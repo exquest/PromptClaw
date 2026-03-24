@@ -6,13 +6,14 @@ Format:
 
 ## INBOX
 
-- [P1] [todo] Define the daily brief format and source mix for infrastructure, project, and local event coverage — Claude — target 8:00 AM local routine
 - [P1] [todo] Define the weekly retro template and review inputs for Sunday 6:00 PM — Claude — include infra, project, and research progress
 - [P1] [todo] Build a status workflow for running servers, websites, work infrastructure, and `sdp-cli` processes — Codex — monitoring and reporting baseline
 
 ## NEXT
 
 ## DOING
+
+- [P1] [doing] Define the daily brief format, inputs, and output template — Claude — delegation packet: `.promptclaw/delegations/2026-03-24__claude__daily-brief-design.md`
 
 ## BLOCKED
 
