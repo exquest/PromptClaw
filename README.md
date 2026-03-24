@@ -81,21 +81,6 @@ Invoke with `$promptclaw-<name>` in Codex, `/promptclaw-<name>` in Claude Code, 
 
 ## Optional integrations
 
-### sdp-cli bridge
-
-If you use [sdp-cli](https://github.com/cascadiantech/sdp-cli) for coding-agent project management, enable the bridge in `STATE.json`:
-
-```json
-"integrations": {
-  "sdp_cli": {
-    "enabled": true,
-    "repo_path": "~/path/to/sdp-cli"
-  }
-}
-```
-
-The bridge script (`.promptclaw/scripts/sdp_cli_bridge.py`) pulls task queue, approval, and escalation state into the startup and heartbeat workflows.
-
 ### Workspace snapshot
 
 To track multiple repos, populate `.promptclaw/workspace_registry.json` with your projects and enable the integration in `STATE.json`:

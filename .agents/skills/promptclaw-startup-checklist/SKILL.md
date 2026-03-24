@@ -67,9 +67,7 @@ Start a new PromptClaw session cleanly.
    - summarize persona name and style
    - summarize top backlog items
    - summarize new inbox items
-   - if `.promptclaw/STATE.json` has `integrations.sdp_cli.enabled = true`, run `python3 .promptclaw/scripts/sdp_cli_bridge.py --json`
    - if `.promptclaw/STATE.json` has `integrations.workspace.enabled = true`, run `python3 .promptclaw/scripts/workspace_snapshot.py --json`
-   - summarize `sdp-cli` queue counts, pending approvals, open escalations, and quota alerts when available
    - summarize the highest-priority workspace repos with branch, status source, and the most useful progress or session-note headline
    - identify stale or blocked work
    - recommend the next 1–3 actions with routing notes
@@ -77,18 +75,7 @@ Start a new PromptClaw session cleanly.
 6. Append a `Startup checklist` entry to today's journal.
 7. Keep the output to about one screen unless the user asks for more detail.
 
-## sdp-cli integration notes
-
-- Use the bridge only when `integrations.sdp_cli.enabled` is true in `.promptclaw/STATE.json`.
-- The bridge reads existing machine-readable `sdp-cli` surfaces:
-  - `tasks snapshot --json`
-  - `tasks approvals --json`
-  - `tasks escalations --json`
-  - `agents usage --json`
-- Prefer the bridge over scraping human-formatted `sdp-cli status` output.
-- If the bridge reports missing repo/command/errors, note that briefly and continue normal startup.
-
-## workspace integration notes
+## Workspace integration notes
 
 - Use the workspace snapshot when `integrations.workspace.enabled` is true in `.promptclaw/STATE.json`.
 - The snapshot should come from:
