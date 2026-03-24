@@ -1,0 +1,244 @@
+from __future__ import annotations
+
+from dataclasses import asdict
+from pathlib import Path
+from typing import Optional
+
+from .agent_runtime import AgentRuntime
+from .artifacts import ArtifactManager
+from .config import load_config
+from .control_plane import ControlPlane
+from .memory import MemoryStore
+from .models import Event, PromptClawConfig, RouteDecision, RunState
+from .paths import ProjectPaths
+from .prompt_builder import (
+    build_lead_prompt,
+    build_retry_prompt,
+    build_verify_prompt,
+    load_instruction,
+)
+from .router import route_markdown
+from .state_store import StateStore
+from .utils import parse_verdict, read_text, slugify, truncate, utc_now, write_text
+
+DEFAULT_LEAD_INSTRUCTION = "You are a PromptClaw worker. Produce useful markdown output for the assigned task."
+DEFAULT_VERIFY_INSTRUCTION = "You are a PromptClaw verifier. Review the lead output and emit a verdict line."
+
+class PromptClawOrchestrator:
+    def __init__(self, project_root: Path) -> None:
+        self.project_root = project_root
+        self.config: PromptClawConfig = load_config(project_root)
+        self.paths = ProjectPaths(project_root=project_root, config=self.config)
+        self.runtime = AgentRuntime()
+        self.control_plane = ControlPlane(self.config, self.runtime, self.project_root)
+        self.artifacts = None
+        self.state_store = StateStore(self.paths)
+        self.memory_store = MemoryStore(self.paths)
+
+    def run(self, task_text: str, title: str = "PromptClaw Task") -> RunState:
+        timestamp = utc_now().replace(":", "").replace("-", "").replace("+00:00", "z")
+        run_id = f"{timestamp}-{slugify(title)}"
+        self.artifacts = ArtifactManager(self.paths, run_id)
+        self.artifacts.create_run_layout()
+        task_path = self.artifacts.write_task(task_text)
+        memory_text = self.memory_store.read()
+
+        state = RunState(
+            run_id=run_id,
+            title=title,
+            status="running",
+            current_phase="routing",
+            created_at=utc_now(),
+            updated_at=utc_now(),
+            task_text=task_text,
+        )
+        self._log(state, "run_started", f"Run created for '{title}'")
+
+        route_prompt_path = self.paths.run_prompts(run_id) / "control-routing.md"
+        decision, routing_mode = self.control_plane.decide(task_text, memory_text, route_prompt_path)
+        state.route_decision = asdict(decision)
+        state.lead_agent = decision.lead_agent
+        state.verifier_agent = decision.verifier_agent or ""
+        state.updated_at = utc_now()
+        self.artifacts.write_route_json(asdict(decision))
+        self.artifacts.write_route_markdown(route_markdown(decision))
+        self._log(state, "route_decided", f"Routing via {routing_mode}: lead={decision.lead_agent}, verifier={decision.verifier_agent or 'none'}", phase="routing")
+
+        if decision.ambiguous and self.config.routing.ask_user_on_ambiguity:
+            state.status = "awaiting_user"
+            state.current_phase = "clarification"
+            state.clarification_question = decision.clarification_question
+            question_markdown = (
+                "# Clarification Needed\n\n"
+                "The orchestrator paused because the task is ambiguous.\n\n"
+                "## Question\n"
+                f"{decision.clarification_question or 'Please clarify the task.'}\n"
+            )
+            question_path = self.artifacts.write_summary("clarification-request.md", question_markdown)
+            state.final_summary_path = str(question_path.relative_to(self.project_root))
+            state.updated_at = utc_now()
+            self._log(state, "awaiting_user", "Run paused for clarification", phase="clarification")
+            self.state_store.save(state)
+            self.memory_store.append_run_summary(state, question_markdown)
+            return state
+
+        lead_output = self._run_lead(state, decision, memory_text)
+        final_summary = ""
+        if self.config.routing.verification_enabled and decision.verifier_agent:
+            final_summary = self._run_verification_cycle(state, decision, lead_output, memory_text)
+        else:
+            final_summary = self._finalize_without_verification(state, lead_output)
+
+        state.status = "complete"
+        state.current_phase = "complete"
+        state.updated_at = utc_now()
+        summary_path = self.artifacts.write_summary("final-summary.md", final_summary)
+        state.final_summary_path = str(summary_path.relative_to(self.project_root))
+        self._log(state, "run_complete", "Run completed", phase="complete")
+        self.state_store.save(state)
+        self.memory_store.append_run_summary(state, final_summary)
+        return state
+
+    def resume(self, run_id: str, answer: str) -> RunState:
+        previous = self.state_store.load(run_id)
+        if previous.status != "awaiting_user":
+            raise ValueError(f"Run {run_id} is not awaiting user input")
+        resumed_task = (
+            previous.task_text.strip()
+            + "\n\n# Clarification Answer\n"
+            + answer.strip()
+        )
+        return self.run(task_text=resumed_task, title=previous.title + " (resumed)")
+
+    def _run_lead(self, state: RunState, decision: RouteDecision, memory_text: str) -> str:
+        state.current_phase = "lead"
+        agent = self.config.agents[decision.lead_agent]
+        instruction = load_instruction(self.project_root, agent.instruction_file, DEFAULT_LEAD_INSTRUCTION)
+        prompt_text = build_lead_prompt(
+            agent_instruction=instruction,
+            task_text=state.task_text,
+            decision=decision,
+            memory_text=memory_text,
+        )
+        prompt_path = self.artifacts.write_prompt(f"lead-{agent.name}.md", prompt_text)
+        result = self.runtime.run(
+            agent=agent,
+            prompt_text=prompt_text,
+            prompt_path=prompt_path,
+            phase="lead",
+            role="lead",
+            project_root=self.project_root,
+            task_text=state.task_text,
+        )
+        output_path = self.artifacts.write_output(f"lead-{agent.name}.md", result.output_text)
+        self._log(state, "lead_complete", f"Lead output written by {agent.name}", phase="lead", agent=agent.name, role="lead")
+        return result.output_text
+
+    def _run_verification_cycle(self, state: RunState, decision: RouteDecision, lead_output: str, memory_text: str) -> str:
+        verifier = self.config.agents[decision.verifier_agent]  # type: ignore[index]
+        instruction = load_instruction(self.project_root, verifier.instruction_file, DEFAULT_VERIFY_INSTRUCTION)
+        verify_prompt = build_verify_prompt(
+            agent_instruction=instruction,
+            task_text=state.task_text,
+            decision=decision,
+            lead_output=lead_output,
+            memory_text=memory_text,
+        )
+        self.artifacts.write_handoff(
+            "lead-to-verify.md",
+            "# Handoff\n\n"
+            f"Lead agent: {decision.lead_agent}\n\n"
+            f"Verifier agent: {decision.verifier_agent}\n\n"
+            "## Brief\n"
+            f"{decision.subtask_brief}\n",
+        )
+        verify_prompt_path = self.artifacts.write_prompt(f"verify-{verifier.name}.md", verify_prompt)
+        verify_result = self.runtime.run(
+            agent=verifier,
+            prompt_text=verify_prompt,
+            prompt_path=verify_prompt_path,
+            phase="verify",
+            role="verify",
+            project_root=self.project_root,
+            task_text=state.task_text,
+        )
+        self.artifacts.write_output(f"verify-{verifier.name}.md", verify_result.output_text)
+        verdict = parse_verdict(verify_result.output_text) or "PASS_WITH_NOTES"
+        self._log(state, "verify_complete", f"Verifier {verifier.name} returned {verdict}", phase="verify", agent=verifier.name, role="verify")
+
+        if verdict == "FAIL" and state.retries_used < self.config.routing.max_retries:
+            state.retries_used += 1
+            retry_agent = self.config.agents[decision.lead_agent]
+            retry_instruction = load_instruction(self.project_root, retry_agent.instruction_file, DEFAULT_LEAD_INSTRUCTION)
+            retry_prompt = build_retry_prompt(
+                agent_instruction=retry_instruction,
+                task_text=state.task_text,
+                verifier_output=verify_result.output_text,
+                prior_output=lead_output,
+                decision=decision,
+            )
+            retry_prompt_path = self.artifacts.write_prompt(f"retry-{retry_agent.name}.md", retry_prompt)
+            retry_result = self.runtime.run(
+                agent=retry_agent,
+                prompt_text=retry_prompt,
+                prompt_path=retry_prompt_path,
+                phase="retry",
+                role="lead",
+                project_root=self.project_root,
+                task_text=state.task_text,
+            )
+            retry_output_path = self.artifacts.write_output(f"retry-{retry_agent.name}.md", retry_result.output_text)
+            self._log(state, "retry_complete", f"Retry completed by {retry_agent.name}", phase="retry", agent=retry_agent.name, role="lead")
+            summary = (
+                "# Final Summary\n\n"
+                f"- Lead agent: {decision.lead_agent}\n"
+                f"- Verifier agent: {decision.verifier_agent}\n"
+                f"- Verification verdict: {verdict} (after retry)\n"
+                f"- Retries used: {state.retries_used}\n\n"
+                "## Final output\n"
+                f"{truncate(retry_result.output_text, 8000)}\n"
+            )
+            return summary
+
+        summary = (
+            "# Final Summary\n\n"
+            f"- Lead agent: {decision.lead_agent}\n"
+            f"- Verifier agent: {decision.verifier_agent}\n"
+            f"- Verification verdict: {verdict}\n"
+            f"- Retries used: {state.retries_used}\n\n"
+            "## Lead output excerpt\n"
+            f"{truncate(lead_output, 5000)}\n\n"
+            "## Verification excerpt\n"
+            f"{truncate(verify_result.output_text, 5000)}\n"
+        )
+        return summary
+
+    def _finalize_without_verification(self, state: RunState, lead_output: str) -> str:
+        return (
+            "# Final Summary\n\n"
+            f"- Lead agent: {state.lead_agent}\n"
+            "- Verification: disabled or no verifier available\n\n"
+            "## Output\n"
+            f"{truncate(lead_output, 8000)}\n"
+        )
+
+    def _log(
+        self,
+        state: RunState,
+        event_type: str,
+        message: str,
+        phase: str = "",
+        agent: str = "",
+        role: str = "",
+    ) -> None:
+        event = Event(
+            timestamp=utc_now(),
+            event_type=event_type,
+            message=message,
+            phase=phase,
+            agent=agent,
+            role=role,
+        )
+        state.events.append(event)
+        if self.artifacts:
+            self.artifacts.append_event(event)

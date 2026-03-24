@@ -1,0 +1,95 @@
+# Handoff Protocol
+
+PromptClaw v2.1 uses **artifact handoffs** rather than agent-to-agent chat.
+
+## Rule
+
+One agent never directly passes work to another. The orchestrator does.
+
+## Mechanism
+
+For each step, the orchestrator writes:
+
+- the task input
+- the route decision
+- the handoff brief
+- the prompt given to the next agent
+- the output returned by that agent
+- optional verification output
+- the final summary
+
+## Files
+
+```text
+.promptclaw/runs/<run-id>/
+├── input/task.md
+├── routing/route.json
+├── routing/route.md
+├── prompts/lead-<agent>.md
+├── outputs/lead-<agent>.md
+├── handoffs/lead-to-verify.md
+├── prompts/verify-<agent>.md
+├── outputs/verify-<agent>.md
+├── summary/final-summary.md
+└── logs/events.jsonl
+```
+
+## Benefits
+
+- deterministic transfer point
+- reproducible history
+- resumable runs
+- better debugging
+- compatible with mixed local tools
+
+## Startup handoff
+
+Before runtime handoffs begin, the startup wizard can generate the initial routing documents and agent lanes. That gives the orchestrator a cleaner starting point than raw placeholder prompts.
+
+## Clarification flow
+
+If the route decision marks the task as ambiguous, the orchestrator writes:
+
+```text
+summary/clarification-request.md
+```
+
+Then run status becomes `awaiting_user`.
+
+To continue:
+
+```bash
+promptclaw resume . --run-id <run-id> --answer "your answer"
+```
+
+## Verification contract
+
+Verification prompts instruct the chosen verifier to emit:
+
+```text
+VERDICT: PASS
+```
+
+or
+
+```text
+VERDICT: PASS_WITH_NOTES
+```
+
+or
+
+```text
+VERDICT: FAIL
+```
+
+PromptClaw parses that marker and decides whether to complete, retry, or fail.
+
+## Retry policy
+
+By default:
+
+- one lead pass
+- one verifier pass
+- one retry after fail
+
+You can change this in `promptclaw.json`.
