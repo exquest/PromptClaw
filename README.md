@@ -9,7 +9,7 @@ PromptClaw is a prompt-native, multi-agent operating layer for software and rese
 1. Clone or use this repo as a template:
 
    ```bash
-   git clone https://github.com/YOUR_ORG/PromptClaw.git my-project
+   git clone https://github.com/exquest/PromptClaw.git my-project
    cd my-project
    ```
 
