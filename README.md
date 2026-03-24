@@ -6,24 +6,76 @@ PromptClaw is a prompt-native, multi-agent operating layer for software and rese
 
 ## Quick start
 
-1. Clone or use this repo as a template:
+### 1. Get the repo
 
-   ```bash
-   git clone https://github.com/exquest/PromptClaw.git my-project
-   cd my-project
-   ```
+Clone it into your project directory, or use it as a GitHub template:
 
-2. Open the project in your preferred agent:
+```bash
+git clone https://github.com/exquest/PromptClaw.git my-project
+cd my-project
+```
 
-   | Agent | Command |
-   |-------|---------|
-   | Codex | `codex` then `$promptclaw-startup-checklist` |
-   | Claude Code | `claude` (startup runs automatically) |
-   | Gemini | `gemini` then `/promptclaw:startup` |
+Alternatively, click **Use this template** on GitHub to create your own copy.
 
-3. On first run, PromptClaw detects that no persona is configured and asks a 15-question onboarding interview. Answer the questions and it configures itself — persona, memory, routing, and routines.
+### 2. Pick your agent and launch
 
-4. After onboarding, every new session starts with a startup checklist that summarizes your state, backlog, and inbox.
+PromptClaw works with three AI coding agents. Pick whichever you already have installed:
+
+**Codex (OpenAI)**
+```bash
+codex
+```
+Then run:
+```
+$promptclaw-startup-checklist
+```
+
+**Claude Code (Anthropic)**
+```bash
+claude
+```
+PromptClaw starts automatically — `CLAUDE.md` is read on launch.
+
+**Gemini (Google)**
+```bash
+gemini
+```
+Then run:
+```
+/promptclaw:startup
+```
+
+### 3. Complete the onboarding interview
+
+On first run, PromptClaw sees that no persona is configured and asks you 15 questions:
+
+- What to call you and the assistant
+- Tone and communication style
+- Research output preferences
+- Your top domains and example tasks
+- Autonomy boundaries (when to pause vs. act)
+- Routing preferences across agents
+- Routine preferences (daily brief, heartbeat, weekly retro)
+
+Answer in one message. PromptClaw writes your persona to `PERSONA.md`, saves stable preferences to `MEMORY.md`, updates `STATE.json`, and logs the session to `JOURNAL/`.
+
+### 4. Start working
+
+After onboarding, every new session opens with a startup checklist that shows:
+- Your persona summary
+- Top backlog items and inbox
+- Workspace status (if configured)
+- Suggested next actions with routing
+
+From there, use skills to drive work:
+
+```
+$promptclaw-adp-task-intake     # classify and route a coding task
+$promptclaw-research-brief      # run a research mission
+$promptclaw-heartbeat           # maintenance cycle
+```
+
+Drop quick ideas into `.promptclaw/INBOX.md` — the heartbeat skill picks them up and converts them into backlog items or delegation packets.
 
 ## How it works
 
