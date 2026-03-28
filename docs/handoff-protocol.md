@@ -18,6 +18,8 @@ For each step, the orchestrator writes:
 - optional verification output
 - the final summary
 
+For live `command` agents, the orchestrator invokes the local CLI from the project root and passes an absolute `{prompt_file}` path for the prompt artifact it just wrote.
+
 ## Files
 
 ```text

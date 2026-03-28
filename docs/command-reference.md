@@ -74,6 +74,8 @@ promptclaw run PROJECT_ROOT --task-file FILE
 promptclaw run PROJECT_ROOT --task "free text"
 ```
 
+For live `command` agents, PromptClaw executes from `PROJECT_ROOT` and renders `{prompt_file}` and `{project_root}` as absolute paths.
+
 ## `promptclaw resume`
 
 Resume an ambiguous task.

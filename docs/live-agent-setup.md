@@ -32,6 +32,8 @@ Example argv pattern:
 }
 ```
 
+`{prompt_file}` and `{project_root}` render as absolute paths. PromptClaw still sets the subprocess working directory to the project root.
+
 ## Step 3 — Keep metadata accurate
 
 Make sure these stay aligned with reality:

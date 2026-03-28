@@ -81,7 +81,7 @@ Agent runtimes support three modes:
 - `echo`
 - `command`
 
-`command` is the live mode. It writes a prompt file and then executes the configured local command.
+`command` is the live mode. It writes a prompt file, executes the configured local command from the project root, and renders `{prompt_file}` and `{project_root}` as absolute paths so relative `PROJECT_ROOT` invocations still work.
 
 ### 7. Memory
 

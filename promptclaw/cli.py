@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .bootstrap import bootstrap_project, init_project
 from .config import load_config, validate_config
+from .diagnostics import diagnose, format_diagnosis
 from .orchestrator import PromptClawOrchestrator
 from .paths import ProjectPaths
 from .state_store import StateStore
@@ -78,6 +79,12 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         if agent.enabled and agent.kind == "command":
             if agent.command:
                 program = str(agent.command[0])
+                # Resolve relative paths against the project root
+                program_path = Path(program)
+                if not program_path.is_absolute() and (str(program_path) != program_path.name):
+                    resolved = (args.project_root / program_path).resolve()
+                    if resolved.exists():
+                        program = str(resolved)
                 if not executable_exists(program):
                     issues.append(f"agent '{name}' command executable not found: {program}")
             elif agent.shell_command:
@@ -101,14 +108,18 @@ def cmd_run(args: argparse.Namespace) -> int:
     orchestrator = PromptClawOrchestrator(args.project_root)
     task_text = args.task if args.task else read_text(args.task_file)
     state = orchestrator.run(task_text=task_text, title="PromptClaw Run")
-    print(json.dumps({
+    result = {
         "run_id": state.run_id,
         "status": state.status,
         "phase": state.current_phase,
         "lead_agent": state.lead_agent,
         "verifier_agent": state.verifier_agent,
         "summary": state.final_summary_path,
-    }, indent=2))
+    }
+    if state.errors:
+        result["errors"] = state.errors
+        result["recovery_actions"] = state.recovery_actions
+    print(json.dumps(result, indent=2))
     return 0
 
 
@@ -194,9 +205,7 @@ def cmd_show_config(args: argparse.Namespace) -> int:
     return 0
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = build_parser()
-    args = parser.parse_args(argv)
+def _dispatch(args: argparse.Namespace) -> int:
     if args.command == "init":
         return cmd_init(args)
     if args.command == "wizard":
@@ -213,8 +222,33 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_status(args)
     if args.command == "show-config":
         return cmd_show_config(args)
-    parser.error("Unknown command")
     return 2
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    try:
+        return _dispatch(args)
+    except KeyboardInterrupt:
+        print("\nInterrupted.", file=sys.stderr)
+        return 130
+    except Exception as exc:
+        command = getattr(args, "command", "unknown")
+        diag = diagnose(exc, phase=command)
+        print(f"\n{format_diagnosis(diag)}", file=sys.stderr)
+        if state := _try_extract_state(args):
+            print(f"\n  Run state may be partially saved. Check: promptclaw status {state} --run-id <id>", file=sys.stderr)
+        return 1
+
+
+def _try_extract_state(args: argparse.Namespace) -> str | None:
+    """Try to extract the project root from args for error messages."""
+    for attr in ("project_root", "path"):
+        val = getattr(args, attr, None)
+        if val is not None:
+            return str(val)
+    return None
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ TASK_KEYWORDS = {
     "architecture": ["architecture", "design", "system", "workflow", "protocol", "orchestrator", "state", "handoff", "integration"],
     "research": ["research", "compare", "analyze", "summary", "synthesize", "market", "literature", "document"],
     "docs": ["manual", "docs", "documentation", "guide", "writeup", "instruction"],
+    "image": ["image", "generate", "picture", "visual", "drawing", "illustration", "art", "photo"],
 }
 
 AMBIGUITY_MARKERS = [

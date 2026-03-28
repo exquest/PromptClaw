@@ -89,6 +89,7 @@ For live mode, set:
 - optional `env`
 
 Use the exact invocation syntax your machine already uses.
+PromptClaw renders `{prompt_file}` and `{project_root}` as absolute paths and runs the process from the project root.
 
 ## Capability tags
 

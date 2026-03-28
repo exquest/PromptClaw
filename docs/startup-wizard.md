@@ -75,6 +75,7 @@ Examples:
 - The wizard is **heuristic-first** so it works in mock mode and before live agents are configured.
 - Custom agent names are supported; new prompt files are created automatically.
 - Agents not selected in the wizard are disabled in `promptclaw.json`.
+- When you later switch an agent to live `command` mode, PromptClaw runs it from the project root and fills `{prompt_file}` with an absolute path to the generated prompt artifact.
 
 ## Typical loop
 
