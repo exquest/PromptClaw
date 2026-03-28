@@ -52,6 +52,29 @@ def build_parser() -> argparse.ArgumentParser:
     show_config_parser = subparsers.add_parser("show-config", help="Print resolved config")
     show_config_parser.add_argument("project_root", type=Path)
 
+    # --- coherence subcommand group ---
+    coherence_parser = subparsers.add_parser("coherence", help="Coherence engine commands")
+    coherence_sub = coherence_parser.add_subparsers(dest="coherence_command", required=True)
+
+    coh_status_parser = coherence_sub.add_parser("status", help="Show coherence engine status")
+    coh_status_parser.add_argument("project_root", type=Path)
+
+    coh_decisions_parser = coherence_sub.add_parser("decisions", help="List active architectural decisions")
+    coh_decisions_parser.add_argument("project_root", type=Path)
+
+    coh_record_parser = coherence_sub.add_parser("record-decision", help="Record a new architectural decision")
+    coh_record_parser.add_argument("project_root", type=Path)
+    coh_record_parser.add_argument("--title", required=True, help="Decision title")
+    coh_record_parser.add_argument("--context", required=True, help="Why this decision was made")
+    coh_record_parser.add_argument("--decision", required=True, help="What was decided")
+    coh_record_parser.add_argument("--rationale", required=True, help="The reasoning")
+    coh_record_parser.add_argument("--tags", nargs="*", default=[], help="Tags for the decision")
+    coh_record_parser.add_argument("--files", nargs="*", default=[], help="File paths affected")
+
+    coh_replay_parser = coherence_sub.add_parser("replay", help="Replay events for a run")
+    coh_replay_parser.add_argument("project_root", type=Path)
+    coh_replay_parser.add_argument("--run-id", required=True, help="Run ID to replay")
+
     return parser
 
 
@@ -168,6 +191,102 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def _build_coherence_engine(project_root: Path):
+    """Instantiate a CoherenceEngine for the given project root."""
+    from .coherence.engine import CoherenceEngine
+    from .coherence.models import CoherenceConfig
+
+    config = CoherenceConfig()
+    return CoherenceEngine(config, project_root)
+
+
+def cmd_coherence_status(args: argparse.Namespace) -> int:
+    """Show coherence engine status: enforcement mode, trust scores, recent violations."""
+    engine = _build_coherence_engine(args.project_root)
+    trust_scores = engine.trust_manager.all_scores()
+    decisions = engine.decision_store.list_active()
+    result = {
+        "enforcement_mode": engine.config.mode.value,
+        "auto_graduate": engine.config.auto_graduate,
+        "constitution_loaded": engine.constitution.rules_for_phase("routing") != [],
+        "active_decisions": len(decisions),
+        "trust_scores": {
+            agent: {
+                "score": round(ts.score, 4),
+                "hard_violations": ts.hard_violations,
+                "soft_violations": ts.soft_violations,
+                "compliant_actions": ts.compliant_actions,
+                "last_updated": ts.last_updated,
+            }
+            for agent, ts in trust_scores.items()
+        },
+    }
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+def cmd_coherence_decisions(args: argparse.Namespace) -> int:
+    """List all active architectural decisions."""
+    engine = _build_coherence_engine(args.project_root)
+    decisions = engine.decision_store.list_active()
+    print(json.dumps([
+        {
+            "decision_id": d.decision_id,
+            "created_at": d.created_at,
+            "title": d.title,
+            "context": d.context,
+            "decision": d.decision_text,
+            "rationale": d.rationale,
+            "status": d.status,
+            "tags": d.tags,
+            "file_paths": d.file_paths,
+        }
+        for d in decisions
+    ], indent=2))
+    return 0
+
+
+def cmd_coherence_record_decision(args: argparse.Namespace) -> int:
+    """Record a new architectural decision."""
+    engine = _build_coherence_engine(args.project_root)
+    decision = engine.record_decision(
+        title=args.title,
+        context=args.context,
+        decision_text=args.decision,
+        rationale=args.rationale,
+        tags=args.tags,
+        file_paths=args.files,
+    )
+    print(json.dumps({
+        "decision_id": decision.decision_id,
+        "title": decision.title,
+        "status": decision.status,
+        "created_at": decision.created_at,
+    }, indent=2))
+    return 0
+
+
+def cmd_coherence_replay(args: argparse.Namespace) -> int:
+    """Replay events for a specific run."""
+    engine = _build_coherence_engine(args.project_root)
+    events = engine.replay(args.run_id)
+    print(json.dumps([
+        {
+            "event_id": e.event_id,
+            "run_id": e.run_id,
+            "timestamp": e.timestamp,
+            "event_type": e.event_type,
+            "phase": e.phase,
+            "agent": e.agent,
+            "role": e.role,
+            "sequence_number": e.sequence_number,
+            "payload": e.payload,
+        }
+        for e in events
+    ], indent=2))
+    return 0
+
+
 def cmd_show_config(args: argparse.Namespace) -> int:
     config = load_config(args.project_root)
     print(json.dumps({
@@ -222,6 +341,20 @@ def _dispatch(args: argparse.Namespace) -> int:
         return cmd_status(args)
     if args.command == "show-config":
         return cmd_show_config(args)
+    if args.command == "coherence":
+        return _dispatch_coherence(args)
+    return 2
+
+
+def _dispatch_coherence(args: argparse.Namespace) -> int:
+    if args.coherence_command == "status":
+        return cmd_coherence_status(args)
+    if args.coherence_command == "decisions":
+        return cmd_coherence_decisions(args)
+    if args.coherence_command == "record-decision":
+        return cmd_coherence_record_decision(args)
+    if args.coherence_command == "replay":
+        return cmd_coherence_replay(args)
     return 2
 
 
