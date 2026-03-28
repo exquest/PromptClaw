@@ -75,6 +75,9 @@ def build_parser() -> argparse.ArgumentParser:
     coh_replay_parser.add_argument("project_root", type=Path)
     coh_replay_parser.add_argument("--run-id", required=True, help="Run ID to replay")
 
+    coh_doctor_parser = coherence_sub.add_parser("doctor", help="Validate coherence system health")
+    coh_doctor_parser.add_argument("project_root", type=Path)
+
     return parser
 
 
@@ -287,6 +290,153 @@ def cmd_coherence_replay(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_coherence_doctor(args: argparse.Namespace) -> int:
+    """Validate coherence system health."""
+    project_root = args.project_root
+    checks_passed = 0
+    checks_failed = 0
+
+    def _pass(label: str, detail: str = "") -> None:
+        nonlocal checks_passed
+        checks_passed += 1
+        msg = f"  PASS: {label}"
+        if detail:
+            msg += f" ({detail})"
+        print(msg)
+
+    def _fail(label: str, detail: str = "") -> None:
+        nonlocal checks_failed
+        checks_failed += 1
+        msg = f"  FAIL: {label}"
+        if detail:
+            msg += f" ({detail})"
+        print(msg)
+
+    print("Coherence Doctor")
+    print("=" * 40)
+
+    # Check 1: Constitution file exists and parses without errors
+    constitution_path = project_root / "constitution.yaml"
+    if constitution_path.exists():
+        try:
+            from .coherence.constitution import Constitution
+            const = Constitution(constitution_path)
+            _pass("Constitution file", f"{len(const.rules)} rules loaded from {constitution_path.name}")
+        except Exception as exc:
+            _fail("Constitution file", f"parse error: {exc}")
+    else:
+        # Also check constitution.json as fallback
+        constitution_json = project_root / "constitution.json"
+        if constitution_json.exists():
+            try:
+                from .coherence.constitution import Constitution
+                const = Constitution(constitution_json)
+                _pass("Constitution file", f"{len(const.rules)} rules loaded from {constitution_json.name}")
+            except Exception as exc:
+                _fail("Constitution file", f"parse error: {exc}")
+        else:
+            _pass("Constitution file", "no constitution file present (optional)")
+
+    # Check 2: Coherence DB exists and has valid schema
+    db_path = project_root / ".promptclaw" / "coherence.db"
+    if db_path.exists():
+        try:
+            import sqlite3
+            conn = sqlite3.connect(str(db_path), timeout=5)
+            conn.row_factory = sqlite3.Row
+            # Check events table
+            tables = [
+                row[0] for row in
+                conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+            ]
+            has_events = "events" in tables
+            has_decisions = "decisions" in tables
+            if has_events and has_decisions:
+                _pass("Coherence DB schema", "events and decisions tables present")
+            elif has_events:
+                _pass("Coherence DB schema", "events table present, decisions table missing")
+            elif has_decisions:
+                _fail("Coherence DB schema", "events table missing")
+            else:
+                _fail("Coherence DB schema", "neither events nor decisions table found")
+            conn.close()
+        except Exception as exc:
+            _fail("Coherence DB schema", f"database error: {exc}")
+    else:
+        _fail("Coherence DB", f"database not found at {db_path}")
+
+    # Check 3: All decision records have required fields
+    try:
+        engine = _build_coherence_engine(project_root)
+        decisions = engine.decision_store.list_active()
+        invalid_decisions = []
+        for d in decisions:
+            missing = []
+            if not d.decision_id:
+                missing.append("decision_id")
+            if not d.title:
+                missing.append("title")
+            if not d.created_at:
+                missing.append("created_at")
+            if not d.decision_text:
+                missing.append("decision_text")
+            if missing:
+                invalid_decisions.append((d.decision_id or "<no-id>", missing))
+        if not invalid_decisions:
+            _pass("Decision records", f"{len(decisions)} active decisions, all valid")
+        else:
+            details = "; ".join(f"{did} missing {', '.join(fields)}" for did, fields in invalid_decisions)
+            _fail("Decision records", details)
+    except Exception as exc:
+        _fail("Decision records", f"could not query: {exc}")
+
+    # Check 4: No orphaned events (events referencing non-existent runs)
+    try:
+        engine = _build_coherence_engine(project_root)
+        all_events = engine.event_store.replay_all()
+        # Collect unique run_ids from events
+        event_run_ids = set()
+        for ev in all_events:
+            event_run_ids.add(ev.run_id)
+        # Check which run_ids have a run_started event
+        started_runs = set()
+        for ev in all_events:
+            if ev.event_type == "run_started":
+                started_runs.add(ev.run_id)
+        orphaned = event_run_ids - started_runs
+        if not orphaned:
+            _pass("Orphaned events", f"{len(event_run_ids)} run(s) found, none orphaned")
+        else:
+            _fail("Orphaned events", f"{len(orphaned)} run(s) with events but no run_started: {', '.join(sorted(orphaned))}")
+    except Exception as exc:
+        _fail("Orphaned events", f"could not check: {exc}")
+
+    # Check 5: Trust scores are within valid range [0.0, 1.0]
+    try:
+        engine = _build_coherence_engine(project_root)
+        scores = engine.trust_manager.all_scores()
+        out_of_range = []
+        for agent, ts in scores.items():
+            if ts.score < 0.0 or ts.score > 1.0:
+                out_of_range.append(f"{agent}={ts.score:.4f}")
+        if not out_of_range:
+            _pass("Trust scores", f"{len(scores)} agent(s) tracked, all in [0.0, 1.0]")
+        else:
+            _fail("Trust scores", f"out of range: {', '.join(out_of_range)}")
+    except Exception as exc:
+        _fail("Trust scores", f"could not check: {exc}")
+
+    # Summary
+    print("=" * 40)
+    total = checks_passed + checks_failed
+    if checks_failed == 0:
+        print(f"All {total} checks passed.")
+        return 0
+    else:
+        print(f"{checks_failed} of {total} checks failed.")
+        return 1
+
+
 def cmd_show_config(args: argparse.Namespace) -> int:
     config = load_config(args.project_root)
     print(json.dumps({
@@ -355,6 +505,8 @@ def _dispatch_coherence(args: argparse.Namespace) -> int:
         return cmd_coherence_record_decision(args)
     if args.coherence_command == "replay":
         return cmd_coherence_replay(args)
+    if args.coherence_command == "doctor":
+        return cmd_coherence_doctor(args)
     return 2
 
 

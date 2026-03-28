@@ -91,7 +91,7 @@ def infer_task_type(task_text: str, default_task_type: str = "general") -> str:
     return best
 
 
-def score_agent_for_task(agent: AgentConfig, task_text: str, task_type: str) -> int:
+def score_agent_for_task(agent: AgentConfig, task_text: str, task_type: str, trust_score: float = 1.0) -> float:
     score = 0
     lowered = task_text.lower()
     for capability in agent.capabilities:
@@ -105,30 +105,24 @@ def score_agent_for_task(agent: AgentConfig, task_text: str, task_type: str) -> 
         score += 1
     if task_type == "research" and "docs" in [cap.lower() for cap in agent.capabilities]:
         score += 1
-    return score
+    return score * trust_score
 
 
-def choose_lead_agent(config: PromptClawConfig, task_text: str, task_type: str) -> str:
+def choose_lead_agent(config: PromptClawConfig, task_text: str, task_type: str,
+                      trust_scores: dict[str, float] | None = None) -> str:
     candidates = [agent for agent in config.agents.values() if agent.enabled]
+    # Filter out agents with trust < 0.2
+    if trust_scores:
+        trusted = [a for a in candidates if trust_scores.get(a.name, 1.0) >= 0.2]
+        if trusted:
+            candidates = trusted
     if not candidates:
         raise ValueError("No enabled agents available")
     ranked = sorted(
         candidates,
-        key=lambda agent: (score_agent_for_task(agent, task_text, task_type), len(agent.capabilities)),
-        reverse=True,
-    )
-    return ranked[0].name
-
-
-def choose_verifier_agent(config: PromptClawConfig, lead_agent: str, task_text: str, task_type: str) -> str | None:
-    candidates = [agent for agent in config.agents.values() if agent.enabled and agent.name != lead_agent]
-    if not candidates:
-        return None
-    ranked = sorted(
-        candidates,
         key=lambda agent: (
-            ("verification" in [cap.lower() for cap in agent.capabilities]),
-            score_agent_for_task(agent, task_text, task_type),
+            score_agent_for_task(agent, task_text, task_type,
+                                trust_score=trust_scores.get(agent.name, 1.0) if trust_scores else 1.0),
             len(agent.capabilities),
         ),
         reverse=True,
@@ -136,11 +130,35 @@ def choose_verifier_agent(config: PromptClawConfig, lead_agent: str, task_text: 
     return ranked[0].name
 
 
-def heuristic_route(config: PromptClawConfig, task_text: str) -> RouteDecision:
+def choose_verifier_agent(config: PromptClawConfig, lead_agent: str, task_text: str, task_type: str,
+                          trust_scores: dict[str, float] | None = None) -> str | None:
+    candidates = [agent for agent in config.agents.values() if agent.enabled and agent.name != lead_agent]
+    # Filter out agents with trust < 0.2
+    if trust_scores:
+        trusted = [a for a in candidates if trust_scores.get(a.name, 1.0) >= 0.2]
+        if trusted:
+            candidates = trusted
+    if not candidates:
+        return None
+    ranked = sorted(
+        candidates,
+        key=lambda agent: (
+            ("verification" in [cap.lower() for cap in agent.capabilities]),
+            score_agent_for_task(agent, task_text, task_type,
+                                trust_score=trust_scores.get(agent.name, 1.0) if trust_scores else 1.0),
+            len(agent.capabilities),
+        ),
+        reverse=True,
+    )
+    return ranked[0].name
+
+
+def heuristic_route(config: PromptClawConfig, task_text: str,
+                    trust_scores: dict[str, float] | None = None) -> RouteDecision:
     ambiguous, question = detect_ambiguity(task_text)
     task_type = infer_task_type(task_text, config.routing.default_task_type)
-    lead = choose_lead_agent(config, task_text, task_type)
-    verifier = choose_verifier_agent(config, lead, task_text, task_type) if config.routing.verification_enabled else None
+    lead = choose_lead_agent(config, task_text, task_type, trust_scores=trust_scores)
+    verifier = choose_verifier_agent(config, lead, task_text, task_type, trust_scores=trust_scores) if config.routing.verification_enabled else None
     confidence = 0.35 if ambiguous else 0.72
     return RouteDecision(
         ambiguous=ambiguous,

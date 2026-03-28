@@ -66,12 +66,20 @@ class PromptClawOrchestrator:
         # --- Hook A: Pre-routing coherence ---
         coherence_a = self.coherence.pre_routing(run_id, task_text, memory_text)
 
+        # Gather trust scores for trust-aware routing
+        trust_scores: dict[str, float] | None = None
+        if hasattr(self.coherence, 'trust_manager'):
+            raw_scores = self.coherence.trust_manager.all_scores()
+            if raw_scores:
+                trust_scores = {agent: ts.score for agent, ts in raw_scores.items()}
+
         # --- Phase: Routing ---
         try:
             route_prompt_path = self.paths.run_prompts(run_id) / "control-routing.md"
             decision, routing_mode = self.control_plane.decide(
                 task_text, memory_text, route_prompt_path,
                 coherence_context=coherence_a.injected_context,
+                trust_scores=trust_scores,
             )
         except Exception as exc:
             decision, routing_mode = self._recover_routing(state, exc, task_text)

@@ -19,14 +19,16 @@ class ControlPlane:
         self.runtime = runtime
         self.project_root = project_root
 
-    def decide(self, task_text: str, memory_text: str, prompt_path: Path, coherence_context: str = "") -> tuple[RouteDecision, str]:
+    def decide(self, task_text: str, memory_text: str, prompt_path: Path,
+               coherence_context: str = "",
+               trust_scores: dict[str, float] | None = None) -> tuple[RouteDecision, str]:
         if self.config.control_plane.mode != "agent":
-            decision = heuristic_route(self.config, task_text)
+            decision = heuristic_route(self.config, task_text, trust_scores=trust_scores)
             return decision, "heuristic"
         agent_name = self.config.control_plane.agent
         if not agent_name or agent_name not in self.config.agents:
             if self.config.control_plane.allow_fallback:
-                decision = heuristic_route(self.config, task_text)
+                decision = heuristic_route(self.config, task_text, trust_scores=trust_scores)
                 return decision, "heuristic-fallback"
             raise ValueError("control_plane.agent is not configured correctly")
         agent = self.config.agents[agent_name]
@@ -57,6 +59,6 @@ class ControlPlane:
         if decision is not None:
             return decision, agent_name
         if self.config.control_plane.allow_fallback:
-            fallback = heuristic_route(self.config, task_text)
+            fallback = heuristic_route(self.config, task_text, trust_scores=trust_scores)
             return fallback, f"{agent_name}-fallback"
         raise ValueError("control plane returned malformed routing JSON")
