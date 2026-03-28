@@ -1,0 +1,44 @@
+{
+  "rules": [
+    {
+      "id": "no-secrets",
+      "severity": "hard",
+      "description": "Never include API keys, passwords, or secrets in output",
+      "pattern": "(api[_-]?key|secret[_-]?key|password|access[_-]?token)\\s*[:=]\\s*['\"]?[A-Za-z0-9+/=_-]{8,}",
+      "applies_to": ["lead", "verify", "retry"],
+      "message": "Output contains what appears to be a secret or credential"
+    },
+    {
+      "id": "no-destructive-shell",
+      "severity": "hard",
+      "description": "No destructive shell commands without safeguards",
+      "pattern": "rm\\s+-rf\\s+/(?!\\w)",
+      "applies_to": ["lead", "retry"],
+      "message": "Potentially destructive command targeting root filesystem"
+    },
+    {
+      "id": "require-rationale",
+      "severity": "soft",
+      "description": "Architectural outputs should include reasoning",
+      "keywords": ["architecture", "design", "refactor"],
+      "applies_to": ["lead"],
+      "message": "Include rationale for architectural decisions"
+    },
+    {
+      "id": "follow-patterns",
+      "severity": "soft",
+      "description": "Code should follow existing project conventions",
+      "keywords": ["implement", "code", "function"],
+      "applies_to": ["lead", "retry"],
+      "message": "Follow patterns documented in AGENTS.md"
+    },
+    {
+      "id": "test-coverage",
+      "severity": "soft",
+      "description": "New code should include tests",
+      "keywords": ["implement", "feature", "module"],
+      "applies_to": ["lead"],
+      "message": "Include tests for new code"
+    }
+  ]
+}

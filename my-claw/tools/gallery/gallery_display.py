@@ -10,8 +10,12 @@ import threading
 import time
 from pathlib import Path
 
-from tty_renderer import TTYRenderer
-from fb_renderer import FramebufferRenderer
+try:
+    from .tty_renderer import TTYRenderer
+    from .fb_renderer import FramebufferRenderer
+except ImportError:
+    from tty_renderer import TTYRenderer
+    from fb_renderer import FramebufferRenderer
 
 
 class GalleryDisplay:
