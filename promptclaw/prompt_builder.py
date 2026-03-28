@@ -18,8 +18,9 @@ def build_routing_prompt(
     task_text: str,
     memory_text: str,
     agent_catalog: str,
+    coherence_context: str = "",
 ) -> str:
-    return (
+    parts = [
         f"{control_instruction.strip()}\n\n"
         "# Task\n"
         f"{task_text.strip()}\n\n"
@@ -27,18 +28,24 @@ def build_routing_prompt(
         f"{truncate(memory_text or '(no project memory yet)', 4000)}\n\n"
         "# Available Agents\n"
         f"{agent_catalog.strip()}\n\n"
+    ]
+    if coherence_context:
+        parts.append(f"{coherence_context.strip()}\n\n")
+    parts.append(
         "# Output\n"
         "Return JSON with these exact keys: "
         "ambiguous, clarification_question, lead_agent, verifier_agent, reason, subtask_brief, task_type, confidence."
     )
+    return "".join(parts)
 
 def build_lead_prompt(
     agent_instruction: str,
     task_text: str,
     decision: RouteDecision,
     memory_text: str,
+    coherence_context: str = "",
 ) -> str:
-    return (
+    parts = [
         f"{agent_instruction.strip()}\n\n"
         "# Assigned Role\n"
         "Lead\n\n"
@@ -50,9 +57,14 @@ def build_lead_prompt(
         f"{decision.subtask_brief.strip()}\n\n"
         "# Project Memory\n"
         f"{truncate(memory_text or '(no project memory yet)', 4000)}\n\n"
+    ]
+    if coherence_context:
+        parts.append(f"{coherence_context.strip()}\n\n")
+    parts.append(
         "# Required Output\n"
         "Produce markdown. Be explicit, structured, and implementation-oriented."
     )
+    return "".join(parts)
 
 def build_verify_prompt(
     agent_instruction: str,
@@ -60,8 +72,9 @@ def build_verify_prompt(
     decision: RouteDecision,
     lead_output: str,
     memory_text: str,
+    coherence_context: str = "",
 ) -> str:
-    return (
+    parts = [
         f"{agent_instruction.strip()}\n\n"
         "# Assigned Role\n"
         "Verifier\n\n"
@@ -73,10 +86,15 @@ def build_verify_prompt(
         f"Task type: {decision.task_type}\nReason: {decision.reason}\n\n"
         "# Project Memory\n"
         f"{truncate(memory_text or '(no project memory yet)', 3000)}\n\n"
+    ]
+    if coherence_context:
+        parts.append(f"{coherence_context.strip()}\n\n")
+    parts.append(
         "# Required Output\n"
         "Produce markdown and include one explicit verdict line: "
         "VERDICT: PASS, VERDICT: PASS_WITH_NOTES, or VERDICT: FAIL."
     )
+    return "".join(parts)
 
 def build_retry_prompt(
     agent_instruction: str,
@@ -84,8 +102,9 @@ def build_retry_prompt(
     verifier_output: str,
     prior_output: str,
     decision: RouteDecision,
+    coherence_context: str = "",
 ) -> str:
-    return (
+    parts = [
         f"{agent_instruction.strip()}\n\n"
         "# Assigned Role\n"
         "Lead retry\n\n"
@@ -95,6 +114,11 @@ def build_retry_prompt(
         f"{truncate(prior_output, 10000)}\n\n"
         "# Verifier Feedback\n"
         f"{truncate(verifier_output, 10000)}\n\n"
+    ]
+    if coherence_context:
+        parts.append(f"{coherence_context.strip()}\n\n")
+    parts.append(
         "# Required Output\n"
         "Produce a corrected markdown output that addresses the verifier's blocking issues."
     )
+    return "".join(parts)

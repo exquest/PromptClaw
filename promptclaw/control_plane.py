@@ -19,7 +19,7 @@ class ControlPlane:
         self.runtime = runtime
         self.project_root = project_root
 
-    def decide(self, task_text: str, memory_text: str, prompt_path: Path) -> tuple[RouteDecision, str]:
+    def decide(self, task_text: str, memory_text: str, prompt_path: Path, coherence_context: str = "") -> tuple[RouteDecision, str]:
         if self.config.control_plane.mode != "agent":
             decision = heuristic_route(self.config, task_text)
             return decision, "heuristic"
@@ -41,6 +41,7 @@ class ControlPlane:
             task_text=task_text,
             memory_text=memory_text,
             agent_catalog=catalog,
+            coherence_context=coherence_context,
         )
         prompt_path.write_text(prompt_text, encoding="utf-8")
         result = self.runtime.run(

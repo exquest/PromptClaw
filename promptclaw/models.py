@@ -43,6 +43,7 @@ class PromptClawConfig:
     control_plane: ControlPlaneConfig
     routing: RoutingConfig
     agents: dict[str, AgentConfig] = field(default_factory=dict)
+    coherence: Any = None  # CoherenceConfig, typed as Any to avoid circular import
 
 @dataclass
 class RouteDecision:
@@ -93,3 +94,7 @@ class RunState:
     final_summary_path: str = ""
     retries_used: int = 0
     events: list[Event] = field(default_factory=list)
+    errors: list[dict[str, Any]] = field(default_factory=list)
+    recovery_actions: list[str] = field(default_factory=list)
+    coherence_violations: list[dict[str, Any]] = field(default_factory=list)
+    enforcement_mode: str = "monitor"

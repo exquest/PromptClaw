@@ -4,6 +4,7 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
+from .coherence.models import CoherenceConfig
 from .models import (
     AgentConfig,
     ArtifactConfig,
@@ -27,6 +28,7 @@ def default_project_config(project_name: str = "New PromptClaw") -> PromptClawCo
             ask_user_on_ambiguity=True,
             default_task_type="general",
         ),
+        coherence=CoherenceConfig(),
         agents={
             "codex": AgentConfig(
                 name="codex",
@@ -63,12 +65,14 @@ def load_config(project_root: Path) -> PromptClawConfig:
         name: AgentConfig(name=name, **{k: v for k, v in agent.items() if k != "name"})
         for name, agent in raw.get("agents", {}).items()
     }
+    coherence = CoherenceConfig(**raw.get("coherence", {}))
     return PromptClawConfig(
         project=ProjectConfig(**raw["project"]),
         artifacts=ArtifactConfig(**raw.get("artifacts", {})),
         control_plane=ControlPlaneConfig(**raw.get("control_plane", {})),
         routing=RoutingConfig(**raw.get("routing", {})),
         agents=agents,
+        coherence=coherence,
     )
 
 def save_config(project_root: Path, config: PromptClawConfig) -> None:

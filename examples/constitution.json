@@ -1,0 +1,36 @@
+{
+  "rules": [
+    {
+      "id": "no-secrets",
+      "severity": "hard",
+      "description": "Never include API keys, passwords, or secrets in output",
+      "pattern": "(api[_-]?key|secret[_-]?key|password|access[_-]?token)\\s*[:=]\\s*['\"]?[A-Za-z0-9+/=_-]{8,}",
+      "applies_to": ["lead", "verify", "retry"],
+      "message": "Output contains what appears to be a secret or credential"
+    },
+    {
+      "id": "no-destructive-commands",
+      "severity": "hard",
+      "description": "Never suggest rm -rf / or other destructive commands without safeguards",
+      "pattern": "rm\\s+-rf\\s+/(?!\\w)",
+      "applies_to": ["lead", "retry"],
+      "message": "Output contains a potentially destructive command targeting root filesystem"
+    },
+    {
+      "id": "require-rationale",
+      "severity": "soft",
+      "description": "Architecture and design outputs should include rationale",
+      "keywords": ["architecture", "design", "refactor", "restructure"],
+      "applies_to": ["lead"],
+      "message": "Architectural output should include rationale for decisions made"
+    },
+    {
+      "id": "respect-existing-patterns",
+      "severity": "soft",
+      "description": "Code should follow existing project patterns and conventions",
+      "keywords": ["implement", "code", "function", "class", "module"],
+      "applies_to": ["lead", "retry"],
+      "message": "Ensure code follows existing project patterns documented in AGENTS.md"
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from dataclasses import asdict
 from pathlib import Path
 from typing import Optional
@@ -8,6 +9,7 @@ from .agent_runtime import AgentRuntime
 from .artifacts import ArtifactManager
 from .config import load_config
 from .control_plane import ControlPlane
+from .diagnostics import Diagnosis, diagnose, format_diagnosis
 from .memory import MemoryStore
 from .models import Event, PromptClawConfig, RouteDecision, RunState
 from .paths import ProjectPaths
@@ -17,7 +19,9 @@ from .prompt_builder import (
     build_verify_prompt,
     load_instruction,
 )
-from .router import route_markdown
+from .router import heuristic_route, route_markdown
+from .coherence.engine import CoherenceEngine, NullCoherenceEngine
+from .coherence.models import CoherenceConfig
 from .state_store import StateStore
 from .utils import parse_verdict, read_text, slugify, truncate, utc_now, write_text
 
@@ -34,6 +38,11 @@ class PromptClawOrchestrator:
         self.artifacts = None
         self.state_store = StateStore(self.paths)
         self.memory_store = MemoryStore(self.paths)
+        try:
+            coherence_config = self.config.coherence or CoherenceConfig()
+            self.coherence = CoherenceEngine(coherence_config, self.project_root)
+        except Exception:
+            self.coherence = NullCoherenceEngine()
 
     def run(self, task_text: str, title: str = "PromptClaw Task") -> RunState:
         timestamp = utc_now().replace(":", "").replace("-", "").replace("+00:00", "z")
@@ -54,8 +63,19 @@ class PromptClawOrchestrator:
         )
         self._log(state, "run_started", f"Run created for '{title}'")
 
-        route_prompt_path = self.paths.run_prompts(run_id) / "control-routing.md"
-        decision, routing_mode = self.control_plane.decide(task_text, memory_text, route_prompt_path)
+        # --- Hook A: Pre-routing coherence ---
+        coherence_a = self.coherence.pre_routing(run_id, task_text, memory_text)
+
+        # --- Phase: Routing ---
+        try:
+            route_prompt_path = self.paths.run_prompts(run_id) / "control-routing.md"
+            decision, routing_mode = self.control_plane.decide(
+                task_text, memory_text, route_prompt_path,
+                coherence_context=coherence_a.injected_context,
+            )
+        except Exception as exc:
+            decision, routing_mode = self._recover_routing(state, exc, task_text)
+
         state.route_decision = asdict(decision)
         state.lead_agent = decision.lead_agent
         state.verifier_agent = decision.verifier_agent or ""
@@ -63,6 +83,9 @@ class PromptClawOrchestrator:
         self.artifacts.write_route_json(asdict(decision))
         self.artifacts.write_route_markdown(route_markdown(decision))
         self._log(state, "route_decided", f"Routing via {routing_mode}: lead={decision.lead_agent}, verifier={decision.verifier_agent or 'none'}", phase="routing")
+
+        # --- Hook B: Post-routing coherence ---
+        coherence_b = self.coherence.post_routing(run_id, asdict(decision))
 
         if decision.ambiguous and self.config.routing.ask_user_on_ambiguity:
             state.status = "awaiting_user"
@@ -82,12 +105,25 @@ class PromptClawOrchestrator:
             self.memory_store.append_run_summary(state, question_markdown)
             return state
 
-        lead_output = self._run_lead(state, decision, memory_text)
+        # --- Phase: Lead ---
+        try:
+            lead_output = self._run_lead(state, decision, memory_text)
+        except Exception as exc:
+            lead_output = self._recover_lead(state, exc, decision, memory_text)
+
+        # --- Phase: Verification ---
         final_summary = ""
         if self.config.routing.verification_enabled and decision.verifier_agent:
-            final_summary = self._run_verification_cycle(state, decision, lead_output, memory_text)
+            try:
+                final_summary = self._run_verification_cycle(state, decision, lead_output, memory_text)
+            except Exception as exc:
+                final_summary = self._recover_verification(state, exc, lead_output, decision)
         else:
             final_summary = self._finalize_without_verification(state, lead_output)
+
+        # --- Hook G: Finalization coherence audit ---
+        coherence_g = self.coherence.finalize(run_id)
+        state.enforcement_mode = coherence_g.mode.value if hasattr(coherence_g.mode, 'value') else str(coherence_g.mode)
 
         state.status = "complete"
         state.current_phase = "complete"
@@ -110,15 +146,119 @@ class PromptClawOrchestrator:
         )
         return self.run(task_text=resumed_task, title=previous.title + " (resumed)")
 
+    # --- Recovery methods ---
+
+    def _recover_routing(self, state: RunState, exc: Exception, task_text: str) -> tuple[RouteDecision, str]:
+        """Recover from a routing failure by falling back to heuristic routing."""
+        diag = diagnose(exc, phase="routing")
+        self._record_error(state, diag)
+        self._log(state, "routing_error", f"Routing failed: {diag.message}. Falling back to heuristic.", phase="routing")
+        print(format_diagnosis(diag), file=sys.stderr)
+        try:
+            decision = heuristic_route(self.config, task_text)
+            state.recovery_actions.append("routing: fell back to heuristic routing")
+            return decision, "heuristic-recovery"
+        except Exception as fallback_exc:
+            # Heuristic also failed — create a minimal decision using the first enabled agent
+            diag2 = diagnose(fallback_exc, phase="routing")
+            self._record_error(state, diag2)
+            first_agent = next(
+                (name for name, a in self.config.agents.items() if a.enabled),
+                next(iter(self.config.agents), "unknown"),
+            )
+            state.recovery_actions.append(f"routing: emergency fallback to agent '{first_agent}'")
+            return RouteDecision(
+                ambiguous=False,
+                clarification_question=None,
+                lead_agent=first_agent,
+                verifier_agent=None,
+                reason="Emergency fallback — routing failed",
+                subtask_brief=task_text[:200],
+                task_type="general",
+                confidence=0.1,
+            ), "emergency-fallback"
+
+    def _recover_lead(self, state: RunState, exc: Exception, decision: RouteDecision, memory_text: str) -> str:
+        """Recover from a lead agent failure by trying an alternate agent or mock mode."""
+        diag = diagnose(exc, phase="lead", context={"agent_name": decision.lead_agent})
+        self._record_error(state, diag)
+        self._log(state, "lead_error", f"Lead agent failed: {diag.message}. Attempting recovery.", phase="lead")
+        print(format_diagnosis(diag), file=sys.stderr)
+
+        # Try a different enabled agent
+        alternate = self._find_alternate_agent(decision.lead_agent)
+        if alternate:
+            state.recovery_actions.append(f"lead: switched from '{decision.lead_agent}' to '{alternate}'")
+            decision.lead_agent = alternate
+            state.lead_agent = alternate
+            try:
+                return self._run_lead(state, decision, memory_text)
+            except Exception:
+                pass  # Fall through to mock fallback
+
+        # Final fallback: generate mock output
+        state.recovery_actions.append(f"lead: fell back to mock output for '{decision.lead_agent}'")
+        return (
+            f"# Recovery Output (mock fallback)\n\n"
+            f"The lead agent '{decision.lead_agent}' encountered an error and could not produce output.\n\n"
+            f"**Error:** {diag.message}\n\n"
+            f"## Suggestions to fix\n"
+            + "\n".join(f"- {s}" for s in diag.suggestions)
+            + f"\n\n## Original Task\n{state.task_text[:500]}\n"
+        )
+
+    def _recover_verification(self, state: RunState, exc: Exception, lead_output: str, decision: RouteDecision) -> str:
+        """Recover from a verification failure by skipping verification."""
+        diag = diagnose(exc, phase="verify", context={"agent_name": decision.verifier_agent})
+        self._record_error(state, diag)
+        self._log(state, "verify_error", f"Verification failed: {diag.message}. Skipping verification.", phase="verify")
+        print(format_diagnosis(diag), file=sys.stderr)
+        state.recovery_actions.append(f"verify: skipped verification due to error in '{decision.verifier_agent}'")
+        return (
+            "# Final Summary\n\n"
+            f"- Lead agent: {decision.lead_agent}\n"
+            f"- Verification: skipped (verifier error — see suggestions below)\n"
+            f"- Retries used: {state.retries_used}\n\n"
+            f"## Verification Error\n"
+            f"{diag.message}\n\n"
+            f"## Suggestions\n"
+            + "\n".join(f"- {s}" for s in diag.suggestions)
+            + f"\n\n## Lead output excerpt\n"
+            f"{truncate(lead_output, 5000)}\n"
+        )
+
+    def _find_alternate_agent(self, exclude: str) -> str | None:
+        """Find another enabled agent to use as a fallback."""
+        for name, agent in self.config.agents.items():
+            if agent.enabled and name != exclude:
+                return name
+        return None
+
+    def _record_error(self, state: RunState, diag: Diagnosis) -> None:
+        """Record an error diagnosis on the run state."""
+        state.errors.append({
+            "phase": diag.phase,
+            "error_type": diag.error_type,
+            "message": diag.message,
+            "suggestions": diag.suggestions,
+            "auto_recovered": diag.auto_recoverable,
+            "recovery_action": diag.recovery_action,
+        })
+
+    # --- Original phase methods (unchanged logic) ---
+
     def _run_lead(self, state: RunState, decision: RouteDecision, memory_text: str) -> str:
         state.current_phase = "lead"
         agent = self.config.agents[decision.lead_agent]
         instruction = load_instruction(self.project_root, agent.instruction_file, DEFAULT_LEAD_INSTRUCTION)
+        # --- Hook C: Pre-lead coherence ---
+        coherence_c = self.coherence.pre_lead(state.run_id, agent.name, state.task_text)
         prompt_text = build_lead_prompt(
             agent_instruction=instruction,
             task_text=state.task_text,
             decision=decision,
             memory_text=memory_text,
+            coherence_context=coherence_c.injected_context,
         )
         prompt_path = self.artifacts.write_prompt(f"lead-{agent.name}.md", prompt_text)
         result = self.runtime.run(
@@ -137,12 +277,15 @@ class PromptClawOrchestrator:
     def _run_verification_cycle(self, state: RunState, decision: RouteDecision, lead_output: str, memory_text: str) -> str:
         verifier = self.config.agents[decision.verifier_agent]  # type: ignore[index]
         instruction = load_instruction(self.project_root, verifier.instruction_file, DEFAULT_VERIFY_INSTRUCTION)
+        # --- Hook E: Pre-verify coherence ---
+        coherence_e = self.coherence.pre_verify(state.run_id, verifier.name, lead_output)
         verify_prompt = build_verify_prompt(
             agent_instruction=instruction,
             task_text=state.task_text,
             decision=decision,
             lead_output=lead_output,
             memory_text=memory_text,
+            coherence_context=coherence_e.injected_context,
         )
         self.artifacts.write_handoff(
             "lead-to-verify.md",
@@ -242,3 +385,12 @@ class PromptClawOrchestrator:
         state.events.append(event)
         if self.artifacts:
             self.artifacts.append_event(event)
+        # Emit to coherence event store
+        self.coherence.emit(
+            run_id=state.run_id,
+            event_type=event_type,
+            message=message,
+            phase=phase,
+            agent=agent,
+            role=role,
+        )

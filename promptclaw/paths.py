@@ -30,6 +30,14 @@ class ProjectPaths:
     def prompts_root(self) -> Path:
         return self.project_root / "prompts"
 
+    @property
+    def coherence_db(self) -> Path:
+        return self.artifact_root / "coherence.db"
+
+    @property
+    def constitution_file(self) -> Path:
+        return self.project_root / "constitution.yaml"
+
     def run_root(self, run_id: str) -> Path:
         return self.runs_root / run_id
 
