@@ -528,7 +528,7 @@ def _best_available_agent(
     disabled_agents: set[str] | None = None,
 ) -> str:
     available = _available_agents(agents, disabled_agents=disabled_agents)
-    return available[0] if available else "claude"
+    return available[0] if available else "gemini"
 
 
 def _build_agent_command(agent: str, prompt: str) -> tuple[list[str], dict[str, str], bool]:
@@ -1092,7 +1092,7 @@ def fast_route(user_text: str) -> list[dict] | None:
 
 def _invoke_router_agent(agent: str, route_prompt: str, route_env: dict[str, str], timeout: int) -> subprocess.CompletedProcess[str]:
     if agent == "gemini":
-        route_cmd = ["gemini", "--yolo", "-p", route_prompt]
+        route_cmd = ["gemini", "--approval-mode", "plan", "-p", route_prompt]
         route_input = None
     elif agent == "codex":
         route_cmd = ["codex", "exec", "--full-auto", "-"]
@@ -1275,7 +1275,7 @@ def execute_plan(steps: list[dict]) -> None:
                     save_artifact(f"shell_{int(time.time())}.txt", output)
 
             elif step_type == "agent":
-                agent = step.get("agent", "claude")
+                agent = step.get("agent") or _best_available_agent()
                 prompt = step.get("prompt", "")
                 label = step.get("label", f"{agent} task")
                 context_ref = step.get("context_artifact")
@@ -1318,7 +1318,7 @@ def execute_plan(steps: list[dict]) -> None:
                     state.add_message("assistant", f"[parallel:{r['label']}] {r['output'][:200]}")
 
             elif step_type == "background":
-                agent = step.get("agent", "claude")
+                agent = step.get("agent") or _best_available_agent()
                 prompt = step.get("prompt", "")
                 label = step.get("label", "background task")
                 task_id = hashlib.md5(f"{agent}{prompt}{time.time()}".encode()).hexdigest()[:8]
@@ -1473,7 +1473,7 @@ def execute_plan(steps: list[dict]) -> None:
                         f"Break large features into multiple rows. "
                         f"Output ONLY the table."
                     )
-                    prd_output = run_agent("claude", prd_prompt, task_label=f"\U0001f4cb PRD: {label}")
+                    prd_output = run_agent(_best_available_agent(), prd_prompt, task_label=f"\U0001f4cb PRD: {label}")
 
                     prd_dir = PROJECT_ROOT / "sdp"
                     prd_dir.mkdir(parents=True, exist_ok=True)
@@ -1699,7 +1699,7 @@ def handle_builtin(text: str) -> bool:
     if cmd == "/art":
         prompt = text[5:].strip() or "cypherclaw crab"
         tg_send(f"🎨 Generating: {prompt}")
-        output = run_agent("claude", f"Using only plain text ASCII characters and a few emoji, create a small piece of art (max 20 lines, max 30 chars wide) depicting: {prompt}. Output ONLY the art, nothing else.", task_label=f"art: {prompt}")
+        output = run_agent(_best_available_agent(), f"Using only plain text ASCII characters and a few emoji, create a small piece of art (max 20 lines, max 30 chars wide) depicting: {prompt}. Output ONLY the art, nothing else.", task_label=f"art: {prompt}")
         tg_send(output)
         return True
 

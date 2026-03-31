@@ -280,6 +280,19 @@ class PromptClawOrchestrator:
         )
         output_path = self.artifacts.write_output(f"lead-{agent.name}.md", result.output_text)
         self._log(state, "lead_complete", f"Lead output written by {agent.name}", phase="lead", agent=agent.name, role="lead")
+
+        # --- Hook D: Post-lead coherence assessment ---
+        coherence_d = self.coherence.post_lead(state.run_id, agent.name, result.output_text)
+        if not coherence_d.approved:
+            violation_summary = "; ".join(
+                v.rule_id for v in coherence_d.violations
+            ) if coherence_d.violations else "constitutional violation"
+            state.coherence_violations.extend(
+                {"phase": "lead", "rule": v.rule_id, "severity": v.severity.value}
+                for v in (coherence_d.violations or [])
+            )
+            self._log(state, "coherence_blocked_lead", f"Lead output blocked: {violation_summary}", phase="lead", agent=agent.name)
+
         return result.output_text
 
     def _run_verification_cycle(self, state: RunState, decision: RouteDecision, lead_output: str, memory_text: str) -> str:
@@ -316,6 +329,19 @@ class PromptClawOrchestrator:
         self.artifacts.write_output(f"verify-{verifier.name}.md", verify_result.output_text)
         verdict = parse_verdict(verify_result.output_text) or "PASS_WITH_NOTES"
         self._log(state, "verify_complete", f"Verifier {verifier.name} returned {verdict}", phase="verify", agent=verifier.name, role="verify")
+
+        # --- Hook F: Post-verify coherence override ---
+        coherence_f = self.coherence.post_verify(state.run_id, verifier.name, verify_result.output_text)
+        if not coherence_f.approved:
+            violation_summary = "; ".join(
+                v.rule_id for v in coherence_f.violations
+            ) if coherence_f.violations else "constitutional violation"
+            state.coherence_violations.extend(
+                {"phase": "verify", "rule": v.rule_id, "severity": v.severity.value}
+                for v in (coherence_f.violations or [])
+            )
+            self._log(state, "coherence_override_verdict", f"Verdict overridden to FAIL: {violation_summary}", phase="verify", agent=verifier.name)
+            verdict = "FAIL"
 
         if verdict == "FAIL" and state.retries_used < self.config.routing.max_retries:
             state.retries_used += 1
