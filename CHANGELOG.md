@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Added quota-aware graceful degradation for CypherClaw live command routing using `sdp-cli` provider headroom.
+- Added provider status monitoring, runtime quota-error detection, Telegram `/quota` reporting, and routing fallback away from exhausted providers.
+- Added quota-aware selector and daemon tests covering degraded-mode routing, retry fallback, and provider status transitions.
+
 ## 3.0.0
 
 ### Coherence Engine (core feature)

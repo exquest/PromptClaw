@@ -95,3 +95,5 @@ By default:
 - one retry after fail
 
 You can change this in `promptclaw.json`.
+
+For CypherClaw live command runs, provider availability can also change the handoff path. When quota telemetry marks a provider as degraded or paused, the orchestrator can swap to another provider for lead/verify work, and in single-agent degraded mode it can temporarily assign the same available agent to both roles until headroom recovers.

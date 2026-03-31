@@ -76,6 +76,7 @@ Examples:
 - Custom agent names are supported; new prompt files are created automatically.
 - Agents not selected in the wizard are disabled in `promptclaw.json`.
 - When you later switch an agent to live `command` mode, PromptClaw runs it from the project root and fills `{prompt_file}` with an absolute path to the generated prompt artifact.
+- CypherClaw live command projects can layer quota-aware routing on top of those rules, redistributing work away from providers with degraded headroom and collapsing to single-agent mode when only one provider remains viable.
 
 ## Typical loop
 

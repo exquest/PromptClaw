@@ -76,6 +76,8 @@ promptclaw run PROJECT_ROOT --task "free text"
 
 For live `command` agents, PromptClaw executes from `PROJECT_ROOT` and renders `{prompt_file}` and `{project_root}` as absolute paths.
 
+In CypherClaw live command deployments, `run` can also honor `sdp-cli` quota telemetry. Healthy and warn providers stay eligible for routing, degraded providers stop receiving new work, and full exhaustion falls back to the provider with the best remaining headroom so runs continue in degraded mode.
+
 ## `promptclaw resume`
 
 Resume an ambiguous task.

@@ -51,6 +51,7 @@ The control plane decides:
 - which agent should verify
 - what short handoff brief should be passed
 - whether the run can complete or needs another loop
+- when a live provider should be deprioritized or excluded because quota headroom is degraded
 
 There are two modes:
 
@@ -82,6 +83,8 @@ Agent runtimes support three modes:
 - `command`
 
 `command` is the live mode. It writes a prompt file, executes the configured local command from the project root, and renders `{prompt_file}` and `{project_root}` as absolute paths so relative `PROJECT_ROOT` invocations still work.
+
+In CypherClaw-style live command deployments, command routing can consult `sdp-cli` quota telemetry. Healthy and warn providers remain eligible, degraded and paused providers are excluded from new work, and if every provider is degraded the runtime falls back to the provider with the most remaining headroom instead of refusing to operate.
 
 ### 7. Memory
 
