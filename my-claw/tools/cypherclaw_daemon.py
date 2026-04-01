@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ruff: noqa: E402
 """CypherClaw Daemon v2 — always-on Telegram orchestrator.
 
 Fixes over v1:
@@ -24,13 +25,13 @@ import hashlib
 import json
 import logging
 import os
+import platform
 import re
 import signal
 import subprocess
 import sys
 import threading
 import time
-import traceback
 import urllib.error
 import urllib.request
 from collections import deque
@@ -42,7 +43,7 @@ from pathlib import Path
 TOOLS_DIR_EARLY = Path(__file__).parent
 sys.path.insert(0, str(TOOLS_DIR_EARLY))
 from glyphweave.scenes import CypherClawArt
-from glyphweave.player import AEAFPlayer, build_spinner_frames, build_processing_frames
+from glyphweave.player import AEAFPlayer, build_spinner_frames
 from sdp_runtime import run_sdp_command
 from tamagotchi import PetManager
 _art = CypherClawArt()
@@ -84,7 +85,11 @@ else:
 # === STABILITY: Agent concurrency limiter ===
 # Max 2 concurrent agent processes to prevent disk I/O saturation
 # (jbd2 ext4 journal freezes when too many processes write simultaneously)
-_agent_semaphore = threading.Semaphore(2)
+_SEMAPHORE_MAX = 2
+_SEMAPHORE_IO_REVERT_THRESHOLD = 2
+_agent_semaphore = threading.Semaphore(_SEMAPHORE_MAX)
+_agent_semaphore_limit = _SEMAPHORE_MAX
+_io_guard_trigger_count = 0
 _agent_count = 0
 _agent_count_lock = threading.Lock()
 
@@ -152,12 +157,55 @@ quota_monitor = QuotaMonitor(
     poll_interval=60,
 )
 
+try:
+    from io_watchdog import IOWatchdog  # type: ignore[import-not-found]
+except ImportError:
+    IOWatchdog = None  # type: ignore[assignment]
+
 from agent_selector import AgentSelector, PROVIDERS
 agent_selector = AgentSelector(
     observatory=observatory,
     quota_monitor=quota_monitor,
     state_file=TOOLS_DIR / ".agent_selector_state.json",
 )
+
+
+def _on_io_guard_triggered() -> None:
+    """Tighten concurrency when the I/O guard kills agent processes repeatedly."""
+    global _agent_semaphore, _agent_semaphore_limit, _io_guard_trigger_count
+    _io_guard_trigger_count += 1
+    observatory.record(
+        "io_guard_triggered",
+        {
+            "trigger_count": _io_guard_trigger_count,
+            "semaphore_limit": _agent_semaphore_limit,
+        },
+    )
+    if _agent_semaphore_limit > 1 and _io_guard_trigger_count > _SEMAPHORE_IO_REVERT_THRESHOLD:
+        previous_limit = _agent_semaphore_limit
+        _agent_semaphore = threading.Semaphore(1)
+        _agent_semaphore_limit = 1
+        observatory.record(
+            "semaphore_reverted",
+            {
+                "from": previous_limit,
+                "to": _agent_semaphore_limit,
+                "trigger_count": _io_guard_trigger_count,
+            },
+        )
+
+
+def _make_io_watchdog():
+    if IOWatchdog is None:
+        return None
+    return IOWatchdog(
+        alert_fn=tg_send,
+        kill_fn=_kill_orphan_agents,
+        on_io_kill=_on_io_guard_triggered,
+    )
+
+
+io_watchdog = None
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -220,6 +268,10 @@ def tg_send(text: str) -> dict:
             result = tg_api("sendMessage", data)
         time.sleep(0.2)
     return result
+
+
+if io_watchdog is None:
+    io_watchdog = _make_io_watchdog()
 
 
 quota_monitor.alert_callback = lambda message: tg_send(message)
@@ -640,11 +692,19 @@ def run_agent(agent: str, prompt: str, timeout: int = MAX_AGENT_TIMEOUT,
     global _agent_count
     acquired = _agent_semaphore.acquire(timeout=30)
     if not acquired:
-        log.warning("Agent semaphore full (2 agents running). Rejecting %s call.", agent)
+        observatory.record(
+            "semaphore_rejected",
+            {"agent": agent, "task_label": task_label or prompt[:80], "limit": _agent_semaphore_limit},
+        )
+        log.warning("Agent semaphore full (%d agents running). Rejecting %s call.", _agent_semaphore_limit, agent)
         return f"[{agent} busy — 2 agents already running. Try again in a moment.]"
     with _agent_count_lock:
         _agent_count += 1
         log.info("Agent started: %s (concurrent: %d)", agent, _agent_count)
+    observatory.record(
+        "semaphore_acquired",
+        {"agent": agent, "task_label": task_label or prompt[:80], "concurrent": _agent_count, "limit": _agent_semaphore_limit},
+    )
 
     spinner = AgentSpinner(agent, task_label or prompt[:60])
     start_time = time.time()
@@ -802,6 +862,10 @@ def run_agent(agent: str, prompt: str, timeout: int = MAX_AGENT_TIMEOUT,
         with _agent_count_lock:
             _agent_count -= 1
             log.info("Agent finished: %s (concurrent: %d)", agent, _agent_count)
+        observatory.record(
+            "semaphore_released",
+            {"agent": agent, "task_label": task_label or prompt[:80], "concurrent": _agent_count, "limit": _agent_semaphore_limit},
+        )
 
 
 def run_agents_parallel(dispatches: list[dict]) -> list[dict]:
@@ -957,7 +1021,7 @@ class Scheduler(threading.Thread):
                 self._sent_today["daily_rollup"] = today_key
                 try:
                     observatory.rollup_daily()
-                except Exception as e:
+                except Exception:
                     log.exception("Daily rollup error")
 
             # LDP daily briefing at 7:30am
@@ -978,7 +1042,7 @@ class Scheduler(threading.Thread):
                     pet_section = CypherClawArt.pet_xp_summary(pet_manager.pets)
                     tg_send(f"{brief}\n\n{pet_section}")
                     observatory.record("daily_brief_sent", data={"date": today_key})
-                except Exception as e:
+                except Exception:
                     log.exception("Daily brief error")
 
             # Weekly retro on Sunday at 8pm
@@ -989,7 +1053,7 @@ class Scheduler(threading.Thread):
                     pet_section = CypherClawArt.pet_xp_summary(pet_manager.pets)
                     tg_send(f"{retro}\n\n{pet_section}")
                     observatory.record("weekly_retro_sent", data={"date": today_key})
-                except Exception as e:
+                except Exception:
                     log.exception("Weekly retro error")
 
             # Monthly review on 1st at 9am
@@ -999,7 +1063,7 @@ class Scheduler(threading.Thread):
                     review = reviewer.monthly_review()
                     tg_send(review)
                     observatory.record("monthly_review_sent", data={"date": today_key})
-                except Exception as e:
+                except Exception:
                     log.exception("Monthly review error")
 
             # Server health check every 6 hours (6am, 12pm, 6pm, midnight)
@@ -1019,7 +1083,7 @@ class Scheduler(threading.Thread):
                             "warnings": len(health["warnings"]),
                             "actions": len(actions),
                         })
-                    except Exception as e:
+                    except Exception:
                         log.exception("Health check error")
 
             self._stop_event.wait(30)  # Check every 30s
@@ -1038,8 +1102,6 @@ SYSTEM_PROMPT = ""  # Not used — routing prompt is built inline in route_messa
 def fast_route(user_text: str) -> list[dict] | None:
     """Handle messages locally without calling Claude when possible."""
     lower = user_text.lower().strip()
-    import random
-
     # Greetings
     if lower in ("hi", "hello", "hey", "yo", "sup", "ping", "you there?", "alive?"):
         claw_portrait = pet_manager.get("cypherclaw").get_portrait()
@@ -1305,7 +1367,7 @@ def execute_plan(steps: list[dict]) -> None:
                 for d in dispatches:
                     ico = {"claude": "🟣", "codex": "🟢", "gemini": "🔵"}.get(d["agent"], "🤖")
                     agent_tags.append(f"{ico}{d.get('label', d['agent'])}")
-                tg_send(f"🔀 parallel launch!\n" + " ┃ ".join(agent_tags))
+                tg_send("🔀 parallel launch!\n" + " ┃ ".join(agent_tags))
                 results = run_agents_parallel(dispatches)
                 for r in results:
                     artifact_name = f"{r['agent']}_{int(time.time())}.md"
@@ -1378,7 +1440,7 @@ def execute_plan(steps: list[dict]) -> None:
                         tg_send("📁 Workspace is empty.")
             elif step_type == "image_gen":
                 img_prompt = step.get("prompt", "")
-                tg_send(f"🎨 Generating image...")
+                tg_send("🎨 Generating image...")
                 try:
                     result = subprocess.run(
                         [sys.executable, str(TOOLS_DIR / "gemini_image.py"), img_prompt],
@@ -1420,18 +1482,18 @@ def execute_plan(steps: list[dict]) -> None:
                     continue
                 try:
                     researcher = get_researcher()
-                    result = researcher.research(query, scope=scope)
-                    if len(result.summary) > 3500:
-                        tg_send(result.summary[:2000] + "\n\n📄 Full report saved to workspace.")
+                    research_result = researcher.research(query, scope=scope)
+                    if len(research_result.summary) > 3500:
+                        tg_send(research_result.summary[:2000] + "\n\n📄 Full report saved to workspace.")
                     else:
-                        tg_send(result.summary)
-                    if result.full_report and len(result.full_report) > 2500:
+                        tg_send(research_result.summary)
+                    if research_result.full_report and len(research_result.full_report) > 2500:
                         report_name = f"research_{int(time.time())}.md"
                         report_path = WORKSPACE_DIR / report_name
                         if not report_path.exists():
-                            save_artifact(report_name, result.full_report)
+                            save_artifact(report_name, research_result.full_report)
                         tg_send_file(str(report_path), label)
-                    state.add_message("assistant", f"[research: {label}] {result.summary[:200]}")
+                    state.add_message("assistant", f"[research: {label}] {research_result.summary[:200]}")
                 except Exception as exc:
                     log.exception("Research step failed")
                     tg_send(f"❌ Research failed: {exc}\n\nTry /research {query[:50]}")
@@ -1483,7 +1545,7 @@ def execute_plan(steps: list[dict]) -> None:
                     tg_send_file(str(prd_file), f"\U0001f4cb PRD: {label}")
 
                     # ── Phase 2: Analyze PRD → task graph ──
-                    tg_send(f"\U0001f4e6 Phase 2: Analyzing PRD \u2192 generating task graph...")
+                    tg_send("\U0001f4e6 Phase 2: Analyzing PRD \u2192 generating task graph...")
 
                     out, err, rc = _sdp(["sdp-cli", "analyze", "--prd", str(prd_file), "--load"])
                     if rc != 0:
@@ -1502,7 +1564,7 @@ def execute_plan(steps: list[dict]) -> None:
                     tg_send(f"\U0001f4e6 {pending} tasks queued")
 
                     # ── Phase 3: Run pipeline ──
-                    tg_send(f"\U0001f680 Phase 3: Running pipeline (lead \u2192 gates \u2192 verify \u2192 merge)...")
+                    tg_send("\U0001f680 Phase 3: Running pipeline (lead \u2192 gates \u2192 verify \u2192 merge)...")
 
                     # Start monitor thread to show sdp-cli progress on Telegram
                     monitor_msg = tg_api("sendMessage", {"chat_id": CHAT_ID, "text": "\U0001f680 sdp-cli pipeline starting..."})
@@ -1561,10 +1623,10 @@ def execute_plan(steps: list[dict]) -> None:
                         f"[dev_task: {label}] PRD \u2192 analyze({pending} tasks) \u2192 run(exit={rc})")
 
                 except subprocess.TimeoutExpired:
-                    tg_send(f"\u23f1\ufe0f sdp-cli timed out. Check: sdp-cli status")
+                    tg_send("\u23f1\ufe0f sdp-cli timed out. Check: sdp-cli status")
                     state.add_message("assistant", f"[dev_task: {label}] timeout")
                 except FileNotFoundError:
-                    tg_send(f"\u274c sdp-cli not found. Install: pip install sdp-cli")
+                    tg_send("\u274c sdp-cli not found. Install: pip install sdp-cli")
                 except Exception as exc:
                     log.exception("dev_task error")
                     tg_send(f"\u274c Dev task error: {exc}")
@@ -1621,9 +1683,12 @@ def format_quota_status() -> str:
     lines = ["📊 Provider Quota"]
     for provider in ("google", "openai", "anthropic"):
         info = provider_status.get(provider, {"status": "healthy", "headroom": 1.0})
+        headroom = info.get("headroom", 1.0)
+        if not isinstance(headroom, (int, float, str)):
+            headroom = 1.0
         lines.append(
             f"{icon_map.get(str(info.get('status', 'healthy')), '⚪️')} {provider}: "
-            f"{float(info.get('headroom', 1.0)):.0%} headroom ({info.get('status', 'healthy')})"
+            f"{float(headroom):.0%} headroom ({info.get('status', 'healthy')})"
         )
     active = _available_agents(["claude", "codex", "gemini"])
     excluded = [agent for agent in ("claude", "codex", "gemini") if agent not in active]
@@ -1792,17 +1857,17 @@ def handle_builtin(text: str) -> bool:
         task_file.write_text(args)
         tg_send("\U0001f980 Running through PromptClaw orchestrator...")
         try:
-            result = subprocess.run(
+            promptclaw_result = subprocess.run(
                 ["promptclaw", "run", ".", "--task-file", str(task_file)],
                 capture_output=True, text=True, timeout=MAX_AGENT_TIMEOUT,
                 cwd=str(PROJECT_ROOT),
                 env={**os.environ, "PATH": f"{Path.home() / '.local' / 'bin'}:/usr/local/bin:/usr/bin:/bin"},
             )
-            output = result.stdout.strip()
-            if result.returncode == 0:
+            output = promptclaw_result.stdout.strip()
+            if promptclaw_result.returncode == 0:
                 tg_send(f"\u2705 PromptClaw complete:\n{output[:2000]}")
             else:
-                tg_send(f"\u274c PromptClaw failed:\n{result.stderr[:500]}")
+                tg_send(f"\u274c PromptClaw failed:\n{promptclaw_result.stderr[:500]}")
         except subprocess.TimeoutExpired:
             tg_send("\u23f1\ufe0f PromptClaw timed out")
         except Exception as e:
@@ -2031,18 +2096,45 @@ def uninstall_service():
 
 
 def check_status():
-    result = subprocess.run(
-        ["launchctl", "print", f"gui/{os.getuid()}/{PLIST_LABEL}"],
-        capture_output=True, text=True,
-    )
-    if result.returncode == 0:
-        for line in result.stdout.splitlines():
-            if "pid" in line.lower():
-                print(f"🟢 Running — {line.strip()}")
-                return
-        print("🟢 Running")
-    else:
-        print("🔴 Not running")
+    system = platform.system().lower()
+    if system == "darwin":
+        try:
+            result = subprocess.run(
+                ["launchctl", "print", f"gui/{os.getuid()}/{PLIST_LABEL}"],
+                capture_output=True,
+                text=True,
+            )
+        except FileNotFoundError:
+            print("🟡 launchctl unavailable")
+            return
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                if "pid" in line.lower():
+                    print(f"🟢 Running — {line.strip()}")
+                    return
+            print("🟢 Running")
+        else:
+            print("🔴 Not running")
+        return
+
+    if system == "linux":
+        try:
+            result = subprocess.run(
+                ["systemctl", "is-active", "cypherclaw.service"],
+                capture_output=True,
+                text=True,
+            )
+        except FileNotFoundError:
+            print("🟡 systemctl unavailable")
+            return
+        status = (result.stdout or "").strip()
+        if status == "active":
+            print("🟢 Running")
+        else:
+            print("🔴 Not running")
+        return
+
+    print(f"🟡 Status unavailable on {platform.system()}")
 
 
 def main():

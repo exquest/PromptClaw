@@ -15,21 +15,60 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 try:
     from google import genai
     from google.genai import types
 except ImportError:
-    print("ERROR: google-genai package not installed. Run: pip install google-genai", file=sys.stderr)
-    sys.exit(1)
+    genai = None  # type: ignore[assignment]
+    types = None  # type: ignore[assignment]
 
 
 OUTPUT_DIR = Path(__file__).parent.parent / "outputs" / "images"
 MODEL = os.environ.get("GEMINI_IMAGE_MODEL", "gemini-3.1-flash-image-preview")
 
 
+def _response_parts(response: Any) -> list[Any]:
+    candidates = getattr(response, "candidates", None)
+    if not candidates:
+        return []
+
+    first_candidate = candidates[0]
+    content = getattr(first_candidate, "content", None)
+    parts = getattr(content, "parts", None)
+    if not parts:
+        return []
+    return list(parts)
+
+
+def _inline_bytes(part: Any) -> bytes | None:
+    inline_data = getattr(part, "inline_data", None)
+    if inline_data is None:
+        return None
+
+    data = getattr(inline_data, "data", None)
+    if isinstance(data, str):
+        return base64.b64decode(data)
+    if isinstance(data, bytes):
+        return data
+    return None
+
+
+def _inline_extension(part: Any) -> str:
+    inline_data = getattr(part, "inline_data", None)
+    mime_type = getattr(inline_data, "mime_type", "") if inline_data is not None else ""
+    if isinstance(mime_type, str) and "/" in mime_type:
+        return mime_type.split("/")[-1]
+    return "png"
+
+
 def generate_image(prompt: str) -> Path:
     """Generate an image from a text prompt and save it to OUTPUT_DIR."""
+    if genai is None or types is None:
+        print("ERROR: google-genai package not installed. Run: pip install google-genai", file=sys.stderr)
+        sys.exit(1)
+
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         print("ERROR: GEMINI_API_KEY environment variable not set.", file=sys.stderr)
@@ -50,13 +89,16 @@ def generate_image(prompt: str) -> Path:
     text_parts = []
     image_path = None
 
-    for part in response.candidates[0].content.parts:
-        if part.inline_data is not None:
-            ext = part.inline_data.mime_type.split("/")[-1]
+    for part in _response_parts(response):
+        image_bytes = _inline_bytes(part)
+        if image_bytes is not None:
+            ext = _inline_extension(part)
             image_path = OUTPUT_DIR / f"gen_{timestamp}.{ext}"
-            image_path.write_bytes(base64.b64decode(part.inline_data.data) if isinstance(part.inline_data.data, str) else part.inline_data.data)
-        elif part.text:
-            text_parts.append(part.text)
+            image_path.write_bytes(image_bytes)
+        else:
+            text = getattr(part, "text", None)
+            if isinstance(text, str) and text:
+                text_parts.append(text)
 
     if not image_path:
         print("WARNING: No image returned by the model.", file=sys.stderr)

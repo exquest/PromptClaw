@@ -93,6 +93,8 @@ class Pet:
         self.mood = 80
         self.hunger = 50
         self.energy = 100
+        self.incarnation: int = 1
+        self.critical_since: str | None = None
         self._task_started = False
         if data:
             self.__dict__.update(data)
@@ -104,6 +106,7 @@ class Pet:
         self.mood = _clamp(int(self.mood))
         self.hunger = _clamp(int(self.hunger))
         self.energy = _clamp(int(self.energy))
+        self.incarnation = max(int(self.incarnation), 1)
         if self.state not in VALID_STATES:
             self.state = "idle"
         if not self.created:
@@ -329,12 +332,13 @@ class PetManager:
         if old is not None:
             old.cancel()
 
+        def _finish_idle_window() -> None:
+            self.on_idle(agent, only_if=set(TERMINAL_STATES))
+            self._idle_timers.pop(agent, None)
+
         timer = threading.Timer(
             delay_s,
-            lambda: (
-                self.on_idle(agent, only_if=set(TERMINAL_STATES)),
-                self._idle_timers.pop(agent, None),
-            ),
+            _finish_idle_window,
         )
         timer.daemon = True
         timer.start()

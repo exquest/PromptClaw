@@ -9,6 +9,9 @@ try:
     HAS_PILLOW = True
 except ImportError:
     HAS_PILLOW = False
+    Image = ImageDraw = ImageFont = None  # type: ignore[assignment]
+
+RESAMPLE_LANCZOS = getattr(getattr(Image, "Resampling", Image), "LANCZOS", 1)
 
 
 class FramebufferRenderer:
@@ -95,7 +98,7 @@ class FramebufferRenderer:
         new_w = int(img_w * scale)
         new_h = int(img_h * scale)
 
-        resized = img.resize((new_w, new_h), Image.LANCZOS)
+        resized = img.resize((new_w, new_h), RESAMPLE_LANCZOS)
 
         # Paste onto black canvas, centered
         canvas = Image.new("RGBA", (self.width, self.height), (0, 0, 0, 255))
@@ -152,10 +155,10 @@ class FramebufferRenderer:
         for line in overlay_lines:
             if font:
                 bbox = draw.textbbox((0, 0), line, font=font)
-                width = bbox[2] - bbox[0]
-                height = bbox[3] - bbox[1]
+                width = int(bbox[2] - bbox[0])
+                height = int(bbox[3] - bbox[1])
             else:
-                width = len(line) * (font_size // 2)
+                width = int(len(line) * (font_size // 2))
                 height = font_size
             line_metrics.append((line, width, height))
             max_width = max(max_width, width)
@@ -246,9 +249,9 @@ class FramebufferRenderer:
         for line in lines:
             if font:
                 bbox = draw.textbbox((0, 0), line, font=font)
-                w = bbox[2] - bbox[0]
+                w = int(bbox[2] - bbox[0])
             else:
-                w = len(line) * (font_size // 2)
+                w = int(len(line) * (font_size // 2))
             max_line_width = max(max_line_width, w)
 
         y_start = max(0, (self.height - total_text_height) // 2)

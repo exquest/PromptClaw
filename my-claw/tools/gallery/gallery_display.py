@@ -5,7 +5,6 @@ import json
 import os
 import signal
 import subprocess
-import sys
 import threading
 import time
 from pathlib import Path
@@ -14,8 +13,8 @@ try:
     from .tty_renderer import TTYRenderer
     from .fb_renderer import FramebufferRenderer
 except ImportError:
-    from tty_renderer import TTYRenderer
-    from fb_renderer import FramebufferRenderer
+    from gallery.tty_renderer import TTYRenderer  # type: ignore[no-redef]
+    from gallery.fb_renderer import FramebufferRenderer  # type: ignore[no-redef]
 
 
 class GalleryDisplay:

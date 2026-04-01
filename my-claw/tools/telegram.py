@@ -49,28 +49,32 @@ def _api(method: str, data: dict | None = None, files: dict | None = None) -> di
         # Multipart form upload
         import mimetypes
         boundary = "----CypherClawBoundary"
-        body_parts = []
+        parts: list[bytes] = []
 
         for key, val in (data or {}).items():
-            body_parts.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"{key}\"\r\n\r\n{val}")
+            parts.append(
+                f"--{boundary}\r\nContent-Disposition: form-data; name=\"{key}\"\r\n\r\n{val}\r\n".encode()
+            )
 
         for key, filepath in files.items():
             filename = os.path.basename(filepath)
             mime = mimetypes.guess_type(filepath)[0] or "application/octet-stream"
-            with open(filepath, "rb") as f:
-                file_data = f.read()
-            body_parts.append(
-                f"--{boundary}\r\nContent-Disposition: form-data; name=\"{key}\"; filename=\"{filename}\"\r\n"
-                f"Content-Type: {mime}\r\n\r\n"
+            parts.append(
+                (
+                    f"--{boundary}\r\n"
+                    f"Content-Disposition: form-data; name=\"{key}\"; filename=\"{filename}\"\r\n"
+                    f"Content-Type: {mime}\r\n\r\n"
+                ).encode()
             )
-            body_bytes = ("\r\n".join(body_parts[:-1]) + "\r\n").encode()
-            last_header = body_parts[-1].encode()
-            body_bytes = body_bytes + last_header + file_data + f"\r\n--{boundary}--\r\n".encode()
+            with open(filepath, "rb") as f:
+                parts.append(f.read())
+            parts.append(b"\r\n")
 
-            req = urllib.request.Request(url, data=body_bytes)
-            req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                return json.loads(resp.read())
+        parts.append(f"--{boundary}--\r\n".encode())
+        req = urllib.request.Request(url, data=b"".join(parts))
+        req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.loads(resp.read())
     else:
         payload = json.dumps(data or {}).encode()
         req = urllib.request.Request(url, data=payload)

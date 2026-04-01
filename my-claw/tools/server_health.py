@@ -1,13 +1,28 @@
 """Server self-care — health monitoring and auto-maintenance for cypherclaw."""
 
+from __future__ import annotations
+
 import os
 import platform
 import subprocess
+from typing import TypedDict
 
 
-def check_health() -> dict:
+class HealthReport(TypedDict):
+    healthy: bool
+    checks: dict[str, str | int]
+    warnings: list[str]
+    actions_taken: list[str]
+
+
+def check_health() -> HealthReport:
     """Comprehensive server health check."""
-    health = {"healthy": True, "checks": {}, "warnings": [], "actions_taken": []}
+    health: HealthReport = {
+        "healthy": True,
+        "checks": {},
+        "warnings": [],
+        "actions_taken": [],
+    }
 
     # 1. Disk usage
     try:
@@ -231,7 +246,7 @@ def auto_maintain() -> list[str]:
     return actions
 
 
-def telegram_report(health: dict, actions: list[str]) -> str:
+def telegram_report(health: HealthReport, actions: list[str]) -> str:
     """Format health check for Telegram."""
     if health["healthy"] and not health["warnings"]:
         emoji = "\U0001f7e2"

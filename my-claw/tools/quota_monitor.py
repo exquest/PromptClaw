@@ -132,7 +132,7 @@ class QuotaMonitor:
         self._apply_status(
             provider,
             status=status,
-            headroom=existing.get("headroom", 0.0) if headroom is None else headroom,
+            headroom=self._coerce_headroom(existing.get("headroom", 0.0)) if headroom is None else headroom,
             confidence=confidence,
             reason=reason,
         )
@@ -157,7 +157,9 @@ class QuotaMonitor:
 
         best_agent = max(
             candidates,
-            key=lambda agent: float(details.get(self.agent_providers[agent], {}).get("headroom", 0.0)),
+            key=lambda agent: self._coerce_headroom(
+                details.get(self.agent_providers[agent], {}).get("headroom", 0.0)
+            ),
         )
         return [best_agent]
 
@@ -172,7 +174,7 @@ class QuotaMonitor:
         if provider is None:
             return 0.0
         with self._lock:
-            return float(self._provider_details.get(provider, {}).get("headroom", 0.0))
+            return self._coerce_headroom(self._provider_details.get(provider, {}).get("headroom", 0.0))
 
     def _poll_loop(self) -> None:
         while not self._stop_event.is_set():
@@ -225,7 +227,13 @@ class QuotaMonitor:
         if not isinstance(result, tuple) or len(result) != 2:
             raise ValueError(f"unexpected quota headroom result: {result!r}")
         headroom, confidence = result
-        return (max(0.0, min(1.0, float(headroom))), str(confidence))
+        return (self._coerce_headroom(headroom), str(confidence))
+
+    @staticmethod
+    def _coerce_headroom(value: object) -> float:
+        if not isinstance(value, (int, float, str)):
+            raise TypeError(f"unsupported headroom value: {value!r}")
+        return max(0.0, min(1.0, float(value)))
 
     def _status_for_headroom(self, headroom: float) -> str:
         if headroom > HEALTHY_THRESHOLD:

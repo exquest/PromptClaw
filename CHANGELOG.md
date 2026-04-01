@@ -10,6 +10,8 @@
 - Removed backup-restore and ad hoc pipeline-start behavior from `boot_hardening.sh` so runtime authority stays with the managed bootstrap and runner path.
 - Unified `promptclaw doctor` with optional runtime preflight so live CypherClaw roots report config health and runtime readiness through one entry point.
 - Hardened the CypherClaw Telegram helper so bot token and chat ID must come from environment instead of hardcoded defaults.
+- Hardened runtime portability across the MacBook and Linux server homes: daemon status checks are platform-aware, optional watchdog imports no longer break type checks, and dashboard/Gemini-image/test fixtures no longer assume a single repo layout.
+- Added Observatory-backed semaphore visibility for the live daemon and restored full dashboard compatibility coverage so server-side `pytest` and `mypy src tools` gates pass again.
 
 ## 3.0.0
 

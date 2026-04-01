@@ -441,7 +441,7 @@ def _collect_git_info(project_path: str, info: dict, now: datetime.datetime) -> 
 
 def _detect_languages(project_path: str, info: dict) -> None:
     """Walk files and count by language extension."""
-    counts: dict[str, int] = collections.Counter()
+    counts: collections.Counter[str] = collections.Counter()
     file_limit = 50_000  # safety valve
     visited = 0
 
@@ -513,7 +513,7 @@ def _detect_frameworks(project_path: str, info: dict) -> None:
     if os.path.isfile(pkg_json_path):
         pkg = read_json_safe(pkg_json_path)
         if isinstance(pkg, dict):
-            all_deps = {}
+            all_deps: dict[str, object] = {}
             for key in ("dependencies", "devDependencies", "peerDependencies"):
                 deps = pkg.get(key)
                 if isinstance(deps, dict):
@@ -789,7 +789,7 @@ def _detect_mac_specific(project_path: str, info: dict) -> None:
         # Check if React Native
         pkg = read_json_safe(os.path.join(project_path, "package.json"))
         if isinstance(pkg, dict):
-            all_deps = set()
+            all_deps: set[str] = set()
             for key in ("dependencies", "devDependencies"):
                 d = pkg.get(key)
                 if isinstance(d, dict):
@@ -1101,18 +1101,21 @@ def correlate_github(projects: list[dict], github_json_path: str | None) -> dict
     Match local projects to GitHub repos.
     Returns correlation report dict.
     """
-    result = {
+    matched_entries: list[dict[str, object]] = []
+    local_only: list[dict[str, object]] = []
+    github_only: list[dict[str, object]] = []
+    result: dict[str, object] = {
         "github_file_loaded": False,
         "total_github_repos": 0,
-        "matched": [],
-        "local_only": [],
-        "github_only": [],
+        "matched": matched_entries,
+        "local_only": local_only,
+        "github_only": github_only,
     }
 
     if not github_json_path or not os.path.isfile(github_json_path):
         # If no github json, just report all as local-only
         for p in projects:
-            result["local_only"].append({
+            local_only.append({
                 "name": p["name"],
                 "path": p["path"],
                 "git_remote": p.get("git_remote"),
@@ -1158,7 +1161,7 @@ def correlate_github(projects: list[dict], github_json_path: str | None) -> dict
     matched_gh_names: set[str] = set()
 
     for project in projects:
-        matched = False
+        is_matched = False
         match_info = {
             "name": project["name"],
             "path": project["path"],
@@ -1175,27 +1178,27 @@ def correlate_github(projects: list[dict], github_json_path: str | None) -> dict
                 gh_repo = gh_by_url[norm_remote]
                 match_info["github_repo"] = gh_repo.get("full_name", gh_repo.get("name", ""))
                 match_info["match_method"] = "remote_url"
-                matched = True
+                is_matched = True
                 repo_name = gh_repo.get("name", "").lower()
                 matched_gh_names.add(repo_name)
 
         # Try matching by name
-        if not matched:
+        if not is_matched:
             proj_name_lower = project["name"].lower()
             if proj_name_lower in gh_by_name:
                 gh_repo = gh_by_name[proj_name_lower]
                 match_info["github_repo"] = gh_repo.get("full_name", gh_repo.get("name", ""))
                 match_info["match_method"] = "name"
-                matched = True
+                is_matched = True
                 matched_gh_names.add(proj_name_lower)
 
-        if matched:
+        if is_matched:
             # Check sync status
             if project["has_git"]:
                 match_info["sync_status"] = _check_sync_status(project["path"])
-            result["matched"].append(match_info)
+            matched_entries.append(match_info)
         else:
-            result["local_only"].append({
+            local_only.append({
                 "name": project["name"],
                 "path": project["path"],
                 "git_remote": project.get("git_remote"),
@@ -1205,7 +1208,7 @@ def correlate_github(projects: list[dict], github_json_path: str | None) -> dict
     for repo in gh_repos:
         name = repo.get("name", "").lower()
         if name and name not in matched_gh_names:
-            result["github_only"].append({
+            github_only.append({
                 "name": repo.get("name", ""),
                 "full_name": repo.get("full_name", ""),
                 "html_url": repo.get("html_url", ""),

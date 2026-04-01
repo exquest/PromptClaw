@@ -7,7 +7,7 @@ import unicodedata
 from typing import Iterable
 
 try:
-    from wcwidth import wcswidth
+    from wcwidth import wcswidth  # type: ignore[import-untyped]
 except ModuleNotFoundError:
     wcswidth = None  # type: ignore[assignment]
 

@@ -108,3 +108,5 @@ The runtime transport itself is also guarded now:
 - `my-claw/tools/sdp_runner_launcher.sh` runs preflight before `sdp-cli run`.
 - `my-claw/tools/safe_reboot.sh prepare` checkpoints and enters maintenance mode before shutdown.
 - `my-claw/tools/safe_reboot.sh resume` validates the latest checkpoint before reopening the runner.
+
+For live CypherClaw daemon executions, the transport also records concurrency semaphore transitions (`acquired`, `released`, `rejected`) to Observatory and keeps daemon status probes platform-aware so the same code path can run on macOS launchd and Linux systemd hosts without crashing.

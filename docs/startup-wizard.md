@@ -78,6 +78,7 @@ Examples:
 - When you later switch an agent to live `command` mode, PromptClaw runs it from the project root and fills `{prompt_file}` with an absolute path to the generated prompt artifact.
 - CypherClaw live command projects can layer quota-aware routing on top of those rules, redistributing work away from providers with degraded headroom and collapsing to single-agent mode when only one provider remains viable.
 - In the live CypherClaw home, those startup materials now feed a preflight-gated runtime: bootstrap prepares a tmpfs workdir, authoritative DBs stay on disk, and the queue runner refuses to start if maintenance mode or integrity checks say the home is not safe.
+- The same live daemon toolchain is now portable across the MacBook and Linux server homes, so post-init status and runner checks do not assume one service manager or one repo layout.
 
 ## Typical loop
 

@@ -102,6 +102,8 @@ The tmpfs workdir is acceleration only. It clones the repository into `/run/cyph
 
 When the project root also looks like a live CypherClaw runtime, `promptclaw doctor` now includes the runtime preflight lane in addition to config validation. Plain starter projects still get the lighter config-only doctor path.
 
+The live daemon path is now also portable across the MacBook dev home and the Linux server home. Status checks branch on platform, optional watchdog integrations are treated as optional imports, and runtime semaphore acquire/release/reject transitions are recorded so concurrency throttling is observable instead of implicit.
+
 ### 7. Memory
 
 Rolling memory lives in:

@@ -137,3 +137,11 @@ Systemd units shipped with this repo:
 
 - `my-claw/systemd/cypherclaw-bootstrap.service`
 - `my-claw/systemd/cypherclaw-sdp-runner.service`
+
+Daemon status utility:
+
+```bash
+python my-claw/tools/cypherclaw_daemon.py --status
+```
+
+This probe is platform-aware: it checks `launchctl` on macOS homes and `systemctl` on Linux homes so status checks do not crash when the local service manager is absent.

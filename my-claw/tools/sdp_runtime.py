@@ -5,6 +5,7 @@ from __future__ import annotations
 import subprocess
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
+from typing import cast
 
 DEFAULT_SDP_COMMAND_TIMEOUT_SECONDS = 60
 SHORT_SDP_STATUS_TIMEOUT_SECONDS = 15
@@ -32,7 +33,11 @@ def run_sdp_command(
     timeout_s: int | None | object = _USE_POLICY_TIMEOUT,
 ) -> tuple[str, str, int]:
     """Run an sdp-cli command with the project timeout policy."""
-    resolved_timeout = sdp_timeout_for(command) if timeout_s is _USE_POLICY_TIMEOUT else timeout_s
+    resolved_timeout = (
+        sdp_timeout_for(command)
+        if timeout_s is _USE_POLICY_TIMEOUT
+        else cast(int | None, timeout_s)
+    )
     result = subprocess.run(
         list(command),
         capture_output=True,
@@ -51,13 +56,16 @@ def get_provider_headroom(provider: str) -> tuple[float, str]:
     unavailable in the current environment.
     """
     try:
-        from sdp.state.db import get_quota_headroom
+        from sdp.state.db import get_quota_headroom as raw_get_quota_headroom
+
+        get_quota_headroom = cast(Callable[..., tuple[object, object]], raw_get_quota_headroom)
 
         try:
             headroom, confidence = get_quota_headroom(provider)
         except TypeError:
             headroom, confidence = get_quota_headroom(str(DEFAULT_SDP_STATE_DB), provider)
-        return (max(0.0, min(1.0, float(headroom))), str(confidence))
+        normalized_headroom = float(cast(str | int | float, headroom))
+        return (max(0.0, min(1.0, normalized_headroom)), str(confidence))
     except Exception:
         return (1.0, "unknown")
 

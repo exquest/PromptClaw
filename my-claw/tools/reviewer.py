@@ -8,6 +8,8 @@ never writes to Observatory.
 Uses only Python stdlib.
 """
 
+from __future__ import annotations
+
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 
@@ -22,7 +24,7 @@ class Reviewer:
     # Public report generators
     # ==================================================================
 
-    def daily_brief(self, date: str = None) -> str:
+    def daily_brief(self, date: str | None = None) -> str:
         """Generate a Telegram-friendly daily summary.
 
         Args:
@@ -86,7 +88,7 @@ class Reviewer:
 
         # Find top agent
         top_agent = None
-        top_rate = -1
+        top_rate = -1.0
         for agent, s in agent_summaries.items():
             if s["success_rate"] > top_rate:
                 top_rate = s["success_rate"]
@@ -189,8 +191,8 @@ class Reviewer:
         lines.append("")
         lines.append("Performance:")
 
-        completed = cw["tasks_completed"]
-        prev_completed = lw["tasks_completed"]
+        completed = int(cw["tasks_completed"])
+        prev_completed = int(lw["tasks_completed"])
         diff_str = self._diff_string(completed, prev_completed)
         lines.append(f"- {completed} tasks completed ({diff_str})")
 
@@ -525,9 +527,9 @@ class Reviewer:
 
         return recs
 
-    def _aggregate_rollups(self, rollups: list) -> dict:
+    def _aggregate_rollups(self, rollups: list) -> dict[str, int | float]:
         """Aggregate a list of daily rollup rows into totals."""
-        result = {
+        result: dict[str, int | float] = {
             "tasks_completed": 0,
             "tasks_failed": 0,
             "total_tokens": 0,
@@ -546,7 +548,7 @@ class Reviewer:
 
         total_tasks = result["tasks_completed"] + result["tasks_failed"]
         if total_tasks > 0:
-            result["avg_duration_ms"] = result["total_duration_ms"] / total_tasks
+            result["avg_duration_ms"] = float(result["total_duration_ms"]) / total_tasks
         return result
 
     # ==================================================================

@@ -42,9 +42,9 @@ class AgentSelector:
     def __init__(self, observatory=None, quota_monitor=None, state_file: str | Path = ""):
         self.observatory = observatory
         self.quota_monitor = quota_monitor
-        self._state_file = Path(state_file) if state_file else None
-        self._last_lead = None
-        self._last_lead_provider = None
+        self._state_file: Path | None = Path(state_file) if state_file else None
+        self._last_lead: str | None = None
+        self._last_lead_provider: str | None = None
         self._task_count = 0
         self._load_state()
 
@@ -131,7 +131,7 @@ class AgentSelector:
         category = self.detect_category(task_desc)
 
         # Compute scores
-        scores = {}
+        scores: dict[str, float] = {}
         for agent in agents:
             fitness = self.get_fitness(agent, category)
             score = fitness + self._headroom_bonus(agent)
@@ -150,7 +150,7 @@ class AgentSelector:
         if random.random() < EXPLORATION_RATE:
             chosen = random.choice(agents)
         else:
-            chosen = max(scores, key=scores.get)
+            chosen = max(scores, key=lambda agent: scores[agent])
 
         # Update state
         self._last_lead = chosen
@@ -177,7 +177,7 @@ class AgentSelector:
         if not others:
             return lead, lead
         verify_scores = {a: self.get_fitness(a, "review") + self._headroom_bonus(a) for a in others}
-        verify = max(verify_scores, key=verify_scores.get)
+        verify = max(verify_scores, key=lambda agent: verify_scores[agent])
         return lead, verify
 
     def record_outcome(self, agent: str, task_desc: str, success: bool):

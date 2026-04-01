@@ -102,3 +102,10 @@ def test_effective_state_prefers_sleeping_and_hungry_thresholds() -> None:
 
     pet = tamagotchi.Pet("gemini", {"state": "idle", "energy": 90, "hunger": 85, "mood": 80})
     assert pet.effective_state() == "hungry"
+
+
+def test_pet_exposes_rebirth_tracking_fields() -> None:
+    pet = tamagotchi.Pet("claude")
+
+    assert pet.incarnation == 1
+    assert pet.critical_since is None

@@ -11,6 +11,7 @@ import urllib.request
 import urllib.error
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Mapping
 
 
 LI_PROJECT = Path.home() / "Documents" / "programming" / "LifeImprover"
@@ -29,7 +30,7 @@ class BriefingResult:
 class PipelineStatus:
     leads: list[dict] = field(default_factory=list)
     total: int = 0
-    by_stage: dict[str, int] = field(default_factory=dict)
+    by_stage: Mapping[str, int | str] = field(default_factory=dict)
 
 
 class LifeImproverBridge:

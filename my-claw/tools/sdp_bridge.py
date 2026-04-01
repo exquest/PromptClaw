@@ -4,13 +4,14 @@ Provides a simplified interface for creating tasks, running the sdp-cli
 pipeline, and querying task status — all callable from the daemon.
 """
 
+from __future__ import annotations
+
 import hashlib
 import os
 import time
-import threading
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 # Try to import sdp-cli — graceful fallback if not installed
 try:
@@ -51,9 +52,9 @@ class SDPBridge:
         self.project_root = Path(project_root)
         self.on_progress = on_progress  # callback(task_id, phase, message)
         self.quota_monitor = quota_monitor
-        self._settings = None
-        self._agents = None
-        self._queue = None
+        self._settings: SDPSettings | None = None
+        self._agents: dict[str, Any] | None = None
+        self._queue: TaskQueue | None = None
 
         if SDP_AVAILABLE:
             try:
@@ -62,7 +63,7 @@ class SDPBridge:
                 self._agents = _build_agents(self._settings)
                 db_path = str(self._settings.state_db_path)
                 self._queue = TaskQueue(db_path=db_path)
-            except Exception as e:
+            except Exception:
                 # sdp-cli might not be configured for this project
                 self._settings = None
 
@@ -70,11 +71,27 @@ class SDPBridge:
     def available(self) -> bool:
         return SDP_AVAILABLE and self._settings is not None
 
+    def _require_settings(self) -> SDPSettings:
+        if self._settings is None:
+            raise RuntimeError("sdp-cli settings are unavailable")
+        return self._settings
+
+    def _require_agents(self) -> dict[str, Any]:
+        if self._agents is None:
+            raise RuntimeError("sdp-cli agents are unavailable")
+        return self._agents
+
+    def _require_queue(self) -> TaskQueue:
+        if self._queue is None:
+            raise RuntimeError("sdp-cli queue is unavailable")
+        return self._queue
+
     def create_task(self, description: str, tier: str = "T1",
                     criteria: str = "") -> str | None:
         """Create a single task. Returns task_id or None if unavailable."""
         if not self.available:
             return None
+        queue = self._require_queue()
 
         task_id = f"T-{hashlib.md5(f'{description}{time.time()}'.encode()).hexdigest()[:6]}"
         spec = ImportedTaskSpec(
@@ -85,7 +102,7 @@ class SDPBridge:
             criteria=criteria,
             dependencies=[],
         )
-        self._queue.import_task_specs([spec], if_exists="replace")
+        queue.import_task_specs([spec], if_exists="replace")
         return task_id
 
     def create_tasks(self, specs: list[dict]) -> list[str]:
@@ -93,6 +110,7 @@ class SDPBridge:
         Returns list of task_ids."""
         if not self.available:
             return []
+        queue = self._require_queue()
 
         task_ids = []
         import_specs = []
@@ -108,22 +126,25 @@ class SDPBridge:
                 criteria=s.get("criteria", ""),
                 dependencies=s.get("depends_on", []),
             ))
-        self._queue.import_task_specs(import_specs, if_exists="replace")
+        queue.import_task_specs(import_specs, if_exists="replace")
         return task_ids
 
     def run_next(self) -> TaskResult | None:
         """Execute the next pending task through the full pipeline."""
         if not self.available:
             return None
+        queue = self._require_queue()
+        agents = self._require_agents()
+        settings = self._require_settings()
 
-        task = self._queue.get_next_pending()
+        task = queue.get_next_pending()
         if not task:
             return None
 
         if self.on_progress:
             self.on_progress(task.task_id, "starting", f"Running: {task.description[:60]}")
 
-        available_agents = tuple(self._agents.keys())
+        available_agents = tuple(agents.keys())
         quota_monitor = getattr(self, "quota_monitor", None)
         if quota_monitor is not None:
             try:
@@ -138,11 +159,11 @@ class SDPBridge:
             available_agents,
             choose_verify_agent=choose_verify_agent if SDP_AVAILABLE else None,
         )
-        lead = self._agents.get(lead_name)
+        lead = agents.get(lead_name)
         if lead is None:
-            lead_name, lead = next(iter(self._agents.items()))
-        verifier = self._agents.get(verify_name, lead)
-        if verifier is lead and verify_name not in self._agents:
+            lead_name, lead = next(iter(agents.items()))
+        verifier = agents.get(verify_name, lead)
+        if verifier is lead and verify_name not in agents:
             verify_name = lead_name
 
         try:
@@ -152,7 +173,7 @@ class SDPBridge:
                 verifier=verifier,
                 lead_name=lead_name,
                 verify_name=verify_name,
-                settings=self._settings,
+                settings=settings,
             )
 
             return TaskResult(
@@ -196,8 +217,9 @@ class SDPBridge:
         """Get current task queue status."""
         if not self.available:
             return {"available": False}
+        queue = self._require_queue()
 
-        tasks = self._queue.list_all()
+        tasks = queue.list_all()
         return {
             "available": True,
             "total": len(tasks),

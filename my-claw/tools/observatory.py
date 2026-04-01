@@ -10,6 +10,7 @@ Storage: append-only event log with rollup tables for daily/weekly aggregates.
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -18,14 +19,21 @@ from pathlib import Path
 class Observatory:
     """Records and queries all PromptClaw events."""
 
+    AUTHORITY_PATH = os.environ.get(
+        "PROMPTCLAW_OBSERVATORY_DB",
+        "/home/user/cypherclaw/.promptclaw/observatory.db",
+    )
+
     def __init__(self, db_path: str | None = None):
         if db_path is None:
-            db_path = str(Path(__file__).parent.parent / ".promptclaw" / "observatory.db")
+            db_path = self.AUTHORITY_PATH
+        if db_path != ":memory:":
             Path(db_path).parent.mkdir(parents=True, exist_ok=True)
         self.db_path = db_path
         self._conn = sqlite3.connect(db_path, check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")
         self._init_schema()
 
     # ------------------------------------------------------------------
@@ -86,6 +94,23 @@ class Observatory:
                 gate_total      INTEGER DEFAULT 0,
                 PRIMARY KEY (date, agent)
             );
+
+            CREATE TABLE IF NOT EXISTS verifications (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                action_id       TEXT NOT NULL,
+                lead_agent      TEXT NOT NULL,
+                verify_agent    TEXT,
+                risk_level      TEXT NOT NULL,
+                verified        INTEGER NOT NULL,
+                passed_first_try INTEGER,
+                corrected       INTEGER NOT NULL DEFAULT 0,
+                fix_cycles      INTEGER NOT NULL DEFAULT 0,
+                escalated       INTEGER NOT NULL DEFAULT 0,
+                agreed          INTEGER,
+                timestamp       TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_verifications_agent_ts
+                ON verifications(lead_agent, timestamp);
         """)
         c.commit()
 
@@ -126,6 +151,42 @@ class Observatory:
         )
         self._conn.commit()
 
+    def record_verification(
+        self,
+        action_id: str,
+        lead_agent: str,
+        verify_agent: str | None,
+        risk_level: str,
+        verified: bool,
+        *,
+        passed_first_try: bool | None = None,
+        corrected: bool = False,
+        fix_cycles: int = 0,
+        escalated: bool = False,
+        agreed: bool | None = None,
+    ) -> None:
+        """Record verification metadata for a reviewed action."""
+        now = datetime.now(timezone.utc).isoformat()
+        self._conn.execute(
+            "INSERT INTO verifications "
+            "(action_id, lead_agent, verify_agent, risk_level, verified, passed_first_try, corrected, fix_cycles, escalated, agreed, timestamp) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                action_id,
+                lead_agent,
+                verify_agent,
+                risk_level,
+                int(verified),
+                None if passed_first_try is None else int(passed_first_try),
+                int(corrected),
+                fix_cycles,
+                int(escalated),
+                None if agreed is None else int(agreed),
+                now,
+            ),
+        )
+        self._conn.commit()
+
     def _update_skill(self, agent: str, category: str, success: bool):
         """Update rolling agent skill score (exponential moving average)."""
         now = datetime.now(timezone.utc).isoformat()
@@ -162,7 +223,7 @@ class Observatory:
     # Queries
     # ------------------------------------------------------------------
 
-    def query(self, event_type: str, since: datetime = None, limit: int = 100) -> list:
+    def query(self, event_type: str, since: datetime | None = None, limit: int = 100) -> list:
         """Query events by type."""
         if since is None:
             since = datetime.now(timezone.utc) - timedelta(days=1)
@@ -172,7 +233,7 @@ class Observatory:
         ).fetchall()
         return [dict(r) for r in rows]
 
-    def get_task_results(self, since: datetime = None, agent: str = None) -> list:
+    def get_task_results(self, since: datetime | None = None, agent: str | None = None) -> list:
         """Get task results, optionally filtered by agent and time."""
         if since is None:
             since = datetime.now(timezone.utc) - timedelta(days=1)
@@ -185,7 +246,7 @@ class Observatory:
         rows = self._conn.execute(sql, params).fetchall()
         return [dict(r) for r in rows]
 
-    def get_agent_stats(self, agent: str = None, days: int = 1) -> dict:
+    def get_agent_stats(self, agent: str | None = None, days: int = 1) -> dict:
         """Get aggregate stats for an agent (or all agents) over N days."""
         since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
         if agent:
@@ -206,7 +267,7 @@ class Observatory:
             ).fetchall()
         return {r["agent"]: dict(r) for r in rows}
 
-    def get_agent_skills(self, agent: str = None) -> list:
+    def get_agent_skills(self, agent: str | None = None) -> list:
         """Get current skill scores for agent(s)."""
         if agent:
             rows = self._conn.execute(
@@ -261,11 +322,70 @@ class Observatory:
         ).fetchone()
         return dict(row) if row else {}
 
+    def get_verification_metrics(self, days: int = 7, agent: str | None = None) -> dict[str, float | int]:
+        """Aggregate verification quality metrics for the requested period."""
+        since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+        sql = "SELECT * FROM verifications WHERE timestamp >= ?"
+        params: list[object] = [since]
+        if agent:
+            sql += " AND lead_agent = ?"
+            params.append(agent)
+        rows = self._conn.execute(sql, params).fetchall()
+
+        total_actions = len(rows)
+        total_verified = sum(int(row["verified"]) for row in rows)
+        verification_rate = (total_verified / total_actions * 100.0) if total_actions else 0.0
+
+        high_critical = [
+            row for row in rows
+            if row["verified"] and row["risk_level"] in {"high", "critical"}
+        ]
+        medium_verified = [
+            row for row in rows
+            if row["verified"] and row["risk_level"] == "medium"
+        ]
+        agreed_rows = [
+            row for row in rows
+            if row["verified"] and row["agreed"] is not None
+        ]
+
+        pass_rate = (
+            sum(1 for row in high_critical if row["passed_first_try"]) / len(high_critical) * 100.0
+            if high_critical else 0.0
+        )
+        correction_rate = (
+            sum(1 for row in medium_verified if row["corrected"]) / len(medium_verified) * 100.0
+            if medium_verified else 0.0
+        )
+        avg_fix_cycles = (
+            sum(int(row["fix_cycles"] or 0) for row in high_critical) / len(high_critical)
+            if high_critical else 0.0
+        )
+        escalation_rate = (
+            sum(1 for row in high_critical if row["escalated"]) / len(high_critical) * 100.0
+            if high_critical else 0.0
+        )
+        agreement_rate = (
+            sum(1 for row in agreed_rows if row["agreed"]) / len(agreed_rows) * 100.0
+            if agreed_rows else 0.0
+        )
+
+        return {
+            "total_actions": total_actions,
+            "total_verified": total_verified,
+            "verification_rate": verification_rate,
+            "pass_rate": pass_rate,
+            "correction_rate": correction_rate,
+            "avg_fix_cycles": avg_fix_cycles,
+            "escalation_rate": escalation_rate,
+            "agreement_rate": agreement_rate,
+        }
+
     # ------------------------------------------------------------------
     # Rollups
     # ------------------------------------------------------------------
 
-    def rollup_daily(self, date: str = None):
+    def rollup_daily(self, date: str | None = None):
         """Compute daily rollup aggregates. date format: YYYY-MM-DD."""
         if date is None:
             date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -288,7 +408,7 @@ class Observatory:
             )
         self._conn.commit()
 
-    def get_daily_rollup(self, date: str = None) -> list:
+    def get_daily_rollup(self, date: str | None = None) -> list:
         """Get the daily rollup for a date."""
         if date is None:
             date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -309,4 +429,8 @@ class Observatory:
         return [dict(r) for r in rows]
 
     def close(self):
+        try:
+            self._conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        except sqlite3.Error:
+            pass
         self._conn.close()

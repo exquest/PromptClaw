@@ -11,14 +11,19 @@ import subprocess
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 # Research tools will be imported from research_tools.py
 # For now, import what we need
 try:
-    from research_tools import ResearchTools, SourcedFinding
+    from research_tools import ResearchTools as _ImportedResearchTools
+    from research_tools import SourcedFinding as _ImportedSourcedFinding
 except ImportError:
-    ResearchTools = None
+    _ResearchToolsFactory: type[Any] | None = None
+    _SourcedFindingFactory: type[Any] | None = None
+else:
+    _ResearchToolsFactory = _ImportedResearchTools
+    _SourcedFindingFactory = _ImportedSourcedFinding
 
 
 @dataclass
@@ -28,9 +33,9 @@ class ResearchResult:
     scope: str  # quick, medium, deep
     summary: str  # short summary for Telegram
     full_report: str  # detailed markdown report
-    findings: list = field(default_factory=list)  # list of SourcedFinding
+    findings: list[Any] = field(default_factory=list)
     sources_count: int = 0
-    confidence_breakdown: dict = field(default_factory=dict)  # {high: N, medium: N, low: N}
+    confidence_breakdown: dict[str, int] = field(default_factory=dict)  # {high: N, medium: N, low: N}
     verified: bool = False
     duration_seconds: float = 0
 
@@ -60,6 +65,12 @@ _PACKAGE_STOPWORDS = {
     "vs",
     "versus",
 }
+
+
+def _build_sourced_finding(**kwargs: object) -> Any:
+    if _SourcedFindingFactory is None:
+        return dict(kwargs)
+    return _SourcedFindingFactory(**kwargs)
 
 
 def _run_agent(agent: str, prompt: str, timeout: int = 120) -> str:
@@ -129,12 +140,12 @@ def _extract_package_candidates(query: str) -> list[str]:
 class Researcher:
     """Deep research engine with adaptive depth and cross-agent verification."""
 
-    def __init__(self, send_fn: Callable = None, send_file_fn: Callable = None,
+    def __init__(self, send_fn: Callable[[str], object] | None = None, send_file_fn: Callable[[str, str], object] | None = None,
                  observatory=None):
-        self.send = send_fn or (lambda x: None)
-        self.send_file = send_file_fn or (lambda x, y: None)
+        self.send: Callable[[str], object] = send_fn or (lambda x: None)
+        self.send_file: Callable[[str, str], object] = send_file_fn or (lambda x, y: None)
         self.observatory = observatory
-        self.tools = ResearchTools(PROJECT_ROOT) if ResearchTools else None
+        self.tools = _ResearchToolsFactory(PROJECT_ROOT) if _ResearchToolsFactory is not None else None
         self.workspace = TOOLS_DIR / "workspace"
         self.workspace.mkdir(parents=True, exist_ok=True)
 
@@ -207,7 +218,7 @@ class Researcher:
         if self.tools:
             results = self.tools.web_search(query, num_results=3)
             for r in results[:2]:
-                findings.append(SourcedFinding(
+                findings.append(_build_sourced_finding(
                     claim=r.snippet, source_url=r.url,
                     source_type="web", confidence="medium",
                     raw_excerpt=r.snippet,
@@ -251,7 +262,7 @@ class Researcher:
             if any(kw in query.lower() for kw in academic_keywords):
                 papers = self.tools.arxiv_search(query, max_results=3)
                 for p in papers:
-                    all_findings.append(SourcedFinding(
+                    all_findings.append(_build_sourced_finding(
                         claim=p.abstract[:200], source_url=p.url,
                         source_type="academic", confidence="high",
                         raw_excerpt=p.abstract,
@@ -262,7 +273,7 @@ class Researcher:
                 for package_name in _extract_package_candidates(query):
                     info = self.tools.pypi_package_info(package_name)
                     if info.get("version"):
-                        all_findings.append(SourcedFinding(
+                        all_findings.append(_build_sourced_finding(
                             claim=f"{package_name}: {info.get('summary', '')} (v{info['version']})",
                             source_url=f"https://pypi.org/project/{package_name}/",
                             source_type="api", confidence="high",
@@ -371,7 +382,7 @@ class Researcher:
 
             papers = self.tools.arxiv_search(query, max_results=3)
             for p in papers:
-                all_findings.append(SourcedFinding(
+                all_findings.append(_build_sourced_finding(
                     claim=p.abstract[:200], source_url=p.url,
                     source_type="academic", confidence="high",
                     raw_excerpt=p.abstract,
@@ -382,7 +393,7 @@ class Researcher:
             if any(kw in query.lower() for kw in code_keywords):
                 matches = self.tools.search_local_code(query.split()[-1])
                 for m in matches[:5]:
-                    all_findings.append(SourcedFinding(
+                    all_findings.append(_build_sourced_finding(
                         claim=f"Found in local codebase: {m.file}",
                         source_url=f"file://{m.file}",
                         source_type="codebase", confidence="high",

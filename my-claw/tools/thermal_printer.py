@@ -8,8 +8,7 @@ from __future__ import annotations
 
 import glob
 import os
-from pathlib import Path
-from typing import Optional
+from typing import Any, Protocol, cast
 
 
 # ESC/POS control codes (raw bytes)
@@ -26,6 +25,13 @@ _FEED_LINES = _ESC + b"\x64\x04"  # ESC d 4 — feed 4 lines
 _CUT = _GS + b"\x56\x00"        # GS V 0 — full cut
 
 
+class EscposPrinter(Protocol):
+    def set(self, **kwargs: object) -> object: ...
+    def text(self, text: str) -> object: ...
+    def cut(self) -> object: ...
+    def image(self, image: object) -> object: ...
+
+
 class ThermalPrinter:
     """Print GlyphWeave art on ESC/POS thermal printers."""
 
@@ -33,13 +39,13 @@ class ThermalPrinter:
         # width = printable characters per line (48 for 58mm paper)
         self.device = device
         self.width = width
-        self._printer = None  # python-escpos printer object, if available
+        self._printer: EscposPrinter | None = None  # python-escpos printer object, if available
 
     def connect(self) -> bool:
         """Connect to printer. Try python-escpos first, fall back to raw."""
         try:
-            from escpos.printer import File  # type: ignore[import-untyped]
-            self._printer = File(self.device)
+            from escpos.printer import File  # type: ignore[import-not-found, import-untyped]
+            self._printer = cast(EscposPrinter, File(self.device))
             return True
         except ImportError:
             # python-escpos not installed -- fall back to raw device writes
@@ -79,6 +85,7 @@ class ThermalPrinter:
 
         # Render to image
         font_size = 12
+        font: Any
         try:
             font = ImageFont.truetype("DejaVuSansMono.ttf", font_size)
         except OSError:
@@ -133,8 +140,10 @@ class ThermalPrinter:
 
     def _print_escpos(self, text: str, title: str, cut: bool) -> bool:
         """Print using python-escpos library."""
+        p = self._printer
+        if p is None:
+            return False
         try:
-            p = self._printer
             p.set(align="center")
 
             if title:
