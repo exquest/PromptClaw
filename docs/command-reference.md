@@ -145,3 +145,23 @@ python my-claw/tools/cypherclaw_daemon.py --status
 ```
 
 This probe is platform-aware: it checks `launchctl` on macOS homes and `systemctl` on Linux homes so status checks do not crash when the local service manager is absent.
+
+## CypherClaw Telegram built-ins
+
+The live CypherClaw daemon also exposes built-in Telegram commands for operator status without routing through an LLM.
+
+- `/quota` shows provider headroom, active agents, and exclusions from quota-aware routing.
+- `/prd` shows the ordered PRD roadmap as it will be implemented, using the live `.sdp/state.db` queue instead of cached prose summaries.
+
+`/prd` is queue-backed and dependency-aware. It reflects the explicit roadmap order:
+
+1. Home Resilience
+2. Restructure
+3. GlyphWeave Studio Loop
+4. GlyphWeave Art
+5. Pet System v2
+6. Narrative Engine
+7. SenseWeave
+8. Proactive Intel
+9. Web Platform
+10. Federation

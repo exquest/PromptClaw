@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 import sys
 from collections import deque
 from pathlib import Path
@@ -207,6 +208,96 @@ class TestDaemonFallback:
         assert daemon_env["sent_messages"]  # type: ignore[index]
         assert "Provider Quota" in daemon_env["sent_messages"][-1]  # type: ignore[index]
         assert "openai" in daemon_env["sent_messages"][-1]  # type: ignore[index]
+
+    def test_prd_command_returns_ordered_roadmap(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        daemon_env: dict[str, object],
+    ) -> None:
+        project_root = tmp_path / "cypherclaw"
+        state_dir = project_root / ".sdp"
+        state_dir.mkdir(parents=True)
+        db_path = state_dir / "state.db"
+
+        con = sqlite3.connect(db_path)
+        with con:
+            con.execute(
+                """
+                CREATE TABLE tasks (
+                    task_id TEXT PRIMARY KEY,
+                    description TEXT NOT NULL,
+                    tier TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    lead_agent TEXT,
+                    verify_agent TEXT,
+                    priority INTEGER NOT NULL DEFAULT 0,
+                    complexity_score INTEGER NOT NULL DEFAULT 0,
+                    source TEXT NOT NULL DEFAULT 'manual',
+                    criteria TEXT NOT NULL DEFAULT '',
+                    rollback_count INTEGER NOT NULL DEFAULT 0,
+                    parent_task_id TEXT,
+                    status_reason TEXT NOT NULL DEFAULT '',
+                    status_changed_at TEXT NOT NULL DEFAULT '',
+                    status_changed_by TEXT NOT NULL DEFAULT '',
+                    frozen INTEGER NOT NULL DEFAULT 0,
+                    frozen_reason TEXT NOT NULL DEFAULT '',
+                    frozen_at TEXT NOT NULL DEFAULT '',
+                    frozen_by TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+                """
+            )
+            rows = [
+                ("T-011@20260331T232739Z", "home", "T1", "pending", None),
+                ("T-001@20260328T142659Z", "restructure", "T1", "pending", None),
+                ("T-001@20260401T195527Z", "studio", "T1", "running", None),
+                ("T-010@20260327T172236Z", "glyph", "T2", "pending", None),
+                ("T-001@20260327T221957Z", "pet", "T2", "pending", None),
+                ("T-001@20260329T183119Z", "narrative", "T1", "pending", None),
+                ("T-001@20260331T210000Z", "sense", "T1", "pending", None),
+                ("T-001@20260327T234426Z", "proactive", "T1", "pending", None),
+                ("T-001@20260327T233208Z", "web", "T1", "pending", None),
+                ("T-001@20260329T205115Z", "federation", "T1", "pending", None),
+                ("T-001@20260327T154047Z", "model awareness", "T1", "complete", None),
+            ]
+            for task_id, description, tier, status, parent_task_id in rows:
+                con.execute(
+                    """
+                    INSERT INTO tasks (
+                        task_id, description, tier, status, lead_agent, verify_agent, priority,
+                        complexity_score, source, criteria, rollback_count, parent_task_id,
+                        status_reason, status_changed_at, status_changed_by, frozen,
+                        frozen_reason, frozen_at, frozen_by, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, NULL, NULL, 0, 0, 'prd', '', 0, ?, '', '', '', 0, '', '', '', '2026-04-01T00:00:00+00:00', '2026-04-01T00:00:00+00:00')
+                    """,
+                    (task_id, description, tier, status, parent_task_id),
+                )
+
+        monkeypatch.setattr(cypherclaw_daemon, "PROJECT_ROOT", project_root)
+
+        handled = cypherclaw_daemon.handle_builtin("/prd")
+
+        assert handled is True
+        text = daemon_env["sent_messages"][-1]  # type: ignore[index]
+        assert "PRD Roadmap" in text
+        labels = [
+            "Home Resilience",
+            "Restructure",
+            "GlyphWeave Studio Loop",
+            "GlyphWeave Art",
+            "Pet System v2",
+            "Narrative Engine",
+            "SenseWeave",
+            "Proactive Intel",
+            "Web Platform",
+            "Federation",
+        ]
+        positions = [text.index(label) for label in labels]
+        assert positions == sorted(positions)
+        assert "running" in text.lower()
+        assert "Completed Earlier" in text
 
     def test_non_quota_error_does_not_trigger_fallback(
         self,

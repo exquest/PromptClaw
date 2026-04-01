@@ -104,6 +104,8 @@ When the project root also looks like a live CypherClaw runtime, `promptclaw doc
 
 The live daemon path is now also portable across the MacBook dev home and the Linux server home. Status checks branch on platform, optional watchdog integrations are treated as optional imports, and runtime semaphore acquire/release/reject transitions are recorded so concurrency throttling is observable instead of implicit.
 
+Operator-facing Telegram status now also splits cleanly between built-ins and routed work. Queue-backed commands like `/quota` and `/prd` read live runtime state directly instead of relying on conversational summaries, so roadmap and provider status stay aligned with the SQLite authority DB.
+
 ### 7. Memory
 
 Rolling memory lives in:

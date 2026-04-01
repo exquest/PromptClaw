@@ -28,6 +28,7 @@ import os
 import platform
 import re
 import signal
+import sqlite3
 import subprocess
 import sys
 import threading
@@ -1651,6 +1652,7 @@ def execute_plan(steps: list[dict]) -> None:
 BUILTIN_COMMANDS = {
     "/status": "Show daemon status, running tasks, schedules",
     "/quota": "Show provider quota headroom and active agents",
+    "/prd": "Show the ordered PRD roadmap and current implementation status",
     "/tasks": "List background tasks",
     "/schedules": "List scheduled tasks",
     "/workspace": "List workspace artifacts",
@@ -1668,6 +1670,138 @@ BUILTIN_COMMANDS = {
     "/pulse": "Context pulse — see the AI's own context",
     "/help": "Show available commands",
 }
+
+PRD_ROADMAP = [
+    ("Home Resilience", ("20260331T232739Z",)),
+    ("Restructure", ("20260328T142659Z",)),
+    ("GlyphWeave Studio Loop", ("20260401T195527Z",)),
+    ("GlyphWeave Art", ("20260327T172236Z",)),
+    ("GlyphWeave Art B2", ("20260327T182001Z", "20260327T182001Za", "20260327T182001Zb", "20260327T182001Zc", "20260327T182001Zd")),
+    ("Pet System v2", ("20260327T221957Z",)),
+    ("Narrative Engine", ("20260329T183119Z",)),
+    ("SenseWeave", ("20260331T210000Z",)),
+    ("Proactive Intel", ("20260327T234426Z",)),
+    ("Web Platform", ("20260327T233208Z",)),
+    ("Federation", ("20260329T205115Z",)),
+]
+
+PRD_COMPLETED = [
+    ("Demo Fixes", ("20260326T185852Z",)),
+    ("Pet Animation", ("20260326T195444Z", "20260326T195444Za", "20260326T195444Zb", "20260326T195444Zc", "20260326T195444Zd")),
+    ("Model Awareness", ("20260327T154047Z", "20260327T154047Za", "20260327T154047Zb", "20260327T154047Zc", "20260327T154047Zd")),
+    ("Server Optimization", ("20260327T223909Z",)),
+    ("Verification", ("20260327T235215Z",)),
+    ("Introspector", ("20260329T191308Z",)),
+    ("Gap Analyzer", ("20260329T202017Z",)),
+    ("Hotfixes", ("20260330T235959Z",)),
+]
+
+
+def _queue_db_path() -> Path:
+    return PROJECT_ROOT / ".sdp" / "state.db"
+
+
+def _batch_rollups() -> dict[str, dict[str, int]]:
+    db_path = _queue_db_path()
+    if not db_path.exists():
+        return {}
+
+    con = sqlite3.connect(db_path)
+    try:
+        rows = con.execute(
+            """
+            SELECT
+                substr(task_id, instr(task_id, '@') + 1) AS batch,
+                status,
+                COUNT(*) AS count
+            FROM tasks
+            WHERE COALESCE(parent_task_id, '') = ''
+            GROUP BY batch, status
+            """
+        ).fetchall()
+    finally:
+        con.close()
+
+    rollups: dict[str, dict[str, int]] = {}
+    for batch, status, count in rows:
+        batch_key = str(batch)
+        status_key = str(status)
+        bucket = rollups.setdefault(batch_key, {"total": 0, "complete": 0, "running": 0, "pending": 0, "blocked": 0, "split": 0})
+        bucket["total"] += int(count)
+        bucket[status_key] = bucket.get(status_key, 0) + int(count)
+    return rollups
+
+
+def _merge_rollups(batches: tuple[str, ...], batch_rollups: dict[str, dict[str, int]]) -> dict[str, int]:
+    merged = {"total": 0, "complete": 0, "running": 0, "pending": 0, "blocked": 0, "split": 0}
+    for batch in batches:
+        bucket = batch_rollups.get(batch)
+        if not bucket:
+            continue
+        for key, value in bucket.items():
+            merged[key] = merged.get(key, 0) + int(value)
+    return merged
+
+
+def _label_status(summary: dict[str, int]) -> str:
+    total = summary.get("total", 0)
+    complete = summary.get("complete", 0)
+    running = summary.get("running", 0)
+    blocked = summary.get("blocked", 0)
+    split = summary.get("split", 0)
+    pending = summary.get("pending", 0)
+    active_blockers = blocked + split
+
+    if total == 0:
+        return "not loaded"
+    if running:
+        return "running"
+    if complete == total:
+        return "done"
+    if active_blockers and pending == 0:
+        return "blocked"
+    if active_blockers:
+        return "partially blocked"
+    if complete:
+        pct = int(round((complete / total) * 100))
+        return f"{pct}% done"
+    return "queued"
+
+
+def format_prd_status() -> str:
+    """Return the ordered PRD roadmap summary for Telegram."""
+    batch_rollups = _batch_rollups()
+    lines = ["🗺️ PRD Roadmap"]
+
+    for idx, (label, batches) in enumerate(PRD_ROADMAP, start=1):
+        summary = _merge_rollups(batches, batch_rollups)
+        status = _label_status(summary)
+        total = summary.get("total", 0)
+        complete = summary.get("complete", 0)
+        running = summary.get("running", 0)
+        pending = summary.get("pending", 0)
+        blocked = summary.get("blocked", 0) + summary.get("split", 0)
+        detail = f"{complete}/{total}" if total else "not loaded"
+        suffix_parts = []
+        if running:
+            suffix_parts.append(f"{running} running")
+        if pending:
+            suffix_parts.append(f"{pending} pending")
+        if blocked:
+            suffix_parts.append(f"{blocked} blocked")
+        suffix = f" ({', '.join(suffix_parts)})" if suffix_parts else ""
+        lines.append(f"{idx}. {label} — {status} [{detail}]{suffix}")
+
+    completed = []
+    for label, batches in PRD_COMPLETED:
+        summary = _merge_rollups(batches, batch_rollups)
+        if summary.get("total", 0) and summary.get("complete", 0) == summary.get("total", 0):
+            completed.append(label)
+    if completed:
+        lines.append("")
+        lines.append("Completed Earlier: " + ", ".join(completed))
+
+    return "\n".join(lines)[:3500]
 
 
 def format_quota_status() -> str:
@@ -1728,6 +1862,10 @@ def handle_builtin(text: str) -> bool:
 
     if cmd == "/quota":
         tg_send(format_quota_status())
+        return True
+
+    if cmd == "/prd":
+        tg_send(format_prd_status())
         return True
 
     if cmd == "/tasks":
