@@ -67,12 +67,13 @@ They become dramatically easier once the runtime, permissions, verification, and
 
 The art-facing PRDs should follow once the organism itself is stable:
 
-1. [prd-glyphweave-art-studio.md](./prd-glyphweave-art-studio.md)
-2. [prd-pet-system-v2.md](./prd-pet-system-v2.md)
-3. [prd-narrative-engine.md](./prd-narrative-engine.md)
-4. SenseWeave and later physical-output work
+1. [prd-glyphweave-studio-loop.md](./prd-glyphweave-studio-loop.md)
+2. [prd-glyphweave-art-studio.md](./prd-glyphweave-art-studio.md)
+3. [prd-pet-system-v2.md](./prd-pet-system-v2.md)
+4. [prd-narrative-engine.md](./prd-narrative-engine.md)
+5. SenseWeave and later physical-output work
 
-Reason: the artistic layers benefit most from a stable home, truthful monitoring, reliable provider degradation, and compacted memory.
+Reason: the artistic layers benefit most from a stable home, truthful monitoring, reliable provider degradation, compacted memory, and a fast local studio loop before the larger autonomous art pipeline starts producing volume.
 
 ## Research-to-Implementation Mapping
 

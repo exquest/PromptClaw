@@ -4,7 +4,7 @@
 
 Transform CypherClaw from a system that *uses* GlyphWeave art into one that *creates* it. Every 30 minutes, CypherClaw generates a new original GlyphWeave artwork — static or animated — featuring its Tamagotchi pets, using a scientific experimentation framework that tests every available LLM model at every effort/temperature setting to discover what produces the best hybrid ASCII+emoji art. Results are displayed in Telegram alongside health checks, served through an interactive web gallery, and tracked with detailed statistics. A 3-day calibration period runs first to map the model-quality landscape before settling on optimal configurations.
 
-**Depends on:** `prd-model-awareness.md` (model registry, model selector, per-model fitness scoring — currently being implemented by sdp-cli on server)
+**Depends on:** `prd-model-awareness.md` (model registry, model selector, per-model fitness scoring — currently being implemented by sdp-cli on server), `prd-glyphweave-studio-loop.md` (fast preview/watch loop, context compaction, source-map/indexing, golden render fixtures)
 
 **Reference:** `glyphweave-foundations.md` (research document, copied to server at `/home/user/cypherclaw/docs/glyphweave-foundations.md`)
 
