@@ -77,6 +77,7 @@ Examples:
 - Agents not selected in the wizard are disabled in `promptclaw.json`.
 - When you later switch an agent to live `command` mode, PromptClaw runs it from the project root and fills `{prompt_file}` with an absolute path to the generated prompt artifact.
 - CypherClaw live command projects can layer quota-aware routing on top of those rules, redistributing work away from providers with degraded headroom and collapsing to single-agent mode when only one provider remains viable.
+- In the live CypherClaw home, those startup materials now feed a preflight-gated runtime: bootstrap prepares a tmpfs workdir, authoritative DBs stay on disk, and the queue runner refuses to start if maintenance mode or integrity checks say the home is not safe.
 
 ## Typical loop
 
@@ -86,4 +87,11 @@ cd my-claw
 promptclaw doctor .
 promptclaw bootstrap .
 promptclaw run . --task "Compare orchestration patterns and propose an implementation plan."
+```
+
+For live server operations after the project is initialized:
+
+```bash
+bash my-claw/tools/init_workdir.sh
+python my-claw/tools/preflight.py --project-root .
 ```

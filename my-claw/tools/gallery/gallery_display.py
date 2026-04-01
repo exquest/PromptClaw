@@ -181,11 +181,9 @@ class GalleryDisplay:
         if art_type == "animation":
             self._display_animation(piece)
         elif art_type == "image" and use_fb and self.fb_renderer and self.fb_renderer.available:
-            self.fb_renderer.render_image(str(art_path))
-            if self.overlay_visible:
-                overlay = self._build_overlay(piece)
-                # For fb mode, render overlay via TTY on top
-                self.tty_renderer.render_overlay("", overlay)
+            overlay = self._build_overlay(piece) if self.overlay_visible else None
+            self.tty_renderer.clear()
+            self.fb_renderer.render_image(str(art_path), overlay_lines=overlay)
         elif art_type in ("text", "ansi"):
             self._display_text_art(piece)
         elif art_type == "image":

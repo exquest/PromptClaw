@@ -50,6 +50,14 @@ Checks:
 - command agents have executable commands
 - control plane agent exists if `mode=agent`
 
+For CypherClaw live deployments, the repo also ships runtime safety tools that sit beneath `promptclaw doctor` until the unified doctor/preflight path lands:
+
+- `python my-claw/tools/preflight.py --project-root PROJECT_ROOT`
+- `python my-claw/tools/runtime_checkpoint.py --project-root PROJECT_ROOT`
+- `python my-claw/tools/maintenance_mode.py --project-root PROJECT_ROOT status`
+- `bash my-claw/tools/safe_reboot.sh prepare --actor operator --dry-run`
+- `bash my-claw/tools/safe_reboot.sh resume --checkpoint PATH --actor operator --dry-run`
+
 ## `promptclaw bootstrap`
 
 Run the bootstrap task using the startup materials.
@@ -78,6 +86,12 @@ For live `command` agents, PromptClaw executes from `PROJECT_ROOT` and renders `
 
 In CypherClaw live command deployments, `run` can also honor `sdp-cli` quota telemetry. Healthy and warn providers stay eligible for routing, degraded providers stop receiving new work, and full exhaustion falls back to the provider with the best remaining headroom so runs continue in degraded mode.
 
+Before the long-running queue starts, the runtime launcher also enforces:
+
+- maintenance mode must be inactive
+- preflight must pass
+- the tmpfs workdir must be present and correctly linked to disk-authoritative DBs
+
 ## `promptclaw resume`
 
 Resume an ambiguous task.
@@ -102,3 +116,21 @@ Print resolved config.
 ```bash
 promptclaw show-config PROJECT_ROOT
 ```
+
+## CypherClaw runtime utilities
+
+These are repo-managed operational tools for the live CypherClaw home:
+
+```bash
+bash my-claw/tools/init_workdir.sh
+python my-claw/tools/preflight.py --project-root .
+python my-claw/tools/runtime_checkpoint.py --project-root .
+python my-claw/tools/maintenance_mode.py --project-root . enter --reason "planned reboot"
+bash my-claw/tools/safe_reboot.sh prepare --actor anthony
+bash my-claw/tools/safe_reboot.sh resume --checkpoint .sdp/recovery/checkpoint-<stamp>.json --actor anthony
+```
+
+Systemd units shipped with this repo:
+
+- `my-claw/systemd/cypherclaw-bootstrap.service`
+- `my-claw/systemd/cypherclaw-sdp-runner.service`

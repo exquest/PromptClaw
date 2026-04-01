@@ -20,6 +20,8 @@ For each step, the orchestrator writes:
 
 For live `command` agents, the orchestrator invokes the local CLI from the project root and passes an absolute `{prompt_file}` path for the prompt artifact it just wrote.
 
+In CypherClaw live operations, those handoffs only begin after the bootstrap and preflight gates pass. The runner launcher refuses to start if maintenance mode is active, if the workdir layout is incomplete, or if the authoritative SQLite files fail integrity checks.
+
 ## Files
 
 ```text
@@ -97,3 +99,10 @@ By default:
 You can change this in `promptclaw.json`.
 
 For CypherClaw live command runs, provider availability can also change the handoff path. When quota telemetry marks a provider as degraded or paused, the orchestrator can swap to another provider for lead/verify work, and in single-agent degraded mode it can temporarily assign the same available agent to both roles until headroom recovers.
+
+The runtime transport itself is also guarded now:
+
+- `my-claw/tools/init_workdir.sh` prepares the tmpfs workdir and symlinks authority DBs back to disk.
+- `my-claw/tools/sdp_runner_launcher.sh` runs preflight before `sdp-cli run`.
+- `my-claw/tools/safe_reboot.sh prepare` checkpoints and enters maintenance mode before shutdown.
+- `my-claw/tools/safe_reboot.sh resume` validates the latest checkpoint before reopening the runner.

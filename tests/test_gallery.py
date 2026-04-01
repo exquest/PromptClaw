@@ -28,6 +28,13 @@ class TestTTYRenderer(unittest.TestCase):
         self.assertEqual(renderer.width, 160)
         self.assertEqual(renderer.height, 64)
 
+    @patch("gallery.tty_renderer.TTYRenderer._detect_terminal_size", return_value=(240, 67))
+    def test_detects_terminal_size_from_tty(self, _mock_detect):
+        from gallery.tty_renderer import TTYRenderer
+        renderer = TTYRenderer(str(self.fake_tty))
+        self.assertEqual(renderer.width, 240)
+        self.assertEqual(renderer.height, 67)
+
     def test_clear_writes_escape_codes(self):
         from gallery.tty_renderer import TTYRenderer
         renderer = TTYRenderer(str(self.fake_tty))
@@ -71,6 +78,27 @@ class TestFramebufferRenderer(unittest.TestCase):
         from gallery.fb_renderer import FramebufferRenderer
         renderer = FramebufferRenderer(fb_path="/nonexistent/fb0")
         self.assertFalse(renderer.available)
+
+    def test_detects_geometry_from_sysfs(self):
+        from gallery.fb_renderer import FramebufferRenderer
+
+        temp_dir = Path(tempfile.mkdtemp(prefix="fb-sysfs-"))
+        try:
+            fb_dir = temp_dir / "fb0"
+            fb_dir.mkdir()
+            (fb_dir / "virtual_size").write_text("3840,2160\n")
+            (fb_dir / "bits_per_pixel").write_text("32\n")
+
+            renderer = FramebufferRenderer(
+                fb_path="/dev/fb0",
+                sysfs_root=temp_dir,
+            )
+            self.assertEqual(renderer.width, 3840)
+            self.assertEqual(renderer.height, 2160)
+            self.assertEqual(renderer.bpp, 32)
+            self.assertEqual(renderer.screen_size, 3840 * 2160 * 4)
+        finally:
+            shutil.rmtree(temp_dir)
 
 
 class TestGalleryDisplay(unittest.TestCase):
@@ -162,6 +190,39 @@ class TestGalleryDisplay(unittest.TestCase):
         self.assertEqual(len(gallery.playlist), 2)
         # Newest should be first
         self.assertIn("new", gallery.playlist[0]["path"])
+
+    def test_image_mode_renders_overlay_in_framebuffer(self):
+        from gallery.gallery_display import GalleryDisplay
+
+        image_path = self.art_dir / "piece.png"
+        image_path.write_bytes(b"\x89PNG\r\n")
+        gallery = GalleryDisplay(
+            art_dir=str(self.art_dir),
+            tty_path=str(self.fake_tty),
+            fb_path="/nonexistent",
+        )
+        gallery.fb_renderer = MagicMock()
+        gallery.fb_renderer.available = True
+        gallery.tty_renderer = MagicMock()
+        gallery.overlay_visible = True
+
+        piece = {
+            "path": str(image_path),
+            "type": "image",
+            "title": "Piece",
+            "model": "codex",
+            "score": 8.0,
+            "theme": "demo",
+            "favorite": False,
+        }
+        gallery.playlist = [piece]
+        gallery._display_piece(piece)
+
+        gallery.fb_renderer.render_image.assert_called_once()
+        _, kwargs = gallery.fb_renderer.render_image.call_args
+        self.assertIn("overlay_lines", kwargs)
+        self.assertTrue(kwargs["overlay_lines"])
+        gallery.tty_renderer.render_overlay.assert_not_called()
 
 
 class TestArtWatcher(unittest.TestCase):

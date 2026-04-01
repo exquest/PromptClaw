@@ -86,6 +86,19 @@ Agent runtimes support three modes:
 
 In CypherClaw-style live command deployments, command routing can consult `sdp-cli` quota telemetry. Healthy and warn providers remain eligible, degraded and paused providers are excluded from new work, and if every provider is degraded the runtime falls back to the provider with the most remaining headroom instead of refusing to operate.
 
+### 7. CypherClaw resilience layer
+
+CypherClaw live deployments add a runtime safety layer around the orchestrator:
+
+- disk authority for `.sdp/state.db` and `.promptclaw/observatory.db`
+- tmpfs workdir bootstrap via `my-claw/tools/init_workdir.sh`
+- startup preflight via `my-claw/tools/preflight.py`
+- explicit maintenance state via `my-claw/tools/maintenance_mode.py`
+- checkpoint export via `my-claw/tools/runtime_checkpoint.py`
+- systemd-managed runner startup through `my-claw/tools/sdp_runner_launcher.sh`
+
+The tmpfs workdir is acceleration only. It clones the repository into `/run/cypherclaw-tmp/workdir/<name>` and then symlinks the authoritative DBs back to disk so reboot or tmpfs loss cannot silently rewrite queue authority.
+
 ### 7. Memory
 
 Rolling memory lives in:
@@ -110,20 +123,24 @@ Future routing uses that memory to preserve continuity.
 ```mermaid
 flowchart TD
     A[Startup wizard or manual prompts] --> B[Bootstrap task or direct task]
-    B --> C[Create run directory]
-    C --> D[Control plane route decision]
-    D --> E{Ambiguous?}
-    E -->|yes| F[Write clarification-request.md]
-    E -->|no| G[Lead agent prompt]
-    G --> H[Lead output]
-    H --> I{Verification enabled?}
-    I -->|yes| J[Verifier prompt]
-    J --> K[Verification output]
-    K --> L{Pass?}
-    L -->|no| M[Retry or fail]
-    L -->|yes| N[Write final summary]
-    I -->|no| N
-    N --> O[Append project memory]
+    B --> C[Bootstrap tmpfs workdir]
+    C --> D[Run preflight]
+    D --> E{Maintenance or failed preflight?}
+    E -->|yes| F[Refuse runner start]
+    E -->|no| G[Create run directory]
+    G --> H[Control plane route decision]
+    H --> I{Ambiguous?}
+    I -->|yes| J[Write clarification-request.md]
+    I -->|no| K[Lead agent prompt]
+    K --> L[Lead output]
+    L --> M{Verification enabled?}
+    M -->|yes| N[Verifier prompt]
+    N --> O[Verification output]
+    O --> P{Pass?}
+    P -->|no| Q[Retry or fail]
+    P -->|yes| R[Write final summary]
+    M -->|no| R
+    R --> S[Append project memory]
 ```
 
 ## Why this layout exists
@@ -134,3 +151,5 @@ The core failure in a prompt-only multi-agent setup is that one agent cannot act
 - knows how to invoke them
 - knows how to parse their outputs
 - keeps startup requirements in durable markdown artifacts
+
+For CypherClaw live operations, that control plane now also sits inside an operational shell that must survive reboot and maintenance. The orchestrator is not considered safe to start until bootstrap, preflight, and maintenance-state checks all agree that the runtime is sane.
