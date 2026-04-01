@@ -150,10 +150,13 @@ This probe is platform-aware: it checks `launchctl` on macOS homes and `systemct
 
 The live CypherClaw daemon also exposes built-in Telegram commands for operator status without routing through an LLM.
 
+- `/monitor` shows live queue progress, runner state, and the current active task/pair from the authority queue DB.
 - `/quota` shows provider headroom, active agents, and exclusions from quota-aware routing.
 - `/prd` shows the ordered PRD roadmap as it will be implemented, using the live `.sdp/state.db` queue instead of cached prose summaries.
 
-`/prd` is queue-backed and dependency-aware. It reflects the explicit roadmap order:
+`/monitor` and `/prd` are queue-backed and dependency-aware. They reflect the authority SQLite queue instead of routed prose summaries.
+
+`/prd` reflects the explicit roadmap order:
 
 1. Home Resilience
 2. Restructure

@@ -1651,6 +1651,7 @@ def execute_plan(steps: list[dict]) -> None:
 
 BUILTIN_COMMANDS = {
     "/status": "Show daemon status, running tasks, schedules",
+    "/monitor": "Show live queue progress, active task, and runner status",
     "/quota": "Show provider quota headroom and active agents",
     "/prd": "Show the ordered PRD roadmap and current implementation status",
     "/tasks": "List background tasks",
@@ -1701,6 +1702,37 @@ def _queue_db_path() -> Path:
     return PROJECT_ROOT / ".sdp" / "state.db"
 
 
+def _queue_db_exists() -> bool:
+    return _queue_db_path().exists()
+
+
+def _runner_service_state() -> str:
+    system = platform.system().lower()
+    if system == "linux":
+        try:
+            result = subprocess.run(
+                ["systemctl", "is-active", "cypherclaw-sdp-runner.service"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+        except (FileNotFoundError, subprocess.SubprocessError):
+            return "unknown"
+        state = (result.stdout or "").strip()
+        return state or "inactive"
+
+    try:
+        result = subprocess.run(
+            ["pgrep", "-af", "sdp-cli run"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (FileNotFoundError, subprocess.SubprocessError):
+        return "unknown"
+    return "active" if result.returncode == 0 and (result.stdout or "").strip() else "inactive"
+
+
 def _batch_rollups() -> dict[str, dict[str, int]]:
     db_path = _queue_db_path()
     if not db_path.exists():
@@ -1730,6 +1762,109 @@ def _batch_rollups() -> dict[str, dict[str, int]]:
         bucket["total"] += int(count)
         bucket[status_key] = bucket.get(status_key, 0) + int(count)
     return rollups
+
+
+def _root_queue_counts() -> dict[str, int]:
+    db_path = _queue_db_path()
+    if not db_path.exists():
+        return {"total": 0, "complete": 0, "running": 0, "pending": 0, "blocked": 0, "split": 0}
+
+    con = sqlite3.connect(db_path)
+    try:
+        row = con.execute(
+            """
+            SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN status='complete' THEN 1 ELSE 0 END) AS complete,
+                SUM(CASE WHEN status='running' THEN 1 ELSE 0 END) AS running,
+                SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) AS pending,
+                SUM(CASE WHEN status='blocked' THEN 1 ELSE 0 END) AS blocked,
+                SUM(CASE WHEN status='split' THEN 1 ELSE 0 END) AS split
+            FROM tasks
+            WHERE COALESCE(parent_task_id, '') = ''
+            """
+        ).fetchone()
+    finally:
+        con.close()
+
+    if row is None:
+        return {"total": 0, "complete": 0, "running": 0, "pending": 0, "blocked": 0, "split": 0}
+    total, complete, running, pending, blocked, split = row
+    return {
+        "total": int(total or 0),
+        "complete": int(complete or 0),
+        "running": int(running or 0),
+        "pending": int(pending or 0),
+        "blocked": int(blocked or 0),
+        "split": int(split or 0),
+    }
+
+
+def _active_task_snapshot() -> dict[str, str] | None:
+    db_path = _queue_db_path()
+    if not db_path.exists():
+        return None
+
+    con = sqlite3.connect(db_path)
+    try:
+        task_row = con.execute(
+            """
+            SELECT task_id, COALESCE(parent_task_id, ''), status
+            FROM tasks
+            WHERE status='running'
+            ORDER BY updated_at DESC, created_at DESC
+            LIMIT 1
+            """
+        ).fetchone()
+        if task_row is None:
+            return None
+        task_id, parent_task_id, status = task_row
+        run_row = con.execute(
+            """
+            SELECT COALESCE(lead_agent, ''), COALESCE(verify_agent, ''), COALESCE(started_at, ''), COALESCE(verdict, '')
+            FROM task_runs
+            WHERE task_id=?
+            ORDER BY started_at DESC, rowid DESC
+            LIMIT 1
+            """,
+            (task_id,),
+        ).fetchone()
+    finally:
+        con.close()
+
+    lead = ""
+    verify = ""
+    started_at = ""
+    verdict = ""
+    if run_row is not None:
+        lead, verify, started_at, verdict = (str(value or "") for value in run_row)
+
+    return {
+        "task_id": str(task_id),
+        "parent_task_id": str(parent_task_id),
+        "status": str(status),
+        "lead_agent": lead,
+        "verify_agent": verify,
+        "started_at": started_at,
+        "verdict": verdict,
+    }
+
+
+def _format_elapsed(started_at: str) -> str:
+    if not started_at:
+        return "unknown"
+    try:
+        started = datetime.fromisoformat(started_at)
+    except ValueError:
+        return "unknown"
+    elapsed = max(0, int((datetime.now(timezone.utc) - started).total_seconds()))
+    minutes, seconds = divmod(elapsed, 60)
+    hours, minutes = divmod(minutes, 60)
+    if hours:
+        return f"{hours}h {minutes}m"
+    if minutes:
+        return f"{minutes}m {seconds}s"
+    return f"{seconds}s"
 
 
 def _merge_rollups(batches: tuple[str, ...], batch_rollups: dict[str, dict[str, int]]) -> dict[str, int]:
@@ -1804,6 +1939,40 @@ def format_prd_status() -> str:
     return "\n".join(lines)[:3500]
 
 
+def format_monitor_status() -> str:
+    """Return a compact live queue monitor summary for Telegram."""
+    if not _queue_db_exists():
+        return "📡 SDP Monitor\nQueue DB unavailable."
+
+    counts = _root_queue_counts()
+    total = counts["total"]
+    complete = counts["complete"]
+    pending = counts["pending"]
+    blocked = counts["blocked"] + counts["split"]
+    running_roots = counts["running"]
+    percent = int(round((complete / total) * 100)) if total else 0
+    runner_state = _runner_service_state()
+    active = _active_task_snapshot()
+
+    lines = ["📡 SDP Monitor"]
+    lines.append(f"Progress: {complete}/{total} complete ({percent}%)")
+    lines.append(f"Queue: {pending} pending, {blocked} blocked, {running_roots} running roots")
+    lines.append(f"Runner: {runner_state}")
+    if active is None:
+        lines.append("Current: idle")
+    else:
+        pair = " → ".join(agent for agent in (active["lead_agent"], active["verify_agent"]) if agent) or "pair unknown"
+        current = active["task_id"]
+        if active["parent_task_id"]:
+            current += f" (child of {active['parent_task_id']})"
+        lines.append(f"Current: {current}")
+        lines.append(f"Pair: {pair}")
+        lines.append(f"Elapsed: {_format_elapsed(active['started_at'])}")
+    available = _available_agents(["claude", "codex", "gemini"])
+    lines.append("Available: " + ", ".join(available) if available else "Available: none")
+    return "\n".join(lines)[:1200]
+
+
 def format_quota_status() -> str:
     """Return a compact provider quota summary for Telegram."""
     provider_status = quota_monitor.get_provider_status()
@@ -1862,6 +2031,10 @@ def handle_builtin(text: str) -> bool:
 
     if cmd == "/quota":
         tg_send(format_quota_status())
+        return True
+
+    if cmd == "/monitor":
+        tg_send(format_monitor_status())
         return True
 
     if cmd == "/prd":

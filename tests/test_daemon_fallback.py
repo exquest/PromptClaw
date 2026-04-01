@@ -299,6 +299,101 @@ class TestDaemonFallback:
         assert "running" in text.lower()
         assert "Completed Earlier" in text
 
+    def test_monitor_command_returns_live_queue_state(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        daemon_env: dict[str, object],
+    ) -> None:
+        project_root = tmp_path / "cypherclaw"
+        state_dir = project_root / ".sdp"
+        state_dir.mkdir(parents=True)
+        db_path = state_dir / "state.db"
+
+        con = sqlite3.connect(db_path)
+        with con:
+            con.execute(
+                """
+                CREATE TABLE tasks (
+                    task_id TEXT PRIMARY KEY,
+                    description TEXT NOT NULL,
+                    tier TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    lead_agent TEXT,
+                    verify_agent TEXT,
+                    priority INTEGER NOT NULL DEFAULT 0,
+                    complexity_score INTEGER NOT NULL DEFAULT 0,
+                    source TEXT NOT NULL DEFAULT 'manual',
+                    criteria TEXT NOT NULL DEFAULT '',
+                    rollback_count INTEGER NOT NULL DEFAULT 0,
+                    parent_task_id TEXT,
+                    status_reason TEXT NOT NULL DEFAULT '',
+                    status_changed_at TEXT NOT NULL DEFAULT '',
+                    status_changed_by TEXT NOT NULL DEFAULT '',
+                    frozen INTEGER NOT NULL DEFAULT 0,
+                    frozen_reason TEXT NOT NULL DEFAULT '',
+                    frozen_at TEXT NOT NULL DEFAULT '',
+                    frozen_by TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+                """
+            )
+            con.execute(
+                """
+                CREATE TABLE task_runs (
+                    task_id TEXT NOT NULL,
+                    lead_agent TEXT,
+                    verify_agent TEXT,
+                    started_at TEXT,
+                    completed_at TEXT,
+                    verdict TEXT,
+                    gate_passed INTEGER,
+                    work_result TEXT
+                )
+                """
+            )
+            task_rows = [
+                ("T-home", "home", "T1", "pending", None),
+                ("T-artist", "artist", "T1", "running", None),
+                ("T-blocked", "blocked", "T1", "blocked", None),
+                ("T-split", "split parent", "T1", "split", None),
+            ]
+            for task_id, description, tier, status, parent_task_id in task_rows:
+                con.execute(
+                    """
+                    INSERT INTO tasks (
+                        task_id, description, tier, status, lead_agent, verify_agent, priority,
+                        complexity_score, source, criteria, rollback_count, parent_task_id,
+                        status_reason, status_changed_at, status_changed_by, frozen,
+                        frozen_reason, frozen_at, frozen_by, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, NULL, NULL, 0, 0, 'prd', '', 0, ?, '', '', '', 0, '', '', '', '2026-04-01T00:00:00+00:00', '2026-04-01T00:00:00+00:00')
+                    """,
+                    (task_id, description, tier, status, parent_task_id),
+                )
+            con.execute(
+                """
+                INSERT INTO task_runs (
+                    task_id, lead_agent, verify_agent, started_at, completed_at, verdict, gate_passed, work_result
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                ("T-artist", "codex", "gemini", "2026-04-01T00:00:00+00:00", None, "", 0, "no_work"),
+            )
+
+        monkeypatch.setattr(cypherclaw_daemon, "PROJECT_ROOT", project_root)
+        monkeypatch.setattr(cypherclaw_daemon, "_runner_service_state", lambda: "active")
+
+        handled = cypherclaw_daemon.handle_builtin("/monitor")
+
+        assert handled is True
+        text = daemon_env["sent_messages"][-1]  # type: ignore[index]
+        assert "SDP Monitor" in text
+        assert "Progress: 0/4 complete (0%)" in text
+        assert "Queue: 1 pending, 2 blocked, 1 running roots" in text
+        assert "Runner: active" in text
+        assert "Current: T-artist" in text
+        assert "Pair: codex → gemini" in text
+
     def test_non_quota_error_does_not_trigger_fallback(
         self,
         monkeypatch: pytest.MonkeyPatch,

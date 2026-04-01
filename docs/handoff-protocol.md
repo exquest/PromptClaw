@@ -111,4 +111,4 @@ The runtime transport itself is also guarded now:
 
 For live CypherClaw daemon executions, the transport also records concurrency semaphore transitions (`acquired`, `released`, `rejected`) to Observatory and keeps daemon status probes platform-aware so the same code path can run on macOS launchd and Linux systemd hosts without crashing.
 
-Operator roadmap/status queries should prefer queue-backed built-ins over routed summaries when possible. In the live daemon, `/prd` is expected to read the authority queue DB and present the implementation order directly, so handoff planning is based on the same dependency graph the runner uses.
+Operator roadmap/status queries should prefer queue-backed built-ins over routed summaries when possible. In the live daemon, `/monitor` and `/prd` are expected to read the authority queue DB directly, so queue progress and implementation order are based on the same dependency graph the runner uses.

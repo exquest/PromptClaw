@@ -6,6 +6,7 @@
 - Added provider status monitoring, runtime quota-error detection, Telegram `/quota` reporting, and routing fallback away from exhausted providers.
 - Added quota-aware selector and daemon tests covering degraded-mode routing, retry fallback, and provider status transitions.
 - Added a queue-backed Telegram `/prd` built-in so roadmap summaries follow the live dependency graph instead of routed prose.
+- Added a queue-backed Telegram `/monitor` built-in so live queue progress and active task status come from the authority DB instead of stale routed status text.
 - Added disk-authoritative resilience tools for CypherClaw runtime operations: checkpoint export, preflight validation, maintenance-mode state, tmpfs workdir bootstrap, runner launcher, and safe reboot flow.
 - Added systemd unit definitions for `cypherclaw-bootstrap.service` and `cypherclaw-sdp-runner.service`.
 - Removed backup-restore and ad hoc pipeline-start behavior from `boot_hardening.sh` so runtime authority stays with the managed bootstrap and runner path.
