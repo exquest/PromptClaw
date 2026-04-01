@@ -9,6 +9,7 @@
 - Added systemd unit definitions for `cypherclaw-bootstrap.service` and `cypherclaw-sdp-runner.service`.
 - Removed backup-restore and ad hoc pipeline-start behavior from `boot_hardening.sh` so runtime authority stays with the managed bootstrap and runner path.
 - Unified `promptclaw doctor` with optional runtime preflight so live CypherClaw roots report config health and runtime readiness through one entry point.
+- Hardened the CypherClaw Telegram helper so bot token and chat ID must come from environment instead of hardcoded defaults.
 
 ## 3.0.0
 
