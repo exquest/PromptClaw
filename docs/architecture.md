@@ -93,11 +93,14 @@ CypherClaw live deployments add a runtime safety layer around the orchestrator:
 - disk authority for `.sdp/state.db` and `.promptclaw/observatory.db`
 - tmpfs workdir bootstrap via `my-claw/tools/init_workdir.sh`
 - startup preflight via `my-claw/tools/preflight.py`
+- unified health entry via `promptclaw doctor`
 - explicit maintenance state via `my-claw/tools/maintenance_mode.py`
 - checkpoint export via `my-claw/tools/runtime_checkpoint.py`
 - systemd-managed runner startup through `my-claw/tools/sdp_runner_launcher.sh`
 
 The tmpfs workdir is acceleration only. It clones the repository into `/run/cypherclaw-tmp/workdir/<name>` and then symlinks the authoritative DBs back to disk so reboot or tmpfs loss cannot silently rewrite queue authority.
+
+When the project root also looks like a live CypherClaw runtime, `promptclaw doctor` now includes the runtime preflight lane in addition to config validation. Plain starter projects still get the lighter config-only doctor path.
 
 ### 7. Memory
 

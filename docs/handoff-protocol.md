@@ -22,6 +22,8 @@ For live `command` agents, the orchestrator invokes the local CLI from the proje
 
 In CypherClaw live operations, those handoffs only begin after the bootstrap and preflight gates pass. The runner launcher refuses to start if maintenance mode is active, if the workdir layout is incomplete, or if the authoritative SQLite files fail integrity checks.
 
+The operator-facing health check now follows the same split: `promptclaw doctor` validates PromptClaw config for every project and automatically adds runtime preflight when the project root includes live CypherClaw runtime markers.
+
 ## Files
 
 ```text

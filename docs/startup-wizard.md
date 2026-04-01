@@ -94,4 +94,7 @@ For live server operations after the project is initialized:
 ```bash
 bash my-claw/tools/init_workdir.sh
 python my-claw/tools/preflight.py --project-root .
+promptclaw doctor .
 ```
+
+On a plain starter project, `promptclaw doctor .` stays lightweight and config-focused. On a live CypherClaw runtime root, it now folds in runtime preflight automatically.

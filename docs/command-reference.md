@@ -49,6 +49,7 @@ Checks:
 - agents are configured
 - command agents have executable commands
 - control plane agent exists if `mode=agent`
+- if the project root also contains live CypherClaw runtime markers, runtime preflight is run too
 
 For CypherClaw live deployments, the repo also ships runtime safety tools that sit beneath `promptclaw doctor` until the unified doctor/preflight path lands:
 
@@ -57,6 +58,8 @@ For CypherClaw live deployments, the repo also ships runtime safety tools that s
 - `python my-claw/tools/maintenance_mode.py --project-root PROJECT_ROOT status`
 - `bash my-claw/tools/safe_reboot.sh prepare --actor operator --dry-run`
 - `bash my-claw/tools/safe_reboot.sh resume --checkpoint PATH --actor operator --dry-run`
+
+If `PROJECT_ROOT` looks like a live CypherClaw runtime, `promptclaw doctor PROJECT_ROOT` now runs the same preflight automatically and reports it as a separate doctor check.
 
 ## `promptclaw bootstrap`
 

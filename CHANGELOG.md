@@ -8,6 +8,7 @@
 - Added disk-authoritative resilience tools for CypherClaw runtime operations: checkpoint export, preflight validation, maintenance-mode state, tmpfs workdir bootstrap, runner launcher, and safe reboot flow.
 - Added systemd unit definitions for `cypherclaw-bootstrap.service` and `cypherclaw-sdp-runner.service`.
 - Removed backup-restore and ad hoc pipeline-start behavior from `boot_hardening.sh` so runtime authority stays with the managed bootstrap and runner path.
+- Unified `promptclaw doctor` with optional runtime preflight so live CypherClaw roots report config health and runtime readiness through one entry point.
 
 ## 3.0.0
 

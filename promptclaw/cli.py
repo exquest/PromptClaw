@@ -6,13 +6,14 @@ import sys
 from pathlib import Path
 
 from .bootstrap import bootstrap_project, init_project
-from .config import load_config, validate_config
+from .config import load_config
 from .diagnostics import diagnose, format_diagnosis
+from .doctor import run_doctor
 from .orchestrator import PromptClawOrchestrator
 from .paths import ProjectPaths
 from .state_store import StateStore
 from .ui import banner, status_line
-from .utils import executable_exists, read_text
+from .utils import read_text
 from .wizard import run_startup_wizard
 
 
@@ -99,29 +100,17 @@ def cmd_wizard(args: argparse.Namespace) -> int:
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
-    config = load_config(args.project_root)
-    issues = validate_config(config)
-    for name, agent in config.agents.items():
-        if agent.enabled and agent.kind == "command":
-            if agent.command:
-                program = str(agent.command[0])
-                # Resolve relative paths against the project root
-                program_path = Path(program)
-                if not program_path.is_absolute() and (str(program_path) != program_path.name):
-                    resolved = (args.project_root / program_path).resolve()
-                    if resolved.exists():
-                        program = str(resolved)
-                if not executable_exists(program):
-                    issues.append(f"agent '{name}' command executable not found: {program}")
-            elif agent.shell_command:
-                pass
-    if issues:
-        print("Doctor found issues:")
-        for issue in issues:
-            print(f"- {issue}")
-        return 1
-    print(status_line("Doctor OK ✅", "🩺"))
-    return 0
+    report = run_doctor(args.project_root)
+    for name, check in report.checks.items():
+        status = check["status"].upper()
+        print(f"- {name}: {status} — {check['message']}")
+        for detail in check.get("details", []):
+            print(f"  - {detail}")
+    if report.ok:
+        print(status_line("Doctor OK ✅", "🩺"))
+        return 0
+    print("Doctor found issues:")
+    return 1
 
 
 def cmd_bootstrap(args: argparse.Namespace) -> int:
