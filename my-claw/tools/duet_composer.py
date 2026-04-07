@@ -26,6 +26,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "senseweave"))
 
 from pythonosc import udp_client
 
+# Senseweave ADSR voice for sustained sounds
+from senseweave.synthesis.senseweave_voice import SenseweaveVoice, PAD, BREATH, SWELL, STAB
+
 # Korsakov modules
 from senseweave.synthesis.accompaniment import (
     DensityTracker,
@@ -106,14 +109,38 @@ VOICE_DEFAULTS = {
 }
 
 
+# Sustained voices go through ADSR-controlled SenseweaveVoice
+# Percussive voices (pluck, kotekan, gong) fire directly
+_sw_voice = SenseweaveVoice(osc=c)
+
+# Which voices are sustained (need ADSR control) vs percussive (fire-and-forget)
+_SUSTAINED = {"bowed", "choir", "breath", "bell"}
+_PERCUSSIVE = {"pluck", "kotekan", "gong"}
+
+
 def play_voice(voice_name: str, freq: float, amp: float, release: float | None = None) -> None:
-    """Play a note on a named voice."""
-    synth = SYNTH_MAP.get(voice_name, "sw_pluck")
-    defaults = VOICE_DEFAULTS.get(voice_name, {"attack": 0.01, "release": 0.5})
-    c.send_message("/s_new", [synth, next_nid(), 0, 0,
-        "freq", freq, "amp", amp,
-        "attack", defaults["attack"],
-        "release", release or defaults["release"]])
+    """Play a note on a named voice.
+
+    Sustained voices (bowed, choir, breath, bell) go through SenseweaveVoice
+    with ADSR control. Percussive voices (pluck, kotekan, gong) fire directly.
+    """
+    if voice_name in _SUSTAINED:
+        # Use SenseweaveVoice — has ADSR and note_off capability
+        _sw_voice.set_timbre(voice_name)
+        _sw_voice.note_on(freq, amp)
+    else:
+        # Fire and forget — natural decay
+        synth = SYNTH_MAP.get(voice_name, "sw_pluck")
+        defaults = VOICE_DEFAULTS.get(voice_name, {"attack": 0.01, "release": 0.5})
+        c.send_message("/s_new", [synth, next_nid(), 0, 0,
+            "freq", freq, "amp", amp,
+            "attack", defaults["attack"],
+            "release", release or defaults["release"]])
+
+
+def release_sustained() -> None:
+    """Release all sustained voices. Call between movements."""
+    _sw_voice.release_all()
 
 
 # === KEY/SCALE ===
@@ -227,6 +254,8 @@ def solo_song(key_name: str, song_num: int) -> str:
         time.sleep(BT * 2)
     time.sleep(BT * 2)
 
+    release_sustained()  # Clean slate between movements
+
     # --- THEME (Mvt 1): 2-3 voices, waltz + melody ---
     mvt = "Theme"
     mvt_idx = 1
@@ -279,6 +308,8 @@ def solo_song(key_name: str, song_num: int) -> str:
         play_voice("gong", pf, pa, pr)
 
     time.sleep(BT * 2)
+
+    release_sustained()
 
     # --- DEVELOPMENT (Mvt 2): 3-5 voices, key change, crescendo ---
     mvt = "Development"
@@ -351,6 +382,8 @@ def solo_song(key_name: str, song_num: int) -> str:
         play_voice(reentry, nkey[1], 0.03, 2.0)
         time.sleep(BT * 2)
 
+    release_sustained()
+
     # --- RECAP (Mvt 3): 2-3 voices, original key, re-orchestrated ---
     mvt = "Recap"
     mvt_idx = 3
@@ -378,6 +411,8 @@ def solo_song(key_name: str, song_num: int) -> str:
 
     prev_voice_count = 2
 
+    release_sustained()
+
     # --- RESOLUTION (Mvt 4): 1-2 voices, solo, silence ---
     mvt = "Resolution"
     mvt_idx = 4
@@ -398,10 +433,10 @@ def solo_song(key_name: str, song_num: int) -> str:
     play_voice("pluck", key[1], 0.06, 0.8)
     time.sleep(BT * 5)
 
-    # Silence
+    # Silence — release everything
+    release_sustained()
     time.sleep(3)
     budget.reset()
-    elapsed = int(time.time() - time.time())
     print(f"  Done", flush=True)
     return next_key
 
