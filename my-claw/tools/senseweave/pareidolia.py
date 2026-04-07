@@ -953,6 +953,820 @@ def draw_pebble(
 
 
 # ---------------------------------------------------------------------------
+# PARE-003: All 21 organism character draw functions
+# ---------------------------------------------------------------------------
+
+# --- SENSORS (6) ---
+
+def draw_membrane(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw The Membrane — window contact mic. Flat, wide, translucent-feeling.
+
+    A wide, thin ellipse with subtle horizontal striations to evoke a
+    vibrating membrane surface.
+    """
+    fill = (170, 185, 200) if palette is None else _lerp_color(palette.character_fill, (170, 185, 200), 0.3)
+    outline = (110, 120, 135) if palette is None else _lerp_color(palette.character_outline, (110, 120, 135), 0.3)
+
+    half = size // 2
+    # Very wide, very flat ellipse — membrane shape
+    w = int(half * 1.6)
+    h = int(half * 0.45)
+    draw.ellipse(
+        [cx - w, cy - h, cx + w, cy + h],
+        fill=fill, outline=outline, width=2,
+    )
+    # Horizontal striations for translucent texture
+    for i in range(-h + 4, h, 6):
+        stripe_color = _lerp_color(fill, outline, 0.3)
+        draw.line(
+            [(cx - w + 10, cy + i), (cx + w - 10, cy + i)],
+            fill=stripe_color, width=1,
+        )
+
+    draw_face_eyes(draw, cx, cy, size, expression, palette)
+    draw_face_mouth(draw, cx, cy, size, expression, palette)
+
+
+def draw_heartbeat(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw The Heartbeat — case contact mic. Round, pulsing, warm.
+
+    A round body with concentric pulse rings radiating outward.
+    """
+    fill = (200, 120, 100) if palette is None else _lerp_color(palette.character_fill, (200, 120, 100), 0.3)
+    outline = (150, 80, 65) if palette is None else _lerp_color(palette.character_outline, (150, 80, 65), 0.3)
+
+    half = size // 2
+    # Pulse rings — concentric circles getting fainter
+    for ring in range(3, 0, -1):
+        ring_r = half + ring * (size // 8)
+        alpha_factor = 0.15 * ring
+        ring_color = _lerp_color(fill, (255, 255, 255), alpha_factor)
+        draw.ellipse(
+            [cx - ring_r, cy - ring_r, cx + ring_r, cy + ring_r],
+            outline=ring_color, width=1,
+        )
+    # Round body
+    draw.ellipse(
+        [cx - half, cy - half, cx + half, cy + half],
+        fill=fill, outline=outline, width=2,
+    )
+
+    draw_face_eyes(draw, cx, cy, size, expression, palette)
+    draw_face_mouth(draw, cx, cy, size, expression, palette)
+
+
+def draw_face_eye(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw Face Eye — webcam. Tall body with a single large eye.
+
+    A tall oval shape dominated by one central eye rather than the
+    usual pair.
+    """
+    fill = (140, 150, 170) if palette is None else _lerp_color(palette.character_fill, (140, 150, 170), 0.3)
+    outline = (90, 95, 110) if palette is None else _lerp_color(palette.character_outline, (90, 95, 110), 0.3)
+
+    half = size // 2
+    # Tall body
+    draw.ellipse(
+        [cx - int(half * 0.7), cy - int(half * 1.4),
+         cx + int(half * 0.7), cy + int(half * 1.4)],
+        fill=fill, outline=outline, width=2,
+    )
+
+    # Single large central eye
+    eye_color = (30, 30, 40) if palette is None else palette.character_outline
+    eye_r = max(3, size // 6)
+    eye_y = cy - size // 8
+    draw.ellipse(
+        [cx - eye_r, eye_y - eye_r, cx + eye_r, eye_y + eye_r],
+        fill=eye_color,
+    )
+    # Highlight
+    hr = max(1, eye_r // 3)
+    draw.ellipse(
+        [cx - hr + 1, eye_y - hr - 1, cx + hr + 1, eye_y + hr - 1],
+        fill=(255, 255, 255),
+    )
+
+    draw_face_mouth(draw, cx, cy, size, expression, palette)
+
+
+def draw_porch_eye(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw Porch Eye — outdoor cam. Wide, watchful, two eyes spread far apart.
+
+    A wide, slightly flat body with eyes placed near the edges for a
+    wide field-of-view look.
+    """
+    fill = (130, 140, 120) if palette is None else _lerp_color(palette.character_fill, (130, 140, 120), 0.3)
+    outline = (80, 90, 70) if palette is None else _lerp_color(palette.character_outline, (80, 90, 70), 0.3)
+
+    half = size // 2
+    w = int(half * 1.5)
+    h = int(half * 0.8)
+    draw.ellipse(
+        [cx - w, cy - h, cx + w, cy + h],
+        fill=fill, outline=outline, width=2,
+    )
+
+    # Eyes spread wide — near edges
+    eye_color = (30, 30, 40) if palette is None else palette.character_outline
+    eye_r = max(2, size // 12)
+    eye_y = cy - size // 10
+    eye_spacing = int(w * 0.65)
+
+    for ex in [cx - eye_spacing, cx + eye_spacing]:
+        draw.ellipse(
+            [ex - eye_r, eye_y - eye_r, ex + eye_r, eye_y + eye_r],
+            fill=eye_color,
+        )
+        hr = max(1, eye_r // 3)
+        draw.ellipse(
+            [ex - hr + 1, eye_y - hr - 1, ex + hr + 1, eye_y + hr - 1],
+            fill=(255, 255, 255),
+        )
+
+    draw_face_mouth(draw, cx, cy, size, expression, palette)
+
+
+def draw_garden_eye(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw Garden Eye — window cam. Leafy, organic shape.
+
+    A round body with small leaf-like protrusions, evoking a plant
+    peering through the window.
+    """
+    fill = (100, 160, 90) if palette is None else _lerp_color(palette.character_fill, (100, 160, 90), 0.3)
+    outline = (60, 110, 50) if palette is None else _lerp_color(palette.character_outline, (60, 110, 50), 0.3)
+
+    half = size // 2
+    # Round body
+    draw.ellipse(
+        [cx - half, cy - half, cx + half, cy + half],
+        fill=fill, outline=outline, width=2,
+    )
+    # Leaf protrusions around the top half
+    leaf_count = 6
+    for i in range(leaf_count):
+        angle = math.pi + (math.pi * i / (leaf_count - 1))
+        lx = cx + int(math.cos(angle) * half * 0.9)
+        ly = cy + int(math.sin(angle) * half * 0.9)
+        tx = cx + int(math.cos(angle) * half * 1.35)
+        ty = cy + int(math.sin(angle) * half * 1.35)
+        # Leaf shape — small elongated oval between body and tip
+        leaf_w = max(3, size // 12)
+        draw.ellipse(
+            [min(lx, tx) - leaf_w, min(ly, ty) - 2,
+             max(lx, tx) + leaf_w, max(ly, ty) + 2],
+            fill=fill, outline=outline, width=1,
+        )
+
+    draw_face_eyes(draw, cx, cy, size, expression, palette)
+    draw_face_mouth(draw, cx, cy, size, expression, palette)
+
+
+def draw_instrument(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw The Instrument — Theramini. Tall, antenna-like, elegant.
+
+    A thin tall body with a thin antenna protruding upward, giving the
+    theremin silhouette.
+    """
+    fill = (160, 140, 180) if palette is None else _lerp_color(palette.character_fill, (160, 140, 180), 0.3)
+    outline = (110, 90, 130) if palette is None else _lerp_color(palette.character_outline, (110, 90, 130), 0.3)
+
+    half = size // 2
+    # Tall, thin body
+    body_w = int(half * 0.5)
+    body_h = int(half * 1.5)
+    draw.ellipse(
+        [cx - body_w, cy - body_h, cx + body_w, cy + body_h],
+        fill=fill, outline=outline, width=2,
+    )
+    # Antenna — thin line from top with a small circle at the tip
+    antenna_base_y = cy - body_h
+    antenna_tip_y = antenna_base_y - int(half * 0.8)
+    draw.line(
+        [(cx, antenna_base_y), (cx, antenna_tip_y)],
+        fill=outline, width=2,
+    )
+    tip_r = max(2, size // 16)
+    draw.ellipse(
+        [cx - tip_r, antenna_tip_y - tip_r, cx + tip_r, antenna_tip_y + tip_r],
+        fill=fill, outline=outline, width=1,
+    )
+
+    draw_face_eyes(draw, cx, cy, size, expression, palette)
+    draw_face_mouth(draw, cx, cy, size, expression, palette)
+
+
+# --- VOICES (5) ---
+# draw_basalt and draw_pebble already defined above.
+
+def draw_poet(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw The Poet — haiku printer. Tall, thin, book-shaped.
+
+    A tall rectangle with rounded corners and faint horizontal lines
+    suggesting pages of text.
+    """
+    fill = (210, 200, 180) if palette is None else _lerp_color(palette.character_fill, (210, 200, 180), 0.3)
+    outline = (140, 130, 110) if palette is None else _lerp_color(palette.character_outline, (140, 130, 110), 0.3)
+
+    half = size // 2
+    w = int(half * 0.6)
+    h = int(half * 1.5)
+    draw.rounded_rectangle(
+        [cx - w, cy - h, cx + w, cy + h],
+        radius=max(3, size // 10),
+        fill=fill, outline=outline, width=2,
+    )
+    # Text lines — faint horizontal lines in the lower half
+    line_color = _lerp_color(fill, outline, 0.3)
+    for i in range(3):
+        ly = cy + int(h * 0.2) + i * (size // 8)
+        lx_start = cx - w + 6
+        lx_end = cx + w - 6
+        if ly < cy + h - 4:
+            draw.line([(lx_start, ly), (lx_end, ly)], fill=line_color, width=1)
+
+    draw_face_eyes(draw, cx, cy - size // 6, size, expression, palette)
+    draw_face_mouth(draw, cx, cy - size // 6, size, expression, palette)
+
+
+def draw_archivist(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw The Archivist — data storage. Square, sturdy, many eyes.
+
+    A square body with four small eyes arranged in a grid pattern,
+    evoking a storage array watching over data.
+    """
+    fill = (140, 145, 155) if palette is None else _lerp_color(palette.character_fill, (140, 145, 155), 0.3)
+    outline = (90, 95, 105) if palette is None else _lerp_color(palette.character_outline, (90, 95, 105), 0.3)
+
+    half = size // 2
+    # Square body with slightly rounded corners
+    draw.rounded_rectangle(
+        [cx - half, cy - half, cx + half, cy + half],
+        radius=max(2, size // 12),
+        fill=fill, outline=outline, width=2,
+    )
+
+    # Four eyes in a 2x2 grid
+    eye_color = (30, 30, 40) if palette is None else palette.character_outline
+    eye_r = max(2, size // 14)
+    grid_spacing = size // 5
+    eye_cy = cy - size // 10
+
+    for row in range(2):
+        for col in range(2):
+            ex = cx + (col * 2 - 1) * grid_spacing
+            ey = eye_cy + (row * 2 - 1) * (grid_spacing // 2)
+            draw.ellipse(
+                [ex - eye_r, ey - eye_r, ex + eye_r, ey + eye_r],
+                fill=eye_color,
+            )
+            hr = max(1, eye_r // 3)
+            draw.ellipse(
+                [ex - hr + 1, ey - hr - 1, ex + hr + 1, ey + hr - 1],
+                fill=(255, 255, 255),
+            )
+
+    draw_face_mouth(draw, cx, cy, size, expression, palette)
+
+
+def draw_dreamer(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw The Dreamer — dream journal. Cloud-shaped, soft, sleepy eyes.
+
+    A body made of overlapping ovals to create a cloud silhouette.
+    Expression defaults visually toward drowsy/soft.
+    """
+    fill = (190, 180, 210) if palette is None else _lerp_color(palette.character_fill, (190, 180, 210), 0.3)
+    outline = (140, 130, 160) if palette is None else _lerp_color(palette.character_outline, (140, 130, 160), 0.3)
+
+    half = size // 2
+    # Cloud shape — overlapping ellipses
+    puffs = [
+        (0, 0, half, int(half * 0.7)),           # center
+        (-int(half * 0.6), int(half * 0.1), int(half * 0.7), int(half * 0.55)),  # left
+        (int(half * 0.6), int(half * 0.1), int(half * 0.7), int(half * 0.55)),   # right
+        (-int(half * 0.3), -int(half * 0.35), int(half * 0.55), int(half * 0.5)),  # top-left
+        (int(half * 0.3), -int(half * 0.35), int(half * 0.55), int(half * 0.5)),   # top-right
+    ]
+    for ox, oy, pw, ph in puffs:
+        draw.ellipse(
+            [cx + ox - pw, cy + oy - ph, cx + ox + pw, cy + oy + ph],
+            fill=fill, outline=outline, width=1,
+        )
+
+    # Sleepy expression override — Dreamer always looks a bit drowsy
+    eff_expression = "sleeping" if expression == "neutral" else expression
+    draw_face_eyes(draw, cx, cy, size, eff_expression, palette)
+    draw_face_mouth(draw, cx, cy, size, eff_expression, palette)
+
+
+# --- OUTPUTS (4) ---
+
+def draw_gallery_face(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw Gallery Face — the face display. Oval with prominent, large eyes.
+
+    Represents CypherClaw's face display — an oval with oversized eyes
+    that dominate the shape, like the real e-ink face.
+    """
+    fill = (180, 175, 190) if palette is None else _lerp_color(palette.character_fill, (180, 175, 190), 0.3)
+    outline = (120, 115, 130) if palette is None else _lerp_color(palette.character_outline, (120, 115, 130), 0.3)
+
+    half = size // 2
+    # Oval face shape — slightly taller than wide
+    draw.ellipse(
+        [cx - int(half * 0.9), cy - int(half * 1.15),
+         cx + int(half * 0.9), cy + int(half * 1.15)],
+        fill=fill, outline=outline, width=2,
+    )
+
+    # Oversized eyes — larger than normal proportions
+    eye_color = (30, 30, 40) if palette is None else palette.character_outline
+    eye_r = max(3, size // 7)  # bigger than default size//12
+    eye_spacing = max(5, size // 4)
+    eye_y = cy - size // 6
+
+    for ex in [cx - eye_spacing, cx + eye_spacing]:
+        draw.ellipse(
+            [ex - eye_r, eye_y - eye_r, ex + eye_r, eye_y + eye_r],
+            fill=eye_color,
+        )
+        hr = max(1, eye_r // 3)
+        draw.ellipse(
+            [ex - hr + 1, eye_y - hr - 1, ex + hr + 1, eye_y + hr - 1],
+            fill=(255, 255, 255),
+        )
+
+    draw_face_mouth(draw, cx, cy, size, expression, palette)
+
+
+def draw_gallery_wall(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw Gallery Wall — the art display. Rectangular, frame-like.
+
+    A picture-frame rectangle with an inner border, hosting a small
+    face in the center of the "canvas" area.
+    """
+    fill = (200, 195, 185) if palette is None else _lerp_color(palette.character_fill, (200, 195, 185), 0.3)
+    outline = (130, 120, 100) if palette is None else _lerp_color(palette.character_outline, (130, 120, 100), 0.3)
+    frame_color = (100, 85, 65) if palette is None else _lerp_color(palette.character_outline, (100, 85, 65), 0.4)
+
+    half = size // 2
+    w = int(half * 1.3)
+    h = int(half * 1.0)
+    # Outer frame
+    draw.rectangle(
+        [cx - w, cy - h, cx + w, cy + h],
+        fill=frame_color, outline=outline, width=2,
+    )
+    # Inner canvas
+    margin = max(3, size // 10)
+    draw.rectangle(
+        [cx - w + margin, cy - h + margin, cx + w - margin, cy + h - margin],
+        fill=fill,
+    )
+
+    draw_face_eyes(draw, cx, cy, size, expression, palette)
+    draw_face_mouth(draw, cx, cy, size, expression, palette)
+
+
+def draw_printer(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw The Printer — thermal printer. Boxy with paper coming out the top.
+
+    A rectangular body with a strip of paper curling upward from the top.
+    """
+    fill = (175, 175, 180) if palette is None else _lerp_color(palette.character_fill, (175, 175, 180), 0.3)
+    outline = (110, 110, 120) if palette is None else _lerp_color(palette.character_outline, (110, 110, 120), 0.3)
+
+    half = size // 2
+    w = int(half * 0.9)
+    h = int(half * 0.8)
+    # Boxy body
+    draw.rounded_rectangle(
+        [cx - w, cy - h, cx + w, cy + h],
+        radius=max(2, size // 16),
+        fill=fill, outline=outline, width=2,
+    )
+    # Paper strip curling out the top
+    paper_color = (240, 238, 230)
+    paper_w = int(w * 0.6)
+    paper_top = cy - h - int(half * 0.6)
+    draw.rectangle(
+        [cx - paper_w, paper_top, cx + paper_w, cy - h + 2],
+        fill=paper_color, outline=outline, width=1,
+    )
+    # Slight curl at the top of the paper
+    draw.arc(
+        [cx - paper_w - 4, paper_top - 8, cx - paper_w + 12, paper_top + 8],
+        start=180, end=270, fill=outline, width=1,
+    )
+
+    draw_face_eyes(draw, cx, cy, size, expression, palette)
+    draw_face_mouth(draw, cx, cy, size, expression, palette)
+
+
+def draw_speaker(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw The Speaker — audio output. Round with radiating sound lines.
+
+    A circular body with arc lines radiating outward on both sides
+    to suggest sound emission.
+    """
+    fill = (155, 150, 140) if palette is None else _lerp_color(palette.character_fill, (155, 150, 140), 0.3)
+    outline = (100, 95, 85) if palette is None else _lerp_color(palette.character_outline, (100, 95, 85), 0.3)
+
+    half = size // 2
+    # Round body
+    draw.ellipse(
+        [cx - half, cy - half, cx + half, cy + half],
+        fill=fill, outline=outline, width=2,
+    )
+    # Sound waves — arcs on left and right sides
+    wave_color = _lerp_color(outline, (255, 255, 255), 0.3)
+    for side in [-1, 1]:
+        for ring in range(1, 4):
+            arc_r = half + ring * (size // 10)
+            arc_cx = cx + side * (half // 2)
+            start_angle = 60 if side == 1 else 240
+            end_angle = 120 if side == 1 else 300
+            draw.arc(
+                [arc_cx - arc_r, cy - arc_r, arc_cx + arc_r, cy + arc_r],
+                start=start_angle - 30, end=end_angle - 30,
+                fill=wave_color, width=1,
+            )
+
+    draw_face_eyes(draw, cx, cy, size, expression, palette)
+    draw_face_mouth(draw, cx, cy, size, expression, palette)
+
+
+# --- BRIDGES (6) ---
+
+def draw_skin(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw Skin — network. Amorphous, flowing shape.
+
+    An organic blob shape made of overlapping offset ellipses to give
+    an amoeba-like silhouette.
+    """
+    fill = (150, 170, 160) if palette is None else _lerp_color(palette.character_fill, (150, 170, 160), 0.3)
+    outline = (100, 120, 110) if palette is None else _lerp_color(palette.character_outline, (100, 120, 110), 0.3)
+
+    half = size // 2
+    # Amorphous blob — several offset ellipses
+    blobs = [
+        (0, 0, half, int(half * 0.8)),
+        (-int(half * 0.3), -int(half * 0.2), int(half * 0.7), int(half * 0.6)),
+        (int(half * 0.35), int(half * 0.15), int(half * 0.65), int(half * 0.55)),
+        (-int(half * 0.1), int(half * 0.3), int(half * 0.6), int(half * 0.5)),
+    ]
+    for ox, oy, bw, bh in blobs:
+        draw.ellipse(
+            [cx + ox - bw, cy + oy - bh, cx + ox + bw, cy + oy + bh],
+            fill=fill, outline=outline, width=1,
+        )
+
+    draw_face_eyes(draw, cx, cy, size, expression, palette)
+    draw_face_mouth(draw, cx, cy, size, expression, palette)
+
+
+def draw_messenger(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw The Messenger — Telegram bot. Arrow-shaped, quick.
+
+    A rightward-pointing arrow/chevron body suggesting speed and
+    directional communication.
+    """
+    fill = (100, 160, 210) if palette is None else _lerp_color(palette.character_fill, (100, 160, 210), 0.3)
+    outline = (60, 110, 160) if palette is None else _lerp_color(palette.character_outline, (60, 110, 160), 0.3)
+
+    half = size // 2
+    # Arrow/chevron polygon pointing right
+    points = [
+        (cx - int(half * 0.9), cy - int(half * 0.7)),  # top-left
+        (cx + int(half * 0.5), cy - int(half * 0.7)),   # top-right shoulder
+        (cx + int(half * 1.1), cy),                      # arrow tip
+        (cx + int(half * 0.5), cy + int(half * 0.7)),   # bottom-right shoulder
+        (cx - int(half * 0.9), cy + int(half * 0.7)),   # bottom-left
+    ]
+    draw.polygon(points, fill=fill, outline=outline, width=2)
+
+    draw_face_eyes(draw, cx, cy, size, expression, palette)
+    draw_face_mouth(draw, cx, cy, size, expression, palette)
+
+
+def draw_scribe(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw The Scribe — keyboard emulator. Rectangular with keys pattern.
+
+    A wide rectangle with a grid of small squares suggesting keyboard
+    keys across the lower half.
+    """
+    fill = (170, 165, 155) if palette is None else _lerp_color(palette.character_fill, (170, 165, 155), 0.3)
+    outline = (110, 105, 95) if palette is None else _lerp_color(palette.character_outline, (110, 105, 95), 0.3)
+
+    half = size // 2
+    w = int(half * 1.3)
+    h = int(half * 0.7)
+    # Rectangular body
+    draw.rounded_rectangle(
+        [cx - w, cy - h, cx + w, cy + h],
+        radius=max(2, size // 14),
+        fill=fill, outline=outline, width=2,
+    )
+    # Key grid in lower portion
+    key_color = _lerp_color(fill, outline, 0.3)
+    key_size = max(3, size // 12)
+    key_gap = key_size + 2
+    key_start_y = cy + 2
+    key_start_x = cx - w + 8
+    cols = max(1, (2 * w - 16) // key_gap)
+    rows = max(1, (h - 6) // key_gap)
+    for row in range(rows):
+        for col in range(cols):
+            kx = key_start_x + col * key_gap
+            ky = key_start_y + row * key_gap
+            if kx + key_size < cx + w - 4 and ky + key_size < cy + h - 4:
+                draw.rectangle(
+                    [kx, ky, kx + key_size, ky + key_size],
+                    fill=key_color, outline=outline, width=1,
+                )
+
+    draw_face_eyes(draw, cx, cy - size // 6, size, expression, palette)
+    draw_face_mouth(draw, cx, cy - size // 6, size, expression, palette)
+
+
+def draw_navigator(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw The Navigator — compass-like. Circular with a pointer.
+
+    A circle with a diamond-shaped compass needle inside pointing
+    upward (north).
+    """
+    fill = (170, 180, 170) if palette is None else _lerp_color(palette.character_fill, (170, 180, 170), 0.3)
+    outline = (110, 120, 110) if palette is None else _lerp_color(palette.character_outline, (110, 120, 110), 0.3)
+
+    half = size // 2
+    # Circular body
+    draw.ellipse(
+        [cx - half, cy - half, cx + half, cy + half],
+        fill=fill, outline=outline, width=2,
+    )
+    # Compass needle — diamond pointing north
+    needle_color = (200, 80, 70)
+    needle_h = int(half * 0.6)
+    needle_w = max(3, size // 10)
+    draw.polygon(
+        [
+            (cx, cy - needle_h),       # north tip
+            (cx + needle_w, cy),        # east
+            (cx, cy + needle_h // 2),   # south (shorter)
+            (cx - needle_w, cy),        # west
+        ],
+        fill=needle_color, outline=outline, width=1,
+    )
+
+    # Eyes placed around the needle
+    draw_face_eyes(draw, cx, cy - size // 6, size, expression, palette)
+    draw_face_mouth(draw, cx, cy + size // 6, size, expression, palette)
+
+
+def draw_weaver(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw The Weaver — art engine. Web-like pattern.
+
+    A circular body with radiating lines and connecting arcs forming
+    a web/loom pattern.
+    """
+    fill = (180, 160, 190) if palette is None else _lerp_color(palette.character_fill, (180, 160, 190), 0.3)
+    outline = (130, 110, 140) if palette is None else _lerp_color(palette.character_outline, (130, 110, 140), 0.3)
+
+    half = size // 2
+    # Circular body
+    draw.ellipse(
+        [cx - half, cy - half, cx + half, cy + half],
+        fill=fill, outline=outline, width=2,
+    )
+    # Web pattern — radiating lines
+    web_color = _lerp_color(fill, outline, 0.4)
+    num_spokes = 8
+    for i in range(num_spokes):
+        angle = (2 * math.pi * i) / num_spokes
+        x2 = cx + int(math.cos(angle) * half * 0.85)
+        y2 = cy + int(math.sin(angle) * half * 0.85)
+        draw.line([(cx, cy), (x2, y2)], fill=web_color, width=1)
+    # Concentric rings
+    for ring in range(1, 4):
+        r = int(half * ring / 4)
+        draw.ellipse(
+            [cx - r, cy - r, cx + r, cy + r],
+            outline=web_color, width=1,
+        )
+
+    draw_face_eyes(draw, cx, cy, size, expression, palette)
+    draw_face_mouth(draw, cx, cy, size, expression, palette)
+
+
+def draw_conductor(
+    draw: "ImageDraw.ImageDraw",
+    cx: int,
+    cy: int,
+    size: int,
+    expression: str = "neutral",
+    palette: ColorPalette | None = None,
+) -> None:
+    """Draw The Conductor — orchestrator. Tall, baton-like.
+
+    A tall, thin body resembling a conductor's baton, with a small
+    round knob at the top and a tapered lower half.
+    """
+    fill = (160, 155, 145) if palette is None else _lerp_color(palette.character_fill, (160, 155, 145), 0.3)
+    outline = (105, 100, 90) if palette is None else _lerp_color(palette.character_outline, (105, 100, 90), 0.3)
+
+    half = size // 2
+    # Tall thin body (baton shaft)
+    body_w = int(half * 0.35)
+    body_h = int(half * 1.5)
+    draw.rounded_rectangle(
+        [cx - body_w, cy - body_h, cx + body_w, cy + body_h],
+        radius=max(2, body_w),
+        fill=fill, outline=outline, width=2,
+    )
+    # Knob at top
+    knob_r = max(3, int(half * 0.3))
+    knob_y = cy - body_h - knob_r + 2
+    draw.ellipse(
+        [cx - knob_r, knob_y - knob_r, cx + knob_r, knob_y + knob_r],
+        fill=fill, outline=outline, width=2,
+    )
+
+    draw_face_eyes(draw, cx, cy - size // 6, size, expression, palette)
+    draw_face_mouth(draw, cx, cy, size, expression, palette)
+
+
+# ---------------------------------------------------------------------------
+# PARE-003: Character Registry
+# ---------------------------------------------------------------------------
+
+CHARACTER_REGISTRY: dict[str, callable] = {
+    # Sensors
+    "membrane": draw_membrane,
+    "the membrane": draw_membrane,
+    "heartbeat": draw_heartbeat,
+    "the heartbeat": draw_heartbeat,
+    "face eye": draw_face_eye,
+    "porch eye": draw_porch_eye,
+    "garden eye": draw_garden_eye,
+    "instrument": draw_instrument,
+    "the instrument": draw_instrument,
+    # Voices
+    "basalt": draw_basalt,
+    "pebble": draw_pebble,
+    "poet": draw_poet,
+    "the poet": draw_poet,
+    "archivist": draw_archivist,
+    "the archivist": draw_archivist,
+    "dreamer": draw_dreamer,
+    "the dreamer": draw_dreamer,
+    # Outputs
+    "gallery face": draw_gallery_face,
+    "gallery wall": draw_gallery_wall,
+    "printer": draw_printer,
+    "the printer": draw_printer,
+    "speaker": draw_speaker,
+    "the speaker": draw_speaker,
+    # Bridges
+    "skin": draw_skin,
+    "messenger": draw_messenger,
+    "the messenger": draw_messenger,
+    "scribe": draw_scribe,
+    "the scribe": draw_scribe,
+    "navigator": draw_navigator,
+    "the navigator": draw_navigator,
+    "weaver": draw_weaver,
+    "the weaver": draw_weaver,
+    "conductor": draw_conductor,
+    "the conductor": draw_conductor,
+}
+
+
+# ---------------------------------------------------------------------------
 # Panel and story rendering (existing interface)
 # ---------------------------------------------------------------------------
 
@@ -1014,12 +1828,7 @@ def render_panel(
         elif elem_type == "bush":
             draw_bush(draw, ex, ey, es, palette)
 
-    # Characters
-    character_drawers = {
-        "basalt": draw_basalt,
-        "pebble": draw_pebble,
-    }
-
+    # Characters — use PARE-003 registry for all organism characters
     for char in spec.characters:
         name = char.get("name", "").lower()
         expr = char.get("expression", "neutral")
@@ -1027,7 +1836,7 @@ def render_panel(
         cy = char.get("y", int(spec.height * 0.65))
         cs = char.get("size", 60)
 
-        drawer = character_drawers.get(name)
+        drawer = CHARACTER_REGISTRY.get(name)
         if drawer:
             drawer(draw, cx, cy, cs, expr, palette)
         else:
@@ -1253,15 +2062,10 @@ def render_scene(
         elif elem.type == "bush":
             draw_bush(draw, elem.x, elem.y, elem.size, palette)
 
-    # 7. Characters
-    character_drawers = {
-        "basalt": draw_basalt,
-        "pebble": draw_pebble,
-    }
-
+    # 7. Characters — use PARE-003 registry for all organism characters
     for char in characters:
         name = char.name.lower()
-        drawer = character_drawers.get(name)
+        drawer = CHARACTER_REGISTRY.get(name)
         if drawer:
             drawer(draw, char.x, char.y, char.size, char.expression, palette)
         else:
