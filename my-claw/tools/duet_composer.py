@@ -38,6 +38,9 @@ from senseweave.synthesis.melodic_mind import (
     personality_for_hour,
 )
 
+# Continuous learner — learn-by-performing feedback loop
+from senseweave.synthesis.continuous_learner import ContinuousLearner
+
 # Korsakov modules
 from senseweave.synthesis.accompaniment import (
     DensityTracker,
@@ -250,6 +253,7 @@ PROGS = [[1, 4, 5, 1], [1, 6, 4, 5], [1, 4, 1, 5], [1, 3, 4, 5]]
 # Melodic mind instances (created per song with appropriate settings)
 _memory = MelodicMemory()
 _llm = LLMAdvisor(model="qwen3.5:4b")
+_learner = ContinuousLearner(llm_advisor=_llm)
 _last_intention: dict = {}
 
 
@@ -292,6 +296,14 @@ def send_face_message(text: str, duration: float = 30) -> None:
 
 def solo_song(key_name: str, song_num: int) -> str:
     global _last_intention
+
+    # Check if the learner suggests exploring a new key or feel
+    exploration = _learner.suggest_exploration()
+    if exploration:
+        if "try_key" in exploration and exploration["try_key"] in KEY_ROOTS:
+            key_name = exploration["try_key"]
+        # feel override applied below after personality lookup
+
     root = KEY_ROOTS.get(key_name, 130.8)
     key = make_key(root)
     prog = random.choice(PROGS)
@@ -303,10 +315,23 @@ def solo_song(key_name: str, song_num: int) -> str:
     bpm = random.uniform(*personality["tempo_range"])
     chromatic_prob = personality["chromatic_probability"]
 
+    # Apply exploration feel override if suggested
+    if exploration and "try_feel" in exploration:
+        try:
+            feel = RhythmFeel(exploration["try_feel"])
+        except ValueError:
+            pass
+
+    # Get learned adjustments before creating the mind
+    adj = _learner.get_adjustments_for_mind()
+
     # Create a melodic mind for this song
     mind = MelodicMind(key_root=root, rhythm_feel=feel, bpm=bpm)
-    mind.set_chromatic_probability(chromatic_prob)
+    mind.set_chromatic_probability(chromatic_prob + adj.get("chromatic_adjustment", 0.0))
     bt = 60.0 / bpm  # beat duration from BPM, not hardcoded
+
+    # Start learner recording for this song
+    _learner.start_song(song_num, key_name, feel.value, bpm)
 
     # Ask LLM for musical intention (async-ish — if slow, use cached)
     try:
@@ -397,10 +422,15 @@ def solo_song(key_name: str, song_num: int) -> str:
                 time.sleep(dur * bt)
                 continue
             play_voice("pluck", freq, (0.22 if accent else 0.16) * loud, 0.5)
+            _learner.record_note(freq, dur, accent, "pluck")
             density.note_played()
             # Kotekan sparkle (second rep, every 3rd note)
             if rep == 1 and i % 3 == 0 and freq > 0:
                 play_voice("kotekan", freq * 2, 0.04 * loud, 0.3)
+            # Real-time learning reflection
+            reflections = _learner.maybe_reflect()
+            if reflections and "chromatic_bump" in reflections:
+                mind.set_chromatic_probability(mind._chromatic_probability + reflections["chromatic_bump"])
             time.sleep(dur * bt)
             eq.update()
         bass_t.join()
@@ -493,9 +523,14 @@ def solo_song(key_name: str, song_num: int) -> str:
             time.sleep(dur * bt)
             continue
         play_voice("bell", freq, (0.08 if accent else 0.05) * loud, 0.6)
+        _learner.record_note(freq, dur, accent, "bell")
         density.note_played()
         if freq > root * 3:  # high notes get sparkle
             play_voice("kotekan", freq * 2, 0.035 * loud, 0.25)
+        # Real-time learning reflection
+        reflections = _learner.maybe_reflect()
+        if reflections and "chromatic_bump" in reflections:
+            dev_mind.set_chromatic_probability(dev_mind._chromatic_probability + reflections["chromatic_bump"])
         time.sleep(dur * bt)
     bass_t.join()
     ct.join()
@@ -606,6 +641,10 @@ def solo_song(key_name: str, song_num: int) -> str:
     release_sustained()
     time.sleep(3)
     budget.reset()
+
+    # End-of-song learning: evaluate, store best fragments, evolve
+    _learner.end_song(memory=_memory)
+
     print(f"  Done", flush=True)
     return next_key
 
@@ -683,9 +722,22 @@ def duet_loop(initial_key: str, song_num: int) -> str:
 
 # === MAIN ===
 
+def _graceful_shutdown(*_):
+    """Fade to silence before exit — no pops."""
+    try:
+        c.send_message("/n_set", [99999, "amp", 0.0])
+        release_sustained()
+        time.sleep(0.2)
+        c.send_message("/g_freeAll", [0])
+        time.sleep(0.1)
+    except Exception:
+        pass
+    sys.exit(0)
+
+
 def main() -> None:
-    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
-    signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
+    signal.signal(signal.SIGTERM, _graceful_shutdown)
+    signal.signal(signal.SIGINT, _graceful_shutdown)
 
     c.send_message("/g_freeAll", [0])
     time.sleep(0.5)
