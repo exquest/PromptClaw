@@ -85,34 +85,44 @@ THERAMINI_STATE = Path("/tmp/theramini_state.json")
 class EQDrift:
     """Slowly modulate the master chain's warmth and filter parameters.
 
-    Each parameter drifts at a coprime rate so they never repeat
-    the same pattern. Sends /n_set to the master chain node.
+    Interpolates smoothly toward target values to prevent pops/clicks.
+    Each parameter drifts at a coprime rate. Energy changes are gradual.
     """
 
     MASTER_NODE = 99999
+    SMOOTHING = 0.05  # how fast to approach target (0=instant pop, 1=never move)
 
     def __init__(self, osc_client):
         self.osc = osc_client
         self.start_time = time.time()
-        # Coprime drift rates in seconds (Eno technique)
-        self.warmth_period = 37.0    # slow warmth sweep
-        self.drive_period = 43.0     # saturation drift
-        self.reverb_period = 31.0    # room drift
-        # Base values
+        self.warmth_period = 37.0
+        self.drive_period = 43.0
+        self.reverb_period = 31.0
         self.warmth_base = 0.3
-        self.warmth_range = 0.12     # drifts ±0.12 around 0.3
+        self.warmth_range = 0.12
         self.drive_base = 0.15
-        self.drive_range = 0.05      # drifts ±0.05 around 0.15
+        self.drive_range = 0.05
         self.reverb_base = 0.08
-        self.reverb_range = 0.04     # drifts ±0.04
+        self.reverb_range = 0.04
+        # Smooth interpolation state
+        self._target_energy = 0.5
+        self._current_energy = 0.5
+        self._current_warmth = 0.3
+        self._current_drive = 0.15
+        self._current_reverb = 0.08
 
-    def update(self, movement_energy: float = 0.5) -> None:
-        """Call every few seconds. Sends updated EQ to master chain.
+    def update(self, movement_energy: float | None = None) -> None:
+        """Call frequently (every beat or few seconds).
 
-        movement_energy (0-1) shifts the center point:
-        high energy = brighter (less warmth), more drive
-        low energy = warmer, less drive
+        If movement_energy is provided, sets a new target.
+        Always interpolates smoothly toward target — never jumps.
         """
+        if movement_energy is not None:
+            self._target_energy = movement_energy
+
+        # Smooth interpolation toward target energy (no pops)
+        self._current_energy += (self._target_energy - self._current_energy) * self.SMOOTHING
+
         t = time.time() - self.start_time
 
         # Coprime sine modulation
@@ -120,19 +130,23 @@ class EQDrift:
         drive_mod = _math.sin(2 * _math.pi * t / self.drive_period) * self.drive_range
         reverb_mod = _math.sin(2 * _math.pi * t / self.reverb_period) * self.reverb_range
 
-        # Energy shifts the center: high energy = brighter
-        energy_shift = (movement_energy - 0.5) * 0.1
+        energy_shift = (self._current_energy - 0.5) * 0.1
 
-        warmth = max(0.05, min(0.6, self.warmth_base + warmth_mod - energy_shift))
-        drive = max(0.05, min(0.3, self.drive_base + drive_mod + energy_shift * 0.5))
-        reverb = max(0.02, min(0.15, self.reverb_base + reverb_mod))
+        target_warmth = max(0.05, min(0.6, self.warmth_base + warmth_mod - energy_shift))
+        target_drive = max(0.05, min(0.3, self.drive_base + drive_mod + energy_shift * 0.5))
+        target_reverb = max(0.02, min(0.15, self.reverb_base + reverb_mod))
+
+        # Smooth interpolation on all parameters
+        self._current_warmth += (target_warmth - self._current_warmth) * self.SMOOTHING
+        self._current_drive += (target_drive - self._current_drive) * self.SMOOTHING
+        self._current_reverb += (target_reverb - self._current_reverb) * self.SMOOTHING
 
         try:
             self.osc.send_message("/n_set", [
                 self.MASTER_NODE,
-                "warmth", warmth,
-                "drive", drive,
-                "reverb", reverb,
+                "warmth", self._current_warmth,
+                "drive", self._current_drive,
+                "reverb", self._current_reverb,
             ])
         except Exception:
             pass
@@ -327,6 +341,7 @@ def solo_song(key_name: str, song_num: int) -> str:
             return key_name
         play_voice("pluck", freq / 2, 0.22 if accent else 0.16, 0.6)
         time.sleep(dur * bt * 2)
+        eq.update()  # smooth interpolation
     time.sleep(bt * 2)
 
     # Melody responds — mind generates a response
@@ -387,6 +402,7 @@ def solo_song(key_name: str, song_num: int) -> str:
             if rep == 1 and i % 3 == 0 and freq > 0:
                 play_voice("kotekan", freq * 2, 0.04 * loud, 0.3)
             time.sleep(dur * bt)
+            eq.update()
         bass_t.join()
 
         # Release pad at end of phrase
