@@ -85,74 +85,10 @@ THERAMINI_STATE = Path("/tmp/theramini_state.json")
 
 # === EQ DRIFT — slow modulation prevents ear fatigue ===
 
-class EQDrift:
-    """Slowly modulate the master chain's warmth and filter parameters.
-
-    Interpolates smoothly toward target values to prevent pops/clicks.
-    Each parameter drifts at a coprime rate. Energy changes are gradual.
-    """
-
-    MASTER_NODE = 99999
-    SMOOTHING = 0.05  # how fast to approach target (0=instant pop, 1=never move)
-
-    def __init__(self, osc_client):
-        self.osc = osc_client
-        self.start_time = time.time()
-        self.warmth_period = 37.0
-        self.drive_period = 43.0
-        self.reverb_period = 31.0
-        self.warmth_base = 0.3
-        self.warmth_range = 0.12
-        self.drive_base = 0.15
-        self.drive_range = 0.05
-        self.reverb_base = 0.08
-        self.reverb_range = 0.04
-        # Smooth interpolation state
-        self._target_energy = 0.5
-        self._current_energy = 0.5
-        self._current_warmth = 0.3
-        self._current_drive = 0.15
-        self._current_reverb = 0.08
-
-    def update(self, movement_energy: float | None = None) -> None:
-        """Call frequently (every beat or few seconds).
-
-        If movement_energy is provided, sets a new target.
-        Always interpolates smoothly toward target — never jumps.
-        """
-        if movement_energy is not None:
-            self._target_energy = movement_energy
-
-        # Smooth interpolation toward target energy (no pops)
-        self._current_energy += (self._target_energy - self._current_energy) * self.SMOOTHING
-
-        t = time.time() - self.start_time
-
-        # Coprime sine modulation
-        warmth_mod = _math.sin(2 * _math.pi * t / self.warmth_period) * self.warmth_range
-        drive_mod = _math.sin(2 * _math.pi * t / self.drive_period) * self.drive_range
-        reverb_mod = _math.sin(2 * _math.pi * t / self.reverb_period) * self.reverb_range
-
-        energy_shift = (self._current_energy - 0.5) * 0.1
-
-        target_warmth = max(0.05, min(0.6, self.warmth_base + warmth_mod - energy_shift))
-        target_drive = max(0.05, min(0.3, self.drive_base + drive_mod + energy_shift * 0.5))
-        target_reverb = max(0.02, min(0.15, self.reverb_base + reverb_mod))
-
-        # Smooth interpolation on all parameters
-        self._current_warmth += (target_warmth - self._current_warmth) * self.SMOOTHING
-        self._current_drive += (target_drive - self._current_drive) * self.SMOOTHING
-        self._current_reverb += (target_reverb - self._current_reverb) * self.SMOOTHING
-
-        try:
-            self.osc.send_message("/n_set", [
-                self.MASTER_NODE,
-                "warmth", self._current_warmth,
-                "drive", self._current_drive,
-                "reverb", self._current_reverb,
-            ])
-        except Exception:
-            pass
+# EQ modulation is handled INSIDE sw_master_smooth SynthDef via internal LFOs.
+# No external /n_set needed — zero pops.
+# EQ modulation is handled INSIDE sw_master_smooth SynthDef via internal LFOs.
+# No external /n_set needed — zero pops.
 COMPOSER_STATE = Path("/tmp/composer_state.json")
 FACE_MESSAGE = Path("/tmp/face_message.json")
 
@@ -342,7 +278,6 @@ def solo_song(key_name: str, song_num: int) -> str:
 
     density = DensityTracker()
     budget = EffectBudget()
-    eq = EQDrift(c)
     prev_voice_count = 0
 
     print(f"\n=== SOLO: {key_name} major ===", flush=True)
@@ -356,7 +291,6 @@ def solo_song(key_name: str, song_num: int) -> str:
     write_composer_state(key_name, "solo", mvt, song_num)
     voices = select_voices_for_movement(mvt)
     print(f"  I. {mvt} — {len(voices)} voices", flush=True)
-    eq.update(0.2)  # low energy — warm, soft
 
     time.sleep(0.5)
     # Bass speaks — mind generates the opening
@@ -366,7 +300,6 @@ def solo_song(key_name: str, song_num: int) -> str:
             return key_name
         play_voice("pluck", freq / 2, 0.22 if accent else 0.16, 0.6)
         time.sleep(dur * bt * 2)
-        eq.update()  # smooth interpolation
     time.sleep(bt * 2)
 
     # Melody responds — mind generates a response
@@ -386,7 +319,6 @@ def solo_song(key_name: str, song_num: int) -> str:
     mvt_idx = 1
     write_composer_state(key_name, "solo", mvt, song_num)
     print(f"  II. {mvt}", flush=True)
-    eq.update(0.4)  # moderate — warming up
 
     # Tint available from Theme onwards
     tint_voice = suggest_tint(mvt)
@@ -432,7 +364,6 @@ def solo_song(key_name: str, song_num: int) -> str:
             if reflections and "chromatic_bump" in reflections:
                 mind.set_chromatic_probability(mind._chromatic_probability + reflections["chromatic_bump"])
             time.sleep(dur * bt)
-            eq.update()
         bass_t.join()
 
         # Release pad at end of phrase
@@ -463,7 +394,6 @@ def solo_song(key_name: str, song_num: int) -> str:
     nkey = make_key(nroot)
     write_composer_state(next_key, "solo", mvt, song_num)
     print(f"  III. {mvt} → {next_key}", flush=True)
-    eq.update(0.8)  # high energy — brighter, more drive
 
     # Gong transition
     play_voice("gong", key[1] / 4, 0.014, 3.5)
@@ -576,7 +506,6 @@ def solo_song(key_name: str, song_num: int) -> str:
     mvt_idx = 3
     write_composer_state(key_name, "solo", mvt, song_num)
     print(f"  IV. {mvt} — {key_name}", flush=True)
-    eq.update(0.35)  # pulling back — warmer again
 
     # Re-orchestrate: bowed melody, breath pad, gentle kotekan ornaments
     play_voice("gong", key[1] / 4, 0.012, 3.0)
@@ -617,7 +546,6 @@ def solo_song(key_name: str, song_num: int) -> str:
     mvt_idx = 4
     write_composer_state(key_name, "solo", mvt, song_num)
     print(f"  V. {mvt}", flush=True)
-    eq.update(0.15)  # lowest energy — warmest, softest
 
     # Choir swell — the timbre saved for this moment (ADSR)
     if budget.can_use("new_timbre", mvt_idx):
@@ -723,13 +651,15 @@ def duet_loop(initial_key: str, song_num: int) -> str:
 # === MAIN ===
 
 def _graceful_shutdown(*_):
-    """Fade to silence before exit — no pops."""
+    """Fade to silence before exit — no pops. No /n_free, no /g_freeAll."""
     try:
+        # Fade master to zero
         c.send_message("/n_set", [99999, "amp", 0.0])
+        # Fade all sustained voices
         release_sustained()
-        time.sleep(0.2)
-        c.send_message("/g_freeAll", [0])
-        time.sleep(0.1)
+        # Wait for fade
+        time.sleep(0.3)
+        # Don't call g_freeAll — let restart_composer.sh handle it while muted
     except Exception:
         pass
     sys.exit(0)

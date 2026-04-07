@@ -185,32 +185,16 @@ class SenseweaveVoice:
             ]
 
     def _release_note(self, note: ActiveNote) -> bool:
-        """Fade out then free — no pops.
+        """Do nothing — let the synth decay naturally through its envelope.
 
-        Sets amplitude to 0 (scsynth interpolates), then schedules
-        a free after a short delay. The /n_set with amp=0 causes
-        the synth to fade rather than cut abruptly.
+        Any /n_set or /n_free causes pops because scsynth doesn't
+        interpolate control-rate changes. The safest approach: don't
+        touch it. The synth's release envelope will bring it to silence,
+        and doneAction:2 will free the node automatically.
+
+        We just remove it from our tracking list.
         """
-        if self.osc:
-            try:
-                # Fade to silence first (prevents pop)
-                self.osc.send_message("/n_set", [note.node_id, "amp", 0.0])
-                # Schedule free after fade completes
-                # Using /n_free with a small delay via a separate message
-                # For now, just set amp to 0 — the synth will go silent
-                # and scsynth will eventually garbage collect it,
-                # or we free it after a short sleep in a thread
-                import threading
-                def _delayed_free(nid):
-                    import time
-                    time.sleep(0.1)  # 100ms fade
-                    try:
-                        self.osc.send_message("/n_free", [nid])
-                    except Exception:
-                        pass
-                threading.Thread(target=_delayed_free, args=(note.node_id,), daemon=True).start()
-            except Exception:
-                pass
+        # Don't send anything to scsynth — no /n_set, no /n_free
         return True
 
     def chord(self, freqs: list[float], amp: float = 0.06, adsr: ADSR | None = None) -> list[int]:
