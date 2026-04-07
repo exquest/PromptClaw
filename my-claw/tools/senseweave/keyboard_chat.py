@@ -29,6 +29,8 @@ class KeyboardChat:
         self._last_poll: float = 0.0
         self._cursor_blink: bool = True
         self._cursor_time: float = 0.0
+        self._last_activity: float = 0.0
+        self._fade_timeout: float = 20.0
 
     # ------------------------------------------------------------------
     # Environment loading
@@ -65,6 +67,7 @@ class KeyboardChat:
 
     def toggle(self) -> None:
         self.active = not self.active
+        self._last_activity = time.time()
         if not self.active:
             self.input_buffer = ""
 
@@ -83,6 +86,8 @@ class KeyboardChat:
         K_RETURN = 13
         K_ESCAPE = 27
         K_TAB = 9
+
+        self._last_activity = time.time()
 
         if key == K_BACKSPACE:
             self.input_buffer = self.input_buffer[:-1]
@@ -234,18 +239,25 @@ class KeyboardChat:
         """Render chat overlay on a PIL Image. Modifies img in place."""
         if not self.active:
             return
+        # Auto-hide after inactivity
+        if self._last_activity > 0 and (time.time() - self._last_activity) > self._fade_timeout:
+            self.active = False
+            return
 
         draw = ImageDraw.Draw(img, "RGBA")
         w, h = img.size
 
-        # Semi-transparent overlay on bottom 45%
-        overlay_top = int(h * 0.55)
-        draw.rectangle([0, overlay_top, w, h], fill=(0, 0, 0, 180))
-        draw.line(
-            [(0, overlay_top), (w, overlay_top)],
-            fill=(80, 90, 110, 200),
-            width=2,
-        )
+        # Lighter overlay on bottom 30% with gradient fade-in
+        overlay_top = int(h * 0.70)
+        gradient_height = 30
+        # Gradient band: fades from transparent to overlay opacity
+        for i in range(gradient_height):
+            alpha = int(100 * i / gradient_height)
+            y = overlay_top - gradient_height + i
+            if 0 <= y < h:
+                draw.line([(0, y), (w, y)], fill=(0, 0, 0, alpha))
+        # Main overlay: alpha 100 (was 180) — much lighter
+        draw.rectangle([0, overlay_top, w, h], fill=(0, 0, 0, 100))
 
         try:
             font = ImageFont.truetype(font_path, 22)

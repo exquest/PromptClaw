@@ -426,6 +426,24 @@ class TestRenderOverlay:
         # Alpha-composited pixel should be darker than pure white
         assert px[0] < 200 or px[3] < 255  # either darker or transparent
 
+    def test_overlay_is_not_too_dark(self, chat):
+        """Overlay alpha should be <=120 (lighter than the old 180)."""
+        img = self._make_image()
+        chat.render_overlay(img)
+        w, h = img.size
+        # PIL draws raw RGBA — check the alpha in the overlay region directly
+        px = img.getpixel((w // 2, h - 5))
+        assert px[3] <= 120, f"overlay alpha too high: A={px[3]} (was 180, should be ~100)"
+
+    def test_overlay_covers_bottom_30_percent(self, chat):
+        """Overlay should cover bottom 30% not 45%."""
+        img = self._make_image()
+        chat.render_overlay(img)
+        w, h = img.size
+        # Pixel at 60% height should be untouched (white)
+        above = img.getpixel((w // 2, int(h * 0.60)))
+        assert above == (255, 255, 255, 255), f"overlay bleeds too high: {above}"
+
     def test_overlay_with_messages(self, chat):
         chat.messages = [
             {"role": "user", "text": "hello", "time": "12:00"},
@@ -448,6 +466,43 @@ class TestRenderOverlay:
         img = self._make_image()
         chat.render_overlay(img, font_path="/nonexistent/font.ttf")
         # Should not crash — falls back to default font
+
+    def test_fade_timeout_hides_overlay(self):
+        """Overlay auto-hides after _fade_timeout seconds of inactivity."""
+        c = KeyboardChat()
+        c.active = True
+        c._last_activity = time.time() - 25  # 25s ago, past 20s timeout
+        img = self._make_image()
+        original = img.tobytes()
+        c.render_overlay(img)
+        assert img.tobytes() == original  # no changes — faded out
+        assert c.active is False
+
+    def test_no_fade_during_activity(self, chat):
+        """Overlay stays visible while _last_activity is recent."""
+        chat._last_activity = time.time()  # just now
+        img = self._make_image()
+        original = img.tobytes()
+        chat.render_overlay(img)
+        assert img.tobytes() != original  # overlay rendered
+        assert chat.active is True
+
+
+class TestInitAttributes:
+    def test_has_fade_timeout(self):
+        c = KeyboardChat()
+        assert c._fade_timeout == 20.0
+
+    def test_has_last_activity(self):
+        c = KeyboardChat()
+        assert c._last_activity == 0.0
+
+    def test_keypress_refreshes_activity(self):
+        c = KeyboardChat()
+        c.active = True
+        before = c._last_activity
+        c.handle_keypress(ord("a"), "a", 0)
+        assert c._last_activity > before
 
 
 # ---------------------------------------------------------------------------

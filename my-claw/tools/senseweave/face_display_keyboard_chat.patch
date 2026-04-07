@@ -1,0 +1,76 @@
+--- face_display.py.orig
++++ face_display.py
+@@ Imports section — add near other senseweave imports:
++from keyboard_chat import KeyboardChat
+
+@@ In main() — after pygame.init() and before the main loop:
++    chat = KeyboardChat()
++    chat.load_env("/home/user/cypherclaw/.env")
+
+@@ In the event loop — inside `for event in pygame.event.get()`:
+@@ After existing KEYDOWN handling, add:
++            if event.type == pygame.KEYDOWN:
++                if event.key == pygame.K_TAB and not chat.active:
++                    chat.toggle()
++                elif chat.active:
++                    chat.handle_keypress(event.key, event.unicode, event.mod)
+
+@@ In the main loop body — after building the PIL image but before converting to pygame surface:
+@@ (i.e., after `img = ...` and before `surface = pygame.image.fromstring(...)`)
++            if chat.active:
++                chat.poll_incoming()
++            chat.render_overlay(img)
+
+--- END OF PATCH ---
+
+INTEGRATION NOTES:
+
+1. Import: Add `from keyboard_chat import KeyboardChat` at the top of face_display.py.
+
+2. Init: In main(), after pygame.init(), create the chat instance:
+       chat = KeyboardChat()
+       chat.load_env("/home/user/cypherclaw/.env")
+
+3. Event routing: In the pygame event loop, route keyboard events:
+       if event.type == pygame.KEYDOWN:
+           if event.key == pygame.K_TAB and not chat.active:
+               chat.toggle()  # Tab opens chat
+           elif chat.active:
+               chat.handle_keypress(event.key, event.unicode, event.mod)
+               # Tab and Escape close chat (handled inside handle_keypress)
+
+   NOTE: When chat.active is True, ALL keypresses go to the chat.
+   When chat.active is False, only Tab opens it. This prevents the chat
+   from swallowing keypresses meant for other face_display controls.
+
+4. Polling + rendering: Each frame, after building the PIL image:
+       if chat.active:
+           chat.poll_incoming()
+       chat.render_overlay(img)  # no-op when inactive
+
+   This must happen BEFORE converting the PIL image to a pygame surface:
+       surface = pygame.image.fromstring(img.tobytes(), img.size, img.mode)
+
+5. The img MUST be RGBA mode for the semi-transparent overlay to work.
+   If your face currently renders in RGB, convert before overlay:
+       img = img.convert("RGBA")
+
+6. KEYBOARD FOCUS: The pygame window MUST have keyboard focus for events
+   to arrive. In Openbox, add a startup rule to focus the face window:
+       xdotool search --name "CypherClaw Face" windowactivate
+
+   Or in the face_display startup script:
+       sleep 2 && xdotool search --name "CypherClaw" windowfocus &
+
+7. VISUAL DESIGN: The overlay uses:
+   - Bottom 30% of screen (not 45%) — keeps most of the face visible
+   - Alpha 100 (not 180) — see-through, face still visible underneath
+   - 30px gradient fade at the top edge — no hard line
+   - Auto-fades after 20s of no keypress activity
+
+8. OPENBOX TASKBAR REMOVAL: To hide the taskbar on the face display,
+   add to ~/.config/openbox/rc.xml inside <applications>:
+       <application class="*">
+           <decor>no</decor>
+       </application>
+   Then: openbox --reconfigure
