@@ -726,9 +726,11 @@ class LLMAdvisor:
         self,
         model: str = "qwen3.5:4b",
         base_url: str = "http://localhost:11434",
+        music_model: str | None = None,
     ) -> None:
         self._model = model
         self._base_url = base_url.rstrip("/")
+        self._music_model = music_model  # e.g. "chatmusician" for ABC-aware prompts
 
     def _call(self, prompt: str, timeout: float = 10.0) -> str:
         """Send a prompt to Ollama and return the response text."""
@@ -861,6 +863,166 @@ class LLMAdvisor:
         )
         text = self._call(prompt)
         return text.strip() if text else "IV"
+
+    def _call_music(self, prompt: str, timeout: float = 15.0) -> str:
+        """Send a prompt to the music model (ChatMusician or default).
+
+        Uses self._music_model if set, otherwise falls back to self._model.
+        """
+        model = self._music_model or self._model
+        try:
+            resp = requests.post(
+                f"{self._base_url}/api/generate",
+                json={
+                    "model": model,
+                    "prompt": prompt,
+                    "stream": False,
+                    "think": False,
+                },
+                timeout=timeout,
+            )
+            if resp.status_code == 200:
+                return resp.json().get("response", "")
+        except Exception:
+            pass
+        return ""
+
+    def theory_query(self, abc_phrase: str, question: str) -> str:
+        """Ask the music model a theory question about a specific phrase in ABC notation.
+
+        When music_model is set to ChatMusician, formats the prompt in ABC-aware style.
+        Falls back gracefully if the model is unavailable.
+        """
+        if self._music_model and "chatmusician" in self._music_model.lower():
+            # ABC-aware prompt format for ChatMusician
+            prompt = (
+                f"Analyze this ABC notation phrase:\n\n"
+                f"{abc_phrase}\n\n"
+                f"Music theory question: {question}\n"
+                f"Answer concisely."
+            )
+        else:
+            # Standard prompt for qwen or other models
+            prompt = (
+                f"Given this musical phrase in ABC notation:\n{abc_phrase}\n\n"
+                f"{question}"
+            )
+        text = self._call_music(prompt)
+        return text if text else "No response from music model."
+
+
+# ---------------------------------------------------------------------------
+# ABC Notation Utilities
+# ---------------------------------------------------------------------------
+
+# Note names in chromatic order starting from C
+_NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+
+# ABC octave notation: C, = octave below middle C, C = middle C, c = octave above
+_A4_FREQ = 440.0
+
+
+def freq_sequence_to_abc(freqs: list[float], key: str = "C", meter: str = "3/4") -> str:
+    """Convert a sequence of frequencies to ABC notation string.
+
+    ABC is the optimal format for feeding musical material to LLMs.
+    ChatMusician is trained on ABC notation.
+
+    Example output:
+    X:1
+    T:CypherClaw Phrase
+    M:3/4
+    K:Cmaj
+    D F A d c B A F |
+    """
+    header = (
+        f"X:1\n"
+        f"T:CypherClaw Phrase\n"
+        f"M:{meter}\n"
+        f"K:{key}maj\n"
+    )
+    notes: list[str] = []
+    for freq in freqs:
+        if freq <= 0:
+            notes.append("z")  # rest in ABC notation
+            continue
+        notes.append(_freq_to_abc_note(freq))
+
+    return header + " ".join(notes) + " |"
+
+
+def _freq_to_abc_note(freq: float) -> str:
+    """Convert a single frequency to an ABC note name.
+
+    ABC octave conventions:
+        C, D, E, ...  = octave below middle C  (C3)
+        C D E ...      = middle C octave        (C4)
+        c d e ...      = octave above middle C  (C5)
+        c' d' e' ...   = two octaves above      (C6)
+
+    Uses A4=440Hz as the reference.
+    """
+    if freq <= 0:
+        return "z"
+
+    # Calculate semitones from A4
+    semitones_from_a4 = 12.0 * math.log2(freq / _A4_FREQ)
+    # MIDI note number (A4 = 69)
+    midi = round(69 + semitones_from_a4)
+    # Note name and octave
+    note_idx = midi % 12  # 0=C, 1=C#, ...
+    octave = midi // 12 - 1  # MIDI octave convention
+
+    name = _NOTE_NAMES[note_idx]
+
+    # ABC uses: C, = C3, C = C4, c = C5, c' = C6, c'' = C7
+    # For sharps, ABC uses ^
+    base = name[0]
+    is_sharp = len(name) > 1 and name[1] == "#"
+    prefix = "^" if is_sharp else ""
+
+    if octave <= 3:
+        # C3 and below: uppercase with commas
+        abc = prefix + base
+        commas = 4 - octave  # octave 3 = 1 comma, octave 2 = 2 commas
+        if commas > 0:
+            abc += "," * commas
+    elif octave == 4:
+        # C4 (middle C octave): uppercase, no modifier
+        abc = prefix + base
+    elif octave == 5:
+        # C5: lowercase
+        abc = prefix + base.lower()
+    else:
+        # C6+: lowercase with apostrophes
+        abc = prefix + base.lower()
+        apostrophes = octave - 5
+        abc += "'" * apostrophes
+
+    return abc
+
+
+def abc_to_freq_hints(abc_response: str) -> list[str]:
+    """Parse ABC note names from an LLM response back to note name hints.
+
+    Returns list of note names like ['D', 'F#', 'A'] that the composer
+    can use to guide the melodic mind.
+
+    Strips octave modifiers and ABC-specific prefixes, returning just
+    the pitch class names.
+    """
+    # Match ABC notes: optional accidental (^ or _), letter, optional octave (,' )
+    pattern = re.compile(r"([\^_]?)([A-Ga-g])([,\']*)")
+    hints: list[str] = []
+    for match in pattern.finditer(abc_response):
+        accidental, letter, _octave = match.groups()
+        name = letter.upper()
+        if accidental == "^":
+            name += "#"
+        elif accidental == "_":
+            name += "b"
+        hints.append(name)
+    return hints
 
 
 # ---------------------------------------------------------------------------

@@ -136,8 +136,8 @@ VOICE_DEFAULTS = {
 _sw_voice = SenseweaveVoice(osc=c)
 
 # Which voices are sustained (need ADSR control) vs percussive (fire-and-forget)
-_SUSTAINED = {"bowed", "choir", "breath"}
-_PERCUSSIVE = {"pluck", "kotekan", "gong", "bell"}  # bell is short enough for fire-and-forget
+_SUSTAINED = set()  # nothing sustained — everything is fire-and-forget
+_PERCUSSIVE = {"pluck", "kotekan", "gong", "bell", "bowed", "choir", "breath"}  # ALL fire-and-forget
 
 
 def play_voice(voice_name: str, freq: float, amp: float, release: float | None = None) -> None:
@@ -323,6 +323,10 @@ def solo_song(key_name: str, song_num: int) -> str:
     # Tint available from Theme onwards
     tint_voice = suggest_tint(mvt)
 
+    # Generate antecedent/consequent phrase pair for Theme
+    chord_seq = [[c, c + 2, c + 4] for c in prog] if prog else None
+    theme_antecedent, theme_consequent = mind.generate_phrase_pair(8, chord_seq)
+
     for rep in range(2):
         loud = 0.7 + rep * 0.1
         acc_type = select_accompaniment_type(density.density(), density.is_resting())
@@ -343,9 +347,8 @@ def solo_song(key_name: str, song_num: int) -> str:
         bass_t = threading.Thread(target=bass_thread, daemon=True)
         bass_t.start()
 
-        # Mind generates melody in real-time
-        chord_seq = [[c, c + 2, c + 4] for c in prog] if prog else None
-        theme_phrase = mind.generate_phrase(8, chord_seq)
+        # Phrase pair: first rep = antecedent (unresolved), second = consequent (resolves)
+        theme_phrase = theme_antecedent if rep == 0 else theme_consequent
         for i, (freq, dur, accent) in enumerate(theme_phrase):
             if check_theramini():
                 bass_t.join()
@@ -523,8 +526,9 @@ def solo_song(key_name: str, song_num: int) -> str:
     bass_t = threading.Thread(target=recap_bass, daemon=True)
     bass_t.start()
 
-    # Mind generates recap melody — same key, different notes
-    recap_phrase = mind.generate_phrase(8, [[c, c+2, c+4] for c in prog] if prog else None)
+    # Mind generates recap melody — consequent only (resolution, everything resolves)
+    recap_chord_seq = [[c, c+2, c+4] for c in prog] if prog else None
+    _, recap_phrase = mind.generate_phrase_pair(8, recap_chord_seq)
     for i, (freq, dur, accent) in enumerate(recap_phrase):
         if freq == 0:
             time.sleep(dur * bt)

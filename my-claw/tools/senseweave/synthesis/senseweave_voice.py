@@ -185,16 +185,13 @@ class SenseweaveVoice:
             ]
 
     def _release_note(self, note: ActiveNote) -> bool:
-        """Do nothing — let the synth decay naturally through its envelope.
+        """Remove from tracking only. Don't send ANY OSC.
 
-        Any /n_set or /n_free causes pops because scsynth doesn't
-        interpolate control-rate changes. The safest approach: don't
-        touch it. The synth's release envelope will bring it to silence,
-        and doneAction:2 will free the node automatically.
-
-        We just remove it from our tracking list.
+        The synth will be freed naturally when scsynth's envelope
+        doneAction triggers, or it will be overwritten by the
+        polyphony limit (oldest notes get replaced by new ones).
         """
-        # Don't send anything to scsynth — no /n_set, no /n_free
+        # No /n_free, no /n_set — zero OSC messages = zero pops
         return True
 
     def chord(self, freqs: list[float], amp: float = 0.06, adsr: ADSR | None = None) -> list[int]:

@@ -791,3 +791,206 @@ class TestEventResponse:
             assert result is not None
             freq = round(result[0], 4)
             assert freq in valid_freqs, f"Transient note {freq} not in key triad {valid_freqs}"
+
+
+# ---------------------------------------------------------------------------
+# ABC Notation Conversion
+# ---------------------------------------------------------------------------
+
+
+class TestABCNotation:
+    def test_a440_produces_a(self) -> None:
+        """A4 (440Hz) should produce 'A' in ABC notation."""
+        result = mm.freq_sequence_to_abc([440.0])
+        assert "A" in result
+        assert "X:1" in result
+        assert "T:CypherClaw Phrase" in result
+
+    def test_known_frequencies_to_abc(self) -> None:
+        """Known frequencies should map to correct ABC notes."""
+        # D4=293.66, F#4=369.99, A4=440
+        freqs = [293.66, 369.99, 440.0]
+        result = mm.freq_sequence_to_abc(freqs, key="D")
+        assert "K:Dmaj" in result
+        # Should contain D, ^F (F#), and A
+        assert "D" in result
+        assert "A" in result
+
+    def test_middle_c_octave(self) -> None:
+        """Middle C (C4 ~261.63Hz) should be uppercase C with no modifier."""
+        result = mm.freq_sequence_to_abc([261.63])
+        # The note portion should contain just "C" (not c, not C,)
+        lines = result.strip().split("\n")
+        note_line = lines[-1]  # last line has the notes
+        assert "C" in note_line
+
+    def test_octave_above_middle_c(self) -> None:
+        """C5 (~523.25Hz) should be lowercase 'c' in ABC."""
+        note = mm._freq_to_abc_note(523.25)
+        assert note == "c", f"Expected 'c', got {note!r}"
+
+    def test_octave_below_middle_c(self) -> None:
+        """C3 (~130.81Hz) should be 'C,' in ABC."""
+        note = mm._freq_to_abc_note(130.81)
+        assert note == "C,", f"Expected 'C,', got {note!r}"
+
+    def test_rest_frequency(self) -> None:
+        """Frequency 0 should produce 'z' (rest in ABC)."""
+        result = mm.freq_sequence_to_abc([0.0, 440.0])
+        lines = result.strip().split("\n")
+        note_line = lines[-1]
+        assert "z" in note_line
+
+    def test_header_fields(self) -> None:
+        """ABC output should contain X, T, M, K header fields."""
+        result = mm.freq_sequence_to_abc([440.0], key="G", meter="4/4")
+        assert "X:1" in result
+        assert "T:CypherClaw Phrase" in result
+        assert "M:4/4" in result
+        assert "K:Gmaj" in result
+
+    def test_sharp_notes(self) -> None:
+        """F#4 (~369.99Hz) should produce '^F' in ABC notation."""
+        note = mm._freq_to_abc_note(369.99)
+        assert note == "^F", f"Expected '^F', got {note!r}"
+
+    def test_high_octave(self) -> None:
+        """C6 (~1046.5Hz) should produce c' in ABC."""
+        note = mm._freq_to_abc_note(1046.5)
+        assert note == "c'", f"Expected \"c'\", got {note!r}"
+
+    def test_full_phrase_round_trip_structure(self) -> None:
+        """A sequence of frequencies should produce valid ABC with pipe at end."""
+        freqs = [261.63, 293.66, 329.63, 349.23, 392.0, 440.0, 493.88, 523.25]
+        result = mm.freq_sequence_to_abc(freqs)
+        assert result.endswith("|")
+
+
+# ---------------------------------------------------------------------------
+# ABC Parsing
+# ---------------------------------------------------------------------------
+
+
+class TestABCParsing:
+    def test_basic_note_names(self) -> None:
+        """Should extract note names from ABC notation."""
+        abc = "D F A d c B A F |"
+        hints = mm.abc_to_freq_hints(abc)
+        assert hints == ["D", "F", "A", "D", "C", "B", "A", "F"]
+
+    def test_sharp_notes(self) -> None:
+        """Should handle sharp (^) accidentals."""
+        abc = "^F ^C A"
+        hints = mm.abc_to_freq_hints(abc)
+        assert hints == ["F#", "C#", "A"]
+
+    def test_flat_notes(self) -> None:
+        """Should handle flat (_) accidentals."""
+        abc = "_B _E G"
+        hints = mm.abc_to_freq_hints(abc)
+        assert hints == ["Bb", "Eb", "G"]
+
+    def test_octave_modifiers_stripped(self) -> None:
+        """Octave modifiers (commas, apostrophes) should be stripped."""
+        abc = "C, D E c' d''"
+        hints = mm.abc_to_freq_hints(abc)
+        assert hints == ["C", "D", "E", "C", "D"]
+
+    def test_empty_input(self) -> None:
+        """Empty string should return empty list."""
+        assert mm.abc_to_freq_hints("") == []
+
+    def test_mixed_with_non_note_text(self) -> None:
+        """Should extract notes even when mixed with non-note text."""
+        abc = "Try playing C D E in a rising pattern, then resolve to G"
+        hints = mm.abc_to_freq_hints(abc)
+        # Should find the note letters embedded in the text
+        assert "C" in hints
+        assert "D" in hints
+        assert "E" in hints
+        assert "G" in hints
+
+
+# ---------------------------------------------------------------------------
+# LLMAdvisor — theory_query and ChatMusician support
+# ---------------------------------------------------------------------------
+
+
+class TestTheoryQuery:
+    def test_theory_query_includes_abc_in_prompt(self) -> None:
+        """theory_query should include the ABC phrase in the prompt sent to the model."""
+        advisor = mm.LLMAdvisor(model="test", base_url="http://fake:11434")
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "response": "The phrase uses a rising fourth interval."
+        }
+        abc = "X:1\nT:CypherClaw Phrase\nM:3/4\nK:Cmaj\nC E G |"
+        with patch("melodic_mind.requests.post", return_value=mock_response) as mock_post:
+            result = advisor.theory_query(abc, "What intervals are used?")
+        assert isinstance(result, str)
+        assert len(result) > 0
+        # Verify the ABC was included in the prompt
+        call_args = mock_post.call_args
+        prompt_sent = call_args[1]["json"]["prompt"] if "json" in call_args[1] else call_args[0][1]["prompt"]
+        assert "C E G" in prompt_sent
+        assert "What intervals are used?" in prompt_sent
+
+    def test_theory_query_chatmusician_format(self) -> None:
+        """When music_model is ChatMusician, prompt should be ABC-aware format."""
+        advisor = mm.LLMAdvisor(
+            model="test", base_url="http://fake:11434",
+            music_model="m-a-p/ChatMusician",
+        )
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "response": "This is a I-IV-V progression."
+        }
+        abc = "X:1\nT:CypherClaw Phrase\nM:3/4\nK:Cmaj\nC F G |"
+        with patch("melodic_mind.requests.post", return_value=mock_response) as mock_post:
+            result = advisor.theory_query(abc, "What progression is this?")
+        # Verify ChatMusician-specific prompt format
+        call_args = mock_post.call_args
+        prompt_sent = call_args[1]["json"]["prompt"] if "json" in call_args[1] else call_args[0][1]["prompt"]
+        assert "Analyze this ABC notation phrase" in prompt_sent
+        assert "Music theory question:" in prompt_sent
+        # Verify it used the music_model
+        model_sent = call_args[1]["json"]["model"] if "json" in call_args[1] else call_args[0][1]["model"]
+        assert model_sent == "m-a-p/ChatMusician"
+
+    def test_theory_query_fallback_on_error(self) -> None:
+        """theory_query should return fallback string on connection error."""
+        advisor = mm.LLMAdvisor(model="test", base_url="http://fake:11434")
+        with patch("melodic_mind.requests.post", side_effect=Exception("connection refused")):
+            result = advisor.theory_query("C D E |", "What key?")
+        assert result == "No response from music model."
+
+    def test_music_model_parameter_defaults_none(self) -> None:
+        """music_model should default to None."""
+        advisor = mm.LLMAdvisor(model="qwen3.5:4b")
+        assert advisor._music_model is None
+
+    def test_music_model_parameter_stored(self) -> None:
+        """music_model should be stored when provided."""
+        advisor = mm.LLMAdvisor(model="qwen3.5:4b", music_model="chatmusician")
+        assert advisor._music_model == "chatmusician"
+
+    def test_existing_methods_still_work_with_music_model(self) -> None:
+        """Setting music_model should not affect existing LLM methods."""
+        advisor = mm.LLMAdvisor(
+            model="test", base_url="http://fake:11434",
+            music_model="chatmusician",
+        )
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "response": "Play slowly with a nocturne feel."
+        }
+        with patch("melodic_mind.requests.post", return_value=mock_response) as mock_post:
+            result = advisor.get_intention(hour=23, mood="calm", last_key="Am")
+        assert "feel_hint" in result
+        # Existing methods should still use self._model, not music_model
+        call_args = mock_post.call_args
+        model_sent = call_args[1]["json"]["model"] if "json" in call_args[1] else call_args[0][1]["model"]
+        assert model_sent == "test"  # not "chatmusician"
