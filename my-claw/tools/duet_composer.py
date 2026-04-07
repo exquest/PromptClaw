@@ -29,6 +29,15 @@ from pythonosc import udp_client
 # Senseweave ADSR voice for sustained sounds
 from senseweave.synthesis.senseweave_voice import SenseweaveVoice, PAD, BREATH, SWELL, STAB
 
+# Melodic mind — real-time note generation
+from senseweave.synthesis.melodic_mind import (
+    MelodicMind,
+    MelodicMemory,
+    LLMAdvisor,
+    RhythmFeel,
+    personality_for_hour,
+)
+
 # Korsakov modules
 from senseweave.synthesis.accompaniment import (
     DensityTracker,
@@ -66,7 +75,67 @@ from senseweave.theramini_duet import (
     suggest_response_density,
 )
 
+import math as _math
+
 THERAMINI_STATE = Path("/tmp/theramini_state.json")
+
+
+# === EQ DRIFT — slow modulation prevents ear fatigue ===
+
+class EQDrift:
+    """Slowly modulate the master chain's warmth and filter parameters.
+
+    Each parameter drifts at a coprime rate so they never repeat
+    the same pattern. Sends /n_set to the master chain node.
+    """
+
+    MASTER_NODE = 99999
+
+    def __init__(self, osc_client):
+        self.osc = osc_client
+        self.start_time = time.time()
+        # Coprime drift rates in seconds (Eno technique)
+        self.warmth_period = 37.0    # slow warmth sweep
+        self.drive_period = 43.0     # saturation drift
+        self.reverb_period = 31.0    # room drift
+        # Base values
+        self.warmth_base = 0.3
+        self.warmth_range = 0.12     # drifts ±0.12 around 0.3
+        self.drive_base = 0.15
+        self.drive_range = 0.05      # drifts ±0.05 around 0.15
+        self.reverb_base = 0.08
+        self.reverb_range = 0.04     # drifts ±0.04
+
+    def update(self, movement_energy: float = 0.5) -> None:
+        """Call every few seconds. Sends updated EQ to master chain.
+
+        movement_energy (0-1) shifts the center point:
+        high energy = brighter (less warmth), more drive
+        low energy = warmer, less drive
+        """
+        t = time.time() - self.start_time
+
+        # Coprime sine modulation
+        warmth_mod = _math.sin(2 * _math.pi * t / self.warmth_period) * self.warmth_range
+        drive_mod = _math.sin(2 * _math.pi * t / self.drive_period) * self.drive_range
+        reverb_mod = _math.sin(2 * _math.pi * t / self.reverb_period) * self.reverb_range
+
+        # Energy shifts the center: high energy = brighter
+        energy_shift = (movement_energy - 0.5) * 0.1
+
+        warmth = max(0.05, min(0.6, self.warmth_base + warmth_mod - energy_shift))
+        drive = max(0.05, min(0.3, self.drive_base + drive_mod + energy_shift * 0.5))
+        reverb = max(0.02, min(0.15, self.reverb_base + reverb_mod))
+
+        try:
+            self.osc.send_message("/n_set", [
+                self.MASTER_NODE,
+                "warmth", warmth,
+                "drive", drive,
+                "reverb", reverb,
+            ])
+        except Exception:
+            pass
 COMPOSER_STATE = Path("/tmp/composer_state.json")
 FACE_MESSAGE = Path("/tmp/face_message.json")
 
@@ -99,11 +168,11 @@ SYNTH_MAP = {
 }
 
 VOICE_DEFAULTS = {
-    "pluck":   {"attack": 0.003, "release": 0.45},
+    "pluck":   {"attack": 0.005, "release": 0.7},   # longer release = warmer, less sparse
     "bowed":   {"attack": 0.05,  "release": 1.2},
-    "kotekan": {"attack": 0.005, "release": 0.35},
-    "gong":    {"attack": 0.15,  "release": 3.5},
-    "bell":    {"attack": 0.01,  "release": 0.7},
+    "kotekan": {"attack": 0.005, "release": 0.4},
+    "gong":    {"attack": 0.15,  "release": 4.0},    # longer gong ring
+    "bell":    {"attack": 0.01,  "release": 0.8},    # slightly longer bell
     "choir":   {"attack": 0.5,   "release": 1.5},
     "breath":  {"attack": 0.8,   "release": 2.0},
 }
@@ -114,8 +183,8 @@ VOICE_DEFAULTS = {
 _sw_voice = SenseweaveVoice(osc=c)
 
 # Which voices are sustained (need ADSR control) vs percussive (fire-and-forget)
-_SUSTAINED = {"bowed", "choir", "breath", "bell"}
-_PERCUSSIVE = {"pluck", "kotekan", "gong"}
+_SUSTAINED = {"bowed", "choir", "breath"}
+_PERCUSSIVE = {"pluck", "kotekan", "gong", "bell"}  # bell is short enough for fire-and-forget
 
 
 def play_voice(voice_name: str, freq: float, amp: float, release: float | None = None) -> None:
@@ -164,15 +233,10 @@ def make_key(root: float) -> dict[int, float]:
 
 PROGS = [[1, 4, 5, 1], [1, 6, 4, 5], [1, 4, 1, 5], [1, 3, 4, 5]]
 
-MELODIES = [
-    [1, 3, 5, 8, 7, 5, 3, 1],
-    [5, 6, 5, 3, 4, 3, 2, 1],
-    [1, 2, 3, 5, 8, 7, 5, 3],
-    [8, 7, 5, 6, 5, 3, 2, 1],
-    [3, 5, 8, 7, 5, 3, 5, 1],
-]
-
-BASS_SOLOS = [[1, 5, 4, 3, 1], [1, 2, 3, 5, 1], [5, 4, 3, 2, 1]]
+# Melodic mind instances (created per song with appropriate settings)
+_memory = MelodicMemory()
+_llm = LLMAdvisor(model="qwen3.5:4b")
+_last_intention: dict = {}
 
 
 # === STATE ===
@@ -213,15 +277,33 @@ def send_face_message(text: str, duration: float = 30) -> None:
 # === SOLO MODE WITH KORSAKOV ORCHESTRATION ===
 
 def solo_song(key_name: str, song_num: int) -> str:
+    global _last_intention
     root = KEY_ROOTS.get(key_name, 130.8)
     key = make_key(root)
     prog = random.choice(PROGS)
-    mel = random.choice(MELODIES)
-    bass_solo = random.choice(BASS_SOLOS)
+
+    # Time-of-day personality shapes the entire song
+    hour = time.localtime().tm_hour
+    personality = personality_for_hour(hour)
+    feel = personality["feel"]
+    bpm = random.uniform(*personality["tempo_range"])
+    chromatic_prob = personality["chromatic_probability"]
+
+    # Create a melodic mind for this song
+    mind = MelodicMind(key_root=root, rhythm_feel=feel, bpm=bpm)
+    mind.set_chromatic_probability(chromatic_prob)
+    bt = 60.0 / bpm  # beat duration from BPM, not hardcoded
+
+    # Ask LLM for musical intention (async-ish — if slow, use cached)
+    try:
+        _last_intention = _llm.get_intention(hour, "calm", key_name)
+    except Exception:
+        pass
     next_key = KEYS_CYCLE[(KEYS_CYCLE.index(key_name) + 1) % len(KEYS_CYCLE)] if key_name in KEYS_CYCLE else "G"
 
     density = DensityTracker()
     budget = EffectBudget()
+    eq = EQDrift(c)
     prev_voice_count = 0
 
     print(f"\n=== SOLO: {key_name} major ===", flush=True)
@@ -235,24 +317,27 @@ def solo_song(key_name: str, song_num: int) -> str:
     write_composer_state(key_name, "solo", mvt, song_num)
     voices = select_voices_for_movement(mvt)
     print(f"  I. {mvt} — {len(voices)} voices", flush=True)
+    eq.update(0.2)  # low energy — warm, soft
 
     time.sleep(0.5)
-    # Bass speaks alone
-    for deg in bass_solo[:3]:
+    # Bass speaks — mind generates the opening
+    bass_phrase = mind.generate_phrase(3, [[1, 3, 5]])
+    for freq, dur, accent in bass_phrase:
         if check_theramini():
             return key_name
-        play_voice("pluck", key[deg] / 4, 0.18, 0.55)
-        time.sleep(BT * random.choice([1.5, 2, 2.5]))
-    time.sleep(BT * 2)
+        play_voice("pluck", freq / 2, 0.22 if accent else 0.16, 0.6)
+        time.sleep(dur * bt * 2)
+    time.sleep(bt * 2)
 
-    # Melody responds
-    for deg in mel[:4]:
+    # Melody responds — mind generates a response
+    melody_phrase = mind.generate_phrase(4, [[prog[0], prog[0]+2, prog[0]+4]] if prog else [[1, 3, 5]])
+    for freq, dur, accent in melody_phrase:
         if check_theramini():
             return key_name
-        play_voice("pluck", key[deg], 0.16, 0.45)
+        play_voice("pluck", freq, 0.20 if accent else 0.14, 0.5)
         density.note_played()
-        time.sleep(BT * 2)
-    time.sleep(BT * 2)
+        time.sleep(dur * bt)
+    time.sleep(bt * 2)
 
     release_sustained()  # Clean slate between movements
 
@@ -261,53 +346,67 @@ def solo_song(key_name: str, song_num: int) -> str:
     mvt_idx = 1
     write_composer_state(key_name, "solo", mvt, song_num)
     print(f"  II. {mvt}", flush=True)
+    eq.update(0.4)  # moderate — warming up
 
     # Tint available from Theme onwards
     tint_voice = suggest_tint(mvt)
 
     for rep in range(2):
         loud = 0.7 + rep * 0.1
-        # Ch.4: select accompaniment type based on density
         acc_type = select_accompaniment_type(density.density(), density.is_resting())
-        acc_root = key[prog[0]] if prog else key[1]
-        acc_fifth = key[prog[0] + 4] if prog else key[5]
+
+        # ADSR pad underneath the theme (bowed, quiet)
+        _sw_voice.set_preset("pad")
+        _sw_voice.pad_chord(key[1] / 2, key[5] / 2, 0.03 * loud)
 
         def bass_thread():
             for chord in prog:
                 r = key[chord] / 4
                 f = key[chord + 4] / 2
-                pattern = get_pattern(acc_type, r * 2, f * 2, BT, loud * 0.7)
+                pattern = get_pattern(acc_type, r * 2, f * 2, bt, loud * 0.7)
                 for freq, amp, rel, wait in pattern:
                     play_voice("pluck", freq, amp, rel)
                     time.sleep(wait)
 
-        bt = threading.Thread(target=bass_thread, daemon=True)
-        bt.start()
+        bass_t = threading.Thread(target=bass_thread, daemon=True)
+        bass_t.start()
 
-        for deg in mel:
+        # Mind generates melody in real-time
+        chord_seq = [[c, c + 2, c + 4] for c in prog] if prog else None
+        theme_phrase = mind.generate_phrase(8, chord_seq)
+        for i, (freq, dur, accent) in enumerate(theme_phrase):
             if check_theramini():
-                bt.join()
+                bass_t.join()
                 return key_name
-            play_voice("pluck", key[deg], 0.16 * loud, 0.4)
+            if freq == 0:  # rest
+                time.sleep(dur * bt)
+                continue
+            play_voice("pluck", freq, (0.22 if accent else 0.16) * loud, 0.5)
             density.note_played()
-            time.sleep(BT * random.choice([1, 1, 1.5, 0.5]))
-        bt.join()
+            # Kotekan sparkle (second rep, every 3rd note)
+            if rep == 1 and i % 3 == 0 and freq > 0:
+                play_voice("kotekan", freq * 2, 0.04 * loud, 0.3)
+            time.sleep(dur * bt)
+        bass_t.join()
 
-        # Ch.6: timbral tint at phrase boundary
+        # Release pad at end of phrase
+        release_sustained()
+
+        # Timbral tint at phrase boundary
         if budget.can_use("tinting", mvt_idx):
             tv, ta = tint_texture([v.name for v in voices], tint_voice)
             if ta > 0:
                 play_voice(tv, key[1], ta * 0.3, 2.0)
                 budget.spend("tinting")
 
-        time.sleep(BT * 3)
+        time.sleep(bt * 3)
 
     # Ch.4: pedal point at phrase boundary
     if should_pedal(0):
         pf, pa, pr = pedal_note(root, BT)
         play_voice("gong", pf, pa, pr)
 
-    time.sleep(BT * 2)
+    time.sleep(bt * 2)
 
     release_sustained()
 
@@ -318,39 +417,74 @@ def solo_song(key_name: str, song_num: int) -> str:
     nkey = make_key(nroot)
     write_composer_state(next_key, "solo", mvt, song_num)
     print(f"  III. {mvt} → {next_key}", flush=True)
+    eq.update(0.8)  # high energy — brighter, more drive
 
     # Gong transition
     play_voice("gong", key[1] / 4, 0.014, 3.5)
-    time.sleep(BT * 3)
+    time.sleep(bt * 3)
 
     # Ch.5: diverging crescendo — build from center outward
     cresc_plan = plan_diverging_crescendo(4)
 
-    # Counterpoint: melody + bass with Ch.4 density-reactive accompaniment
+    # Development: bell melody, bowed counterpoint, breath swell, pluck bass
     loud = 0.85
     acc_type = select_accompaniment_type(density.density(), density.is_resting())
+
+    # Breath swell at the start of development (ADSR controlled)
+    _sw_voice.set_preset("swell")
+    _sw_voice.swell(nkey[1], 0.04 * loud)
+
+    # Bowed pad underneath (ADSR controlled)
+    _sw_voice.set_preset("pad")
+    _sw_voice.pad_chord(nkey[1] / 2, nkey[5] / 2, 0.03 * loud)
 
     def dev_bass():
         for chord in prog:
             r = nkey[chord] / 4
             f = nkey[chord + 4] / 2
-            pattern = get_pattern(acc_type, r * 2, f * 2, BT, loud * 0.6)
+            pattern = get_pattern(acc_type, r * 2, f * 2, bt, loud * 0.6)
             for freq, amp, rel, wait in pattern:
                 play_voice("pluck", freq, amp, rel)
                 time.sleep(wait)
 
-    bt = threading.Thread(target=dev_bass, daemon=True)
-    bt.start()
+    # Bowed countermelody (lower register, delayed entry)
+    # Counter uses mind-generated phrase reversed
+    def counter_thread():
+        time.sleep(bt * 2)
+        counter_mind = MelodicMind(key_root=nroot, rhythm_feel=feel, bpm=bpm)
+        counter_phrase = counter_mind.generate_phrase(5)
+        for freq, dur, accent in counter_phrase:
+            if freq == 0: continue
+            play_voice("bowed", freq / 2, 0.06 * loud, bt * 1.5)
+            time.sleep(dur * bt * 1.3)
 
-    for deg in mel:
+    bass_t = threading.Thread(target=dev_bass, daemon=True)
+    ct = threading.Thread(target=counter_thread, daemon=True)
+    bass_t.start()
+    ct.start()
+
+    # Bell melody — mind generates in the new key
+    dev_mind = MelodicMind(key_root=nroot, rhythm_feel=feel, bpm=bpm)
+    dev_mind.set_chromatic_probability(chromatic_prob * 1.3)  # more chromatic in development
+    dev_phrase = dev_mind.generate_phrase(8, [[c, c+2, c+4] for c in prog] if prog else None)
+    for freq, dur, accent in dev_phrase:
         if check_theramini():
-            bt.join()
+            bass_t.join()
+            ct.join()
+            release_sustained()
             return next_key
-        play_voice("pluck", nkey[deg], 0.18 * loud, 0.4)
+        if freq == 0:
+            time.sleep(dur * bt)
+            continue
+        play_voice("bell", freq, (0.08 if accent else 0.05) * loud, 0.6)
         density.note_played()
-        time.sleep(BT * random.choice([1, 1, 1.5]))
-    bt.join()
-    time.sleep(BT * 2)
+        if freq > root * 3:  # high notes get sparkle
+            play_voice("kotekan", freq * 2, 0.035 * loud, 0.25)
+        time.sleep(dur * bt)
+    bass_t.join()
+    ct.join()
+    release_sustained()
+    time.sleep(bt * 2)
 
     # Ch.6: sfp pair at climax
     if budget.can_use("sfp", mvt_idx):
@@ -362,25 +496,27 @@ def solo_song(key_name: str, song_num: int) -> str:
     # Ch.5: fusion pair for climax peak
     if budget.can_use("fusion", mvt_idx):
         fp = suggest_fusion_pair("excited")
-        for deg in mel[:4]:
-            play_voice(fp[0], nkey[deg], 0.10, 0.4)
-            play_voice(fp[1], nkey[deg] * 2, 0.04, 0.3)
+        fusion_phrase = dev_mind.generate_phrase(4)
+        for freq, dur, accent in fusion_phrase:
+            if freq == 0: continue
+            play_voice(fp[0], freq, 0.14, 0.45)
+            play_voice(fp[1], freq * 2, 0.04, 0.3)
             density.note_played()
-            time.sleep(BT)
+            time.sleep(dur * bt)
         budget.spend("fusion")
 
     prev_voice_count = 5
-    time.sleep(BT * 2)
+    time.sleep(bt * 2)
 
     # Ch.6: post-tutti silence
     if should_insert_silence(prev_voice_count, 2):
         sil_beats = silence_duration_beats(prev_voice_count)
         print(f"    [silence: {sil_beats} beats]", flush=True)
-        time.sleep(BT * sil_beats)
+        time.sleep(bt * sil_beats)
         # Re-enter with lightest voice
         reentry = suggest_reentry_voice()
         play_voice(reentry, nkey[1], 0.03, 2.0)
-        time.sleep(BT * 2)
+        time.sleep(bt * 2)
 
     release_sustained()
 
@@ -389,27 +525,39 @@ def solo_song(key_name: str, song_num: int) -> str:
     mvt_idx = 3
     write_composer_state(key_name, "solo", mvt, song_num)
     print(f"  IV. {mvt} — {key_name}", flush=True)
+    eq.update(0.35)  # pulling back — warmer again
 
-    # Ch.1: re-orchestrate the return — bowed takes melody this time
+    # Re-orchestrate: bowed melody, breath pad, gentle kotekan ornaments
     play_voice("gong", key[1] / 4, 0.012, 3.0)
-    time.sleep(BT * 3)
+    time.sleep(bt * 3)
 
-    # Ch.4: simpler accompaniment (melody is legato bowed)
+    # Breath pad underneath (ADSR)
+    _sw_voice.set_preset("breath")
+    _sw_voice.breath_tone(key[1] / 2, 0.03)
+
     def recap_bass():
         for chord in prog:
-            play_voice("pluck", key[chord] / 4, 0.12, 0.4)
-            time.sleep(BT * 3)
+            play_voice("pluck", key[chord] / 4, 0.14, 0.45)
+            time.sleep(bt * 3)
 
-    bt = threading.Thread(target=recap_bass, daemon=True)
-    bt.start()
+    bass_t = threading.Thread(target=recap_bass, daemon=True)
+    bass_t.start()
 
-    for deg in mel:
-        play_voice("bowed", key[deg] / 2, 0.08, BT * 1.5)
-        time.sleep(BT * 1.3)
-    bt.join()
-    time.sleep(BT * 3)
+    # Mind generates recap melody — same key, different notes
+    recap_phrase = mind.generate_phrase(8, [[c, c+2, c+4] for c in prog] if prog else None)
+    for i, (freq, dur, accent) in enumerate(recap_phrase):
+        if freq == 0:
+            time.sleep(dur * bt)
+            continue
+        play_voice("bowed", freq / 2, 0.07, bt * 1.5)
+        if i % 4 == 3 and freq > 0:
+            play_voice("kotekan", freq * 2, 0.03, 0.35)
+        time.sleep(dur * bt * 1.3)
+    bass_t.join()
+    release_sustained()
+    time.sleep(bt * 3)
 
-    prev_voice_count = 2
+    prev_voice_count = 3
 
     release_sustained()
 
@@ -418,20 +566,25 @@ def solo_song(key_name: str, song_num: int) -> str:
     mvt_idx = 4
     write_composer_state(key_name, "solo", mvt, song_num)
     print(f"  V. {mvt}", flush=True)
+    eq.update(0.15)  # lowest energy — warmest, softest
 
-    # Ch.6: new timbre reserved for resolution
+    # Choir swell — the timbre saved for this moment (ADSR)
     if budget.can_use("new_timbre", mvt_idx):
-        play_voice("choir", key[5], 0.03, 3.0)
-        time.sleep(2)
+        _sw_voice.set_preset("swell")
+        _sw_voice.swell(key[1], 0.04)
+        _sw_voice.swell(key[5], 0.03)
         budget.spend("new_timbre")
+        time.sleep(2)
+        release_sustained()
 
-    # Three slow descending notes
-    play_voice("pluck", key[5], 0.10, 0.6)
-    time.sleep(BT * 4)
-    play_voice("pluck", key[3], 0.08, 0.6)
-    time.sleep(BT * 4)
-    play_voice("pluck", key[1], 0.06, 0.8)
-    time.sleep(BT * 5)
+    # Three slow descending notes — bell for warmth
+    play_voice("bell", key[5], 0.06, 0.8)
+    time.sleep(bt * 4)
+    play_voice("bell", key[3], 0.05, 0.8)
+    time.sleep(bt * 5)
+    # Final note on pluck — return to the first voice
+    play_voice("pluck", key[1], 0.08, 1.0)
+    time.sleep(bt * 5)
 
     # Silence — release everything
     release_sustained()
@@ -466,16 +619,16 @@ def duet_loop(initial_key: str, song_num: int) -> str:
                 for freq, dur in phrase:
                     play_voice("pluck", freq, 0.12, 0.45)
                     time.sleep(dur * BT)
-                time.sleep(BT * 2)
+                time.sleep(bt * 2)
             elif silence_count == 8:
                 # Longer pause — bass figure
                 root = KEY_ROOTS.get(current_key, 130.8)
                 for deg in [1, 5, 3, 1]:
                     key = make_key(root)
                     play_voice("pluck", key[deg] / 4, 0.10, 0.5)
-                    time.sleep(BT * 2)
+                    time.sleep(bt * 2)
             else:
-                time.sleep(BT * 2)
+                time.sleep(bt * 2)
             continue
 
         silence_count = 0
@@ -494,18 +647,18 @@ def duet_loop(initial_key: str, song_num: int) -> str:
         # Adapt: loud playing → quiet sustained; quiet → gentle waltz
         if their_rms > 0.1:
             play_voice("pluck", key[random.choice([1, 3, 5])] / 4, 0.06, 0.6)
-            time.sleep(BT * 3)
+            time.sleep(bt * 3)
         elif their_rms > 0.02:
             rd = random.choice([1, 4, 5])
-            play_voice("pluck", key[rd] / 4, 0.10, 0.4)
-            time.sleep(BT)
+            play_voice("pluck", key[rd] / 4, 0.14, 0.45)
+            time.sleep(bt)
             play_voice("pluck", key[rd + 4] / 2, 0.05, 0.3)
-            time.sleep(BT)
+            time.sleep(bt)
             play_voice("pluck", key[rd + 4] / 2, 0.04, 0.25)
-            time.sleep(BT)
+            time.sleep(bt)
         else:
             play_voice("pluck", key[random.choice([1, 3, 5, 8])], 0.04, 0.5)
-            time.sleep(BT * 2)
+            time.sleep(bt * 2)
 
     print(f"  Theramini silent → SOLO in {current_key}", flush=True)
     send_face_message("", 0)
