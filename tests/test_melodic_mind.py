@@ -1,7 +1,8 @@
 """Tests for the MelodicMind musical brain module.
 
 Covers: ChromaticScale, RhythmFeel, TimeOfDayPersonality, MelodicMemory,
-MelodicMind note generation, and LLMAdvisor (mocked).
+MelodicMind note generation, LLMAdvisor (mocked), Lewis rhythm concepts
+(humanized timing, phrase pairs, RoomPulse, event response).
 """
 from __future__ import annotations
 
@@ -9,6 +10,7 @@ import json
 import math
 import random
 import sys
+import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -433,3 +435,359 @@ class TestLLMAdvisor:
         with patch("melodic_mind.requests.post", side_effect=Exception("err")):
             result = advisor.suggest_next_chord("C", "I", "calm")
         assert isinstance(result, str)
+
+
+# ---------------------------------------------------------------------------
+# Lewis Rhythm Concepts — Humanized Timing
+# ---------------------------------------------------------------------------
+
+
+class TestHumanizedTiming:
+    def test_duration_varies_from_input(self) -> None:
+        """humanize_duration should return a value different from the raw input
+        (most of the time — statistical over many calls)."""
+        random.seed(42)
+        mind = mm.MelodicMind(key_root=440.0, rhythm_feel=mm.RhythmFeel.WALTZ, bpm=120.0)
+        mind.timing_feel = "human"
+        raw = 1.0
+        results = [mind.humanize_duration(raw) for _ in range(50)]
+        # At least some should differ from raw
+        different = [r for r in results if abs(r - raw) > 1e-6]
+        assert len(different) > 30, "Expected most humanized durations to differ from raw"
+
+    def test_high_energy_biases_early(self) -> None:
+        """With energy > 0.6 and 'human' feel, durations should be biased shorter
+        (early = driving)."""
+        random.seed(42)
+        mind = mm.MelodicMind(key_root=440.0, rhythm_feel=mm.RhythmFeel.MARCH, bpm=120.0)
+        mind.timing_feel = "human"
+        mind.set_energy(0.9)
+        raw = 1.0
+        results = [mind.humanize_duration(raw) for _ in range(200)]
+        avg = sum(results) / len(results)
+        # High energy should bias early (shorter durations)
+        assert avg < raw, f"Expected avg < {raw}, got {avg}"
+
+    def test_low_energy_biases_late(self) -> None:
+        """With energy < 0.4, durations should be biased longer (late = laid-back)."""
+        random.seed(42)
+        mind = mm.MelodicMind(key_root=440.0, rhythm_feel=mm.RhythmFeel.BALLAD, bpm=120.0)
+        mind.timing_feel = "human"
+        mind.set_energy(0.1)
+        raw = 1.0
+        results = [mind.humanize_duration(raw) for _ in range(200)]
+        avg = sum(results) / len(results)
+        assert avg > raw, f"Expected avg > {raw}, got {avg}"
+
+    def test_straight_feel_minimal_variation(self) -> None:
+        """Straight timing feel should have very small variation (+/-2ms)."""
+        random.seed(42)
+        mind = mm.MelodicMind(key_root=440.0, rhythm_feel=mm.RhythmFeel.MARCH, bpm=120.0)
+        mind.timing_feel = "straight"
+        raw = 1.0
+        results = [mind.humanize_duration(raw) for _ in range(100)]
+        # At 120 BPM, 1 beat = 500ms. 2ms = 0.004 beats.
+        for r in results:
+            assert abs(r - raw) < 0.01, f"Straight feel variation too large: {r}"
+
+    def test_swing_feel_late_on_offbeats(self) -> None:
+        """Swing should push off-beats (odd counter positions) late."""
+        random.seed(42)
+        mind = mm.MelodicMind(key_root=440.0, rhythm_feel=mm.RhythmFeel.RAGTIME, bpm=120.0)
+        mind.timing_feel = "swing"
+        raw = 1.0
+        onbeat_vals = []
+        offbeat_vals = []
+        for i in range(200):
+            mind._note_counter = i
+            val = mind.humanize_duration(raw)
+            if i % 2 == 0:
+                onbeat_vals.append(val)
+            else:
+                offbeat_vals.append(val)
+        offbeat_avg = sum(offbeat_vals) / len(offbeat_vals)
+        onbeat_avg = sum(onbeat_vals) / len(onbeat_vals)
+        # Off-beats should be later (longer) than on-beats
+        assert offbeat_avg > onbeat_avg, (
+            f"Swing off-beats should be later: offbeat={offbeat_avg}, onbeat={onbeat_avg}"
+        )
+
+    def test_push_feel_always_early(self) -> None:
+        """Push timing should always produce earlier (shorter) durations."""
+        random.seed(42)
+        mind = mm.MelodicMind(key_root=440.0, rhythm_feel=mm.RhythmFeel.MARCH, bpm=120.0)
+        mind.timing_feel = "push"
+        raw = 1.0
+        results = [mind.humanize_duration(raw) for _ in range(100)]
+        for r in results:
+            assert r < raw, f"Push feel should always be early, got {r}"
+
+    def test_set_timing_feel_validates(self) -> None:
+        mind = mm.MelodicMind(key_root=440.0, rhythm_feel=mm.RhythmFeel.WALTZ, bpm=120.0)
+        mind.set_timing_feel("swing")
+        assert mind.timing_feel == "swing"
+        with pytest.raises(ValueError):
+            mind.set_timing_feel("dubstep")
+
+    def test_next_note_applies_humanization(self) -> None:
+        """next_note should apply humanized timing to durations."""
+        random.seed(42)
+        mind = mm.MelodicMind(key_root=440.0, rhythm_feel=mm.RhythmFeel.WALTZ, bpm=120.0)
+        mind.timing_feel = "human"
+        # Generate many notes and check durations are not all identical
+        durations = []
+        for _ in range(30):
+            _, dur, _ = mind.next_note([1, 3, 5])
+            durations.append(dur)
+        unique = set(round(d, 6) for d in durations)
+        assert len(unique) > 3, "Expected humanized timing to produce varied durations"
+
+
+# ---------------------------------------------------------------------------
+# Lewis Rhythm Concepts — Antecedent-Consequent Phrase Pairs
+# ---------------------------------------------------------------------------
+
+
+class TestPhrasePair:
+    def test_antecedent_ends_non_tonic(self) -> None:
+        """Antecedent phrase should end on a non-tonic (degree 2, 3, 5, or 7)."""
+        random.seed(42)
+        root = 261.63  # C4
+        mind = mm.MelodicMind(key_root=root, rhythm_feel=mm.RhythmFeel.BALLAD, bpm=90.0)
+        antecedent, _ = mind.generate_phrase_pair(length=8)
+
+        # The last note's frequency should NOT be the tonic (or octave of tonic)
+        last_freq = antecedent[-1][0]
+        tonic = root
+        # Check it's not the tonic or an octave of it
+        if last_freq > 0:
+            ratio = last_freq / tonic
+            # Tonic would be ratio = 1.0, 2.0, 0.5, etc.
+            is_tonic = any(
+                abs(ratio - 2**k) < 0.01 for k in range(-2, 3)
+            )
+            assert not is_tonic, f"Antecedent should not end on tonic, got freq={last_freq}"
+
+    def test_consequent_ends_on_tonic(self) -> None:
+        """Consequent phrase should end on tonic (degree 1)."""
+        random.seed(42)
+        root = 261.63
+        mind = mm.MelodicMind(key_root=root, rhythm_feel=mm.RhythmFeel.BALLAD, bpm=90.0)
+        _, consequent = mind.generate_phrase_pair(length=8)
+
+        last_freq = consequent[-1][0]
+        # Should be the tonic
+        assert last_freq == pytest.approx(root, rel=1e-3), (
+            f"Consequent should end on tonic ({root}), got {last_freq}"
+        )
+
+    def test_shared_opening_notes(self) -> None:
+        """Antecedent and consequent should share their opening 2-3 notes."""
+        random.seed(42)
+        root = 440.0
+        mind = mm.MelodicMind(key_root=root, rhythm_feel=mm.RhythmFeel.WALTZ, bpm=120.0)
+        antecedent, consequent = mind.generate_phrase_pair(length=8)
+
+        shared_count = min(3, len(antecedent), len(consequent))
+        for i in range(shared_count):
+            a_freq = antecedent[i][0]
+            c_freq = consequent[i][0]
+            assert a_freq == pytest.approx(c_freq, rel=1e-6), (
+                f"Note {i} should be shared: antecedent={a_freq}, consequent={c_freq}"
+            )
+
+    def test_phrase_pair_returns_correct_lengths(self) -> None:
+        random.seed(42)
+        mind = mm.MelodicMind(key_root=440.0, rhythm_feel=mm.RhythmFeel.WALTZ, bpm=120.0)
+        ant, con = mind.generate_phrase_pair(length=8)
+        assert len(ant) == 8
+        assert len(con) == 8
+
+    def test_phrase_pair_with_chord_progression(self) -> None:
+        random.seed(42)
+        mind = mm.MelodicMind(key_root=440.0, rhythm_feel=mm.RhythmFeel.BALLAD, bpm=80.0)
+        prog = [[1, 3, 5], [4, 6, 1], [5, 7, 2], [1, 3, 5]]
+        ant, con = mind.generate_phrase_pair(length=8, chord_progression=prog)
+        assert len(ant) == 8
+        assert len(con) == 8
+
+
+# ---------------------------------------------------------------------------
+# Lewis Rhythm Concepts — RoomPulse
+# ---------------------------------------------------------------------------
+
+
+class TestRoomPulse:
+    def test_feed_rms_stores_values(self) -> None:
+        pulse = mm.RoomPulse()
+        pulse.feed_rms(0.5)
+        pulse.feed_rms(0.8)
+        assert len(pulse._rms_history) == 2
+
+    def test_feed_rms_caps_history(self) -> None:
+        pulse = mm.RoomPulse()
+        for i in range(300):
+            pulse.feed_rms(float(i))
+        assert len(pulse._rms_history) == mm._ROOM_PULSE_MAX_HISTORY
+
+    def test_estimate_tempo_no_data(self) -> None:
+        pulse = mm.RoomPulse()
+        assert pulse.estimate_room_tempo() == 0.0
+
+    def test_estimate_tempo_insufficient_data(self) -> None:
+        pulse = mm.RoomPulse()
+        for _ in range(5):
+            pulse.feed_rms(0.5)
+        assert pulse.estimate_room_tempo() == 0.0
+
+    def test_estimate_tempo_with_periodic_signal(self) -> None:
+        """Feed a synthetic periodic signal and verify tempo detection."""
+        pulse = mm.RoomPulse()
+        # Simulate 120 BPM = 2 beats/sec = period of 5 samples at 10 samples/sec
+        target_bpm = 120.0
+        samples_per_sec = 10.0
+        period_samples = samples_per_sec * 60.0 / target_bpm  # 5
+        for i in range(100):
+            val = math.sin(2 * math.pi * i / period_samples)
+            pulse.feed_rms(val)
+        bpm = pulse.estimate_room_tempo()
+        assert bpm > 0, "Should detect a rhythm"
+        # Allow some tolerance in BPM detection
+        assert abs(bpm - target_bpm) < 30, f"Expected ~{target_bpm} BPM, got {bpm}"
+
+    def test_estimate_tempo_with_constant_signal(self) -> None:
+        """A constant signal should not detect any rhythm."""
+        pulse = mm.RoomPulse()
+        for _ in range(100):
+            pulse.feed_rms(0.5)
+        bpm = pulse.estimate_room_tempo()
+        assert bpm == 0.0, "Constant signal should yield no rhythm"
+
+    def test_suggest_tempo_adjustment_no_room_pulse(self) -> None:
+        pulse = mm.RoomPulse()
+        adj = pulse.suggest_tempo_adjustment(current_bpm=100.0)
+        assert adj == 0.0
+
+    def test_suggest_tempo_adjustment_nudges_toward_room(self) -> None:
+        pulse = mm.RoomPulse()
+        pulse._estimated_bpm = 110.0
+        adj = pulse.suggest_tempo_adjustment(current_bpm=100.0)
+        # Should nudge upward (positive)
+        assert adj > 0
+        assert adj <= 5.0, "Adjustment should be capped at +/-5 BPM"
+
+    def test_suggest_tempo_adjustment_nudges_down(self) -> None:
+        pulse = mm.RoomPulse()
+        pulse._estimated_bpm = 80.0
+        adj = pulse.suggest_tempo_adjustment(current_bpm=100.0)
+        assert adj < 0
+        assert adj >= -5.0
+
+    def test_suggest_tempo_adjustment_clamped(self) -> None:
+        """Even if room BPM is very different, adjustment is capped."""
+        pulse = mm.RoomPulse()
+        pulse._estimated_bpm = 200.0
+        adj = pulse.suggest_tempo_adjustment(current_bpm=60.0)
+        # diff = 140, clamped to 5, then * 0.3 = 1.5
+        assert abs(adj) <= 5.0 * 0.3 + 0.01
+
+    def test_read_room_state_with_mock_file(self, tmp_path: Path) -> None:
+        """read_room_state should parse a JSON file and feed RMS values."""
+        pulse = mm.RoomPulse()
+        room_data = {
+            "heartbeat": {
+                "rms_history": [0.1, 0.5, 0.9, 0.3, 0.7]
+            }
+        }
+        room_file = tmp_path / "room_activity.json"
+        room_file.write_text(json.dumps(room_data))
+
+        with patch.object(mm, "_ROOM_ACTIVITY_PATH", str(room_file)):
+            pulse.read_room_state()
+        assert len(pulse._rms_history) == 5
+
+    def test_read_room_state_missing_file(self) -> None:
+        """read_room_state should not crash if the file is missing."""
+        pulse = mm.RoomPulse()
+        with patch.object(mm, "_ROOM_ACTIVITY_PATH", "/tmp/nonexistent_room_xyz.json"):
+            pulse.read_room_state()  # should not raise
+        assert len(pulse._rms_history) == 0
+
+    def test_read_room_state_bad_json(self, tmp_path: Path) -> None:
+        """read_room_state should handle malformed JSON gracefully."""
+        pulse = mm.RoomPulse()
+        bad_file = tmp_path / "room_activity.json"
+        bad_file.write_text("not valid json {{{")
+        with patch.object(mm, "_ROOM_ACTIVITY_PATH", str(bad_file)):
+            pulse.read_room_state()  # should not raise
+        assert len(pulse._rms_history) == 0
+
+    def test_read_room_state_flat_rms_key(self, tmp_path: Path) -> None:
+        """read_room_state should also handle {"rms": [...]} format."""
+        pulse = mm.RoomPulse()
+        room_data = {"rms": [0.2, 0.4, 0.6]}
+        room_file = tmp_path / "room_activity.json"
+        room_file.write_text(json.dumps(room_data))
+        with patch.object(mm, "_ROOM_ACTIVITY_PATH", str(room_file)):
+            pulse.read_room_state()
+        assert len(pulse._rms_history) == 3
+
+
+# ---------------------------------------------------------------------------
+# Lewis Rhythm Concepts — Nonperiodic Event Response
+# ---------------------------------------------------------------------------
+
+
+class TestEventResponse:
+    def test_transient_returns_accented_staccato(self) -> None:
+        random.seed(42)
+        mind = mm.MelodicMind(key_root=440.0, rhythm_feel=mm.RhythmFeel.WALTZ, bpm=120.0)
+        result = mind.respond_to_event("transient")
+        assert result is not None
+        freq, duration, accent = result
+        assert freq > 0, "Transient should produce a note"
+        assert duration <= 0.5, "Transient should be short/staccato"
+        assert accent is True, "Transient should be accented"
+
+    def test_speech_returns_none(self) -> None:
+        mind = mm.MelodicMind(key_root=440.0, rhythm_feel=mm.RhythmFeel.WALTZ, bpm=120.0)
+        result = mind.respond_to_event("speech")
+        assert result is None, "Speech events should return None (don't compete)"
+
+    def test_silence_returns_long_quiet_note(self) -> None:
+        mind = mm.MelodicMind(key_root=440.0, rhythm_feel=mm.RhythmFeel.NOCTURNE, bpm=60.0)
+        result = mind.respond_to_event("silence")
+        assert result is not None
+        freq, duration, accent = result
+        assert freq > 0, "Silence response should be a note"
+        assert duration >= 2.0, "Silence response should be a long note"
+        assert accent is False, "Silence response should be unaccented (quiet)"
+
+    def test_silence_returns_tonic(self) -> None:
+        mind = mm.MelodicMind(key_root=261.63, rhythm_feel=mm.RhythmFeel.NOCTURNE, bpm=60.0)
+        result = mind.respond_to_event("silence")
+        assert result is not None
+        freq = result[0]
+        assert freq == pytest.approx(261.63, rel=1e-3), "Silence note should be tonic"
+
+    def test_unknown_event_returns_none(self) -> None:
+        mind = mm.MelodicMind(key_root=440.0, rhythm_feel=mm.RhythmFeel.WALTZ, bpm=120.0)
+        result = mind.respond_to_event("earthquake")
+        assert result is None
+
+    def test_transient_note_is_in_key(self) -> None:
+        """Transient response should produce a note from degrees 1, 3, or 5."""
+        random.seed(42)
+        root = 440.0
+        mind = mm.MelodicMind(key_root=root, rhythm_feel=mm.RhythmFeel.MARCH, bpm=120.0)
+        cs = mm.ChromaticScale()
+        valid_freqs = {
+            round(cs.scale_tone(root, 1, 0), 4),
+            round(cs.scale_tone(root, 3, 0), 4),
+            round(cs.scale_tone(root, 5, 0), 4),
+        }
+        for _ in range(20):
+            result = mind.respond_to_event("transient")
+            assert result is not None
+            freq = round(result[0], 4)
+            assert freq in valid_freqs, f"Transient note {freq} not in key triad {valid_freqs}"
