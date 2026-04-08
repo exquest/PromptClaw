@@ -773,6 +773,50 @@ def run_agent(agent: str, prompt: str, timeout: int = MAX_AGENT_TIMEOUT,
     try:
         spinner.start()
         pet_manager.on_task_start(agent)
+        if agent == "ollama":
+            output = _invoke_ollama(prompt, timeout=timeout, task_label=task_label)
+            output = output or "(no output)"
+            duration_s = time.time() - start_time
+            success = not output.startswith("[")
+            _, evolved, pet = pet_manager.on_task_end(
+                agent,
+                success=success,
+                duration_s=duration_s,
+            )
+            if evolved:
+                tg_send(pet_manager.evolution_announcement(pet))
+            pet_manager.schedule_idle(agent)
+            observatory.record_task_result(
+                agent=agent,
+                task_id=task_label or prompt[:50],
+                success=success,
+                duration_ms=int(duration_s * 1000),
+                tokens=0,
+                gate_pass=True,
+            )
+
+            if output.startswith("[") and ("timed out" in output or "error" in output or "not found" in output):
+                failure = Failure(
+                    type="agent_error",
+                    error_message=output,
+                    context={"agent": agent, "prompt": prompt[:200], "retry_count": _retry_count},
+                    timestamp=time.time(),
+                )
+                heal_result = healer.handle_failure(failure)
+                if heal_result and heal_result.resolved:
+                    observatory.record_healing(failure.type, heal_result.severity, heal_result.action_taken, True, {})
+            elif not success:
+                failure = Failure(
+                    type="agent_error",
+                    error_message=output,
+                    context={"agent": agent, "prompt": prompt[:200], "retry_count": _retry_count},
+                    timestamp=time.time(),
+                )
+                heal_result = healer.handle_failure(failure)
+                if heal_result and heal_result.resolved:
+                    observatory.record_healing(failure.type, heal_result.severity, heal_result.action_taken, True, {})
+            return output
+
         result = _invoke_agent_process(agent, prompt, timeout)
         duration_s = time.time() - start_time
         if result.timed_out:
