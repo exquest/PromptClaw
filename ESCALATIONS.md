@@ -1,0 +1,49 @@
+# Escalations
+
+Items requiring human review. Append-only per task.
+
+## T-001 (2026-04-01T18:55:24.984659+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-001 (2026-04-01T18:56:11.434931+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-001 (2026-04-01T18:56:41.692113+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-009@20260408T220341Z (2026-04-08T22:12:54.185469+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=85.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=85.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=85.0%
+
+## T-001@20260408T223256Z (2026-04-08T22:33:10.555043+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+
+## T-001@20260408T223256Z (2026-04-08T23:10:00+00:00)
+
+- **Reason:** Validation blocked by pre-existing repo issues
+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+
+## T-004@20260408T223256Z (2026-04-08T23:05:05.007269+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+
+## T-004@20260408T223256Z (2026-04-09T00:14:00+00:00)
+
+- **Reason:** Scope constraint on orchestration docs
+- **Details:** `AGENTS.md` asks for architecture/command/startup/changelog updates on orchestration changes, but this task also constrained edits to the bug-fix scope and those doc files already had unrelated local modifications. I limited the change set to the Ollama routing fix plus regression coverage and did not modify the product docs in this task.
