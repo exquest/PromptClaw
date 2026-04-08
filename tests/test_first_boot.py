@@ -16,6 +16,8 @@ sys.path.insert(0, "/home/user/cypherclaw/src")
 
 from cypherclaw.first_boot import (
     FirstBootAnnouncer,
+    bootstrap_identity,
+    generate_artistic_name,
     mint_identity,
 )
 
@@ -364,3 +366,115 @@ class TestFullIntegration:
         assert announcer.maybe_announce() is None
         mock_fn.assert_not_called()
         assert not announced_path.exists()
+
+
+# ── Artistic name generation ───────────────────────────────────
+
+
+class TestGenerateArtisticName:
+    """Tests for the artistic instance name generator."""
+
+    def test_returns_adjective_dash_noun(self):
+        name = generate_artistic_name()
+        parts = name.split("-")
+        assert len(parts) == 2, f"Expected 'adjective-noun', got {name!r}"
+
+    def test_deterministic_with_seed(self):
+        import random
+
+        rng = random.Random(42)
+        name1 = generate_artistic_name(rng=rng)
+        rng2 = random.Random(42)
+        name2 = generate_artistic_name(rng=rng2)
+        assert name1 == name2
+
+    def test_different_seeds_produce_different_names(self):
+        import random
+
+        name1 = generate_artistic_name(rng=random.Random(1))
+        name2 = generate_artistic_name(rng=random.Random(999))
+        assert name1 != name2
+
+    def test_name_uses_lowercase_alpha(self):
+        import random
+
+        for seed in range(50):
+            name = generate_artistic_name(rng=random.Random(seed))
+            assert name == name.lower()
+            assert all(c.isalpha() or c == "-" for c in name)
+
+    def test_mint_identity_uses_artistic_name(self, tmp_path):
+        """mint_identity without explicit name should use an artistic name."""
+        path = tmp_path / "identity.json"
+        identity = mint_identity(identity_path=path)
+        parts = identity.instance_name.split("-")
+        assert len(parts) == 2
+        assert all(part.isalpha() for part in parts)
+
+
+# ── bootstrap_identity ─────────────────────────────────────────
+
+
+class TestBootstrapIdentity:
+    """Tests for the load-or-create bootstrap_identity function."""
+
+    def test_creates_new_on_first_boot(self, tmp_path):
+        path = tmp_path / "identity.json"
+        identity = bootstrap_identity(identity_path=path)
+
+        assert path.exists()
+        assert identity.instance_id
+        assert identity.instance_name
+        assert identity.mode == "standalone"
+
+    def test_loads_existing_on_subsequent_boot(self, tmp_path):
+        path = tmp_path / "identity.json"
+        first = bootstrap_identity(identity_path=path)
+        second = bootstrap_identity(identity_path=path)
+
+        assert first.instance_id == second.instance_id
+        assert first.instance_name == second.instance_name
+        assert first.created_at == second.created_at
+
+    def test_does_not_overwrite_existing(self, tmp_path):
+        path = tmp_path / "identity.json"
+        _write_identity(path, mode="federated", instance_id="keep-me",
+                        instance_name="precious-artifact")
+
+        identity = bootstrap_identity(identity_path=path)
+
+        assert identity.instance_id == "keep-me"
+        assert identity.instance_name == "precious-artifact"
+        assert identity.mode == "federated"
+
+    def test_recovers_from_corrupt_file(self, tmp_path):
+        path = tmp_path / "identity.json"
+        path.write_text("{corrupt json!!")
+
+        identity = bootstrap_identity(identity_path=path)
+
+        assert identity.instance_id  # fresh identity minted
+        assert path.exists()
+        data = json.loads(path.read_text())
+        assert data["instance_id"] == identity.instance_id
+
+    def test_creates_parent_directory(self, tmp_path):
+        path = tmp_path / "nested" / "deep" / "identity.json"
+        identity = bootstrap_identity(identity_path=path)
+
+        assert path.exists()
+        assert identity.instance_id
+
+    def test_preserves_mode_and_release(self, tmp_path):
+        path = tmp_path / "identity.json"
+        identity = bootstrap_identity(
+            mode="federated",
+            release="3.0.0",
+            parent_id="parent-abc",
+            identity_path=path,
+        )
+
+        assert identity.mode == "federated"
+        assert identity.release == "3.0.0"
+        assert identity.parent_id == "parent-abc"
+        assert identity.clone_timestamp is not None

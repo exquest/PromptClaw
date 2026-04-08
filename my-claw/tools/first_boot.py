@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import logging
+import random
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -25,8 +26,47 @@ log = logging.getLogger("cypherclaw.first_boot")
 Mode = Literal["standalone", "federated"]
 
 # Default paths — overridable for testing via constructor args.
-_DEFAULT_IDENTITY_PATH = Path("/home/user/cypherclaw/.promptclaw/identity.json")
-_DEFAULT_ANNOUNCED_PATH = Path("/home/user/cypherclaw/.promptclaw/.first_boot_announced")
+_DEFAULT_IDENTITY_PATH = Path.home() / ".promptclaw" / "identity.json"
+_DEFAULT_ANNOUNCED_PATH = Path.home() / ".promptclaw" / ".first_boot_announced"
+
+# ── Artistic name generator ────────────────────────────────────
+
+_ADJECTIVES: tuple[str, ...] = (
+    "amber", "arcane", "astral", "blazing", "cobalt",
+    "crimson", "crystal", "dappled", "drifting", "dusted",
+    "echoing", "ember", "fading", "ferric", "flickering",
+    "gilded", "glinting", "hollow", "hushed", "ivory",
+    "jade", "latticed", "liminal", "lucid", "midnight",
+    "molten", "mossy", "nebula", "obsidian", "onyx",
+    "opal", "pearlescent", "phantom", "prismatic", "quilted",
+    "radiant", "rippled", "rusted", "sapphire", "shimmering",
+    "silken", "smoldering", "spectral", "tidal", "twilight",
+    "umbral", "veiled", "verdant", "woven", "zephyr",
+)
+
+_NOUNS: tuple[str, ...] = (
+    "anvil", "archive", "basilisk", "beacon", "cairn",
+    "canopy", "chimera", "citadel", "conduit", "crucible",
+    "drake", "ember", "falcon", "forge", "furnace",
+    "garnet", "glyph", "grotto", "harbor", "hearth",
+    "heron", "junction", "kiln", "labyrinth", "lantern",
+    "lattice", "loom", "monolith", "nexus", "obelisk",
+    "oracle", "parchment", "pinnacle", "prism", "quarry",
+    "raven", "relay", "ridge", "sanctum", "sentinel",
+    "shard", "sigil", "spire", "terrace", "thorn",
+    "totem", "turret", "vault", "vortex", "wellspring",
+)
+
+
+def generate_artistic_name(*, rng: random.Random | None = None) -> str:
+    """Generate an artistic instance name from word lists.
+
+    Returns a name like ``"molten-sigil"`` or ``"twilight-beacon"``.
+    """
+    r = rng or random.Random()  # noqa: S311
+    adj = r.choice(_ADJECTIVES)
+    noun = r.choice(_NOUNS)
+    return f"{adj}-{noun}"
 
 
 @dataclass
@@ -169,7 +209,7 @@ def mint_identity(
     """Create and persist a new instance identity (IDLINE-002)."""
     identity = InstanceIdentity(
         instance_id=str(uuid.uuid4()),
-        instance_name=instance_name or f"home-{uuid.uuid4().hex[:8]}",
+        instance_name=instance_name or generate_artistic_name(),
         mode=mode,
         created_at=datetime.now(timezone.utc).isoformat(),
         release=release,
@@ -178,4 +218,36 @@ def mint_identity(
     )
     identity_path.parent.mkdir(parents=True, exist_ok=True)
     identity_path.write_text(json.dumps(identity.to_dict(), indent=2))
+    return identity
+
+
+def bootstrap_identity(
+    *,
+    mode: Mode = "standalone",
+    release: str = "",
+    parent_id: str | None = None,
+    identity_path: Path = _DEFAULT_IDENTITY_PATH,
+) -> InstanceIdentity:
+    """Load an existing identity or mint a new one on first boot.
+
+    If *identity_path* already contains a valid identity record it is
+    returned as-is.  Otherwise a fresh identity is minted, persisted,
+    and returned.
+    """
+    if identity_path.exists():
+        try:
+            payload = json.loads(identity_path.read_text())
+            identity = InstanceIdentity.from_dict(payload)
+            log.info("Loaded existing identity %s (%s)", identity.instance_id, identity.instance_name)
+            return identity
+        except (json.JSONDecodeError, KeyError, TypeError) as exc:
+            log.warning("Corrupt identity file, minting fresh: %s", exc)
+
+    identity = mint_identity(
+        mode=mode,
+        release=release,
+        parent_id=parent_id,
+        identity_path=identity_path,
+    )
+    log.info("Minted new identity %s (%s)", identity.instance_id, identity.instance_name)
     return identity
