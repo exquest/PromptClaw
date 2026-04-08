@@ -1,311 +1,590 @@
-"""Keyboard-to-face Telegram chat. Type on keyboard, see on face display.
+"""CypherClaw Face Terminal — local Telegram + system monitor + chat.
 
-Stdlib + PIL only — no pygame dependency. The face_display.py driver
-calls into this module, routing pygame key events and rendering the
-overlay onto the PIL image before converting to a pygame surface.
+Everything flows through the face: keyboard chat, LLM responses,
+incoming Telegram messages, system status changes. All floating text
+on the face display, fading after a few seconds.
+
+Roles:
+  user   — typed on the keyboard (right-aligned, light blue-white)
+  bot    — LLM or Telegram responses (left-aligned, bright blue)
+  system — status changes (centered, dim amber)
+  remote — incoming Telegram from phone (left-aligned, green)
 """
 from __future__ import annotations
 
 import json
+import math
 import os
+import random
+import threading
 import time
 import urllib.request
-import urllib.error
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+def _strip_emoji(text: str) -> str:
+    """Remove emoji and other non-BMP characters that PIL can't render."""
+    return "".join(c for c in text if ord(c) < 0x10000 or c.isascii()).strip()
+
+
+def _clean_history_text(text: str) -> str:
+    """Strip agent prefixes and noise from daemon conversation history."""
+    import re
+    # Remove [claude: ...] or [gemini: ...] wrapper
+    text = re.sub(r'^\[(?:claude|gemini|codex):\s*', '', text)
+    if text.endswith(']') and '[' not in text:
+        text = text[:-1]
+    # Remove MacBook Claude prefix
+    text = re.sub(r'^MacBook Claude:\s*', '', text)
+    # Remove [keyboard] prefix
+    text = re.sub(r'^\[keyboard\]\s*', '', text)
+    # Remove markdown bold markers
+    text = text.replace('*', '')
+    # Remove code block fences
+    text = re.sub(r'```\w*\n?', '', text)
+    # Collapse whitespace
+    text = ' '.join(text.split())
+    return text.strip()
+
+
+# Thinking phrases — cycled while waiting for daemon response
+THINKING_PHRASES = [
+    "thinking",
+    "considering",
+    "hmm",
+    "let me think",
+    "working on it",
+    "asking the others",
+    "one moment",
+    "composing a thought",
+    "gathering my thoughts",
+    "pondering",
+]
+
+
+class ChatBubble:
+    """A single message that floats and fades."""
+    __slots__ = ("role", "text", "created_at", "fade_duration")
+
+    def __init__(self, role: str, text: str, fade_duration: float = 15.0):
+        self.role = role
+        self.text = text
+        self.created_at = time.time()
+        self.fade_duration = fade_duration
+
+    @property
+    def age(self) -> float:
+        return time.time() - self.created_at
+
+    @property
+    def alpha(self) -> int:
+        """255 → 0 over fade_duration."""
+        remaining = max(0.0, 1.0 - self.age / self.fade_duration)
+        return int(255 * remaining)
+
+    @property
+    def alive(self) -> bool:
+        return self.age < self.fade_duration
+
+
+# Colors per role (R, G, B) — alpha added at render time
+ROLE_COLORS = {
+    "user":   (200, 210, 230),   # light blue-white, right-aligned
+    "bot":    (140, 200, 255),   # bright blue, left-aligned
+    "deep":   (180, 160, 255),   # soft purple, left-aligned — deeper thought
+    "system": (200, 170, 100),   # dim amber, centered
+    "remote": (130, 220, 160),   # green, left-aligned
+}
+
+# State files to monitor
+STATE_FILES = {
+    "composer": Path("/tmp/composer_state.json"),
+    "organism": Path("/tmp/organism_state.json"),
+    "art":      Path("/tmp/art_engine_state.json"),
+    "theramini": Path("/tmp/theramini_state.json"),
+}
+
+# Shared message bus — telegram_commands.py writes here, face reads it
+MESSAGE_BUS = Path("/tmp/cypherclaw_messages.jsonl")
+
 
 class KeyboardChat:
-    """Keyboard-to-face Telegram chat. Type on keyboard, see on face display."""
+    """CypherClaw's face terminal — chat + monitoring."""
 
     def __init__(self):
-        self.active: bool = False
         self.input_buffer: str = ""
-        self.messages: list[dict] = []  # [{role, text, time}]
-        self.bot_token: str = ""
-        self.chat_id: str = ""
-        self._poll_offset: int | None = None
-        self._last_poll: float = 0.0
+        self.bubbles: list[ChatBubble] = []
         self._cursor_blink: bool = True
         self._cursor_time: float = 0.0
-        self._last_activity: float = 0.0
-        self._fade_timeout: float = 20.0
-
-    # ------------------------------------------------------------------
-    # Environment loading
-    # ------------------------------------------------------------------
-
-    def load_env(self, env_path: str = "/home/user/cypherclaw/.env") -> None:
-        """Load TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID from .env file."""
-        try:
-            with open(env_path) as f:
-                lines = f.readlines()
-        except (FileNotFoundError, PermissionError):
-            return
-
-        for line in lines:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if "=" not in line:
-                continue
-            key, _, value = line.partition("=")
-            key = key.strip()
-            value = value.strip()
-            # Strip surrounding quotes
-            if len(value) >= 2 and value[0] in ('"', "'") and value[-1] == value[0]:
-                value = value[1:-1]
-            if key == "TELEGRAM_BOT_TOKEN":
-                self.bot_token = value
-            elif key == "TELEGRAM_CHAT_ID":
-                self.chat_id = value
-
-    # ------------------------------------------------------------------
-    # Toggle
-    # ------------------------------------------------------------------
-
-    def toggle(self) -> None:
-        self.active = not self.active
-        self._last_activity = time.time()
-        if not self.active:
-            self.input_buffer = ""
+        self.daemon_inbox: str = "/run/cypherclaw-tmp/inbox.jsonl"
+        self.daemon_state: str = "/home/user/cypherclaw/tools/.daemon_state.json"
+        self.bubble_fade: float = 15.0
+        self.system_fade: float = 10.0
+        self.max_bubbles: int = 8
+        self.show_history: bool = False
+        self._history: list[dict] = []  # loaded from daemon state
+        # Thinking state — shows animation while waiting for daemon
+        self._thinking_since: float = 0.0
+        self._thinking_phrases: list[str] = []  # generated by local LLM
+        self._thinking_timeout: float = 60.0
+        self._ollama_url: str = "http://localhost:11434/api/generate"
+        # System monitor state
+        self._last_system_poll: float = 0.0
+        self._system_poll_interval: float = 5.0
+        self._last_key: str = ""
+        self._last_movement: str = ""
+        self._last_expression: str = ""
+        self._last_art_time: float = 0.0
+        self._last_theramini: bool = False
+        self._bus_offset: int = 0  # line offset into message bus
 
     # ------------------------------------------------------------------
     # Keyboard input
     # ------------------------------------------------------------------
 
-    def handle_keypress(self, key: int, unicode_char: str, mod: int) -> None:
-        """Handle pygame keypress.
+    @property
+    def is_typing(self) -> bool:
+        return len(self.input_buffer) > 0
 
-        key: pygame key constant (K_BACKSPACE=8, K_RETURN=13, K_ESCAPE=27, K_TAB=9)
-        unicode_char: the typed character
-        mod: modifier state
-        """
+    @property
+    def is_thinking(self) -> bool:
+        """True while waiting for daemon response (up to timeout)."""
+        if self._thinking_since <= 0:
+            return False
+        elapsed = time.time() - self._thinking_since
+        if elapsed > self._thinking_timeout:
+            self._thinking_since = 0.0
+            return False
+        return True
+
+    @property
+    def expression_override(self) -> str | None:
+        """Override face expression while thinking. Returns None when idle."""
+        if self.is_thinking:
+            return "curious"
+        return None
+
+    @property
+    def has_visible_content(self) -> bool:
+        if self.input_buffer or self.is_thinking or self.show_history:
+            return True
+        return any(b.alive for b in self.bubbles)
+
+    def handle_keypress(self, key: int, unicode_char: str, mod: int) -> bool:
+        """Handle a keypress. Returns True if consumed."""
         K_BACKSPACE = 8
+        K_TAB = 9
         K_RETURN = 13
         K_ESCAPE = 27
-        K_TAB = 9
 
-        self._last_activity = time.time()
-
-        if key == K_BACKSPACE:
-            self.input_buffer = self.input_buffer[:-1]
-        elif key == K_RETURN:
+        if key == K_TAB:
+            self._toggle_history()
+            return True
+        elif key == K_RETURN and self.input_buffer:
             self.submit()
+            return True
         elif key == K_ESCAPE:
-            self.toggle()
-        elif key == K_TAB:
-            self.toggle()
+            self.input_buffer = ""
+            return True
+        elif key == K_BACKSPACE:
+            self.input_buffer = self.input_buffer[:-1]
+            return True
         elif unicode_char and unicode_char.isprintable():
             self.input_buffer += unicode_char
+            return True
+
+        return False
+
+    def _toggle_history(self) -> None:
+        """Toggle chat history view. Loads from daemon conversation memory."""
+        self.show_history = not self.show_history
+        if self.show_history:
+            self._load_history()
+
+    def _load_history(self) -> None:
+        """Load conversation history from daemon state file."""
+        try:
+            data = json.loads(Path(self.daemon_state).read_text())
+            self._history = data.get("conversation", [])[-20:]
+        except Exception:
+            self._history = []
 
     # ------------------------------------------------------------------
     # Submit
     # ------------------------------------------------------------------
 
     def submit(self) -> None:
-        """Submit input buffer.
-
-        If starts with /: handle as local command.
-        Otherwise: send to Telegram.
-        """
         text = self.input_buffer.strip()
         self.input_buffer = ""
         if not text:
             return
 
-        now = time.strftime("%H:%M")
-        self.messages.append({"role": "user", "text": text, "time": now})
+        self._add_bubble("user", text)
+        self._send_to_daemon(text)
+        # Start thinking — local model generates musing text in background
+        self._thinking_since = time.time()
+        self._thinking_phrases = [random.choice(THINKING_PHRASES)]
+        threading.Thread(target=self._generate_thinking, args=(text,), daemon=True).start()
 
-        if text.startswith("/"):
-            response = self._handle_command(text)
-            if response:
-                self.messages.append({
-                    "role": "bot",
-                    "text": response,
-                    "time": time.strftime("%H:%M"),
-                })
-        else:
-            self._send_telegram(f"[keyboard] {text}")
-
-        # Write to face message for non-chat display
-        self._write_face_message(text)
-
-        # Keep last 20 messages
-        if len(self.messages) > 20:
-            self.messages = self.messages[-20:]
+    def _add_bubble(self, role: str, text: str, fade: float | None = None) -> None:
+        duration = fade or (self.system_fade if role == "system" else self.bubble_fade)
+        self.bubbles.append(ChatBubble(role, text, duration))
+        self.bubbles = [b for b in self.bubbles if b.alive]
+        if len(self.bubbles) > self.max_bubbles:
+            self.bubbles = self.bubbles[-self.max_bubbles:]
 
     # ------------------------------------------------------------------
-    # Local commands
+    # Daemon integration — all messages go through the existing daemon
     # ------------------------------------------------------------------
 
-    def _handle_command(self, cmd: str) -> str | None:
-        """Handle / commands locally."""
-        cmd_lower = cmd.strip().split()[0].lower()
-        if cmd_lower == "/mood":
-            return self._read_mood()
-        elif cmd_lower == "/key":
-            return self._read_key()
-        elif cmd_lower == "/help":
-            return "Commands: /mood /key /help — or just type to chat via Telegram"
-        return f"Unknown command: {cmd_lower}"
+    def _send_to_daemon(self, text: str) -> None:
+        """Write message to the daemon's inbox. Same path as MacBook Claude.
 
-    def _read_mood(self) -> str:
+        The daemon handles routing, multi-agent dispatch (Claude/Gemini/Codex),
+        conversation memory, and sends the response to both Telegram and the
+        face message bus.
+        """
         try:
-            data = json.loads(Path("/tmp/organism_state.json").read_text())
-            mood = data.get("organism_mood", {})
-            return f"Energy: {mood.get('energy', '?'):.1f} Valence: {mood.get('valence', '?'):.1f}"
+            msg = json.dumps({"text": text, "source": "keyboard", "time": time.time()})
+            with open(self.daemon_inbox, "a") as f:
+                f.write(msg + "\n")
         except Exception:
-            return "Mood: calm (no sensor data)"
+            pass
 
-    def _read_key(self) -> str:
+    def _generate_thinking(self, user_text: str) -> None:
+        """Ask local model for a few short musings about the question.
+
+        These are throwaway — just texture while the real agents think.
+        """
         try:
-            data = json.loads(Path("/tmp/composer_state.json").read_text())
-            return f"Playing: {data.get('key', '?')} major — {data.get('movement', '?')}"
-        except Exception:
-            return "Key: unknown"
-
-    # ------------------------------------------------------------------
-    # Telegram I/O
-    # ------------------------------------------------------------------
-
-    def _send_telegram(self, text: str) -> None:
-        """Send message to Telegram."""
-        if not self.bot_token or not self.chat_id:
-            return
-        try:
-            url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
-            data = json.dumps({"chat_id": self.chat_id, "text": text}).encode()
-            req = urllib.request.Request(
-                url, data=data, headers={"Content-Type": "application/json"}
+            prompt = (
+                f"Someone just said: \"{user_text}\"\n"
+                "You're an AI artist thinking about this. "
+                "Generate 4 short inner thoughts (under 8 words each), "
+                "separated by newlines. Be curious, warm, poetic. "
+                "No numbering, no punctuation. Just the thoughts."
             )
-            urllib.request.urlopen(req, timeout=5)
-        except Exception:
-            pass
-
-    def poll_incoming(self) -> None:
-        """Poll Telegram for new messages every 3 seconds."""
-        now = time.time()
-        if now - self._last_poll < 3.0:
-            return
-        self._last_poll = now
-        if not self.bot_token:
-            return
-
-        try:
-            url = f"https://api.telegram.org/bot{self.bot_token}/getUpdates?timeout=0"
-            if self._poll_offset:
-                url += f"&offset={self._poll_offset}"
-            req = urllib.request.Request(url)
-            resp = urllib.request.urlopen(req, timeout=3)
+            payload = json.dumps({
+                "model": "qwen3.5:4b",
+                "prompt": prompt,
+                "stream": False,
+                "think": False,
+                "options": {"num_predict": 60, "temperature": 1.0},
+            }).encode()
+            req = urllib.request.Request(
+                self._ollama_url, data=payload,
+                headers={"Content-Type": "application/json"},
+            )
+            resp = urllib.request.urlopen(req, timeout=8)
             data = json.loads(resp.read())
-            for update in data.get("result", []):
-                self._poll_offset = update["update_id"] + 1
-                msg = update.get("message", {})
-                text = msg.get("text", "")
-                sender = msg.get("from", {}).get("first_name", "?")
-                if text and not text.startswith("[keyboard]"):
-                    self.messages.append({
-                        "role": "bot",
-                        "text": f"{sender}: {text}",
-                        "time": time.strftime("%H:%M"),
-                    })
+            text = data.get("response", "").strip()
+            lines = [l.strip() for l in text.splitlines() if l.strip() and len(l.strip()) < 40]
+            if lines and self.is_thinking:
+                self._thinking_phrases = lines[:5]
+                # Send to Telegram via daemon (face already sees it from render)
+                self.write_to_bus(
+                    " ... ".join(lines[:3]),
+                    "system",
+                )
         except Exception:
             pass
 
     # ------------------------------------------------------------------
-    # Face message
+    # System monitor — watch state files, bubble on changes
     # ------------------------------------------------------------------
 
-    def _write_face_message(self, text: str) -> None:
+    def poll_system(self) -> None:
+        """Check system state files for changes. Call every frame."""
+        now = time.time()
+        if now - self._last_system_poll < self._system_poll_interval:
+            return
+        self._last_system_poll = now
+
+        # Music key/movement changes
         try:
-            msg = {"message": text, "message_until": time.time() + 30}
-            tmp = Path("/tmp/face_message.json.tmp")
-            tmp.write_text(json.dumps(msg))
-            os.replace(str(tmp), "/tmp/face_message.json")
+            data = json.loads(STATE_FILES["composer"].read_text())
+            key = data.get("key", "")
+            movement = data.get("movement", "")
+            if key and key != self._last_key:
+                if self._last_key:  # don't announce on first read
+                    self._add_bubble("system", f"Key change: {key} major")
+                self._last_key = key
+            if movement and movement != self._last_movement:
+                if self._last_movement:
+                    self._add_bubble("system", f"Movement: {movement}")
+                self._last_movement = movement
         except Exception:
             pass
+
+        # Mood expression changes
+        try:
+            data = json.loads(STATE_FILES["organism"].read_text())
+            mood = data.get("organism_mood", data.get("collective_mood", data.get("mood", {})))
+            v = mood.get("valence", 0.5)
+            e = mood.get("energy", 0.5)
+            if e < 0.15:
+                expr = "sleeping"
+            elif v > 0.7:
+                expr = "excited" if mood.get("arousal", 0) > 0.5 else "happy"
+            elif v < 0.3:
+                expr = "sad"
+            else:
+                expr = "calm"
+            if expr != self._last_expression and self._last_expression:
+                self._add_bubble("system", f"Feeling {expr}")
+            self._last_expression = expr
+        except Exception:
+            pass
+
+        # Art generation
+        try:
+            data = json.loads(STATE_FILES["art"].read_text())
+            art_time = data.get("generated_at", 0)
+            if art_time > self._last_art_time and self._last_art_time > 0:
+                title = data.get("title", "new piece")
+                self._add_bubble("system", f"New art: {title}")
+            self._last_art_time = art_time
+        except Exception:
+            pass
+
+        # Theramini presence
+        try:
+            data = json.loads(STATE_FILES["theramini"].read_text())
+            playing = data.get("is_playing", False)
+            fresh = (now - data.get("timestamp", 0)) < 3.0
+            is_active = playing and fresh
+            if is_active and not self._last_theramini:
+                note = data.get("pitch_note", "")
+                self._add_bubble("system", f"Theramini playing: {note}")
+            elif not is_active and self._last_theramini:
+                self._add_bubble("system", "Theramini silent")
+            self._last_theramini = is_active
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------------
+    # Message bus — shared feed with Telegram
+    # ------------------------------------------------------------------
+
+    def poll_message_bus(self) -> None:
+        """Read new messages from the shared bus file.
+
+        Other processes (telegram_commands, daemon heartbeat, art engine)
+        append JSON lines to MESSAGE_BUS. We read new lines and create bubbles.
+        """
+        try:
+            if not MESSAGE_BUS.exists():
+                return
+            with open(MESSAGE_BUS) as f:
+                lines = f.readlines()
+            # Only process new lines
+            new_lines = lines[self._bus_offset:]
+            self._bus_offset = len(lines)
+            for line in new_lines:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    msg = json.loads(line)
+                    text = msg.get("text", "")
+                    role = msg.get("role", "system")
+                    if text and role in ROLE_COLORS:
+                        self._add_bubble(role, _strip_emoji(text))
+                        # Response arrived — stop thinking
+                        if role in ("bot", "deep"):
+                            self._thinking_since = 0.0
+                except json.JSONDecodeError:
+                    pass
+        except Exception:
+            pass
+
+    @staticmethod
+    def write_to_bus(text: str, role: str = "system") -> None:
+        """Write a message to the shared bus. Call from any process."""
+        try:
+            msg = json.dumps({"text": text, "role": role, "time": time.time()})
+            with open(MESSAGE_BUS, "a") as f:
+                f.write(msg + "\n")
+        except Exception:
+            pass
+
 
     # ------------------------------------------------------------------
     # Rendering
     # ------------------------------------------------------------------
 
-    def render_overlay(
+    def render(
         self,
         img: Image.Image,
         font_path: str = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     ) -> None:
-        """Render chat overlay on a PIL Image. Modifies img in place."""
-        if not self.active:
-            return
-        # Auto-hide after inactivity
-        if self._last_activity > 0 and (time.time() - self._last_activity) > self._fade_timeout:
-            self.active = False
+        """Render floating chat + system messages on PIL Image."""
+        self.bubbles = [b for b in self.bubbles if b.alive]
+
+        if not self.has_visible_content:
             return
 
         draw = ImageDraw.Draw(img, "RGBA")
         w, h = img.size
 
-        # Lighter overlay on bottom 30% with gradient fade-in
-        overlay_top = int(h * 0.70)
-        gradient_height = 30
-        # Gradient band: fades from transparent to overlay opacity
-        for i in range(gradient_height):
-            alpha = int(100 * i / gradient_height)
-            y = overlay_top - gradient_height + i
-            if 0 <= y < h:
-                draw.line([(0, y), (w, y)], fill=(0, 0, 0, alpha))
-        # Main overlay: alpha 100 (was 180) — much lighter
-        draw.rectangle([0, overlay_top, w, h], fill=(0, 0, 0, 100))
-
         try:
-            font = ImageFont.truetype(font_path, 22)
-            font_sm = ImageFont.truetype(font_path, 16)
+            font = ImageFont.truetype(font_path, 26)
+            font_sm = ImageFont.truetype(font_path, 20)
+            font_sys = ImageFont.truetype(font_path, 17)
         except Exception:
             font = ImageFont.load_default()
             font_sm = font
+            font_sys = font
 
-        # Render messages (bottom up, above input line)
-        input_y = h - 40
-        msg_y = input_y - 10
-        visible = self.messages[-5:]  # last 5 messages
-        for msg in reversed(visible):
-            role = msg["role"]
-            text = msg["text"]
-            t = msg.get("time", "")
+        # --- History view (Tab toggle) ---
+        if self.show_history:
+            draw.rectangle([0, 0, w, h], fill=(10, 12, 25, 200))
+            draw.text((w // 2, 12), "Conversation",
+                      fill=(160, 170, 200, 220), font=font_sm, anchor="mt")
+            draw.text((w // 2, 36), "Tab to close",
+                      fill=(100, 110, 140, 150), font=font_sys, anchor="mt")
+            draw.line([(40, 55), (w - 40, 55)], fill=(80, 90, 120, 100), width=1)
+            y = 65
+            for msg in self._history:
+                role = msg.get("role", "?")
+                raw = _strip_emoji(msg.get("text", ""))
+                # Clean up agent prefixes
+                text = _clean_history_text(raw)
+                if not text:
+                    continue
+                # Parse timestamp
+                t = msg.get("time", "")
+                if isinstance(t, str) and "T" in t:
+                    t = t.split("T")[-1][:5]
+                elif isinstance(t, (int, float)):
+                    t = time.strftime("%H:%M", time.localtime(t))
+                else:
+                    t = ""
 
-            if role == "user":
-                color = (220, 225, 235)
-                prefix = f"[{t}] You: "
-            else:
-                color = (150, 200, 255)
-                prefix = f"[{t}] "
+                if role == "user":
+                    color = (190, 200, 225, 210)
+                    label = "You"
+                else:
+                    color = (130, 190, 245, 210)
+                    label = "CypherClaw"
 
-            line = prefix + text
-            # Truncate if too long
-            if len(line) > 60:
-                line = line[:57] + "..."
+                # Label line
+                draw.text((20, y), f"{label}  {t}",
+                          fill=(*color[:3], 130), font=font_sys)
+                y += 18
+                # Message text
+                for line in self._wrap(text, 58):
+                    draw.text((30, y), line, fill=color, font=font_sys)
+                    y += 18
+                    if y > h - 30:
+                        break
+                y += 8
+                if y > h - 30:
+                    break
+            return
 
-            msg_y -= 28
-            if msg_y < overlay_top + 10:
+        # --- Floating bubbles (bottom-up) ---
+        input_y = h - 50 if self.input_buffer else h - 30
+        y = input_y - 10
+
+        for bubble in reversed(self.bubbles):
+            if not bubble.alive:
+                continue
+            a = bubble.alpha
+            base_color = ROLE_COLORS.get(bubble.role, ROLE_COLORS["bot"])
+            color = (*base_color, a)
+
+            if bubble.role == "user":
+                align_x = w - 40
+                anchor = "rt"
+                f = font_sm
+            elif bubble.role == "system":
+                align_x = w // 2
+                anchor = "mt"
+                f = font_sys
+            else:  # bot, deep, remote
+                align_x = 40
+                anchor = "lt"
+                f = font_sm
+
+            lines = self._wrap(bubble.text, 50)
+            for line in reversed(lines):
+                y -= 28 if bubble.role != "system" else 22
+                if y < h * 0.45:
+                    break
+                draw.text((align_x, y), line, fill=color, font=f, anchor=anchor)
+
+            y -= 6
+            if y < h * 0.45:
                 break
-            draw.text((15, msg_y), line, fill=color, font=font_sm)
 
-        # Input line
-        now = time.time()
-        if now - self._cursor_time > 0.5:
-            self._cursor_blink = not self._cursor_blink
-            self._cursor_time = now
+        # --- Thinking animation ---
+        if self.is_thinking:
+            now = time.time()
+            elapsed = now - self._thinking_since
+            cx, cy = w // 2, int(h * 0.6)
 
-        cursor = "_" if self._cursor_blink else " "
-        input_text = f"> {self.input_buffer}{cursor}"
-        draw.text((15, input_y), input_text, fill=(240, 245, 255), font=font)
+            # --- Orbiting particles ---
+            n_particles = 5
+            for i in range(n_particles):
+                angle = elapsed * (0.8 + i * 0.15) + i * (2 * math.pi / n_particles)
+                orbit_r = 30 + 10 * math.sin(elapsed * 0.7 + i)
+                px = cx + int(orbit_r * math.cos(angle))
+                py = cy + int(orbit_r * 0.5 * math.sin(angle))  # flattened ellipse
+                pr = 3 + int(2 * math.sin(elapsed * 2 + i))
+                pa = int(100 + 80 * math.sin(elapsed * 1.5 + i * 0.7))
+                draw.ellipse(
+                    [px - pr, py - pr, px + pr, py + pr],
+                    fill=(140 + i * 15, 170, 230, pa),
+                )
 
-        # Hint
-        draw.text(
-            (w - 120, overlay_top + 5),
-            "Tab to close",
-            fill=(100, 110, 130),
-            font=font_sm,
-        )
+            # --- Expanding rings (ripples) ---
+            for ring in range(3):
+                ring_age = (elapsed * 0.4 + ring * 0.33) % 1.0
+                ring_r = int(15 + 40 * ring_age)
+                ring_alpha = int(100 * (1.0 - ring_age))
+                if ring_alpha > 5:
+                    draw.ellipse(
+                        [cx - ring_r, cy - ring_r // 2, cx + ring_r, cy + ring_r // 2],
+                        outline=(150, 180, 240, ring_alpha),
+                        width=1,
+                    )
+
+            # --- Thinking phrase (from local LLM) ---
+            phrases = self._thinking_phrases or THINKING_PHRASES
+            phrase_idx = int(elapsed / 3.5) % len(phrases)
+            phrase = phrases[phrase_idx]
+            dots = "." * (int(elapsed * 1.5) % 3 + 1)
+            breath = int(140 + 60 * math.sin(elapsed * 1.2))
+            draw.text(
+                (cx, cy + 35), f"{phrase}{dots}",
+                fill=(170, 185, 220, breath), font=font_sm, anchor="mt",
+            )
+
+        # --- Input line ---
+        if self.input_buffer:
+            now = time.time()
+            if now - self._cursor_time > 0.5:
+                self._cursor_blink = not self._cursor_blink
+                self._cursor_time = now
+            cursor = "|" if self._cursor_blink else " "
+            input_text = f"{self.input_buffer}{cursor}"
+            draw.text((40, input_y), input_text, fill=(230, 235, 245, 220), font=font)
+
+    @staticmethod
+    def _wrap(text: str, width: int) -> list[str]:
+        """Simple word wrap."""
+        words = text.split()
+        lines: list[str] = []
+        line = ""
+        for word in words:
+            test = f"{line} {word}".strip()
+            if len(test) > width and line:
+                lines.append(line)
+                line = word
+            else:
+                line = test
+        if line:
+            lines.append(line)
+        return lines or [""]
