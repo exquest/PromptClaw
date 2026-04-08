@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import os
 import random
+import random as _rnd
 import signal
 import sys
 import threading
@@ -121,13 +122,13 @@ SYNTH_MAP = {
 }
 
 VOICE_DEFAULTS = {
-    "pluck":   {"attack": 0.005, "release": 0.7},   # longer release = warmer, less sparse
-    "bowed":   {"attack": 0.05,  "release": 1.2},
-    "kotekan": {"attack": 0.005, "release": 0.4},
-    "gong":    {"attack": 0.15,  "release": 4.0},    # longer gong ring
-    "bell":    {"attack": 0.01,  "release": 0.8},    # slightly longer bell
-    "choir":   {"attack": 0.5,   "release": 1.5},
-    "breath":  {"attack": 0.8,   "release": 2.0},
+    "pluck":   {"attack": 0.018, "release": 0.7, "brightness": 0.5, "position": 0.1, "damping": 0.01, "detune": 0.003, "verb": 0.15, "dly": 0.0},
+    "bowed":   {"attack": 0.05,  "release": 1.2, "verb": 0.2, "dly": 0.02},     # medium depth
+    "kotekan": {"attack": 0.015, "release": 0.4, "verb": 0.25, "dly": 0.03},    # sparkly, a bit back
+    "gong":    {"attack": 0.15,  "release": 4.0, "verb": 0.45, "dly": 0.04},    # far away, deep
+    "bell":    {"attack": 0.01,  "release": 0.8, "verb": 0.35, "dly": 0.05},    # distant shimmer
+    "choir":   {"attack": 0.5,   "release": 1.5, "verb": 0.35, "dly": 0.03},    # medium-far
+    "breath":  {"attack": 0.8,   "release": 2.0, "verb": 0.18, "dly": 0.01},    # close, intimate
 }
 
 
@@ -154,10 +155,26 @@ def play_voice(voice_name: str, freq: float, amp: float, release: float | None =
         # Fire and forget — natural decay
         synth = SYNTH_MAP.get(voice_name, "sw_pluck")
         defaults = VOICE_DEFAULTS.get(voice_name, {"attack": 0.01, "release": 0.5})
-        c.send_message("/s_new", [synth, next_nid(), 0, 0,
+        import random as _rnd
+        args = [
+            synth, next_nid(), 0, 0,
             "freq", freq, "amp", amp,
             "attack", defaults["attack"],
-            "release", release or defaults["release"]])
+            "release", release or defaults["release"],
+        ]
+        # Per-voice space — verb and delay from defaults
+        args.extend([
+            "verb", defaults.get("verb", 0.15),
+            "dly", defaults.get("dly", 0.0),
+        ])
+        # Vary pluck character per note
+        if voice_name == "pluck":
+            args.extend([
+                "brightness", defaults.get("brightness", 0.5) * _rnd.uniform(0.6, 1.4),
+                "position", _rnd.uniform(0.02, 0.05),
+                "detune", _rnd.uniform(0.001, 0.006),
+            ])
+        c.send_message("/s_new", args)
 
 
 def release_sustained() -> None:
@@ -172,6 +189,182 @@ KEY_ROOTS = {
     "E": 164.8, "F": 174.6, "F#": 185.0, "G": 196.0,
     "G#": 207.7, "A": 220.0, "A#": 233.1, "B": 246.9, "Bb": 116.5,
 }
+
+# ---------------------------------------------------------------------------
+# Camera awareness — outdoor light influences key, motion triggers events
+# ---------------------------------------------------------------------------
+
+def _read_outdoor() -> dict:
+    """Read outdoor conditions from camera state files."""
+    import json as _json
+    for p in ["/tmp/porch_eye_state.json", "/tmp/side_eye_state.json"]:
+        try:
+            d = _json.loads(open(p).read())
+            if not d.get("error") and d.get("last_capture_time", 0) > time.time() - 120:
+                return d
+        except Exception:
+            continue
+    return {}
+
+# Map outdoor brightness to preferred keys
+# Bright = major/sharp keys, dark = flat/minor-feeling keys
+_BRIGHT_KEYS = ["G", "D", "A", "E"]  # bright, open
+_DIM_KEYS = ["F", "C", "Bb"]          # warmer, darker
+
+
+def _read_room_presence() -> dict:
+    """Read room presence from /dev/video0 camera analysis."""
+    import json as _json
+    try:
+        return _json.loads(open("/tmp/room_presence.json").read())
+    except Exception:
+        return {}
+
+def _read_midi_keyboard() -> dict:
+    """Read MIDI keyboard state."""
+    import json as _json
+    try:
+        d = _json.loads(open("/tmp/midi_keyboard_state.json").read())
+        if d.get("last_activity", 0) > time.time() - 5:
+            return d
+    except Exception:
+        pass
+    return {}
+
+def _read_garden() -> dict:
+    """Read garden watcher outdoor state."""
+    import json as _json
+    try:
+        return _json.loads(open("/tmp/garden_state.json").read())
+    except Exception:
+        return {}
+
+
+# ---------------------------------------------------------------------------
+# Character System — each organism character has a visual form + musical voice
+# ---------------------------------------------------------------------------
+import sys as _sys
+_sys.path.insert(0, "/home/user/cypherclaw/tools/senseweave")
+from character_registry import CharacterRegistry
+
+_char_registry = CharacterRegistry()
+
+# Track which characters played recently so everyone gets a turn
+_cast_history: list[str] = []
+
+def _get_cast(mood_energy: float = 0.5, max_chars: int = 6) -> list[dict]:
+    """Choose which characters are on stage. ALL 21 rotate over time.
+    
+    Energy determines cast SIZE (2-8). Characters who haven't played
+    recently get priority. Every role is always represented.
+    """
+    global _cast_history
+    all_chars = _char_registry.get_all()
+    
+    # Cast size scales with energy
+    cast_size = max(3, min(8, int(2 + mood_energy * 6)))
+    cast_size = min(cast_size, max_chars)
+    
+    # Score each character: lower = more deserving of stage time
+    scores = {}
+    for cid, char in all_chars.items():
+        voice = char.get("voice", {})
+        if not voice.get("synth"):
+            continue
+        # How recently did they play? (position in history, 0 = most recent)
+        try:
+            recency = _cast_history.index(cid)
+        except ValueError:
+            recency = 999  # never played — highest priority
+        scores[cid] = recency
+    
+    # Sort by score (highest = least recently played)
+    ranked = sorted(scores.keys(), key=lambda c: scores[c], reverse=True)
+    
+    # Pick cast: ensure at least one of each core role
+    cast = []
+    used_roles = set()
+    core_roles = ["melody", "rhythm", "harmony"]
+    
+    # First: fill core roles from the most-deserving characters
+    for cid in ranked:
+        char = all_chars[cid]
+        role = char["voice"].get("role", "")
+        if role in core_roles and role not in used_roles:
+            cast.append({"id": cid, **char["voice"], "char_name": cid})
+            used_roles.add(role)
+    
+    # Then: fill remaining slots from most-deserving
+    for cid in ranked:
+        if len(cast) >= cast_size:
+            break
+        if any(c["id"] == cid for c in cast):
+            continue
+        char = all_chars[cid]
+        cast.append({"id": cid, **char["voice"], "char_name": cid})
+    
+    # Update history
+    _cast_history = [c["id"] for c in cast] + _cast_history
+    _cast_history = _cast_history[:60]  # keep last ~3 songs worth
+    
+    return cast
+
+def _play_character(char: dict, freq: float, amp: float, release: float = 0.5) -> None:
+    """Play a note as a specific character using their synth and params."""
+    synth = char.get("synth", "sw_pluck")
+    register = char.get("register", [36, 96])
+    params = char.get("params", {})
+    
+    # Clamp frequency to character's register (MIDI note range)
+    import math
+    midi = int(69 + 12 * math.log2(max(freq, 20) / 440))
+    midi = max(register[0], min(register[1], midi))
+    freq = 440.0 * (2 ** ((midi - 69) / 12.0))
+    
+    import random as _rnd
+    args = [synth, next_nid(), 0, 0,
+            "freq", freq, "amp", amp,
+            "attack", params.get("attack", 0.01),
+            "release", release,
+            "verb", params.get("verb", 0.2),
+            "dly", params.get("dly", 0.02)]
+    
+    # Add character-specific params
+    for k, v in params.items():
+        if k not in ("attack", "release", "verb", "dly"):
+            args.extend([k, v])
+    
+    c.send_message("/s_new", args)
+
+def _chars_by_role(cast: list[dict], role: str) -> list[dict]:
+    """Filter cast to characters with a given role."""
+    return [c for c in cast if c.get("role") == role]
+
+def _write_active_characters(cast: list[dict]) -> None:
+    """Write active characters to state so art engine can draw them."""
+    import json as _json2
+    try:
+        data = {"active_characters": [c["id"] for c in cast], "timestamp": time.time()}
+        tmp = "/tmp/active_characters.json.tmp"
+        with open(tmp, "w") as f:
+            _json2.dump(data, f)
+        os.replace(tmp, "/tmp/active_characters.json")
+    except Exception:
+        pass
+
+
+
+def _read_inner_life() -> dict:
+    """Read inner life music suggestions."""
+    import json as _json
+    try:
+        d = _json.loads(open("/tmp/inner_life_music.json").read())
+        if d.get("timestamp", 0) > time.time() - 120:
+            return d
+    except Exception:
+        pass
+    return {}
+
 KEYS_CYCLE = ["C", "G", "D", "A", "E", "F"]
 
 
@@ -240,6 +433,33 @@ def solo_song(key_name: str, song_num: int) -> str:
             key_name = exploration["try_key"]
         # feel override applied below after personality lookup
 
+    # Let outdoor conditions nudge key choice
+    _outdoor = _read_outdoor()
+    _garden = _read_garden()
+    if _garden and _garden.get("music_key"):
+        # Garden watcher has a key suggestion based on light + season
+        _gkey = _garden["music_key"].replace("m", "")  # strip minor indicator
+        if _gkey in KEY_ROOTS:
+            key_name = _gkey
+    elif _outdoor:
+        _bright = _outdoor.get("brightness", 0.5)
+        if _bright > 0.6 and key_name not in _BRIGHT_KEYS:
+            key_name = random.choice(_BRIGHT_KEYS)
+        elif _bright < 0.2 and key_name not in _DIM_KEYS:
+            key_name = random.choice(_DIM_KEYS)
+    # If someone is playing the MIDI keyboard, match their key
+    _midi = _read_midi_keyboard()
+    if _midi.get("playing") and _midi.get("notes"):
+        from audio_analysis import pitch_to_nearest_key
+        _midi_key = pitch_to_nearest_key(_midi["freqs"][0])
+        if _midi_key and _midi_key[0] in KEY_ROOTS:
+            key_name = _midi_key[0]
+    # Inner life music influence
+    _inner = _read_inner_life()
+    if _inner.get("suggested_key") and _inner["suggested_key"] in KEY_ROOTS:
+        key_name = _inner["suggested_key"]
+    if _inner.get("suggest_silence"):
+        time.sleep(random.uniform(5, 15))
     root = KEY_ROOTS.get(key_name, 130.8)
     key = make_key(root)
     prog = random.choice(PROGS)
@@ -262,6 +482,28 @@ def solo_song(key_name: str, song_num: int) -> str:
     adj = _learner.get_adjustments_for_mind()
 
     # Create a melodic mind for this song
+    # Choose which characters are on stage for this song
+    _energy = 0.5
+    try:
+        import json as _j
+        _org = _j.loads(open("/tmp/organism_state.json").read())
+        _energy = _org.get("organism_mood", {}).get("energy", 0.5)
+    except Exception:
+        pass
+    _cast = _get_cast(_energy)
+    _write_active_characters(_cast)
+    _melody_chars = _chars_by_role(_cast, "melody")
+    _rhythm_chars = _chars_by_role(_cast, "rhythm")
+    _harmony_chars = _chars_by_role(_cast, "harmony")
+    _color_chars = _chars_by_role(_cast, "color")
+    _accent_chars = _chars_by_role(_cast, "accent")
+    _foundation_chars = _chars_by_role(_cast, "foundation")
+    _texture_chars = _chars_by_role(_cast, "texture")
+    _punctuation_chars = _chars_by_role(_cast, "punctuation")
+    _all_roles = {"melody": _melody_chars, "rhythm": _rhythm_chars,
+                  "harmony": _harmony_chars, "color": _color_chars}
+    print(f"  Cast: {[c['id'] for c in _cast]}", flush=True)
+    
     mind = MelodicMind(key_root=root, rhythm_feel=feel, bpm=bpm)
     mind.set_chromatic_probability(chromatic_prob + adj.get("chromatic_adjustment", 0.0))
     bt = 60.0 / bpm  # beat duration from BPM, not hardcoded
@@ -272,6 +514,72 @@ def solo_song(key_name: str, song_num: int) -> str:
     # Ask LLM for musical intention (async-ish — if slow, use cached)
     try:
         _last_intention = _llm.get_intention(hour, "calm", key_name)
+    except Exception:
+        pass
+    # === BETWEEN-SONG CRITIQUE: ChatMusician + self-listening ===
+    try:
+        import json as _critique_json, urllib.request as _curl
+        # 1. Read what I heard of myself
+        _self = {}
+        try:
+            _self = _critique_json.loads(open("/tmp/self_listen.json").read())
+        except Exception:
+            pass
+        _was_playing = _self.get("is_playing", False)
+        _my_amp = _self.get("amplitude", 0)
+
+        # 2. Ask ChatMusician to critique (ABC notation style)
+        _critique_prompt = (
+            f"I just played a song in {key_name} major, {feel.value} feel at {int(bpm)} BPM. "
+            f"Cast: {[c['id'] for c in _cast]}. "
+            f"My amplitude was {_my_amp:.3f}. "
+            f"What should I try differently in the next song? "
+            f"Suggest a key, tempo change, or musical idea in under 30 words."
+        )
+        # Mute during GPU model swap to prevent audio glitch
+        try:
+            import subprocess as _sp
+            _sp.run(["amixer", "-D", "hw:USB", "sset", "Line 01 Mute", "on"], capture_output=True, timeout=2)
+            _sp.run(["amixer", "-D", "hw:USB", "sset", "Line 02 Mute", "on"], capture_output=True, timeout=2)
+        except Exception:
+            pass
+
+        _payload = _critique_json.dumps({
+            "model": "chatmusician",
+            "prompt": _critique_prompt,
+            "stream": False,
+            "options": {"num_predict": 60, "temperature": 0.9},
+        }).encode()
+        _req = _curl.Request("http://localhost:11434/api/generate",
+                             data=_payload, headers={"Content-Type": "application/json"})
+        _resp = _curl.urlopen(_req, timeout=30)
+        _critique = _critique_json.loads(_resp.read()).get("response", "").strip()
+        if _critique:
+            print(f"  ChatMusician: {_critique[:80]}", flush=True)
+            _last_intention = _critique
+            # Write critique to face bus so it shows on screen
+            try:
+                msg = _critique_json.dumps({"text": f"Self-critique: {_critique[:150]}", "role": "system", "time": time.time()})
+                with open("/tmp/cypherclaw_messages.jsonl", "a") as _bf:
+                    _bf.write(msg + "\n")
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # Unmute after GPU model swap
+    try:
+        import subprocess as _sp2
+        _sp2.run(["amixer", "-D", "hw:USB", "sset", "Line 01 Mute", "off"], capture_output=True, timeout=2)
+        _sp2.run(["amixer", "-D", "hw:USB", "sset", "Line 02 Mute", "off"], capture_output=True, timeout=2)
+    except Exception:
+        pass
+
+    # 3. Original LLM intention
+    try:
+        _chat_resp = _llm.get_intention(hour, "calm", key_name)
+        if _chat_resp:
+            _last_intention = _chat_resp
     except Exception:
         pass
     next_key = KEYS_CYCLE[(KEYS_CYCLE.index(key_name) + 1) % len(KEYS_CYCLE)] if key_name in KEYS_CYCLE else "G"
@@ -334,6 +642,14 @@ def solo_song(key_name: str, song_num: int) -> str:
         # ADSR pad underneath the theme (bowed, quiet)
         _sw_voice.set_preset("pad")
         _sw_voice.pad_chord(key[1] / 2, key[5] / 2, 0.03 * loud)
+        # Foundation character holds the bass
+        if _foundation_chars:
+            _fc = _foundation_chars[0]
+            _play_character(_fc, key[1] / 4, 0.025 * loud, 3.0)
+        # Harmony character adds warmth
+        if _harmony_chars and random.random() < 0.5:
+            _hc = random.choice(_harmony_chars)
+            _play_character(_hc, key[5] / 2, 0.02 * loud, 2.0)
 
         def bass_thread():
             for chord in prog:
@@ -356,8 +672,27 @@ def solo_song(key_name: str, song_num: int) -> str:
             if freq == 0:  # rest
                 time.sleep(dur * bt)
                 continue
-            play_voice("pluck", freq, (0.22 if accent else 0.16) * loud, 0.5)
+            # Note length varies with musical duration — longer notes ring longer
+            _pluck_rel = min(2.0, max(0.3, dur * 0.6 + _rnd.uniform(-0.1, 0.2)))
+            play_voice("pluck", freq, (0.22 if accent else 0.16) * loud, _pluck_rel)
             _learner.record_note(freq, dur, accent, "pluck")
+            # Character voices — let a cast member double the melody
+            if _melody_chars and random.random() < 0.4:
+                _mc = random.choice(_melody_chars)
+                _play_character(_mc, freq, 0.08 * loud, _pluck_rel * 0.8)
+            # Rhythm characters on accents
+            if accent and _rhythm_chars and random.random() < 0.5:
+                _rc = random.choice(_rhythm_chars)
+                _play_character(_rc, freq / 2, 0.06 * loud, 0.3)
+            # Color characters as occasional sparkle
+            if _color_chars and random.random() < 0.15:
+                _cc = random.choice(_color_chars)
+                _play_character(_cc, freq * 2, 0.03 * loud, 0.5)
+            # React to room activity
+            _room = _read_room_presence()
+            if _room.get("motion") and random.random() < 0.3 and _accent_chars:
+                _ac = random.choice(_accent_chars)
+                _play_character(_ac, freq * 2, 0.03 * loud, 0.2)
             density.note_played()
             # Kotekan sparkle (second rep, every 3rd note)
             if rep == 1 and i % 3 == 0 and freq > 0:

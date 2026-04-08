@@ -36,7 +36,7 @@ DEFAULT_PORTS = ["system:capture_3", "system:capture_4"]
 def capture_jack(ports: list[str], duration: float, output: Path) -> bool:
     """Capture audio from JACK ports via jack_rec."""
     cmd = [
-        "jack_rec", "-f", str(output), "-d", str(duration), "-b", "16",
+        "pw-jack", "jack_rec", "-f", str(output), "-d", str(duration), "-b", "16",
     ] + ports
     try:
         subprocess.run(cmd, capture_output=True, timeout=duration + 5)

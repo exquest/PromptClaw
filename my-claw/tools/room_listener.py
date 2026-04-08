@@ -1,7 +1,7 @@
 """Room Listener — speech detection via Perform-VE mic + Whisper.
 
 Pre-classifies audio to avoid Whisper hallucinations on non-speech.
-Captures from PerformVE-In:capture_1 via JACK (or webcam mic fallback).
+Captures from Perform-VE Analog Surround 7.1:capture_FL via JACK (or webcam mic fallback).
 Writes /tmp/room_speech.json atomically.
 """
 from __future__ import annotations
@@ -26,7 +26,7 @@ CAPTURE_DURATION = 8  # seconds
 CYCLE_PERIOD = 10  # seconds
 
 # Prefer Perform-VE mic via JACK, fall back to webcam mic via ALSA
-DEFAULT_JACK_PORT = "PerformVE-In:capture_1"
+DEFAULT_JACK_PORT = "Perform-VE Analog Surround 7.1:capture_FL"
 FALLBACK_ALSA_DEVICE = "hw:4,0"
 
 # Known Whisper hallucination patterns
@@ -43,10 +43,10 @@ HALLUCINATION_PATTERNS = [
 def capture_audio(jack_port: str | None, alsa_device: str | None) -> bool:
     """Capture audio from JACK or ALSA fallback."""
     if jack_port:
-        cmd = ["jack_rec", "-f", str(CLIP_FILE), "-d", str(CAPTURE_DURATION),
+        cmd = ["pw-jack", "jack_rec", "-f", str(CLIP_FILE), "-d", str(CAPTURE_DURATION),
                "-b", "16", jack_port]
         try:
-            result = subprocess.run(cmd, capture_output=True, timeout=CAPTURE_DURATION + 5)
+            subprocess.run(cmd, capture_output=True, timeout=CAPTURE_DURATION + 5)
             if CLIP_FILE.exists() and CLIP_FILE.stat().st_size > 1000:
                 return True
         except (subprocess.TimeoutExpired, FileNotFoundError, OSError):

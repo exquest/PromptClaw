@@ -58,6 +58,28 @@ ALL_CHARACTERS = ACTIVE_CHARACTERS + QUIET_CHARACTERS + NATURE_CHARACTERS
 
 ORGANISM_STATE_PATH = "/tmp/organism_state.json"
 
+
+
+# ---------------------------------------------------------------------------
+# Camera state — real outdoor conditions from porch/side cameras
+# ---------------------------------------------------------------------------
+
+def _read_camera_state() -> dict | None:
+    """Read real outdoor conditions from porch_eye camera state files."""
+    import json
+    best = None
+    for path in ["/tmp/porch_eye_state.json", "/tmp/side_eye_state.json"]:
+        try:
+            data = json.loads(open(path).read())
+            if data.get("error"):
+                continue
+            # Prefer whichever has more recent capture
+            if best is None or data.get("last_capture_time", 0) > best.get("last_capture_time", 0):
+                best = data
+        except Exception:
+            continue
+    return best
+
 # Default mood when sensor state is unavailable
 _DEFAULT_MOOD: dict = {"energy": 0.4, "valence": 0.5, "arousal": 0.3}
 
@@ -107,7 +129,7 @@ class SceneSpec:
 # ---------------------------------------------------------------------------
 
 
-def pick_characters(mood: dict, count: int) -> list[dict]:
+def pick_characters(mood: dict, count: int, prefer: list[str] | None = None) -> list[dict]:
     """Select organism characters that match the current mood.
 
     High energy -> active characters (Instrument, Speaker, Messenger).
@@ -126,6 +148,9 @@ def pick_characters(mood: dict, count: int) -> list[dict]:
 
     # Build a weighted pool and matching face set based on mood
     pool: list[str] = []
+    # If music system specifies active characters, put them first
+    if prefer:
+        pool.extend(prefer)
     if energy >= 0.6:
         # High energy: active characters dominant, some nature
         primary = ACTIVE_CHARACTERS
@@ -308,11 +333,25 @@ def generate_title(characters: list, mood_tag: str, weather: str) -> str:
 
 
 def _infer_weather(mood: dict, hour: int, season: str) -> dict:
-    """Infer weather effects from mood, hour, and season.
-
-    This is a simplified model. In production, garden_watcher camera
-    data would override these guesses.
-    """
+    """Infer weather from real camera data, falling back to mood-based guesses."""
+    # Try real camera data first
+    cam = _read_camera_state()
+    if cam and cam.get("last_capture_time", 0) > 0:
+        brightness = cam.get("brightness", 0.5)
+        weather_label = cam.get("weather", "")
+        # Map camera observations to weather dict
+        if weather_label == "night" or brightness < 0.1:
+            return {"rain": 0.0, "snow": 0.0, "clouds": 0, "fog": False}
+        if weather_label == "overcast" or (0.1 <= brightness < 0.4 and 8 <= hour <= 17):
+            return {"rain": 0.1, "snow": 0.0, "clouds": 3, "fog": False}
+        if weather_label in ("dawn", "dusk"):
+            return {"rain": 0.0, "snow": 0.0, "clouds": 1, "fog": brightness < 0.2}
+        if brightness >= 0.6:
+            return {"rain": 0.0, "snow": 0.0, "clouds": 0, "fog": False}
+        # Motion could indicate wind/rain
+        if cam.get("motion_detected", False) and brightness < 0.4:
+            return {"rain": 0.3, "snow": 0.0, "clouds": 3, "fog": False}
+    # Fallback: mood-based inference
     energy = mood.get("energy", 0.5)
     valence = mood.get("valence", 0.5)
 
@@ -386,6 +425,29 @@ def _select_palette_name(hour: int, mood_tag: str, weather_label: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+
+def _read_active_characters() -> list[str]:
+    """Read which characters the music system is currently playing."""
+    import json
+    try:
+        d = json.loads(open("/tmp/active_characters.json").read())
+        if time.time() - d.get("timestamp", 0) < 300:  # within 5 min
+            return d.get("active_characters", [])
+    except Exception:
+        pass
+    return []
+
+
+def _read_inner_life_arc() -> dict:
+    """Read inner life arc phase for art timing alignment."""
+    import json
+    try:
+        d = json.loads(open("/tmp/inner_life_state.json").read())
+        return {"arc_phase": d.get("arc_phase", "build"), "mood": d.get("mood", 0)}
+    except Exception:
+        return {}
+
+
 def compose_scene(mood: dict | None = None, hour: int | None = None) -> SceneSpec:
     """Compose a complete scene from house mood and time.
 
@@ -431,7 +493,12 @@ def compose_scene(mood: dict | None = None, hour: int | None = None) -> SceneSpe
         char_count = 1
 
     # --- Pick characters ---
-    characters = pick_characters(mood, char_count)
+    # Prefer characters that the music system is currently playing
+    _active = _read_active_characters()
+    if _active:
+        characters = pick_characters(mood, char_count, prefer=_active)
+    else:
+        characters = pick_characters(mood, char_count)
 
     # --- Pick elements ---
     elements = pick_elements(season, w_label)
