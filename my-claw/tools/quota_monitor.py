@@ -16,7 +16,15 @@ AGENT_PROVIDERS = {
     "claude": "anthropic",
     "codex": "openai",
     "gemini": "google",
+    "ollama": "local",
+    "qwen3.5:9b": "local",
+    "qwen3.5:4b": "local",
+    "qwen3.5:27b": "local",
+    "gemma3:4b": "local",
+    "llama3.2:3b": "local",
 }
+
+LOCAL_PROVIDERS = frozenset({"local"})
 
 PROVIDER_AGENTS = {provider: agent for agent, provider in AGENT_PROVIDERS.items()}
 
@@ -187,6 +195,8 @@ class QuotaMonitor:
 
     def _load_provider_headroom(self, provider: str) -> tuple[float, str]:
         """Read provider headroom from sdp-cli, with defensive fallbacks."""
+        if provider in LOCAL_PROVIDERS:
+            return (1.0, "local")
         try:
             module = importlib.import_module("sdp.state.db")
         except ImportError:

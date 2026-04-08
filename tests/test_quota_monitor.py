@@ -57,10 +57,17 @@ def _patch_headroom(
     monkeypatch: pytest.MonkeyPatch,
     values: dict[str, tuple[float, str]],
 ) -> None:
+    original = quota_monitor.QuotaMonitor._load_provider_headroom
+
+    def _patched(self, provider):  # type: ignore[no-untyped-def]
+        if provider in values:
+            return values[provider]
+        return original(self, provider)
+
     monkeypatch.setattr(
         quota_monitor.QuotaMonitor,
         "_load_provider_headroom",
-        lambda self, provider: values[provider],
+        _patched,
     )
 
 
@@ -135,7 +142,19 @@ class TestQuotaMonitor:
         monitor.force_status("openai", "paused", headroom=0.04, confidence="runtime")
         monitor.force_status("google", "paused", headroom=0.02, confidence="runtime")
 
-        assert monitor.get_available_agents() == ["codex"]
+        available = monitor.get_available_agents()
+        assert available  # never empty
+        # Local agents remain healthy, so they are returned
+        assert "ollama" in available
+
+    def test_never_returns_empty_list_remote_only(self) -> None:
+        """When restricted to remote agents only, falls back to best headroom."""
+        monitor = _build_monitor()
+        monitor.force_status("anthropic", "paused", headroom=0.01, confidence="runtime")
+        monitor.force_status("openai", "paused", headroom=0.04, confidence="runtime")
+        monitor.force_status("google", "paused", headroom=0.02, confidence="runtime")
+
+        assert monitor.get_available_agents(["claude", "codex", "gemini"]) == ["codex"]
 
     def test_status_transition_triggers_alert(self, monkeypatch: pytest.MonkeyPatch) -> None:
         alerts: list[str] = []
@@ -169,13 +188,14 @@ class TestQuotaMonitor:
         monitor.poll_once()
         status = monitor.get_provider_status()
 
-        assert monitor.provider_status == {
-            "anthropic": "healthy",
-            "openai": "healthy",
-            "google": "healthy",
-        }
+        assert monitor.provider_status["anthropic"] == "healthy"
+        assert monitor.provider_status["openai"] == "healthy"
+        assert monitor.provider_status["google"] == "healthy"
+        assert monitor.provider_status["local"] == "healthy"
         assert status["anthropic"]["headroom"] == pytest.approx(1.0)
         assert status["anthropic"]["confidence"] == "unknown"
+        # Local provider uses its own short-circuit, not the SDP fallback
+        assert status["local"]["confidence"] == "local"
 
     def test_cli_error_treated_as_error_status(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monitor = _build_monitor()
@@ -228,6 +248,77 @@ class TestQuotaMonitor:
 
         assert monitor._thread is not None
         assert not monitor._thread.is_alive()
+
+    def test_local_provider_always_healthy(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monitor = quota_monitor.QuotaMonitor(poll_interval=0.01)
+        _patch_headroom(
+            monkeypatch,
+            {
+                "anthropic": (0.9, "observed"),
+                "openai": (0.9, "observed"),
+                "google": (0.9, "observed"),
+            },
+        )
+
+        monitor.poll_once()
+
+        assert monitor.provider_status["local"] == "healthy"
+        status = monitor.get_provider_status()
+        assert status["local"]["headroom"] == pytest.approx(1.0)
+        assert status["local"]["confidence"] == "local"
+
+    def test_get_agent_headroom_ollama_returns_one(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monitor = quota_monitor.QuotaMonitor(poll_interval=0.01)
+        _patch_headroom(
+            monkeypatch,
+            {
+                "anthropic": (0.9, "observed"),
+                "openai": (0.9, "observed"),
+                "google": (0.9, "observed"),
+            },
+        )
+
+        monitor.poll_once()
+
+        assert monitor.get_agent_headroom("ollama") == pytest.approx(1.0)
+
+    def test_ollama_never_excluded_from_selection(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monitor = quota_monitor.QuotaMonitor(poll_interval=0.01)
+        _patch_headroom(
+            monkeypatch,
+            {
+                "anthropic": (0.9, "observed"),
+                "openai": (0.9, "observed"),
+                "google": (0.9, "observed"),
+            },
+        )
+        monitor.poll_once()
+
+        # Pause all remote providers
+        monitor.force_status("anthropic", "paused", headroom=0.01, confidence="runtime")
+        monitor.force_status("openai", "paused", headroom=0.01, confidence="runtime")
+        monitor.force_status("google", "paused", headroom=0.01, confidence="runtime")
+
+        available = monitor.get_available_agents(["claude", "codex", "gemini", "ollama"])
+        assert "ollama" in available
+
+    def test_local_provider_skips_sdp_lookup(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monitor = quota_monitor.QuotaMonitor(
+            poll_interval=0.01,
+            agent_providers={"ollama": "local"},
+        )
+
+        # SDP import would blow up if called — proves short-circuit works
+        monkeypatch.setattr(
+            quota_monitor.importlib,
+            "import_module",
+            lambda name: (_ for _ in ()).throw(RuntimeError("should not be called")),
+        )
+
+        monitor.poll_once()
+
+        assert monitor.provider_status["local"] == "healthy"
+        assert monitor.get_agent_headroom("ollama") == pytest.approx(1.0)
 
     def test_runtime_failure_detection(self) -> None:
         assert quota_monitor.is_quota_error("HTTP 429 rate limit exceeded")
