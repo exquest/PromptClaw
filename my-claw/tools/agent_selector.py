@@ -2,13 +2,20 @@
 
 import random
 import json
+import time
 from pathlib import Path
 
+from cypherclaw.pet_classes import CLASS_DEFINITIONS, get_dominant_class
 
 PROVIDERS = {
     "claude": "anthropic",
     "codex": "openai",
     "gemini": "google",
+    "qwen3.5:9b": "ollama",
+    "qwen3.5:4b": "ollama",
+    "qwen3.5:27b": "ollama",
+    "gemma3:4b": "ollama",
+    "llama3.2:3b": "ollama",
 }
 
 # Category detection keywords
@@ -21,30 +28,65 @@ CATEGORY_KEYWORDS = {
     "devops": ["deploy", "staging", "production", "server", "docker", "nginx"],
     "writing": ["write", "draft", "document", "compose", "report"],
     "routing": ["route", "decide", "classify", "determine"],
+    "narrative_prose": [
+        "narrative_prose",
+        "story beat",
+        "narrative beat",
+        "glyphweave narrative",
+        "prose calibration",
+    ],
 }
 
 # Default fitness seeds per agent per category
 DEFAULT_FITNESS = {
-    "claude": {"architecture": 0.85, "review": 0.90, "coding": 0.70, "research": 0.75, "routing": 0.80, "writing": 0.80, "testing": 0.65, "devops": 0.60},
-    "codex": {"architecture": 0.55, "review": 0.60, "coding": 0.90, "research": 0.50, "routing": 0.50, "writing": 0.45, "testing": 0.85, "devops": 0.70},
-    "gemini": {"architecture": 0.60, "review": 0.55, "coding": 0.55, "research": 0.90, "routing": 0.60, "writing": 0.85, "testing": 0.50, "devops": 0.50},
+    "claude": {"architecture": 0.85, "review": 0.90, "coding": 0.70, "research": 0.75, "routing": 0.80, "writing": 0.80, "testing": 0.65, "devops": 0.60, "narrative_prose": 0.86},
+    "codex": {"architecture": 0.55, "review": 0.60, "coding": 0.90, "research": 0.50, "routing": 0.50, "writing": 0.45, "testing": 0.85, "devops": 0.70, "narrative_prose": 0.72},
+    "gemini": {"architecture": 0.60, "review": 0.55, "coding": 0.55, "research": 0.90, "routing": 0.60, "writing": 0.85, "testing": 0.50, "devops": 0.50, "narrative_prose": 0.84},
+    "qwen3.5:9b": {"narrative_prose": 0.78},
+    "qwen3.5:4b": {"narrative_prose": 0.60},
+    "qwen3.5:27b": {"narrative_prose": 0.88},
+    "gemma3:4b": {"narrative_prose": 0.58},
+    "llama3.2:3b": {"narrative_prose": 0.52},
 }
 
 ALTERNATION_PENALTY = 0.3
-CROSS_PROVIDER_BONUS = 0.1
+CROSS_PROVIDER_BONUS = 0.25
 EXPLORATION_RATE = 0.10  # 10% random exploration
-HEADROOM_BONUS_MAX = 0.15
+CLASS_BONUS_PER_LEVEL = 0.005
+MAX_CLASS_BONUS = 0.10
+
+
+def _class_categories(class_name: object) -> tuple[str, ...]:
+    if class_name is None:
+        return ()
+
+    normalized_name = str(class_name).strip()
+    if not normalized_name:
+        return ()
+
+    definition = CLASS_DEFINITIONS.get(normalized_name)
+    if definition is None:
+        definition = next(
+            (
+                candidate_definition
+                for candidate_name, candidate_definition in CLASS_DEFINITIONS.items()
+                if candidate_name.casefold() == normalized_name.casefold()
+            ),
+            None,
+        )
+
+    categories = definition.get("categories", ()) if definition else ()
+    return tuple(str(category).casefold() for category in categories)
 
 
 class AgentSelector:
     """Selects the best agent for a task based on fitness scores + rotation."""
 
-    def __init__(self, observatory=None, quota_monitor=None, state_file: str | Path = ""):
+    def __init__(self, observatory=None, state_file: str | Path = ""):
         self.observatory = observatory
-        self.quota_monitor = quota_monitor
-        self._state_file: Path | None = Path(state_file) if state_file else None
-        self._last_lead: str | None = None
-        self._last_lead_provider: str | None = None
+        self._state_file = Path(state_file) if state_file else None
+        self._last_lead = None
+        self._last_lead_provider = None
         self._task_count = 0
         self._load_state()
 
@@ -72,6 +114,8 @@ class AgentSelector:
 
     def detect_category(self, task_desc: str) -> str:
         lower = task_desc.lower()
+        if lower in CATEGORY_KEYWORDS:
+            return lower
         for category, keywords in CATEGORY_KEYWORDS.items():
             if any(kw in lower for kw in keywords):
                 return category
@@ -82,59 +126,100 @@ class AgentSelector:
         # Try Observatory first
         if self.observatory:
             try:
-                skills = self.observatory.get_agent_skills(agent)
-                if isinstance(skills, dict) and category in skills:
-                    return float(skills[category])
-                if isinstance(skills, list):
-                    for row in skills:
-                        if isinstance(row, dict) and row.get("category") == category:
-                            return float(row.get("score", 0.5))
+                skills_list = self.observatory.get_agent_skills(agent)
+                skills = {s['category']: s['score'] for s in skills_list}
+                if skills and category in skills:
+                    return skills[category]
             except Exception:
                 pass
         # Fall back to defaults
         return DEFAULT_FITNESS.get(agent, {}).get(category, 0.5)
 
-    def _resolve_agents(
-        self,
-        available_agents: list[str] | tuple[str, ...] | None,
-        disabled_agents: set[str] | None = None,
-    ) -> list[str]:
-        agents = list(available_agents or ["claude", "codex", "gemini"])
-        disabled = set(disabled_agents or ())
-        filtered = [agent for agent in agents if agent not in disabled]
-        if not filtered:
-            filtered = agents
-        if self.quota_monitor:
-            try:
-                filtered = self.quota_monitor.get_available_agents(filtered)
-            except Exception:
-                pass
-        return filtered or agents
-
-    def _headroom_bonus(self, agent: str) -> float:
-        if not self.quota_monitor:
-            return 0.0
+    def get_dominant_class(self, agent: str) -> tuple[str, int] | None:
+        """Get an agent's dominant pet class, if pet-class data is available."""
         try:
-            headroom = float(self.quota_monitor.get_agent_headroom(agent))
+            return get_dominant_class(agent)
         except Exception:
-            return 0.0
-        return max(0.0, min(1.0, headroom)) * HEADROOM_BONUS_MAX
+            return None
 
-    def select(
+    def get_class_bonus(self, agent: str, category: str) -> float:
+        """Return the capped selector bonus for a matching dominant class."""
+        dominant = self.get_dominant_class(agent)
+        if not dominant:
+            return 0.0
+
+        class_name, level = dominant
+        if str(category).strip().casefold() not in _class_categories(class_name):
+            return 0.0
+
+        return min(MAX_CLASS_BONUS, max(level, 0) * CLASS_BONUS_PER_LEVEL)
+
+    def _record_class_bonus_influence(
         self,
         task_desc: str,
-        available_agents: list[str] | tuple[str, ...] | None = None,
-        disabled_agents: set[str] | None = None,
-    ) -> str:
+        category: str,
+        baseline_agent: str,
+        chosen_agent: str,
+        base_scores: dict[str, float],
+        bonuses: dict[str, float],
+        final_scores: dict[str, float],
+    ) -> None:
+        if not self.observatory:
+            return
+
+        dominant = self.get_dominant_class(chosen_agent)
+        class_name, class_level = dominant if dominant else (None, None)
+        try:
+            self.observatory.record(
+                "agent_selector_class_bonus",
+                {
+                    "task_desc": task_desc,
+                    "category": category,
+                    "baseline_agent": baseline_agent,
+                    "baseline_score": base_scores[baseline_agent],
+                    "chosen_agent": chosen_agent,
+                    "chosen_base_score": base_scores[chosen_agent],
+                    "chosen_bonus": bonuses[chosen_agent],
+                    "chosen_score": final_scores[chosen_agent],
+                    "class_name": class_name,
+                    "class_level": class_level,
+                    "flipped_winner": chosen_agent != baseline_agent,
+                },
+            )
+        except Exception:
+            pass
+
+    def _record_exploration_roll(
+        self,
+        task_desc: str,
+        category: str,
+        chosen_agent: str,
+    ) -> None:
+        if not self.observatory:
+            return
+        try:
+            self.observatory.record(
+                "agent_selector_exploration",
+                {
+                    "task_desc": task_desc,
+                    "category": category,
+                    "chosen_agent": chosen_agent,
+                    "class_bonus_disabled": True,
+                },
+            )
+        except Exception:
+            pass
+
+    def select(self, task_desc: str, available_agents: list[str] | None = None) -> str:
         """Select the best agent for this task."""
-        agents = self._resolve_agents(available_agents, disabled_agents)
+        agents = available_agents or ["claude", "codex", "gemini"]
         category = self.detect_category(task_desc)
 
-        # Compute scores
-        scores: dict[str, float] = {}
+        # Compute baseline scores before any pet-class bonus is applied.
+        base_scores = {}
         for agent in agents:
             fitness = self.get_fitness(agent, category)
-            score = fitness + self._headroom_bonus(agent)
+            score = fitness
 
             # Alternation penalty — discourage using same provider twice
             if self._last_lead_provider and PROVIDERS.get(agent) == self._last_lead_provider:
@@ -144,13 +229,30 @@ class AgentSelector:
             if self._last_lead_provider and PROVIDERS.get(agent) != self._last_lead_provider:
                 score += CROSS_PROVIDER_BONUS
 
-            scores[agent] = score
+            base_scores[agent] = score
 
-        # Exploration — 10% chance of random pick
+        # Exploration — 10% chance of random pick (class bonus disabled)
         if random.random() < EXPLORATION_RATE:
             chosen = random.choice(agents)
+            self._record_exploration_roll(task_desc, category, chosen)
         else:
-            chosen = max(scores, key=lambda agent: scores[agent])
+            bonuses = {agent: self.get_class_bonus(agent, category) for agent in agents}
+            scores = {
+                agent: base_scores[agent] + bonuses[agent]
+                for agent in agents
+            }
+            baseline_agent = max(base_scores, key=base_scores.get)
+            chosen = max(scores, key=scores.get)
+            if any(b > 0.0 for b in bonuses.values()):
+                self._record_class_bonus_influence(
+                    task_desc=task_desc,
+                    category=category,
+                    baseline_agent=baseline_agent,
+                    chosen_agent=chosen,
+                    base_scores=base_scores,
+                    bonuses=bonuses,
+                    final_scores=scores,
+                )
 
         # Update state
         self._last_lead = chosen
@@ -160,24 +262,13 @@ class AgentSelector:
 
         return chosen
 
-    def select_pair(
-        self,
-        task_desc: str,
-        available_agents: list[str] | tuple[str, ...] | None = None,
-        disabled_agents: set[str] | None = None,
-    ) -> tuple[str, str]:
+    def select_pair(self, task_desc: str) -> tuple[str, str]:
         """Select lead + verify agents (different providers preferred)."""
-        agents = self._resolve_agents(available_agents, disabled_agents)
-        if len(agents) == 1:
-            return agents[0], agents[0]
-
-        lead = self.select(task_desc, available_agents=agents)
+        lead = self.select(task_desc)
         # Pick a different agent for verify
-        others = [a for a in agents if a != lead]
-        if not others:
-            return lead, lead
-        verify_scores = {a: self.get_fitness(a, "review") + self._headroom_bonus(a) for a in others}
-        verify = max(verify_scores, key=lambda agent: verify_scores[agent])
+        others = [a for a in ["claude", "codex", "gemini"] if a != lead]
+        verify_scores = {a: self.get_fitness(a, "review") for a in others}
+        verify = max(verify_scores, key=verify_scores.get)
         return lead, verify
 
     def record_outcome(self, agent: str, task_desc: str, success: bool):
@@ -185,27 +276,30 @@ class AgentSelector:
         if self.observatory:
             category = self.detect_category(task_desc)
             try:
-                self.observatory.update_agent_skill(agent, category, success)
+                self.observatory.record_task_result(
+                    agent=agent,
+                    task_id=f"{agent}_{int(time.time())}",
+                    success=success,
+                    duration_ms=0,
+                    tokens=0,
+                    gate_pass=False,
+                    category=category,
+                    model=agent,
+                )
             except Exception:
                 pass
 
     def status_summary(self) -> str:
         """Return a Telegram-friendly status of agent fitness."""
         lines = ["\U0001f3af Agent Fitness\n"]
-        quota_status = self.quota_monitor.get_provider_status() if self.quota_monitor else {}
         for agent in ("claude", "codex", "gemini"):
-            provider = PROVIDERS[agent]
             icon = {"claude": "\U0001f7e3", "codex": "\U0001f7e2", "gemini": "\U0001f535"}[agent]
             top_categories = []
             for cat in ("coding", "architecture", "review", "research", "writing"):
                 score = self.get_fitness(agent, cat)
                 top_categories.append(f"{cat}:{score:.0%}")
             cats_str = " | ".join(top_categories)
-            quota_info = quota_status.get(provider, {})
-            quota_str = ""
-            if quota_info:
-                quota_str = f" | quota:{quota_info.get('status', 'unknown')} {float(quota_info.get('headroom', 0.0)):.0%}"
             last_marker = " \u25c0" if agent == self._last_lead else ""
-            lines.append(f"{icon} {agent}{last_marker}\n  {cats_str}{quota_str}")
+            lines.append(f"{icon} {agent}{last_marker}\n  {cats_str}")
         lines.append(f"\nRotation: {self._task_count} tasks, last lead: {self._last_lead or 'none'}")
         return "\n".join(lines)
