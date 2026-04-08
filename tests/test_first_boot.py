@@ -478,3 +478,75 @@ class TestBootstrapIdentity:
         assert identity.release == "3.0.0"
         assert identity.parent_id == "parent-abc"
         assert identity.clone_timestamp is not None
+
+
+# ── Startup flow integration: bootstrap → announce ───────────────
+
+
+class TestStartupIdentityPersistence:
+    """Simulate the daemon startup flow: bootstrap_identity then FirstBootAnnouncer.
+
+    Verifies the identity is auto-created on first boot and persists across
+    subsequent boots without regeneration, matching the real poll_loop() wiring.
+    """
+
+    def test_first_boot_creates_identity_then_announces(self, tmp_path):
+        """First startup mints identity; announcer finds it and announces."""
+        identity_path = tmp_path / "identity.json"
+        announced_path = tmp_path / ".first_boot_announced"
+
+        # Simulate startup: bootstrap creates identity
+        identity = bootstrap_identity(
+            mode="federated",
+            release="3.0.0",
+            parent_id="origin-home",
+            identity_path=identity_path,
+        )
+
+        assert identity_path.exists()
+        assert identity.instance_id
+        assert identity.instance_name
+
+        # Announcer finds the identity and announces
+        mock_fn = MagicMock()
+        announcer = FirstBootAnnouncer(
+            identity_path=identity_path,
+            announced_path=announced_path,
+            announce_fn=mock_fn,
+        )
+        payload = announcer.maybe_announce()
+
+        assert payload is not None
+        assert payload["instance_id"] == identity.instance_id
+        mock_fn.assert_called_once()
+
+    def test_identity_persists_across_reboots(self, tmp_path):
+        """Subsequent boots load the same identity without regenerating."""
+        identity_path = tmp_path / "identity.json"
+
+        first = bootstrap_identity(identity_path=identity_path)
+        second = bootstrap_identity(identity_path=identity_path)
+        third = bootstrap_identity(identity_path=identity_path)
+
+        assert first.instance_id == second.instance_id == third.instance_id
+        assert first.instance_name == second.instance_name == third.instance_name
+        assert first.created_at == second.created_at == third.created_at
+
+    def test_standalone_startup_creates_identity_no_announce(self, tmp_path):
+        """Standalone boot creates identity but does not announce."""
+        identity_path = tmp_path / "identity.json"
+        announced_path = tmp_path / ".first_boot_announced"
+
+        identity = bootstrap_identity(mode="standalone", identity_path=identity_path)
+
+        assert identity_path.exists()
+        assert identity.mode == "standalone"
+
+        mock_fn = MagicMock()
+        announcer = FirstBootAnnouncer(
+            identity_path=identity_path,
+            announced_path=announced_path,
+            announce_fn=mock_fn,
+        )
+        assert announcer.maybe_announce() is None
+        mock_fn.assert_not_called()
