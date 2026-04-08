@@ -1,5 +1,15 @@
 # PRD: PromptClaw Federation — Networked Instance Communication
 
+> Superseded in planning by:
+> [prd-clone-and-home-creation.md](./prd-clone-and-home-creation.md),
+> [prd-instance-identity-and-lineage.md](./prd-instance-identity-and-lineage.md),
+> [prd-federation-read-model.md](./prd-federation-read-model.md),
+> [prd-federation-proposal-writes.md](./prd-federation-proposal-writes.md),
+> [prd-publication-and-gallery-surfaces.md](./prd-publication-and-gallery-surfaces.md),
+> and [prd-bundle-exchange.md](./prd-bundle-exchange.md).
+>
+> Keep this file as historical context. Do not use it as the primary queue-loading document for the next federation buildout.
+
 ## Overview
 
 A secure, invite-only federation protocol that allows multiple PromptClaw instances to communicate as peers. Each instance has a cryptographic identity (name + keypair), exposes a signed REST API, and collaborates with other instances through status sharing, task delegation, shared knowledge, coherence enforcement, and social interaction — all governed by layered permissions.

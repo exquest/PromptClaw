@@ -1,107 +1,94 @@
 # CypherClaw Execution Roadmap
 
-This document turns the current PRD set into one ordered program instead of a pile of parallel ambitions.
+This roadmap reframes PromptClaw around the system it is actually becoming:
 
-The goal is simple:
-
-1. make the home durable
-2. make the codebase operable
-3. make the agents trustworthy
-4. make continuity and autonomy real
-5. only then build richer surfaces and art-first expansions on top
+1. a reproducible sovereign home
+2. an artist runtime
+3. an embodied art organism
+4. a cloneable descendant system
+5. a federation of read-visible, write-sovereign homes
+6. a private-by-default gallery/publication layer
 
 ## Non-Negotiable Rules
 
-1. Do not schedule late-stage surface work ahead of foundational runtime work.
-2. Do not start cross-provider autonomy features before provider/runtime behavior is explicit.
-3. Do not rely on tmpfs, ad hoc shells, or raw chat history as operational memory.
-4. Do not let one blocked task halt the whole organism.
+1. Do not schedule surface polish ahead of home/runtime authority.
+2. Do not let clone/install outrun resilience and restructure.
+3. Do not let federation outrun identity, sovereignty, and explicit approval.
+4. Do not build embodiment loops on top of ad hoc state models.
+5. Do not let publication leak private memory, raw logs, or secrets.
 
 ## Execution Spine
 
 | Stage | PRD | Why it is here | Unlocks |
 |---|---|---|---|
-| 1 | [prd-home-resilience.md](./prd-home-resilience.md) | Durable state, safe reboot, continuous queue | Everything else |
-| 2 | [prd-restructure.md](./prd-restructure.md) | Stable imports, packaging, service paths | Reliable tests, runtime reuse, future services |
-| 3 | [prd-model-awareness.md](./prd-model-awareness.md) | Explicit provider/model routing and observability | Cost control, graceful degradation, correct agent choice |
-| 4 | [prd-agent-runtime-substrate.md](./prd-agent-runtime-substrate.md) | Shared execution, streaming, sessions, failure classes | Verification, web streaming, introspector |
-| 5 | [prd-capability-approval-framework.md](./prd-capability-approval-framework.md) | Explicit action classes and approval boundaries | Safe autonomy, approval UX, verification bypass rules |
-| 6 | [prd-verification-system.md](./prd-verification-system.md) | Trustworthy lead/verify/fix behavior | Introspector, safe code changes, reliable high-risk action flow |
-| 7 | [prd-context-engine.md](./prd-context-engine.md) | Compaction, handoff briefs, operational memory | Session continuity, web UX, proactive memory |
-| 8 | [prd-introspector.md](./prd-introspector.md) | Autonomous diagnosis and repair | Self-healing runtime |
-| 9 | [prd-web-platform.md](./prd-web-platform.md) | Rich operator surface | Mission control UI |
+| 1 | [prd-home-resilience.md](./prd-home-resilience.md) | Durable state, safe maintenance, safe reboot, continuous queue | Every future home |
+| 2 | [prd-restructure.md](./prd-restructure.md) | Stable imports, packaging, service paths | Reliable installs, cloneability, reusable services |
+| 3 | [prd-glyphweave-studio-loop.md](./prd-glyphweave-studio-loop.md) | Fast artist iteration, context, compaction, source maps, fixtures | Better art, better embodiment iteration |
+| 4 | [prd-embodiment-core.md](./prd-embodiment-core.md) | Shared organism state, sensor contract, dual-display runtime, rehearsal | Face + gallery organism |
+| 5 | [prd-embodiment-interaction-loops.md](./prd-embodiment-interaction-loops.md) | MIDI, typewriter, camera, Theramini, ambient response loops | Playable embodied interaction |
+| 5.5 | [prd-artist-plan-completion.md](./prd-artist-plan-completion.md) | Visitor identity, physical output, gallery exhibition, room acoustics, story covers | Complete local organism |
+| 6 | [prd-glyphweave-art-studio.md](./prd-glyphweave-art-studio.md) | Larger autonomous art pipeline on top of a better studio/runtime | Volume art generation |
+| 7 | [prd-narrative-engine.md](./prd-narrative-engine.md) | Story and symbolic continuity for the embodied organism | Richer long-cycle identity |
+| 8 | [prd-pet-system-v2.md](./prd-pet-system-v2.md) | Pet/personality depth in service of the organism | Stronger identity continuity |
+| 9 | [prd-publication-and-gallery-surfaces.md](./prd-publication-and-gallery-surfaces.md) | Private-by-default gallery surfaces, explicit publish, read-only public mode | Shareable home galleries |
+| 10 | [prd-clone-and-home-creation.md](./prd-clone-and-home-creation.md) | Reproducible home creation, unattended install, clone flow | New homes, remote installs, clean bootstrap |
+| 11 | [prd-instance-identity-and-lineage.md](./prd-instance-identity-and-lineage.md) | Unique identity, naming, clone inheritance, divergence semantics | Clone continuity, provenance, federation trust |
+| 12 | [prd-federation-read-model.md](./prd-federation-read-model.md) | Read-visible descendants/peers, announcements, revocable read trust | Safe network presence |
+| 13 | [prd-federation-proposal-writes.md](./prd-federation-proposal-writes.md) | Cross-home mutation as proposal + target approval | Sovereign cooperation |
+| 14 | [prd-bundle-exchange.md](./prd-bundle-exchange.md) | Gift bundles, mounted-first imports, provenance | Artistic exchange between homes |
 
 ## Immediate Priority Slice
 
-These items should be treated as the current P0:
+These items are the current P0/P1:
 
-1. Finish the remaining Home Resilience core:
-   - checkpoint exporter
-   - preflight validator
-   - maintenance mode
-   - safe reboot
-   - post-boot reconciliation
-   - blocked-task continuation
-2. Complete Restructure so the runtime no longer pays a flat-layout tax.
-3. Finish the Model Awareness core:
-   - registry
-   - selector
-   - runtime command construction
-   - observatory logging
-4. Land the Agent Runtime Substrate core.
-5. Land the Capability and Approval Framework core.
-6. Then finish the Verification System core.
+1. Finish the remaining `Home Resilience` slice.
+2. Finish `Restructure`.
+3. Finish the `GlyphWeave Studio Loop`.
+4. Pull the embodiment-critical SenseWeave/device tasks under `Embodiment Core`.
+5. Execute `Embodiment Core` and `Embodiment Interaction Loops`.
+6. Resume deeper art/narrative/pet work before clone and federation.
 
-## Existing PRDs That Should Be Deferred Until the Spine Is Stable
+## Existing PRDs That Should Be Deferred
 
-These are important, but they should not outrun the spine:
+These remain important, but they should not outrun the new spine:
 
 - [prd-web-platform.md](./prd-web-platform.md)
 - [prd-proactive-intelligence.md](./prd-proactive-intelligence.md)
 - [prd-local-llm-integration.md](./prd-local-llm-integration.md)
-- [prd-federation.md](./prd-federation.md)
+- [prd-federation.md](./prd-federation.md) as a primary loading source
 
-They become dramatically easier once the runtime, permissions, verification, and context layers exist.
+## Relationship to the Current Queue
 
-## Art-Driven Work Order
+The live root-task backlog still contains useful work, but it was authored against an older model:
 
-The art-facing PRDs should follow once the organism itself is stable:
+- home resilience work largely still stands
+- restructure work still stands
+- GlyphWeave studio-loop work still stands
+- old federation tasks need to be superseded by clone/identity/read/proposal/publication/bundle work
+- embodiment-critical SenseWeave/device tasks need to be regrouped under the new embodiment spine
 
-1. [prd-glyphweave-studio-loop.md](./prd-glyphweave-studio-loop.md)
-2. [prd-glyphweave-art-studio.md](./prd-glyphweave-art-studio.md)
-3. [prd-pet-system-v2.md](./prd-pet-system-v2.md)
-4. [prd-narrative-engine.md](./prd-narrative-engine.md)
-5. SenseWeave and later physical-output work
-
-Reason: the artistic layers benefit most from a stable home, truthful monitoring, reliable provider degradation, compacted memory, and a fast local studio loop before the larger autonomous art pipeline starts producing volume.
-
-## Research-to-Implementation Mapping
-
-The `claude-code-sourcemap` research pass suggests four concrete adoptions:
-
-| Research Pattern | PromptClaw Home |
-|---|---|
-| `doctor` | Home Resilience preflight + unified doctor |
-| `PersistentShell` | Agent Runtime Substrate |
-| `compact` | Context Engine |
-| tool/permission registry | Capability and Approval Framework |
-
-Use the research repo as a pattern library, not as code to transplant wholesale.
+Use [task-audit-20260402.md](./task-audit-20260402.md) as the migration guide from the current backlog to the revised one.
 
 ## Task Loading Guidance
 
 When turning this roadmap into `sdp-cli` work:
 
-1. promote the spine tasks above surface/UI work
-2. keep later-stage PRDs queued but dependency-gated
-3. batch by stage, not by novelty
-4. never mix foundation refactors with broad feature work in the same active slice
+1. keep art-runtime and embodiment work ahead of clone/federation work once resilience and restructure are stable
+2. load embodiment core before deeper interaction loops
+3. keep publication separate from federation write logic
+4. defer clone/install, identity, and federation until the local art organism is strong enough to justify replication
+5. keep bundle exchange separate from core federation transport
+6. author every requirement as one surface, one primary verb, one measurable outcome
+
+Use [prd-authoring-rules.md](./prd-authoring-rules.md) as the PromptClaw-specific queue-fit guide before loading any new PRD.
 
 ## Definition of Success
 
 The roadmap is succeeding when:
 
-1. The queue can run unattended through ordinary failures and reboots.
-2. A new session can orient from generated context, not archaeology.
-3. Agent execution, approval boundaries, and verification are consistent everywhere.
-4. The web platform becomes a natural expression of the system, not a compensating layer for instability underneath.
+1. A new PromptClaw home can be installed or cloned reproducibly.
+2. Every home has a unique identity and clear lineage.
+3. The artist runtime makes iteration, replay, and calibration easy.
+4. The embodied organism feels coherent across face, gallery, text, sound, and motion.
+5. Federation gives visibility by default but preserves sovereignty for every write.
+6. Public sharing is deliberate, private-by-default, and aesthetically strong.
