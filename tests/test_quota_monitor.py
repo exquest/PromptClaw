@@ -10,6 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "my-claw" / "tools"))
 
+import ollama_health
 import quota_monitor
 
 
@@ -77,6 +78,11 @@ def _build_monitor(*, observatory: FakeObservatory | None = None, alerts: list[s
         poll_interval=0.01,
         alert_callback=(alerts.append if alerts is not None else None),
     )
+
+
+@pytest.fixture(autouse=True)
+def _healthy_ollama(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ollama_health, "check_health", lambda port: True)
 
 
 class TestQuotaMonitor:
@@ -282,7 +288,10 @@ class TestQuotaMonitor:
 
         assert monitor.get_agent_headroom("ollama") == pytest.approx(1.0)
 
-    def test_ollama_never_excluded_from_selection(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_ollama_excluded_from_selection_when_unhealthy_and_recovers(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
         monitor = quota_monitor.QuotaMonitor(poll_interval=0.01)
         _patch_headroom(
             monkeypatch,
@@ -294,13 +303,18 @@ class TestQuotaMonitor:
         )
         monitor.poll_once()
 
-        # Pause all remote providers
-        monitor.force_status("anthropic", "paused", headroom=0.01, confidence="runtime")
-        monitor.force_status("openai", "paused", headroom=0.01, confidence="runtime")
-        monitor.force_status("google", "paused", headroom=0.01, confidence="runtime")
+        health = {"ok": False}
+        monkeypatch.setattr(ollama_health, "check_health", lambda port: health["ok"])
 
         available = monitor.get_available_agents(["claude", "codex", "gemini", "ollama"])
-        assert "ollama" in available
+        assert "ollama" not in available
+        assert available == ["claude", "codex", "gemini"]
+
+        health["ok"] = True
+
+        recovered = monitor.get_available_agents(["claude", "codex", "gemini", "ollama"])
+
+        assert "ollama" in recovered
 
     def test_local_provider_skips_sdp_lookup(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monitor = quota_monitor.QuotaMonitor(

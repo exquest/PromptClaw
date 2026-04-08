@@ -289,7 +289,9 @@ class AgentSelector:
         except Exception:
             return filtered
         available = [agent for agent in quota_filtered if agent in filtered]
-        return available or filtered
+        if available:
+            return available
+        return [] if not quota_filtered else filtered
 
     def _headroom_bonus(self, agent: str) -> float:
         if not self.quota_monitor:

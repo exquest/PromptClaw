@@ -10,6 +10,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent / "my-claw" / "tools"))
 
 import agent_selector
+import ollama_health
+import quota_monitor
 
 
 class FakeQuotaMonitor:
@@ -51,6 +53,11 @@ class FakeQuotaMonitor:
 
     def get_agent_headroom(self, agent_name: str) -> float:
         return self.headrooms.get(agent_name, 0.0)
+
+
+@pytest.fixture(autouse=True)
+def _healthy_ollama(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ollama_health, "check_health", lambda port: True)
 
 
 class TestAgentSelectorQuota:
@@ -132,3 +139,32 @@ class TestAgentSelectorQuota:
         assert "quota" in summary.lower()
         assert "warn" in summary.lower()
         assert "paused" in summary.lower()
+
+    def test_select_falls_back_to_cloud_when_ollama_unhealthy_and_recovers(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        monitor = quota_monitor.QuotaMonitor(poll_interval=0.01)
+        monkeypatch.setattr(
+            quota_monitor.QuotaMonitor,
+            "_load_provider_headroom",
+            lambda self, provider: (1.0, "local") if provider == "local" else (0.9, "observed"),
+        )
+        monitor.poll_once()
+
+        selector = agent_selector.AgentSelector(
+            observatory=None,
+            quota_monitor=monitor,
+            state_file=tmp_path / "selector-state.json",
+        )
+        monkeypatch.setattr(agent_selector.random, "random", lambda: 1.0)
+
+        health = {"ok": False}
+        monkeypatch.setattr(ollama_health, "check_health", lambda port: health["ok"])
+
+        assert selector.select("vpn firewall routing help", available_agents=["ollama", "codex", "gemini"]) == "codex"
+
+        health["ok"] = True
+
+        assert selector.select("vpn firewall routing help", available_agents=["ollama", "codex", "gemini"]) == "ollama"

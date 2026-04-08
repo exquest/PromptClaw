@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
+import ollama_health
 from sdp_runtime import run_sdp_command
 
 AGENT_PROVIDERS = {
@@ -152,19 +153,25 @@ class QuotaMonitor:
         if not candidates:
             return []
 
+        runtime_unavailable = self._runtime_unavailable_agents(candidates)
         with self._lock:
             details = {provider: dict(values) for provider, values in self._provider_details.items()}
 
         available = [
             agent
             for agent in candidates
-            if details.get(self.agent_providers[agent], {}).get("status") in {"healthy", "warn"}
+            if agent not in runtime_unavailable
+            and details.get(self.agent_providers[agent], {}).get("status") in {"healthy", "warn"}
         ]
         if available:
             return available
 
+        fallback_candidates = [agent for agent in candidates if agent not in runtime_unavailable]
+        if not fallback_candidates:
+            return []
+
         best_agent = max(
-            candidates,
+            fallback_candidates,
             key=lambda agent: self._coerce_headroom(
                 details.get(self.agent_providers[agent], {}).get("headroom", 0.0)
             ),
@@ -192,6 +199,69 @@ class QuotaMonitor:
 
     def _wait_for_next_poll(self) -> bool:
         return self._stop_event.wait(self.poll_interval)
+
+    def _runtime_unavailable_agents(self, candidates: list[str]) -> set[str]:
+        """Return agents that are blocked by runtime health, not quota headroom."""
+        blocked: set[str] = set()
+        local_providers = {
+            self.agent_providers[agent]
+            for agent in candidates
+            if self.agent_providers.get(agent) in LOCAL_PROVIDERS
+        }
+        for provider in local_providers:
+            if self._refresh_local_provider_status(provider):
+                continue
+            for agent in candidates:
+                if self.agent_providers.get(agent) == provider:
+                    blocked.add(agent)
+        return blocked
+
+    def _refresh_local_provider_status(self, provider: str) -> bool:
+        """Refresh runtime status for a local provider and return health."""
+        ports = self._local_provider_ports()
+        healthy = any(ollama_health.check_health(port) for port in ports)
+        ports_label = ", ".join(str(port) for port in ports)
+
+        with self._lock:
+            existing = dict(self._provider_details.get(provider, {}))
+
+        headroom = self._coerce_headroom(existing.get("headroom", 1.0))
+        confidence = "local"
+        if healthy:
+            status = self._status_for_headroom(headroom)
+            reason = f"ollama healthy on ports {ports_label}"
+        else:
+            status = "error"
+            reason = f"ollama unhealthy on ports {ports_label}"
+
+        self._apply_status(
+            provider,
+            status=status,
+            headroom=headroom,
+            confidence=confidence,
+            reason=reason,
+        )
+        return healthy
+
+    def _local_provider_ports(self) -> tuple[int, ...]:
+        """Return the unique Ollama ports currently configured for local routing."""
+        try:
+            agent_selector = importlib.import_module("agent_selector")
+            routes = getattr(agent_selector, "_load_ollama_routes")()
+        except Exception:
+            return (11434,)
+
+        ports: list[int] = []
+        for route in routes.values():
+            if not isinstance(route, dict):
+                continue
+            try:
+                port = int(route["port"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if port not in ports:
+                ports.append(port)
+        return tuple(ports) or (11434,)
 
     def _load_provider_headroom(self, provider: str) -> tuple[float, str]:
         """Read provider headroom from sdp-cli, with defensive fallbacks."""
@@ -299,11 +369,16 @@ class QuotaMonitor:
         reason: str,
     ) -> None:
         agent = PROVIDER_AGENTS.get(provider, provider)
+        detail = f"{headroom:.0%} headroom"
+        recovery = "headroom recovers"
+        if provider in LOCAL_PROVIDERS:
+            detail = reason
+            recovery = "runtime health recovers"
         message = (
             "⚠️ Provider Degradation\n"
-            f"{provider}: {previous_status} -> {current_status} ({headroom:.0%} headroom)\n"
+            f"{provider}: {previous_status} -> {current_status} ({detail})\n"
             f"Active agents: {', '.join(self.get_available_agents())}\n"
-            f"{agent.title()} excluded from routing until headroom recovers."
+            f"{agent.title()} excluded from routing until {recovery}."
         )
 
         if self.alert_callback is not None:
