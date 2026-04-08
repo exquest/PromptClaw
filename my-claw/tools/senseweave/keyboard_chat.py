@@ -178,8 +178,15 @@ class KeyboardChat:
         K_RETURN = 13
         K_ESCAPE = 27
 
+        # Modifier flags (pygame constants)
+        KMOD_SHIFT = 1  # pygame.KMOD_SHIFT
+
         if key == K_TAB:
             self._toggle_history()
+            return True
+        elif key == K_RETURN and (mod & KMOD_SHIFT):
+            # Shift+Enter = newline
+            self.input_buffer += "\n"
             return True
         elif key == K_RETURN and self.input_buffer:
             self.submit()
@@ -485,7 +492,8 @@ class KeyboardChat:
             return
 
         # --- Floating bubbles (bottom-up) ---
-        input_y = h - 50 if self.input_buffer else h - 30
+        n_input_lines = min(4, max(1, self.input_buffer.count("\n") + 1)) if self.input_buffer else 0
+        input_y = h - 30 - (n_input_lines * 30) if self.input_buffer else h - 30
         y = input_y - 10
 
         for bubble in reversed(self.bubbles):
@@ -562,15 +570,23 @@ class KeyboardChat:
                 fill=(170, 185, 220, breath), font=font_sm, anchor="mt",
             )
 
-        # --- Input line ---
+        # --- Input line (multi-line support) ---
         if self.input_buffer:
             now = time.time()
             if now - self._cursor_time > 0.5:
                 self._cursor_blink = not self._cursor_blink
                 self._cursor_time = now
             cursor = "|" if self._cursor_blink else " "
-            input_text = f"{self.input_buffer}{cursor}"
-            draw.text((40, input_y), input_text, fill=(230, 235, 245, 220), font=font)
+            # Split on actual newlines, then word-wrap each
+            raw_lines = (self.input_buffer + cursor).split("\n")
+            all_lines = []
+            for rl in raw_lines:
+                all_lines.extend(self._wrap(rl, 50) if rl else [""])
+            # Draw from bottom up
+            iy = input_y
+            for line in reversed(all_lines[-4:]):  # max 4 visible lines
+                draw.text((40, iy), line, fill=(230, 235, 245, 220), font=font)
+                iy -= 30
 
     @staticmethod
     def _wrap(text: str, width: int) -> list[str]:
