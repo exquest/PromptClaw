@@ -67,14 +67,14 @@ PRESETS: dict[str, ADSR] = {
 
 TIMBRE_MAP: dict[str, str] = {
     "pad": "sw_pad",
-    "swell": "sw_choir",
-    "stab": "sw_pluck",
-    "rhythmic": "sw_pluck",
-    "breath": "sw_breath",
-    "shimmer": "sw_kotekan",
-    "warm": "sw_bowed",
-    "bell": "sw_bell_warm",
-    "gong": "sw_gong",
+    "swell": "sw_choir",    # has doneAction:2
+    "stab": "sw_pluck",     # has doneAction:2
+    "rhythmic": "sw_pluck", # has doneAction:2
+    "breath": "sw_breath",  # has doneAction:2
+    "shimmer": "sw_kotekan",# has doneAction:2
+    "warm": "sw_bowed",     # has doneAction:2
+    "bell": "sw_bell_warm", # has doneAction:2
+    "gong": "sw_gong",      # has doneAction:2
 }
 
 
@@ -185,13 +185,9 @@ class SenseweaveVoice:
             ]
 
     def _release_note(self, note: ActiveNote) -> bool:
-        """Remove from tracking only. Don't send ANY OSC.
-
-        The synth will be freed naturally when scsynth's envelope
-        doneAction triggers, or it will be overwritten by the
-        polyphony limit (oldest notes get replaced by new ones).
-        """
-        # No /n_free, no /n_set — zero OSC messages = zero pops
+        """Release the active note and report success to list filtering."""
+        if self.osc:
+            self.osc.send_message("/n_free", [note.node_id])
         return True
 
     def chord(self, freqs: list[float], amp: float = 0.06, adsr: ADSR | None = None) -> list[int]:

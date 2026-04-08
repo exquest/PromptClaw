@@ -18,7 +18,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 # Add my-claw/tools to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "my-claw" / "tools"))

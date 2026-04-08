@@ -8,14 +8,10 @@ from unittest.mock import MagicMock
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
 
 from senseweave.synthesis.senseweave_voice import (
-    ADSR,
-    BREATH,
     PAD,
     PRESETS,
     RHYTHMIC,
-    SHIMMER,
     STAB,
-    SWELL,
     TIMBRE_MAP,
     SenseweaveVoice,
 )
@@ -58,6 +54,7 @@ class TestSenseweaveVoice:
     def test_note_on_sends_osc(self):
         voice, osc = self._make_voice()
         nid = voice.note_on(220.0, 0.06)
+        assert isinstance(nid, int)
         assert osc.send_message.called
         args = osc.send_message.call_args[0]
         assert args[0] == "/s_new"
@@ -169,16 +166,19 @@ class TestConvenienceMethods:
     def test_breath_tone(self):
         voice, osc = self._make_voice()
         nid = voice.breath_tone(220.0)
+        assert isinstance(nid, int)
         assert voice.active_count == 1
 
     def test_shimmer_note(self):
         voice, osc = self._make_voice()
         nid = voice.shimmer_note(440.0)
+        assert isinstance(nid, int)
         assert voice.active_count == 1
 
     def test_swell(self):
         voice, osc = self._make_voice()
         nid = voice.swell(330.0)
+        assert isinstance(nid, int)
         assert voice.active_count == 1
 
 

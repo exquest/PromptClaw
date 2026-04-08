@@ -1,7 +1,6 @@
 """Tests for generative_scores.py -- musical score generation from mood and narrative."""
 from __future__ import annotations
 
-import math
 import os
 import sys
 

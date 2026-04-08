@@ -18,7 +18,6 @@ from PIL import Image, ImageDraw
 from senseweave.pareidolia import (
     CHARACTER_REGISTRY,
     PALETTES,
-    ColorPalette,
     PanelSpec,
     SceneCharacter,
     draw_archivist,

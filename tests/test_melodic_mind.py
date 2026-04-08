@@ -10,7 +10,6 @@ import json
 import math
 import random
 import sys
-import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -950,6 +949,7 @@ class TestTheoryQuery:
         abc = "X:1\nT:CypherClaw Phrase\nM:3/4\nK:Cmaj\nC F G |"
         with patch("melodic_mind.requests.post", return_value=mock_response) as mock_post:
             result = advisor.theory_query(abc, "What progression is this?")
+        assert "I-IV-V progression" in result
         # Verify ChatMusician-specific prompt format
         call_args = mock_post.call_args
         prompt_sent = call_args[1]["json"]["prompt"] if "json" in call_args[1] else call_args[0][1]["prompt"]

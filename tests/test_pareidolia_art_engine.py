@@ -5,7 +5,6 @@ import json
 import os
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -13,8 +12,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "my-claw" / "tools"))
 
 
 from senseweave.pareidolia_art_engine import (
-    DEFAULT_GALLERY_DIR,
-    ORGANISM_STATE_PATH,
     _read_organism_state,
     generate_art_piece,
 )

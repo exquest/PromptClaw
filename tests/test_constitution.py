@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from promptclaw.coherence.constitution import Constitution, Rule
+from promptclaw.coherence.constitution import Constitution
 from promptclaw.coherence.models import EnforcementMode, Violation, ViolationSeverity
 
 

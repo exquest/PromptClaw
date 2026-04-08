@@ -10,7 +10,6 @@ from senseweave.synthesis.orchestral_form import (
     ArticulationPair,
     EffectBudget,
     TuttiRole,
-    VOICE_ROLES,
     assign_tutti_roles,
     plan_converging_diminuendo,
     plan_diverging_crescendo,

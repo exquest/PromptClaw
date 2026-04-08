@@ -6,18 +6,16 @@ import os
 import sys
 import time
 
-import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
 
 from inner_life.world_model import WorldModel, read_world, _read_state
-from inner_life.inner_state import InnerState, save_volatile, load_state
+from inner_life.inner_state import InnerState, save_volatile
 from inner_life.presence import update_presence
-from inner_life.narrative_arc import update_arc, complete_cycle, start_new_cycle, energy_for_phase
+from inner_life.narrative_arc import update_arc, start_new_cycle, energy_for_phase
 from inner_life.mood import evolve_mood
 from inner_life.decision_engine import decide
 from inner_life.actions import Action
-from inner_life.llm_client import gpu_available
 
 
 # ---------------------------------------------------------------------------

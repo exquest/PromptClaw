@@ -1,7 +1,6 @@
 """Tests for ContinuousLearner — learn by performing."""
 from __future__ import annotations
 
-import json
 import os
 import sys
 import time
@@ -11,9 +10,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "too
 
 from senseweave.synthesis.continuous_learner import (
     ContinuousLearner,
-    GrowthState,
-    PlayedNote,
-    SongRecord,
 )
 
 
