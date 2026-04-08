@@ -1,22 +1,31 @@
 """Agent selector — rotates agents using fitness-based selection with alternation penalties."""
 
-import random
 import json
+import random
 import time
 from pathlib import Path
 
-from cypherclaw.pet_classes import CLASS_DEFINITIONS, get_dominant_class
+try:
+    from cypherclaw.pet_classes import CLASS_DEFINITIONS, get_dominant_class as _get_dominant_class
+except ImportError:
+    CLASS_DEFINITIONS = {}
+
+    def _get_dominant_class(agent: str) -> tuple[str, int] | None:
+        return None
 
 PROVIDERS = {
     "claude": "anthropic",
     "codex": "openai",
     "gemini": "google",
-    "qwen3.5:9b": "ollama",
-    "qwen3.5:4b": "ollama",
-    "qwen3.5:27b": "ollama",
-    "gemma3:4b": "ollama",
-    "llama3.2:3b": "ollama",
+    "ollama": "local",
+    "qwen3.5:9b": "local",
+    "qwen3.5:4b": "local",
+    "qwen3.5:27b": "local",
+    "gemma3:4b": "local",
+    "llama3.2:3b": "local",
 }
+
+DEFAULT_AGENTS = ("claude", "codex", "gemini")
 
 # Category detection keywords
 CATEGORY_KEYWORDS = {
@@ -26,6 +35,7 @@ CATEGORY_KEYWORDS = {
     "research": ["research", "search", "find", "investigate", "compare", "evaluate"],
     "testing": ["test", "pytest", "coverage", "spec", "validate"],
     "devops": ["deploy", "staging", "production", "server", "docker", "nginx"],
+    "netops": ["netops", "network", "router", "switch", "firewall", "fortigate", "vlan", "bgp", "vpn"],
     "writing": ["write", "draft", "document", "compose", "report"],
     "routing": ["route", "decide", "classify", "determine"],
     "narrative_prose": [
@@ -42,6 +52,17 @@ DEFAULT_FITNESS = {
     "claude": {"architecture": 0.85, "review": 0.90, "coding": 0.70, "research": 0.75, "routing": 0.80, "writing": 0.80, "testing": 0.65, "devops": 0.60, "narrative_prose": 0.86},
     "codex": {"architecture": 0.55, "review": 0.60, "coding": 0.90, "research": 0.50, "routing": 0.50, "writing": 0.45, "testing": 0.85, "devops": 0.70, "narrative_prose": 0.72},
     "gemini": {"architecture": 0.60, "review": 0.55, "coding": 0.55, "research": 0.90, "routing": 0.60, "writing": 0.85, "testing": 0.50, "devops": 0.50, "narrative_prose": 0.84},
+    "ollama": {
+        "architecture": 0.65,
+        "coding": 0.70,
+        "review": 0.60,
+        "research": 0.65,
+        "routing": 0.70,
+        "writing": 0.70,
+        "testing": 0.65,
+        "devops": 0.60,
+        "netops": 0.80,
+    },
     "qwen3.5:9b": {"narrative_prose": 0.78},
     "qwen3.5:4b": {"narrative_prose": 0.60},
     "qwen3.5:27b": {"narrative_prose": 0.88},
@@ -54,6 +75,7 @@ CROSS_PROVIDER_BONUS = 0.25
 EXPLORATION_RATE = 0.10  # 10% random exploration
 CLASS_BONUS_PER_LEVEL = 0.005
 MAX_CLASS_BONUS = 0.10
+HEADROOM_BONUS_MULTIPLIER = 0.10
 
 
 def _class_categories(class_name: object) -> tuple[str, ...]:
@@ -82,8 +104,9 @@ def _class_categories(class_name: object) -> tuple[str, ...]:
 class AgentSelector:
     """Selects the best agent for a task based on fitness scores + rotation."""
 
-    def __init__(self, observatory=None, state_file: str | Path = ""):
+    def __init__(self, observatory=None, quota_monitor=None, state_file: str | Path = ""):
         self.observatory = observatory
+        self.quota_monitor = quota_monitor
         self._state_file = Path(state_file) if state_file else None
         self._last_lead = None
         self._last_lead_provider = None
@@ -138,7 +161,7 @@ class AgentSelector:
     def get_dominant_class(self, agent: str) -> tuple[str, int] | None:
         """Get an agent's dominant pet class, if pet-class data is available."""
         try:
-            return get_dominant_class(agent)
+            return _get_dominant_class(agent)
         except Exception:
             return None
 
@@ -210,9 +233,43 @@ class AgentSelector:
         except Exception:
             pass
 
-    def select(self, task_desc: str, available_agents: list[str] | None = None) -> str:
+    def _eligible_agents(
+        self,
+        available_agents: list[str] | tuple[str, ...] | None = None,
+        disabled_agents: set[str] | None = None,
+    ) -> list[str]:
+        agents = list(available_agents) if available_agents is not None else list(DEFAULT_AGENTS)
+        disabled = set(disabled_agents or ())
+        filtered = [agent for agent in agents if agent not in disabled]
+        if not filtered:
+            return []
+        if not self.quota_monitor:
+            return filtered
+        try:
+            quota_filtered = self.quota_monitor.get_available_agents(filtered)
+        except Exception:
+            return filtered
+        available = [agent for agent in quota_filtered if agent in filtered]
+        return available or filtered
+
+    def _headroom_bonus(self, agent: str) -> float:
+        if not self.quota_monitor:
+            return 0.0
+        try:
+            return float(self.quota_monitor.get_agent_headroom(agent)) * HEADROOM_BONUS_MULTIPLIER
+        except Exception:
+            return 0.0
+
+    def select(
+        self,
+        task_desc: str,
+        available_agents: list[str] | tuple[str, ...] | None = None,
+        disabled_agents: set[str] | None = None,
+    ) -> str:
         """Select the best agent for this task."""
-        agents = available_agents or ["claude", "codex", "gemini"]
+        agents = self._eligible_agents(available_agents, disabled_agents)
+        if not agents:
+            raise ValueError("no agents available for selection")
         category = self.detect_category(task_desc)
 
         # Compute baseline scores before any pet-class bonus is applied.
@@ -229,6 +286,7 @@ class AgentSelector:
             if self._last_lead_provider and PROVIDERS.get(agent) != self._last_lead_provider:
                 score += CROSS_PROVIDER_BONUS
 
+            score += self._headroom_bonus(agent)
             base_scores[agent] = score
 
         # Exploration — 10% chance of random pick (class bonus disabled)
@@ -265,8 +323,10 @@ class AgentSelector:
     def select_pair(self, task_desc: str) -> tuple[str, str]:
         """Select lead + verify agents (different providers preferred)."""
         lead = self.select(task_desc)
-        # Pick a different agent for verify
-        others = [a for a in ["claude", "codex", "gemini"] if a != lead]
+        agents = self._eligible_agents()
+        others = [agent for agent in agents if agent != lead]
+        if not others:
+            return lead, lead
         verify_scores = {a: self.get_fitness(a, "review") for a in others}
         verify = max(verify_scores, key=verify_scores.get)
         return lead, verify
@@ -292,7 +352,7 @@ class AgentSelector:
     def status_summary(self) -> str:
         """Return a Telegram-friendly status of agent fitness."""
         lines = ["\U0001f3af Agent Fitness\n"]
-        for agent in ("claude", "codex", "gemini"):
+        for agent in DEFAULT_AGENTS:
             icon = {"claude": "\U0001f7e3", "codex": "\U0001f7e2", "gemini": "\U0001f535"}[agent]
             top_categories = []
             for cat in ("coding", "architecture", "review", "research", "writing"):
@@ -301,5 +361,16 @@ class AgentSelector:
             cats_str = " | ".join(top_categories)
             last_marker = " \u25c0" if agent == self._last_lead else ""
             lines.append(f"{icon} {agent}{last_marker}\n  {cats_str}")
+        if self.quota_monitor:
+            lines.append("\nQuota:")
+            try:
+                provider_status = self.quota_monitor.get_provider_status()
+            except Exception:
+                provider_status = {}
+            for provider in sorted(provider_status):
+                info = provider_status[provider]
+                status = str(info.get("status", "unknown"))
+                headroom = float(info.get("headroom", 0.0))
+                lines.append(f"  {provider}: {status} ({headroom:.0%})")
         lines.append(f"\nRotation: {self._task_count} tasks, last lead: {self._last_lead or 'none'}")
         return "\n".join(lines)
