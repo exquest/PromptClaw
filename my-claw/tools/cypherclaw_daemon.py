@@ -163,7 +163,7 @@ try:
 except ImportError:
     IOWatchdog = None  # type: ignore[assignment]
 
-from agent_selector import AgentSelector, PROVIDERS
+from agent_selector import AgentSelector, PROVIDERS, get_ollama_route
 agent_selector = AgentSelector(
     observatory=observatory,
     quota_monitor=quota_monitor,
@@ -680,6 +680,67 @@ def _invoke_agent_process(agent: str, prompt: str, timeout: int) -> AgentCommand
         stderr="".join(stderr_lines).strip(),
         returncode=process.returncode,
     )
+
+
+def _ollama_base_url(port: int) -> str:
+    if port == 11434:
+        env_url = os.environ.get("OLLAMA_URL_SOCKET0", "").strip()
+    elif port == 11435:
+        env_url = os.environ.get("OLLAMA_URL_SOCKET1", "").strip()
+    else:
+        env_url = ""
+
+    if env_url:
+        return env_url.rstrip("/")
+    return f"http://localhost:{port}"
+
+
+def _invoke_ollama(
+    prompt: str,
+    timeout: int = 120,
+    *,
+    task_category: str | None = None,
+    task_label: str = "",
+) -> str:
+    category = (task_category or "").strip() or agent_selector.detect_category(task_label or prompt)
+    route = get_ollama_route(category)
+    model = str(route.get("model", "")).strip()
+    port = int(route.get("port", 11434))
+    payload = json.dumps(
+        {
+            "model": model,
+            "prompt": prompt,
+            "stream": False,
+            "options": {"temperature": 0.2, "num_predict": 2048},
+        }
+    ).encode("utf-8")
+    request = urllib.request.Request(
+        f"{_ollama_base_url(port)}/api/generate",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        try:
+            detail = exc.read().decode("utf-8", errors="replace").strip()
+        except Exception:
+            detail = ""
+        suffix = f" {detail}" if detail else ""
+        return f"[ollama error: HTTP {exc.code}{suffix}]"
+    except urllib.error.URLError as exc:
+        return f"[ollama error: {exc.reason}]"
+    except TimeoutError:
+        return f"[ollama error: timed out after {timeout}s]"
+    except Exception as exc:
+        return f"[ollama error: {exc}]"
+
+    response_text = body.get("response")
+    if isinstance(response_text, str):
+        return response_text.strip()
+    return "[ollama error: invalid response payload]"
 
 
 def run_agent(agent: str, prompt: str, timeout: int = MAX_AGENT_TIMEOUT,
