@@ -1,6 +1,7 @@
 """Agent selector — rotates agents using fitness-based selection with alternation penalties."""
 
 import json
+import os
 import random
 import time
 from pathlib import Path
@@ -69,6 +70,44 @@ DEFAULT_FITNESS = {
     "gemma3:4b": {"narrative_prose": 0.58},
     "llama3.2:3b": {"narrative_prose": 0.52},
 }
+
+# Dual-socket Ollama model-per-role routing.
+# Maps task categories to specific models on NUMA-pinned ports.
+# Socket 0 → port 11434, Socket 1 → port 11435.
+# Override at runtime via OLLAMA_ROUTE_JSON env var (JSON string).
+OLLAMA_ROUTE_DEFAULTS: dict[str, dict[str, object]] = {
+    "coding":       {"model": "qwen3-coder:30b", "port": 11434},
+    "review":       {"model": "qwen3.5:122b",    "port": 11435},
+    "netops":       {"model": "qwen3:30b-a3b",   "port": 11435},
+    "orchestrator": {"model": "qwen3:30b-a3b",   "port": 11434},
+    "default":      {"model": "qwen3:30b-a3b",   "port": 11434},
+}
+
+
+def _load_ollama_routes() -> dict[str, dict[str, object]]:
+    """Build the active route table from defaults + env override."""
+    routes = {k: dict(v) for k, v in OLLAMA_ROUTE_DEFAULTS.items()}
+    env_raw = os.environ.get("OLLAMA_ROUTE_JSON", "").strip()
+    if env_raw:
+        try:
+            overrides = json.loads(env_raw)
+            if isinstance(overrides, dict):
+                for role, cfg in overrides.items():
+                    if isinstance(cfg, dict) and "model" in cfg and "port" in cfg:
+                        routes[role] = {"model": str(cfg["model"]), "port": int(cfg["port"])}
+        except (json.JSONDecodeError, ValueError, TypeError):
+            pass  # malformed env var — stick with defaults
+    return routes
+
+
+def get_ollama_route(category: str) -> dict[str, object]:
+    """Return ``{"model": ..., "port": ...}`` for a task category.
+
+    Falls back to the ``"default"`` route for unmapped categories.
+    """
+    routes = _load_ollama_routes()
+    return dict(routes.get(category, routes["default"]))
+
 
 ALTERNATION_PENALTY = 0.3
 CROSS_PROVIDER_BONUS = 0.25
