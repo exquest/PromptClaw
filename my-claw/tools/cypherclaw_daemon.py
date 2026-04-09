@@ -1828,6 +1828,7 @@ def execute_plan(steps: list[dict]) -> None:
 
 BUILTIN_COMMANDS = {
     "/status": "Show daemon status, running tasks, schedules",
+    "/local": "Show local Ollama health and loaded models",
     "/monitor": "Show live queue progress, active task, and runner status",
     "/quota": "Show provider quota headroom and active agents",
     "/prd": "Show the ordered PRD roadmap and current implementation status",
@@ -3159,6 +3160,26 @@ def _heartbeat_gallery_url() -> str | None:
     return None
 
 
+def _safe_ollama_health() -> dict[str, object]:
+    try:
+        return ollama_health()
+    except Exception:
+        return {"healthy": False, "instances": []}
+
+
+def status_snapshot() -> dict[str, object]:
+    """Return the shared daemon status snapshot used by Telegram built-ins."""
+    running = [task for task in state.tasks.values() if task["status"] == "running"]
+    enabled_schedules = [schedule for schedule in state.schedules if schedule.get("enabled", True)]
+    return {
+        "memory": len(state.conversation),
+        "tasks": len(running),
+        "schedules": len(enabled_schedules),
+        "artifacts": len(list_artifacts()),
+        "ollama": _safe_ollama_health(),
+    }
+
+
 def format_half_hour_heartbeat(now_local: datetime | None = None) -> tuple[str, dict[str, object]]:
     """Return the compact half-hour heartbeat message plus observatory payload."""
     current_time = now_local or datetime.now()
@@ -3180,11 +3201,7 @@ def format_half_hour_heartbeat(now_local: datetime | None = None) -> tuple[str, 
     available_agents = _available_agents(["claude", "codex", "gemini"])
     pet_section = CypherClawArt.pet_xp_summary(pet_manager.pets)
     gallery_url = _heartbeat_gallery_url()
-
-    try:
-        ollama = ollama_health()
-    except Exception:
-        ollama = {"healthy": False, "instances": []}
+    ollama = _safe_ollama_health()
 
     lines = [f"💓 CypherClaw Heartbeat · {current_time.strftime('%I:%M %p').lstrip('0')}"]
     lines.append(f"⏱ Uptime: {checks.get('uptime', '?')}")
@@ -3262,24 +3279,22 @@ def handle_builtin(text: str) -> bool:
         return True
 
     if cmd == "/status":
-        running = [t for t in state.tasks.values() if t["status"] == "running"]
-        scheds = [s for s in state.schedules if s.get("enabled", True)]
-        n_artifacts = len(list_artifacts())
-        n_convo = len(state.conversation)
-        try:
-            ollama = ollama_health()
-        except Exception:
-            ollama = {"healthy": False, "instances": []}
+        snapshot = status_snapshot()
         tg_send(
             _art.status_display(
-                n_convo,
-                len(running),
-                len(scheds),
-                n_artifacts,
+                int(snapshot["memory"]),
+                int(snapshot["tasks"]),
+                int(snapshot["schedules"]),
+                int(snapshot["artifacts"]),
                 pets=pet_manager.pets,
-                ollama=ollama,
+                ollama=snapshot["ollama"],
             )
         )
+        return True
+
+    if cmd == "/local":
+        snapshot = status_snapshot()
+        tg_send(_art.local_status_display(snapshot.get("ollama")))
         return True
 
     if cmd == "/quota":

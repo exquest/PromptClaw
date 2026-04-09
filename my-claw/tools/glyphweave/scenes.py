@@ -143,6 +143,7 @@ class CypherClawArt:
         # Map commands to emoji categories
         cmd_icons: dict[str, str] = {
             "/status":    "📋",
+            "/local":     "🦙",
             "/tasks":     "📋",
             "/schedules": "🕐",
             "/workspace": "📁",
@@ -200,19 +201,44 @@ class CypherClawArt:
         ollama_section = ""
         if ollama is not None:
             ollama_section = "\n\n🦙 Ollama:"
-            for inst in ollama.get("instances", []):
-                name = inst.get("socket", "?")
-                if inst.get("healthy"):
-                    models = ", ".join(inst.get("models", [])) or "no models loaded"
-                    latency = inst.get("latency_ms")
-                    lat_str = f"{latency:.0f}ms" if latency is not None else "?"
-                    ollama_section += f"\n  {name}: healthy ({lat_str}) · {models}"
-                else:
-                    ollama_section += f"\n  {name}: unreachable"
+            instances = list(ollama.get("instances", []))
+            if instances:
+                for inst in instances:
+                    name = inst.get("socket", "?")
+                    if inst.get("healthy"):
+                        models = ", ".join(inst.get("models", [])) or "no models loaded"
+                        latency = inst.get("latency_ms")
+                        lat_str = f"{latency:.0f}ms" if latency is not None else "?"
+                        ollama_section += f"\n  {name}: healthy ({lat_str}) · {models}"
+                    else:
+                        ollama_section += f"\n  {name}: unreachable"
+            else:
+                ollama_section += "\n  unavailable"
 
         return f"{header}{vitals}{pet_section}{ollama_section}"
 
-    # ── 5. greeting ──────────────────────────────────────────
+    # ── 5. local_status_display ──────────────────────────────
+    def local_status_display(self, ollama: dict[str, object] | None = None) -> str:
+        lines = ["🦙 Local Models"]
+        instances = list((ollama or {}).get("instances", []))
+        if not instances:
+            lines.append("Ollama unavailable")
+            return "\n".join(lines)
+
+        status = "available" if bool((ollama or {}).get("healthy")) else "unavailable"
+        lines.append(f"Status: {status}")
+        for inst in instances:
+            name = str(inst.get("socket", "?"))
+            if inst.get("healthy"):
+                models = ", ".join(inst.get("models", [])) or "no models loaded"
+                latency = inst.get("latency_ms")
+                lat_str = f"{latency:.0f}ms" if latency is not None else "?"
+                lines.append(f"{name}: healthy ({lat_str}) · {models}")
+            else:
+                lines.append(f"{name}: unreachable")
+        return "\n".join(lines)
+
+    # ── 6. greeting ──────────────────────────────────────────
     def greeting(self, pet_portrait: str | None = None) -> str:
         taglines = [
             "🦀 Hey! What are we building?",
@@ -243,7 +269,7 @@ class CypherClawArt:
             f"{tag}"
         )
 
-    # ── 6. plan_preview ──────────────────────────────────────
+    # ── 7. plan_preview ──────────────────────────────────────
     def plan_preview(self, steps: list[dict]) -> str:
         """Numbered list with step-type icons. No box-drawing."""
         lines = ["📜 Plan Preview\n"]
@@ -254,7 +280,7 @@ class CypherClawArt:
             lines.append(f"{i}. {icon} {label}")
         return "\n".join(lines)
 
-    # ── 7. step_progress ─────────────────────────────────────
+    # ── 8. step_progress ─────────────────────────────────────
     def step_progress(self, current: int, total: int, label: str) -> str:
         bar_width = min(total, 10)
         filled_count = round(current / total * bar_width) if total > 0 else 0
