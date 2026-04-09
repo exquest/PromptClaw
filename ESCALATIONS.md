@@ -47,3 +47,8 @@ step-3: reason=same-provider verify fallback attempted but no same-provider veri
 
 - **Reason:** Scope constraint on orchestration docs
 - **Details:** `AGENTS.md` asks for architecture/command/startup/changelog updates on orchestration changes, but this task also constrained edits to the bug-fix scope and those doc files already had unrelated local modifications. I limited the change set to the Ollama routing fix plus regression coverage and did not modify the product docs in this task.
+
+## T-010@20260408T223256Za (2026-04-09T00:24:00+00:00)
+
+- **Reason:** Scope and latency assumptions
+- **Details:** This split task only adds the daemon-side `ollama_health()` helper for dual sockets `11434` and `11435`; `/status` integration and Telegram `/local` formatting remain assigned to sibling subtasks `T-010@20260408T223256Zb` and `T-010@20260408T223256Zc`. Response latency is treated as daemon-side wall-clock time for the health probe; unreachable instances should return an unhealthy status, an empty model list, and `latency_ms` of `None` instead of raising.

@@ -150,6 +150,7 @@ reviewer = Reviewer(observatory)
 
 from researcher import Researcher
 from lifeimprover_bridge import LifeImproverBridge
+import ollama_health as ollama_probe
 li_bridge = LifeImproverBridge()
 
 from quota_monitor import QuotaMonitor, is_quota_error
@@ -168,6 +169,11 @@ agent_selector = AgentSelector(
     observatory=observatory,
     quota_monitor=quota_monitor,
     state_file=TOOLS_DIR / ".agent_selector_state.json",
+)
+
+OLLAMA_HEALTH_PORTS: tuple[tuple[str, int], ...] = (
+    ("socket0", 11434),
+    ("socket1", 11435),
 )
 
 
@@ -701,6 +707,33 @@ def _ollama_base_url(port: int) -> str:
     if env_url:
         return env_url.rstrip("/")
     return f"http://localhost:{port}"
+
+
+def _ollama_instance_health(socket_name: str, port: int) -> dict[str, object]:
+    started = time.perf_counter()
+    healthy = bool(ollama_probe.check_health(port))
+    latency_ms = int(round((time.perf_counter() - started) * 1000)) if healthy else None
+    models = ollama_probe.check_models(port) if healthy else []
+    return {
+        "socket": socket_name,
+        "port": port,
+        "healthy": healthy,
+        "status": "healthy" if healthy else "unreachable",
+        "models": models,
+        "latency_ms": latency_ms,
+    }
+
+
+def ollama_health() -> dict[str, object]:
+    """Return dual-socket Ollama health for later status/Telegram formatting."""
+    instances = [
+        _ollama_instance_health(socket_name, port)
+        for socket_name, port in OLLAMA_HEALTH_PORTS
+    ]
+    return {
+        "healthy": any(bool(instance["healthy"]) for instance in instances),
+        "instances": instances,
+    }
 
 
 def _invoke_ollama(
