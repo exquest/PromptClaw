@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added `LOCAL_ONLY` daemon enforcement so live routing collapses to `ollama`, bypasses cloud router CLIs, and coerces explicit cloud-agent steps back to the local agent.
 - Added a Telegram `/local` built-in backed by a shared daemon status snapshot so operators can request per-socket Ollama health, loaded models, and latency on demand.
 - Wired `ollama_health()` into the `/status` Telegram command and half-hour heartbeat so operators can see per-socket Ollama health, loaded models, and latency without SSH.
 - Added daemon-local `ollama_health()` dual-socket reporting for ports `11434` and `11435`, including per-instance loaded models and measured probe latency.

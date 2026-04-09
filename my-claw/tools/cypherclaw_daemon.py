@@ -589,6 +589,13 @@ def _local_only_enabled() -> bool:
     return value in {"1", "true", "yes", "on"}
 
 
+def _normalize_agent_name(agent: str | None) -> str:
+    requested = str(agent or "").strip()
+    if _local_only_enabled():
+        return "ollama"
+    return requested or "gemini"
+
+
 def _available_agents(
     agents: list[str] | tuple[str, ...] | None = None,
     *,
@@ -812,6 +819,7 @@ def run_agent(agent: str, prompt: str, timeout: int = MAX_AGENT_TIMEOUT,
     """Run a CLI agent with animated spinner. Uses sdp-cli patterns for reliability."""
     if not prompt or not prompt.strip():
         return "(no prompt provided)"
+    agent = _normalize_agent_name(agent)
 
     # STABILITY: Limit concurrent agent processes to prevent disk I/O saturation
     global _agent_count
@@ -1040,13 +1048,18 @@ def run_agent(agent: str, prompt: str, timeout: int = MAX_AGENT_TIMEOUT,
 def run_agents_parallel(dispatches: list[dict]) -> list[dict]:
     """Run multiple agents in parallel with a shared spinner."""
     # Create one spinner for the parallel group
-    agent_names = [d["agent"] for d in dispatches]
+    normalized_dispatches = []
+    for dispatch in dispatches:
+        normalized = dict(dispatch)
+        normalized["agent"] = _normalize_agent_name(dispatch.get("agent"))
+        normalized_dispatches.append(normalized)
+    agent_names = [d["agent"] for d in normalized_dispatches]
     pet_manager.on_communicate(agent_names)
     collab_scene = pet_manager.interaction_scene(agent_names)
     tg_send(collab_scene)
     agents_str = " + ".join(agent_names)
     r = tg_api("sendMessage", {"chat_id": CHAT_ID,
-        "text": f"🔀 parallel: {agents_str}\n{'○ ' * len(dispatches)}"})
+        "text": f"🔀 parallel: {agents_str}\n{'○ ' * len(normalized_dispatches)}"})
     group_msg_id = r.get("result", {}).get("message_id")
 
     results = []
@@ -1057,13 +1070,13 @@ def run_agents_parallel(dispatches: list[dict]) -> list[dict]:
                 "output": run_agent(d["agent"], d["prompt"])}
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
-        futures = {pool.submit(_run_one, d): d for d in dispatches}
+        futures = {pool.submit(_run_one, d): d for d in normalized_dispatches}
         for f in concurrent.futures.as_completed(futures):
             result = f.result()
             results.append(result)
             done_count += 1
             if group_msg_id:
-                dots = "● " * done_count + "○ " * (len(dispatches) - done_count)
+                dots = "● " * done_count + "○ " * (len(normalized_dispatches) - done_count)
                 tg_edit(group_msg_id,
                     f"🔀 parallel: {agents_str}\n{dots}\n✓ {result['agent']} done!")
 
@@ -1122,6 +1135,7 @@ task_pool = concurrent.futures.ThreadPoolExecutor(max_workers=3)
 
 def submit_background_task(task_id: str, agent: str, prompt: str) -> None:
     """Submit work to run in the background. Reports back via Telegram when done."""
+    agent = _normalize_agent_name(agent)
     state.create_task(task_id, agent, prompt)
 
     def _run():
@@ -1309,7 +1323,7 @@ def fast_route(user_text: str) -> list[dict] | None:
     for agent in ("claude", "codex", "gemini"):
         if lower.startswith(f"@{agent} ") or lower.startswith(f"{agent}: "):
             prompt = user_text.split(" ", 1)[1] if " " in user_text else ""
-            return [{"type": "agent", "agent": agent, "prompt": prompt, "label": prompt[:50]}]
+            return [{"type": "agent", "agent": _normalize_agent_name(agent), "prompt": prompt, "label": prompt[:50]}]
 
     # Image generation — use gemini_image.py tool directly, not gemini CLI
     if any(kw in lower for kw in ("generate image", "create image", "make image", "draw", "image of", "picture of", "make me an image")):
@@ -1374,6 +1388,22 @@ def route_message(user_text: str) -> list[dict]:
     artifacts_ctx = ""
     if artifacts:
         artifacts_ctx = f"\nWorkspace files (tools/workspace/): {', '.join(artifacts[:15])}\n"
+
+    if _local_only_enabled():
+        full_context = (
+            f"{artifacts_ctx}\nConversation:\n{convo}\n\n"
+            f"Anthony: {user_text}\n\n"
+            "Respond helpfully and concisely (this is Telegram chat)."
+        )
+        pet_manager.on_task_end("cypherclaw", success=True, duration_s=0)
+        pet_manager.schedule_idle("cypherclaw")
+        observatory.record(
+            "routing_decision",
+            data={"input": user_text[:100], "steps": ["agent"], "mode": "local_only", "agent": "ollama"},
+        )
+        return [
+            {"type": "agent", "agent": "ollama", "prompt": full_context, "label": user_text[:50]},
+        ]
 
     route_prompt = (
         "You are CypherClaw's router. Output ONLY a JSON array of steps.\n"
@@ -1515,7 +1545,7 @@ def execute_plan(steps: list[dict]) -> None:
                     save_artifact(f"shell_{int(time.time())}.txt", output)
 
             elif step_type == "agent":
-                agent = step.get("agent") or _best_available_agent()
+                agent = _normalize_agent_name(step.get("agent") or _best_available_agent())
                 prompt = step.get("prompt", "")
                 label = step.get("label", f"{agent} task")
                 context_ref = step.get("context_artifact")
@@ -1540,10 +1570,13 @@ def execute_plan(steps: list[dict]) -> None:
                 state.add_message("assistant", f"[{agent}: {label}] {output[:200]}")
 
             elif step_type == "parallel":
-                dispatches = step.get("dispatches", [])
+                dispatches = [
+                    {**dispatch, "agent": _normalize_agent_name(dispatch.get("agent"))}
+                    for dispatch in step.get("dispatches", [])
+                ]
                 agent_tags = []
                 for d in dispatches:
-                    ico = {"claude": "🟣", "codex": "🟢", "gemini": "🔵"}.get(d["agent"], "🤖")
+                    ico = {"claude": "🟣", "codex": "🟢", "gemini": "🔵", "ollama": "🦙"}.get(d["agent"], "🤖")
                     agent_tags.append(f"{ico}{d.get('label', d['agent'])}")
                 tg_send("🔀 parallel launch!\n" + " ┃ ".join(agent_tags))
                 results = run_agents_parallel(dispatches)
@@ -1558,7 +1591,7 @@ def execute_plan(steps: list[dict]) -> None:
                     state.add_message("assistant", f"[parallel:{r['label']}] {r['output'][:200]}")
 
             elif step_type == "background":
-                agent = step.get("agent") or _best_available_agent()
+                agent = _normalize_agent_name(step.get("agent") or _best_available_agent())
                 prompt = step.get("prompt", "")
                 label = step.get("label", "background task")
                 task_id = hashlib.md5(f"{agent}{prompt}{time.time()}".encode()).hexdigest()[:8]
