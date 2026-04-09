@@ -33,6 +33,7 @@ import subprocess
 import sys
 import threading
 import time
+import tomllib
 import urllib.error
 import urllib.request
 from collections import deque
@@ -40,8 +41,14 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+try:
+    from runtime_paths import resolve_runtime_paths
+except ImportError:  # pragma: no cover - package layout
+    from cypherclaw.runtime_paths import resolve_runtime_paths
+
 # GlyphWeave art system
-TOOLS_DIR_EARLY = Path(__file__).parent
+PATHS = resolve_runtime_paths(__file__)
+TOOLS_DIR_EARLY = PATHS.tools_dir
 sys.path.insert(0, str(TOOLS_DIR_EARLY))
 from glyphweave.scenes import CypherClawArt
 from glyphweave.player import AEAFPlayer, build_spinner_frames
@@ -111,6 +118,21 @@ def _notify_watchdog():
         pass
 
 
+def _child_process_env(extra: dict[str, str] | None = None) -> dict[str, str]:
+    """Build a subprocess env without systemd watchdog variables.
+
+    Child CLIs should not inherit sd_notify/watchdog variables from the daemon,
+    otherwise systemd logs noisy "Got notification message from PID ..." warnings
+    when a child process talks to the inherited NOTIFY_SOCKET.
+    """
+    env = os.environ.copy()
+    for key in ("NOTIFY_SOCKET", "WATCHDOG_PID", "WATCHDOG_USEC"):
+        env.pop(key, None)
+    if extra:
+        env.update(extra)
+    return env
+
+
 def _kill_orphan_agents():
     """Kill any orphaned agent processes on startup."""
     for pattern in ["claude --", "codex exec", "gemini -p", "gemini --yolo"]:
@@ -122,16 +144,16 @@ def _kill_orphan_agents():
         except Exception:
             pass
 
-TOOLS_DIR = Path(__file__).parent
+TOOLS_DIR = PATHS.tools_dir
 STATE_FILE = TOOLS_DIR / ".daemon_state.json"
 LOG_FILE = TOOLS_DIR / "cypherclaw_daemon.log"
-WORKSPACE_DIR = TOOLS_DIR / "workspace"
-TASKS_DIR = TOOLS_DIR / "workspace" / "tasks"
+WORKSPACE_DIR = PATHS.workspace_dir
+TASKS_DIR = PATHS.tasks_dir
 
 PLIST_LABEL = "com.cypherclaw.daemon"
 PLIST_PATH = Path.home() / "Library" / "LaunchAgents" / f"{PLIST_LABEL}.plist"
 
-PROJECT_ROOT = TOOLS_DIR.parent  # ~/Programming/PromptClaw/my-claw
+PROJECT_ROOT = PATHS.project_root
 
 # Ensure workspace exists
 WORKSPACE_DIR.mkdir(parents=True, exist_ok=True)
@@ -141,7 +163,7 @@ TASKS_DIR.mkdir(parents=True, exist_ok=True)
 from observatory import Observatory
 from healer import Healer, Failure
 
-OBSERVATORY_DB = TOOLS_DIR.parent / ".promptclaw" / "observatory.db"
+OBSERVATORY_DB = PROJECT_ROOT / ".promptclaw" / "observatory.db"
 OBSERVATORY_DB.parent.mkdir(parents=True, exist_ok=True)
 observatory = Observatory(str(OBSERVATORY_DB))
 
@@ -465,7 +487,7 @@ def run_shell(command: str, timeout: int = 120) -> str:
     try:
         result = subprocess.run(
             command, shell=True, capture_output=True, text=True,
-            timeout=timeout, cwd=str(PROJECT_ROOT),
+            timeout=timeout, cwd=str(PROJECT_ROOT), env=_child_process_env(),
         )
         observatory.record('shell_executed', data={'command': command[:100], 'exit_code': result.returncode})
         output = result.stdout
@@ -599,7 +621,7 @@ def _best_available_agent(
 
 
 def _build_agent_command(agent: str, prompt: str) -> tuple[list[str], dict[str, str], bool]:
-    env = os.environ.copy()
+    env = _child_process_env()
     use_stdin = True
     if agent == "claude":
         env.pop("CLAUDECODE", None)
@@ -1135,6 +1157,90 @@ class Scheduler(threading.Thread):
         self._stop_event = threading.Event()
         self._sent_today = {}
 
+    def _run_time_based_reviews(self, now_local: datetime) -> None:
+        today_key = now_local.strftime("%Y-%m-%d")
+
+        # Daily rollup (needed for aggregate stats)
+        if not self._sent_today.get("daily_rollup") == today_key:
+            self._sent_today["daily_rollup"] = today_key
+            try:
+                observatory.rollup_daily()
+            except Exception:
+                log.exception("Daily rollup error")
+
+        # 30-minute heartbeat at :00 and :30
+        heartbeat_key = _heartbeat_slot_key(now_local)
+        if heartbeat_key and self._sent_today.get("half_hour_heartbeat") != heartbeat_key:
+            self._sent_today["half_hour_heartbeat"] = heartbeat_key
+            try:
+                heartbeat, payload = format_half_hour_heartbeat(now_local)
+                tg_send(heartbeat)
+                observatory.record("half_hour_heartbeat_sent", data=payload)
+            except Exception:
+                log.exception("Half-hour heartbeat error")
+
+        # LDP daily briefing at 7:30am
+        if now_local.hour == 7 and now_local.minute >= 30 and not self._sent_today.get("ldp_briefing") == today_key:
+            self._sent_today["ldp_briefing"] = today_key
+            try:
+                briefing = li_bridge.get_daily_briefing()
+                if briefing.success:
+                    tg_send(f"🏠 LDP Daily Briefing\n\n{briefing.content[:3500]}")
+            except Exception:
+                pass
+
+        # Daily brief at 8am
+        if now_local.hour == 8 and not self._sent_today.get("daily_brief") == today_key:
+            self._sent_today["daily_brief"] = today_key
+            try:
+                brief = reviewer.daily_brief()
+                pet_section = CypherClawArt.pet_xp_summary(pet_manager.pets)
+                tg_send(f"{brief}\n\n{pet_section}")
+                observatory.record("daily_brief_sent", data={"date": today_key})
+            except Exception:
+                log.exception("Daily brief error")
+
+        # Weekly retro on Sunday at 8pm
+        if now_local.weekday() == 6 and now_local.hour == 20 and not self._sent_today.get("weekly_retro") == today_key:
+            self._sent_today["weekly_retro"] = today_key
+            try:
+                retro = reviewer.weekly_retro()
+                pet_section = CypherClawArt.pet_xp_summary(pet_manager.pets)
+                tg_send(f"{retro}\n\n{pet_section}")
+                observatory.record("weekly_retro_sent", data={"date": today_key})
+            except Exception:
+                log.exception("Weekly retro error")
+
+        # Monthly review on 1st at 9am
+        if now_local.day == 1 and now_local.hour == 9 and not self._sent_today.get("monthly_review") == today_key:
+            self._sent_today["monthly_review"] = today_key
+            try:
+                review = reviewer.monthly_review()
+                tg_send(review)
+                observatory.record("monthly_review_sent", data={"date": today_key})
+            except Exception:
+                log.exception("Monthly review error")
+
+        # Server health check every 6 hours (6am, 12pm, 6pm, midnight)
+        if now_local.hour % 6 == 0 and now_local.minute < 1:
+            hour_key = f"{today_key}-{now_local.hour}"
+            if self._sent_today.get("health_check") != hour_key:
+                self._sent_today["health_check"] = hour_key
+                try:
+                    from server_health import check_health, auto_maintain, telegram_report
+                    health = check_health()
+                    actions = auto_maintain()
+                    # Only send to Telegram if there are warnings
+                    if health["warnings"] or actions:
+                        tg_send(telegram_report(health, actions))
+                    observatory.record("health_check", data={
+                        "healthy": health["healthy"],
+                        "warnings": len(health["warnings"]),
+                        "actions": len(actions),
+                    })
+                except Exception:
+                    log.exception("Health check error")
+
     def run(self):
         log.info("Scheduler started")
         while not self._stop_event.is_set():
@@ -1156,82 +1262,7 @@ class Scheduler(threading.Thread):
                         log.exception("Scheduled task error: %s", sched["name"])
                         tg_send(f"❌ Scheduled task {sched['name']} failed: {e}")
 
-            # ---------------------------------------------------------------
-            # Time-based review triggers
-            # ---------------------------------------------------------------
-            import datetime as _dt
-            now_local = _dt.datetime.now()
-            today_key = now_local.strftime("%Y-%m-%d")
-
-            # Daily rollup (needed for aggregate stats)
-            if not self._sent_today.get("daily_rollup") == today_key:
-                self._sent_today["daily_rollup"] = today_key
-                try:
-                    observatory.rollup_daily()
-                except Exception:
-                    log.exception("Daily rollup error")
-
-            # LDP daily briefing at 7:30am
-            if now_local.hour == 7 and now_local.minute >= 30 and not self._sent_today.get("ldp_briefing") == today_key:
-                self._sent_today["ldp_briefing"] = today_key
-                try:
-                    briefing = li_bridge.get_daily_briefing()
-                    if briefing.success:
-                        tg_send(f"🏠 LDP Daily Briefing\n\n{briefing.content[:3500]}")
-                except Exception:
-                    pass
-
-            # Daily brief at 8am
-            if now_local.hour == 8 and not self._sent_today.get("daily_brief") == today_key:
-                self._sent_today["daily_brief"] = today_key
-                try:
-                    brief = reviewer.daily_brief()
-                    pet_section = CypherClawArt.pet_xp_summary(pet_manager.pets)
-                    tg_send(f"{brief}\n\n{pet_section}")
-                    observatory.record("daily_brief_sent", data={"date": today_key})
-                except Exception:
-                    log.exception("Daily brief error")
-
-            # Weekly retro on Sunday at 8pm
-            if now_local.weekday() == 6 and now_local.hour == 20 and not self._sent_today.get("weekly_retro") == today_key:
-                self._sent_today["weekly_retro"] = today_key
-                try:
-                    retro = reviewer.weekly_retro()
-                    pet_section = CypherClawArt.pet_xp_summary(pet_manager.pets)
-                    tg_send(f"{retro}\n\n{pet_section}")
-                    observatory.record("weekly_retro_sent", data={"date": today_key})
-                except Exception:
-                    log.exception("Weekly retro error")
-
-            # Monthly review on 1st at 9am
-            if now_local.day == 1 and now_local.hour == 9 and not self._sent_today.get("monthly_review") == today_key:
-                self._sent_today["monthly_review"] = today_key
-                try:
-                    review = reviewer.monthly_review()
-                    tg_send(review)
-                    observatory.record("monthly_review_sent", data={"date": today_key})
-                except Exception:
-                    log.exception("Monthly review error")
-
-            # Server health check every 6 hours (6am, 12pm, 6pm, midnight)
-            if now_local.hour % 6 == 0 and now_local.minute < 1:
-                hour_key = f"{today_key}-{now_local.hour}"
-                if self._sent_today.get("health_check") != hour_key:
-                    self._sent_today["health_check"] = hour_key
-                    try:
-                        from server_health import check_health, auto_maintain, telegram_report
-                        health = check_health()
-                        actions = auto_maintain()
-                        # Only send to Telegram if there are warnings
-                        if health["warnings"] or actions:
-                            tg_send(telegram_report(health, actions))
-                        observatory.record("health_check", data={
-                            "healthy": health["healthy"],
-                            "warnings": len(health["warnings"]),
-                            "actions": len(actions),
-                        })
-                    except Exception:
-                        log.exception("Health check error")
+            self._run_time_based_reviews(datetime.now())
 
             self._stop_event.wait(30)  # Check every 30s
 
@@ -1368,7 +1399,7 @@ def route_message(user_text: str) -> list[dict]:
 
     try:
         pet_manager.on_task_start("cypherclaw")
-        route_env = os.environ.copy()
+        route_env = _child_process_env()
         route_env.pop("CLAUDECODE", None)
         available_agents = _available_agents(["claude", "codex", "gemini"])
         router_agent = agent_selector.select(user_text, available_agents=available_agents)
@@ -1593,7 +1624,7 @@ def execute_plan(steps: list[dict]) -> None:
                         [sys.executable, str(TOOLS_DIR / "gemini_image.py"), img_prompt],
                         capture_output=True, text=True, timeout=120,
                         cwd=str(TOOLS_DIR.parent),
-                        env={**os.environ, "GEMINI_API_KEY": os.environ.get("GEMINI_API_KEY", "")},
+                        env=_child_process_env({"GEMINI_API_KEY": os.environ.get("GEMINI_API_KEY", "")}),
                     )
                     output = result.stdout.strip()
                     stderr = result.stderr.strip()
@@ -1655,7 +1686,7 @@ def execute_plan(steps: list[dict]) -> None:
 
                 task_id = hashlib.md5(f"dev_{desc}_{time.time()}".encode()).hexdigest()[:8]
 
-                sdp_env = os.environ.copy()
+                sdp_env = _child_process_env()
                 sdp_env.pop("CLAUDECODE", None)
                 sdp_env["PATH"] = f"{Path.home() / '.local' / 'bin'}:/usr/local/bin:/usr/bin:/bin"
 
@@ -1800,7 +1831,7 @@ BUILTIN_COMMANDS = {
     "/monitor": "Show live queue progress, active task, and runner status",
     "/quota": "Show provider quota headroom and active agents",
     "/prd": "Show the ordered PRD roadmap and current implementation status",
-    "/tasks": "List background tasks",
+    "/tasks": "Show actionable queue tasks (usage: /tasks [pending|needs_split|blocked|attention|running|frozen|all] [limit])",
     "/schedules": "List scheduled tasks",
     "/workspace": "List workspace artifacts",
     "/art": "Generate ASCII art",
@@ -1818,7 +1849,7 @@ BUILTIN_COMMANDS = {
     "/help": "Show available commands",
 }
 
-PRD_ROADMAP = [
+DEFAULT_PRD_ROADMAP = [
     ("Home Resilience", ("20260331T232739Z",)),
     ("Restructure", ("20260328T142659Z",)),
     ("GlyphWeave Studio Loop", ("20260401T195527Z",)),
@@ -1832,7 +1863,7 @@ PRD_ROADMAP = [
     ("Federation", ("20260329T205115Z",)),
 ]
 
-PRD_COMPLETED = [
+DEFAULT_PRD_COMPLETED = [
     ("Demo Fixes", ("20260326T185852Z",)),
     ("Pet Animation", ("20260326T195444Z", "20260326T195444Za", "20260326T195444Zb", "20260326T195444Zc", "20260326T195444Zd")),
     ("Model Awareness", ("20260327T154047Z", "20260327T154047Za", "20260327T154047Zb", "20260327T154047Zc", "20260327T154047Zd")),
@@ -1843,13 +1874,191 @@ PRD_COMPLETED = [
     ("Hotfixes", ("20260330T235959Z",)),
 ]
 
+_ROADMAP_ROW_RE = re.compile(r"^\|\s*\d+\s*\|\s*\[[^\]]+\]\(([^)]+)\)\s*\|")
+
+_TASK_PROGRESS_CATEGORY_BY_STATUS = {
+    "complete": "complete",
+    "running": "running",
+    "pending": "pending",
+    "blocked": "blocked",
+    "needs_review": "needs_attention",
+    "rolled_back": "needs_attention",
+    "quarantined": "needs_attention",
+    "needs_split": "needs_split",
+    "split": "skipped",
+}
+
+_TASK_FILTERS: dict[str, dict[str, object]] = {
+    "running": {"label": "Running", "statuses": ("running",), "frozen_only": False},
+    "pending": {"label": "Pending", "statuses": ("pending",), "frozen_only": False},
+    "needs_split": {"label": "Needs Split", "statuses": ("needs_split",), "frozen_only": False},
+    "blocked": {"label": "Blocked", "statuses": ("blocked",), "frozen_only": False},
+    "attention": {
+        "label": "Needs Attention",
+        "statuses": ("needs_review", "rolled_back", "quarantined"),
+        "frozen_only": False,
+    },
+    "skipped": {"label": "Decomposed Parents", "statuses": ("split",), "frozen_only": False},
+    "frozen": {"label": "Frozen", "statuses": None, "frozen_only": True},
+    "all": {"label": "All Tasks", "statuses": None, "frozen_only": None},
+}
+
+_TASK_FILTER_ALIASES = {
+    "running": "running",
+    "active": "running",
+    "pending": "pending",
+    "queued": "pending",
+    "needs_split": "needs_split",
+    "needs-split": "needs_split",
+    "needssplit": "needs_split",
+    "split_needed": "needs_split",
+    "split-needed": "needs_split",
+    "needs_attention": "attention",
+    "needs-attention": "attention",
+    "needsattention": "attention",
+    "attention": "attention",
+    "blocked": "blocked",
+    "frozen": "frozen",
+    "decomposed": "skipped",
+    "skipped": "skipped",
+    "split_parents": "skipped",
+    "split-parents": "skipped",
+    "all": "all",
+}
+
+
+def _empty_rollup() -> dict[str, int]:
+    return {
+        "total": 0,
+        "complete": 0,
+        "running": 0,
+        "pending": 0,
+        "needs_split": 0,
+        "blocked": 0,
+        "needs_attention": 0,
+        "skipped": 0,
+        "frozen": 0,
+    }
+
+
+def _progress_category(status: str) -> str:
+    return _TASK_PROGRESS_CATEGORY_BY_STATUS.get(status, "pending")
+
 
 def _queue_db_path() -> Path:
     return PROJECT_ROOT / ".sdp" / "state.db"
 
 
+def _roadmap_doc_path() -> Path:
+    return PROJECT_ROOT / "sdp" / "execution-roadmap.md"
+
+
+def _roadmap_batch_map_path() -> Path:
+    return PROJECT_ROOT / "sdp" / "execution-roadmap.queue-map.json"
+
+
+def _humanize_prd_filename(filename: str) -> str:
+    stem = Path(filename).stem
+    if stem.startswith("prd-"):
+        stem = stem[4:]
+    parts = []
+    for piece in stem.split("-"):
+        lowered = piece.lower()
+        if lowered == "v2":
+            parts.append("v2")
+        elif lowered == "midi":
+            parts.append("MIDI")
+        else:
+            parts.append(piece.capitalize())
+    return " ".join(parts)
+
+
+def _read_prd_title(prd_filename: str) -> str:
+    prd_path = _roadmap_doc_path().parent / prd_filename
+    try:
+        for line in prd_path.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if not stripped.startswith("#"):
+                continue
+            title = stripped.lstrip("#").strip()
+            if title.startswith("PRD:"):
+                title = title[4:].strip()
+            if " — " in title:
+                title = title.split(" — ", 1)[0].strip()
+            return title or _humanize_prd_filename(prd_filename)
+    except OSError:
+        pass
+    return _humanize_prd_filename(prd_filename)
+
+
+def _load_prd_roadmap() -> tuple[list[tuple[str, tuple[str, ...]]], list[tuple[str, tuple[str, ...]]]]:
+    doc_path = _roadmap_doc_path()
+    batch_map_path = _roadmap_batch_map_path()
+    if not doc_path.exists() or not batch_map_path.exists():
+        return DEFAULT_PRD_ROADMAP, DEFAULT_PRD_COMPLETED
+
+    try:
+        roadmap_map = json.loads(batch_map_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return DEFAULT_PRD_ROADMAP, DEFAULT_PRD_COMPLETED
+
+    if not isinstance(roadmap_map, dict):
+        return DEFAULT_PRD_ROADMAP, DEFAULT_PRD_COMPLETED
+
+    stages = roadmap_map.get("stages", {})
+    if not isinstance(stages, dict):
+        return DEFAULT_PRD_ROADMAP, DEFAULT_PRD_COMPLETED
+
+    roadmap: list[tuple[str, tuple[str, ...]]] = []
+    for line in doc_path.read_text(encoding="utf-8").splitlines():
+        match = _ROADMAP_ROW_RE.match(line.strip())
+        if not match:
+            continue
+        prd_filename = Path(match.group(1)).name
+        batch_ids = stages.get(prd_filename, ())
+        if not isinstance(batch_ids, list):
+            batch_ids = ()
+        roadmap.append(
+            (
+                _read_prd_title(prd_filename),
+                tuple(str(batch_id) for batch_id in batch_ids if batch_id),
+            )
+        )
+
+    if not roadmap:
+        return DEFAULT_PRD_ROADMAP, DEFAULT_PRD_COMPLETED
+
+    completed_earlier: list[tuple[str, tuple[str, ...]]] = []
+    completed_entries = roadmap_map.get("completed_earlier", [])
+    if isinstance(completed_entries, list):
+        for entry in completed_entries:
+            if not isinstance(entry, dict):
+                continue
+            label = str(entry.get("label", "")).strip()
+            batch_ids = entry.get("batches", ())
+            if not label or not isinstance(batch_ids, list):
+                continue
+            completed_earlier.append(
+                (label, tuple(str(batch_id) for batch_id in batch_ids if batch_id))
+            )
+
+    return roadmap, completed_earlier
+
+
 def _queue_db_exists() -> bool:
     return _queue_db_path().exists()
+
+
+def _settings_path() -> Path:
+    return PROJECT_ROOT / "sdp.toml"
+
+
+def _table_exists(con: sqlite3.Connection, table_name: str) -> bool:
+    row = con.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=? LIMIT 1",
+        (table_name,),
+    ).fetchone()
+    return row is not None
 
 
 def _runner_service_state() -> str:
@@ -1889,61 +2098,70 @@ def _batch_rollups() -> dict[str, dict[str, int]]:
         rows = con.execute(
             """
             SELECT
-                substr(task_id, instr(task_id, '@') + 1) AS batch,
+                substr(
+                    CASE
+                        WHEN COALESCE(parent_task_id, '') = '' THEN task_id
+                        ELSE parent_task_id
+                    END,
+                    instr(
+                        CASE
+                            WHEN COALESCE(parent_task_id, '') = '' THEN task_id
+                            ELSE parent_task_id
+                        END,
+                        '@'
+                    ) + 1
+                ) AS batch,
                 status,
+                COALESCE(frozen, 0) AS frozen,
                 COUNT(*) AS count
             FROM tasks
-            WHERE COALESCE(parent_task_id, '') = ''
-            GROUP BY batch, status
+            GROUP BY batch, status, frozen
             """
         ).fetchall()
     finally:
         con.close()
 
     rollups: dict[str, dict[str, int]] = {}
-    for batch, status, count in rows:
+    for batch, status, frozen, count in rows:
         batch_key = str(batch)
-        status_key = str(status)
-        bucket = rollups.setdefault(batch_key, {"total": 0, "complete": 0, "running": 0, "pending": 0, "blocked": 0, "split": 0})
-        bucket["total"] += int(count)
-        bucket[status_key] = bucket.get(status_key, 0) + int(count)
+        bucket = rollups.setdefault(batch_key, _empty_rollup())
+        if int(frozen or 0):
+            bucket["frozen"] += int(count)
+            continue
+        category = _progress_category(str(status))
+        bucket[category] = bucket.get(category, 0) + int(count)
+        if category != "skipped":
+            bucket["total"] += int(count)
     return rollups
 
 
 def _root_queue_counts() -> dict[str, int]:
     db_path = _queue_db_path()
     if not db_path.exists():
-        return {"total": 0, "complete": 0, "running": 0, "pending": 0, "blocked": 0, "split": 0}
+        return _empty_rollup()
 
     con = sqlite3.connect(db_path)
     try:
-        row = con.execute(
+        rows = con.execute(
             """
-            SELECT
-                COUNT(*) AS total,
-                SUM(CASE WHEN status='complete' THEN 1 ELSE 0 END) AS complete,
-                SUM(CASE WHEN status='running' THEN 1 ELSE 0 END) AS running,
-                SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) AS pending,
-                SUM(CASE WHEN status='blocked' THEN 1 ELSE 0 END) AS blocked,
-                SUM(CASE WHEN status='split' THEN 1 ELSE 0 END) AS split
+            SELECT status, COALESCE(frozen, 0) AS frozen, COUNT(*)
             FROM tasks
-            WHERE COALESCE(parent_task_id, '') = ''
+            GROUP BY status, frozen
             """
-        ).fetchone()
+        ).fetchall()
     finally:
         con.close()
 
-    if row is None:
-        return {"total": 0, "complete": 0, "running": 0, "pending": 0, "blocked": 0, "split": 0}
-    total, complete, running, pending, blocked, split = row
-    return {
-        "total": int(total or 0),
-        "complete": int(complete or 0),
-        "running": int(running or 0),
-        "pending": int(pending or 0),
-        "blocked": int(blocked or 0),
-        "split": int(split or 0),
-    }
+    counts = _empty_rollup()
+    for status, frozen, count in rows:
+        if int(frozen or 0):
+            counts["frozen"] += int(count or 0)
+            continue
+        category = _progress_category(str(status))
+        counts[category] = counts.get(category, 0) + int(count or 0)
+        if category != "skipped":
+            counts["total"] += int(count or 0)
+    return counts
 
 
 def _active_task_snapshot() -> dict[str, str] | None:
@@ -1970,11 +2188,23 @@ def _active_task_snapshot() -> dict[str, str] | None:
             SELECT COALESCE(lead_agent, ''), COALESCE(verify_agent, ''), COALESCE(started_at, ''), COALESCE(verdict, '')
             FROM task_runs
             WHERE task_id=?
+              AND TRIM(COALESCE(completed_at, '')) = ''
             ORDER BY started_at DESC, rowid DESC
             LIMIT 1
             """,
             (task_id,),
         ).fetchone()
+        if run_row is None:
+            run_row = con.execute(
+                """
+                SELECT COALESCE(lead_agent, ''), COALESCE(verify_agent, ''), COALESCE(started_at, ''), COALESCE(verdict, '')
+                FROM task_runs
+                WHERE task_id=?
+                ORDER BY started_at DESC, rowid DESC
+                LIMIT 1
+                """,
+                (task_id,),
+            ).fetchone()
     finally:
         con.close()
 
@@ -1996,6 +2226,655 @@ def _active_task_snapshot() -> dict[str, str] | None:
     }
 
 
+def _queue_state_drift() -> dict[str, int]:
+    db_path = _queue_db_path()
+    if not db_path.exists():
+        return {"running_without_open": 0, "stale_open_runs": 0, "duplicate_open_runs": 0}
+
+    con = sqlite3.connect(db_path)
+    try:
+        if not _table_exists(con, "tasks") or not _table_exists(con, "task_runs"):
+            return {"running_without_open": 0, "stale_open_runs": 0, "duplicate_open_runs": 0}
+        row = con.execute(
+            """
+            WITH open_runs AS (
+                SELECT task_id, COUNT(*) AS open_count
+                FROM task_runs
+                WHERE TRIM(COALESCE(completed_at, '')) = ''
+                GROUP BY task_id
+            )
+            SELECT
+                (
+                    SELECT COUNT(*)
+                    FROM tasks t
+                    WHERE t.status = 'running'
+                      AND NOT EXISTS (
+                          SELECT 1 FROM open_runs o WHERE o.task_id = t.task_id
+                      )
+                ) AS running_without_open,
+                (
+                    SELECT COUNT(*)
+                    FROM open_runs o
+                    LEFT JOIN tasks t ON t.task_id = o.task_id
+                    WHERE COALESCE(t.status, '') != 'running'
+                ) AS stale_open_runs,
+                (
+                    SELECT COUNT(*)
+                    FROM open_runs
+                    WHERE open_count > 1
+                ) AS duplicate_open_runs
+            """
+        ).fetchone()
+    finally:
+        con.close()
+
+    if row is None:
+        return {"running_without_open": 0, "stale_open_runs": 0, "duplicate_open_runs": 0}
+
+    return {
+        "running_without_open": int(row[0] or 0),
+        "stale_open_runs": int(row[1] or 0),
+        "duplicate_open_runs": int(row[2] or 0),
+    }
+
+
+def _format_background_tasks_fallback() -> str:
+    if not state.tasks:
+        return "🧾 Queue Tasks\nQueue DB unavailable and no daemon background tasks are active."
+
+    lines = ["🧾 Queue Tasks", "Queue DB unavailable. Showing daemon background tasks instead:"]
+    for tid, task in sorted(
+        state.tasks.items(),
+        key=lambda item: item[1].get("created", ""),
+        reverse=True,
+    )[:10]:
+        icon = {"running": "🔄", "done": "✅", "failed": "❌"}.get(task.get("status", ""), "❓")
+        agent = task.get("agent", "unknown")
+        status = task.get("status", "unknown")
+        lines.append(f"{icon} `{tid}` ({agent}) — {status}")
+    return "\n".join(lines)
+
+
+def _normalize_task_filter(words: list[str]) -> str | None:
+    if not words:
+        return None
+    normalized = "_".join(word.strip().lower() for word in words if word.strip())
+    if not normalized:
+        return None
+    normalized = normalized.replace("-", "_")
+    return _TASK_FILTER_ALIASES.get(normalized)
+
+
+def _parse_tasks_args(args: list[str]) -> tuple[str | None, int]:
+    limit = 10
+    words: list[str] = []
+    for arg in args:
+        stripped = arg.strip()
+        if not stripped:
+            continue
+        if stripped.isdigit():
+            limit = max(1, min(25, int(stripped)))
+            continue
+        words.append(stripped)
+
+    filter_key = _normalize_task_filter(words)
+    return filter_key, limit
+
+
+def _normalize_stage_label(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", text.lower()).strip()
+
+
+def _parse_task_stage_args(args: list[str]) -> tuple[str | None, str | int | None, int]:
+    if not args:
+        return None, None, 10
+
+    mode = args[0].strip().lower()
+    if mode not in {"prd", "stage"}:
+        return None, None, 10
+
+    tail = [arg.strip() for arg in args[1:] if arg.strip()]
+    if not tail:
+        return mode, None, 10
+
+    limit = 10
+    if mode == "prd":
+        stage_ref = tail[0]
+        if len(tail) > 1 and tail[1].isdigit():
+            limit = max(1, min(25, int(tail[1])))
+        if stage_ref.isdigit():
+            return mode, int(stage_ref), limit
+        return mode, stage_ref, limit
+
+    if tail[-1].isdigit():
+        limit = max(1, min(25, int(tail[-1])))
+        tail = tail[:-1]
+    stage_query = " ".join(tail).strip()
+    return mode, stage_query or None, limit
+
+
+def _resolve_stage_reference(stage_ref: str | int) -> tuple[int, str, tuple[str, ...]] | None:
+    roadmap, _ = _load_prd_roadmap()
+    if isinstance(stage_ref, int):
+        if 1 <= stage_ref <= len(roadmap):
+            label, batches = roadmap[stage_ref - 1]
+            return stage_ref, label, batches
+        return None
+
+    query = _normalize_stage_label(str(stage_ref))
+    if not query:
+        return None
+
+    exact_matches = [
+        (idx, label, batches)
+        for idx, (label, batches) in enumerate(roadmap, start=1)
+        if _normalize_stage_label(label) == query
+    ]
+    if exact_matches:
+        return exact_matches[0]
+
+    substring_matches = [
+        (idx, label, batches)
+        for idx, (label, batches) in enumerate(roadmap, start=1)
+        if query in _normalize_stage_label(label)
+    ]
+    if len(substring_matches) == 1:
+        return substring_matches[0]
+    return None
+
+
+def _stage_suggestions(stage_ref: str) -> list[str]:
+    query = _normalize_stage_label(stage_ref)
+    roadmap, _ = _load_prd_roadmap()
+    if not query:
+        return []
+    matches = [
+        f"{idx}. {label}"
+        for idx, (label, _batches) in enumerate(roadmap, start=1)
+        if query in _normalize_stage_label(label)
+    ]
+    return matches[:5]
+
+
+def _task_filter_config(filter_key: str) -> tuple[str, tuple[str, ...] | None, bool | None]:
+    config = _TASK_FILTERS[filter_key]
+    label = str(config["label"])
+    raw_statuses = config["statuses"]
+    statuses = tuple(str(status) for status in raw_statuses) if raw_statuses is not None else None
+    frozen_only = config["frozen_only"]
+    return label, statuses, frozen_only if isinstance(frozen_only, bool) or frozen_only is None else None
+
+
+def _task_batch_clause(batches: tuple[str, ...]) -> tuple[str, list[object]]:
+    placeholders = ", ".join("?" for _ in batches)
+    expr = """
+        substr(
+            CASE
+                WHEN COALESCE(parent_task_id, '') = '' THEN task_id
+                ELSE parent_task_id
+            END,
+            instr(
+                CASE
+                    WHEN COALESCE(parent_task_id, '') = '' THEN task_id
+                    ELSE parent_task_id
+                END,
+                '@'
+            ) + 1
+        )
+    """
+    return f"{expr} IN ({placeholders})", [*batches]
+
+
+def _task_match_count(
+    filter_key: str,
+    *,
+    root_only: bool = False,
+    batches: tuple[str, ...] | None = None,
+) -> int:
+    db_path = _queue_db_path()
+    if not db_path.exists():
+        return 0
+
+    label, statuses, frozen_only = _task_filter_config(filter_key)
+    del label
+
+    clauses: list[str] = []
+    params: list[object] = []
+    if frozen_only is True:
+        clauses.append("COALESCE(frozen, 0) = 1")
+    elif frozen_only is False:
+        clauses.append("COALESCE(frozen, 0) = 0")
+    if statuses:
+        placeholders = ", ".join("?" for _ in statuses)
+        clauses.append(f"status IN ({placeholders})")
+        params.extend(statuses)
+    if root_only:
+        clauses.append("COALESCE(parent_task_id, '') = ''")
+    if batches:
+        clause, batch_params = _task_batch_clause(batches)
+        clauses.append(clause)
+        params.extend(batch_params)
+
+    where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+
+    con = sqlite3.connect(db_path)
+    try:
+        if not _table_exists(con, "tasks"):
+            return 0
+        row = con.execute(f"SELECT COUNT(*) FROM tasks {where_sql}", params).fetchone()
+    finally:
+        con.close()
+
+    return int(row[0] or 0) if row is not None else 0
+
+
+def _task_rows(
+    filter_key: str,
+    *,
+    limit: int,
+    root_only: bool = False,
+    batches: tuple[str, ...] | None = None,
+) -> list[dict[str, object]]:
+    db_path = _queue_db_path()
+    if not db_path.exists():
+        return []
+
+    _, statuses, frozen_only = _task_filter_config(filter_key)
+    clauses: list[str] = []
+    params: list[object] = []
+    if frozen_only is True:
+        clauses.append("COALESCE(frozen, 0) = 1")
+    elif frozen_only is False:
+        clauses.append("COALESCE(frozen, 0) = 0")
+    if statuses:
+        placeholders = ", ".join("?" for _ in statuses)
+        clauses.append(f"status IN ({placeholders})")
+        params.extend(statuses)
+    if root_only:
+        clauses.append("COALESCE(parent_task_id, '') = ''")
+    if batches:
+        clause, batch_params = _task_batch_clause(batches)
+        clauses.append(clause)
+        params.extend(batch_params)
+    where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+
+    order_sql = "ORDER BY updated_at DESC, created_at DESC, task_id ASC"
+    if frozen_only is True:
+        order_sql = "ORDER BY COALESCE(frozen_at, '') DESC, updated_at DESC, task_id ASC"
+    elif statuses == ("pending",):
+        order_sql = "ORDER BY priority DESC, created_at ASC, task_id ASC"
+    elif statuses == ("needs_split",):
+        order_sql = "ORDER BY priority DESC, updated_at DESC, task_id ASC"
+
+    con = sqlite3.connect(db_path)
+    con.row_factory = sqlite3.Row
+    try:
+        if not _table_exists(con, "tasks"):
+            return []
+        rows = con.execute(
+            f"""
+            SELECT
+                task_id,
+                COALESCE(description, '') AS description,
+                COALESCE(tier, '') AS tier,
+                COALESCE(status, '') AS status,
+                COALESCE(priority, 0) AS priority,
+                COALESCE(parent_task_id, '') AS parent_task_id,
+                COALESCE(status_reason, '') AS status_reason,
+                COALESCE(frozen, 0) AS frozen,
+                COALESCE(frozen_reason, '') AS frozen_reason,
+                COALESCE(created_at, '') AS created_at,
+                COALESCE(updated_at, '') AS updated_at
+            FROM tasks
+            {where_sql}
+            {order_sql}
+            LIMIT ?
+            """,
+            [*params, limit],
+        ).fetchall()
+    finally:
+        con.close()
+
+    return [dict(row) for row in rows]
+
+
+def _task_icon(task: dict[str, object]) -> str:
+    if int(task.get("frozen", 0) or 0):
+        return "🧊"
+    return {
+        "running": "🔄",
+        "pending": "🟡",
+        "needs_split": "✂️",
+        "blocked": "⛔",
+        "needs_review": "⚠️",
+        "rolled_back": "↩️",
+        "quarantined": "🚧",
+        "split": "🪓",
+        "complete": "✅",
+    }.get(str(task.get("status", "")), "❓")
+
+
+def _task_line(task: dict[str, object], *, show_status: bool = False) -> str:
+    task_id = str(task.get("task_id", ""))
+    description = _truncate_summary(str(task.get("description", "") or "Untitled task"), limit=78)
+    tier = str(task.get("tier", "")).strip()
+    parent_task_id = str(task.get("parent_task_id", "")).strip()
+    status = str(task.get("status", "")).strip()
+    frozen = int(task.get("frozen", 0) or 0) == 1
+    reason = str(task.get("frozen_reason" if frozen else "status_reason", "")).strip()
+
+    extras: list[str] = []
+    if tier:
+        extras.append(tier)
+    if show_status:
+        extras.append("frozen" if frozen else status.replace("_", " "))
+    if parent_task_id:
+        extras.append(f"child of {parent_task_id}")
+    if reason:
+        extras.append(_truncate_summary(reason, limit=54))
+
+    suffix = f" — {' · '.join(extras)}" if extras else ""
+    return f"{_task_icon(task)} `{task_id}` {description}{suffix}"
+
+
+def _append_task_section(
+    lines: list[str],
+    title: str,
+    tasks: list[dict[str, object]],
+    *,
+    show_status: bool = False,
+) -> None:
+    if not tasks:
+        return
+    lines.append("")
+    lines.append(f"{title}:")
+    for task in tasks:
+        lines.append(_task_line(task, show_status=show_status))
+
+
+def _task_summary_line(summary: dict[str, int]) -> str:
+    parts = [
+        f"{summary.get('running', 0)} running",
+        f"{summary.get('pending', 0)} pending",
+    ]
+    if summary.get("needs_split", 0):
+        parts.append(f"{summary['needs_split']} needs split")
+    if summary.get("blocked", 0):
+        parts.append(f"{summary['blocked']} blocked")
+    if summary.get("needs_attention", 0):
+        parts.append(f"{summary['needs_attention']} needs attention")
+    if summary.get("skipped", 0):
+        parts.append(f"{summary['skipped']} decomposed")
+    if summary.get("frozen", 0):
+        parts.append(f"{summary['frozen']} frozen")
+    return "Summary: " + " · ".join(parts)
+
+
+def _format_stage_tasks_status(stage_number: int, label: str, batches: tuple[str, ...], limit: int) -> str:
+    batch_rollups = _batch_rollups()
+    summary = _merge_rollups(batches, batch_rollups)
+
+    lines = [f"🧾 Tasks · PRD {stage_number} · {label}", _task_summary_line(summary)]
+    if batches:
+        lines.append("Batches: " + ", ".join(batches))
+
+    _append_task_section(lines, "Running", _task_rows("running", limit=min(limit, 3), batches=batches))
+    _append_task_section(lines, "Next Root Tasks", _task_rows("pending", limit=limit, root_only=True, batches=batches))
+    _append_task_section(lines, "Needs Split", _task_rows("needs_split", limit=limit, root_only=True, batches=batches))
+    _append_task_section(lines, "Blocked", _task_rows("blocked", limit=limit, root_only=True, batches=batches))
+    _append_task_section(lines, "Needs Attention", _task_rows("attention", limit=limit, root_only=True, batches=batches))
+
+    background_parts = []
+    if summary.get("frozen", 0):
+        background_parts.append(f"{summary['frozen']} frozen")
+    if summary.get("skipped", 0):
+        background_parts.append(f"{summary['skipped']} decomposed parents")
+    if background_parts:
+        lines.append("")
+        lines.append("Background: " + " · ".join(background_parts))
+
+    if len(lines) <= 3:
+        lines.append("No tasks loaded for this roadmap stage.")
+
+    lines.append("")
+    lines.append(
+        f"Use: `/tasks prd {stage_number} {limit}` · "
+        f"`/tasks stage {label.lower()} {limit}`"
+    )
+    return "\n".join(lines)[:3500]
+
+
+def format_tasks_status(args: list[str] | None = None) -> str:
+    """Return an actionable queue-task summary for Telegram."""
+    args = args or []
+    if not _queue_db_exists():
+        return _format_background_tasks_fallback()
+
+    stage_mode, stage_ref, stage_limit = _parse_task_stage_args(args)
+    if stage_mode is not None:
+        if stage_ref is None:
+            if stage_mode == "prd":
+                return "🧾 Queue Tasks\nUsage: `/tasks prd <stage-number> [limit]`"
+            return "🧾 Queue Tasks\nUsage: `/tasks stage <stage name> [limit]`"
+
+        resolved = _resolve_stage_reference(stage_ref)
+        if resolved is None:
+            if stage_mode == "prd":
+                return f"🧾 Queue Tasks\nUnknown roadmap stage `{stage_ref}`."
+            suggestions = _stage_suggestions(str(stage_ref))
+            if suggestions:
+                return "🧾 Queue Tasks\nStage not found. Try: " + " · ".join(suggestions)
+            return f"🧾 Queue Tasks\nStage not found: `{stage_ref}`."
+
+        stage_number, label, batches = resolved
+        return _format_stage_tasks_status(stage_number, label, batches, stage_limit)
+
+    filter_key, limit = _parse_tasks_args(args)
+    if args and filter_key is None:
+        return (
+            "🧾 Queue Tasks\n"
+            "Unknown filter. Use `/tasks`, `/tasks pending 10`, `/tasks needs_split`, "
+            "`/tasks blocked`, `/tasks attention`, `/tasks running`, `/tasks frozen`, or `/tasks all 20`."
+        )
+
+    if filter_key is None:
+        counts = _root_queue_counts()
+        lines = ["🧾 Queue Tasks", _task_summary_line(counts)]
+
+        _append_task_section(lines, "Running", _task_rows("running", limit=3, root_only=False))
+        _append_task_section(lines, "Next Root Tasks", _task_rows("pending", limit=5, root_only=True))
+        _append_task_section(lines, "Needs Split", _task_rows("needs_split", limit=5, root_only=True))
+        _append_task_section(lines, "Blocked", _task_rows("blocked", limit=5, root_only=True))
+        _append_task_section(lines, "Needs Attention", _task_rows("attention", limit=5, root_only=True))
+
+        if counts["frozen"] or counts["skipped"]:
+            lines.append("")
+            detail_parts = []
+            if counts["frozen"]:
+                detail_parts.append(f"{counts['frozen']} frozen")
+            if counts["skipped"]:
+                detail_parts.append(f"{counts['skipped']} decomposed parents")
+            lines.append("Background: " + " · ".join(detail_parts))
+
+        lines.append("")
+        lines.append(
+            "Use: `/tasks pending 10` · `/tasks needs_split` · `/tasks blocked` · "
+            "`/tasks attention` · `/tasks frozen` · `/tasks prd 6` · `/tasks stage clone and home creation`"
+        )
+        return "\n".join(lines)[:3500]
+
+    label, _, _ = _task_filter_config(filter_key)
+    total_matches = _task_match_count(filter_key)
+    tasks = _task_rows(filter_key, limit=limit, root_only=False)
+    lines = [f"🧾 Tasks · {label}", f"Showing {len(tasks)} of {total_matches}"]
+    if not tasks:
+        lines.append(f"No {label.lower()} tasks.")
+    else:
+        show_status = filter_key == "all"
+        for task in tasks:
+            lines.append(_task_line(task, show_status=show_status))
+    return "\n".join(lines)[:3500]
+
+
+def _truncate_summary(text: str, limit: int = 72) -> str:
+    stripped = " ".join(text.split())
+    if len(stripped) <= limit:
+        return stripped
+    return stripped[: limit - 1].rstrip() + "…"
+
+
+def _sdp_cli_env() -> dict[str, str]:
+    env = _child_process_env()
+    env["PATH"] = f"{Path.home() / '.local' / 'bin'}:/usr/local/bin:/usr/bin:/bin"
+    sibling_sdp_src = PROJECT_ROOT.parent / "sdp-cli" / "src"
+    if sibling_sdp_src.exists():
+        existing = env.get("PYTHONPATH", "").strip()
+        env["PYTHONPATH"] = (
+            f"{sibling_sdp_src}:{existing}" if existing else str(sibling_sdp_src)
+        )
+    return env
+
+
+def _normalize_monitor_snapshot(text: str) -> str:
+    cleaned = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", text or "")
+    lines = [line.rstrip() for line in cleaned.replace("\r\n", "\n").replace("\r", "\n").split("\n")]
+    return "\n".join(lines).strip()
+
+
+def _sdp_monitor_last_snapshot() -> str | None:
+    settings_path = _settings_path()
+    if not settings_path.exists():
+        return None
+    try:
+        stdout, _stderr, returncode = run_sdp_command(
+            ["sdp-cli", "monitor", "--last"],
+            project_root=PROJECT_ROOT,
+            env=_sdp_cli_env(),
+            timeout_s=15,
+        )
+    except Exception:
+        return None
+    if returncode != 0:
+        return None
+    snapshot = _normalize_monitor_snapshot(stdout)
+    if "SDP Monitor" not in snapshot:
+        return None
+    return snapshot[:3500]
+
+
+def _latest_completion_gate_snapshot() -> dict[str, str] | None:
+    db_path = _queue_db_path()
+    if not db_path.exists():
+        return None
+
+    con = sqlite3.connect(db_path)
+    try:
+        if not _table_exists(con, "completion_gate_reports"):
+            return None
+        row = con.execute(
+            """
+            SELECT COALESCE(status, ''), COALESCE(summary, ''), COALESCE(created_at, '')
+            FROM completion_gate_reports
+            ORDER BY created_at DESC, report_id DESC
+            LIMIT 1
+            """
+        ).fetchone()
+    except sqlite3.Error:
+        return None
+    finally:
+        con.close()
+
+    if row is None:
+        return None
+
+    return {
+        "status": str(row[0] or ""),
+        "summary": str(row[1] or ""),
+        "created_at": str(row[2] or ""),
+    }
+
+
+def _latest_completed_run_snapshot() -> dict[str, str] | None:
+    db_path = _queue_db_path()
+    if not db_path.exists():
+        return None
+
+    con = sqlite3.connect(db_path)
+    try:
+        if not _table_exists(con, "task_runs"):
+            return None
+        row = con.execute(
+            """
+            SELECT
+                COALESCE(task_id, ''),
+                COALESCE(lead_agent, ''),
+                COALESCE(verify_agent, ''),
+                COALESCE(verdict, ''),
+                COALESCE(completed_at, '')
+            FROM task_runs
+            WHERE TRIM(COALESCE(completed_at, '')) != ''
+            ORDER BY completed_at DESC, started_at DESC, rowid DESC
+            LIMIT 1
+            """
+        ).fetchone()
+    except sqlite3.Error:
+        return None
+    finally:
+        con.close()
+
+    if row is None:
+        return None
+
+    return {
+        "task_id": str(row[0] or ""),
+        "lead_agent": str(row[1] or ""),
+        "verify_agent": str(row[2] or ""),
+        "verdict": str(row[3] or ""),
+        "completed_at": str(row[4] or ""),
+    }
+
+
+def _provider_monitor_line() -> str:
+    provider_status = quota_monitor.get_provider_status()
+    parts = []
+    for agent in ("claude", "codex", "gemini"):
+        info = provider_status.get(PROVIDERS[agent], {"status": "unknown", "headroom": 0.0})
+        headroom = info.get("headroom", 0.0)
+        if not isinstance(headroom, (int, float, str)):
+            headroom = 0.0
+        parts.append(f"{agent} {float(headroom):.0%} {info.get('status', 'unknown')}")
+    return "Providers: " + " · ".join(parts)
+
+
+def _selector_disabled_agents() -> set[str]:
+    settings_path = _settings_path()
+    if not settings_path.exists():
+        return set()
+    try:
+        with settings_path.open("rb") as fh:
+            settings = tomllib.load(fh)
+    except (OSError, tomllib.TOMLDecodeError):
+        return set()
+
+    scope = settings
+    nested = settings.get("sdp")
+    if isinstance(nested, dict):
+        scope = nested
+
+    disabled: set[str] = set()
+    for agent in ("claude", "codex", "gemini"):
+        raw_value = scope.get(f"selector_{agent}_remaining_tokens")
+        if raw_value is None:
+            continue
+        try:
+            remaining = float(raw_value)
+        except (TypeError, ValueError):
+            continue
+        if remaining <= 0:
+            disabled.add(agent)
+    return disabled
+
+
 def _format_elapsed(started_at: str) -> str:
     if not started_at:
         return "unknown"
@@ -2014,7 +2893,7 @@ def _format_elapsed(started_at: str) -> str:
 
 
 def _merge_rollups(batches: tuple[str, ...], batch_rollups: dict[str, dict[str, int]]) -> dict[str, int]:
-    merged = {"total": 0, "complete": 0, "running": 0, "pending": 0, "blocked": 0, "split": 0}
+    merged = _empty_rollup()
     for batch in batches:
         bucket = batch_rollups.get(batch)
         if not bucket:
@@ -2029,11 +2908,18 @@ def _label_status(summary: dict[str, int]) -> str:
     complete = summary.get("complete", 0)
     running = summary.get("running", 0)
     blocked = summary.get("blocked", 0)
-    split = summary.get("split", 0)
+    needs_attention = summary.get("needs_attention", 0)
     pending = summary.get("pending", 0)
-    active_blockers = blocked + split
+    needs_split = summary.get("needs_split", 0)
+    frozen = summary.get("frozen", 0)
+    skipped = summary.get("skipped", 0)
+    active_blockers = blocked + needs_attention + needs_split
 
     if total == 0:
+        if frozen:
+            return "frozen"
+        if skipped:
+            return "decomposed"
         return "not loaded"
     if running:
         return "running"
@@ -2049,32 +2935,59 @@ def _label_status(summary: dict[str, int]) -> str:
     return "queued"
 
 
+def _stage_detail(summary: dict[str, int]) -> str:
+    total = summary.get("total", 0)
+    if total:
+        return f"{summary.get('complete', 0)}/{total}"
+
+    zero_parts = []
+    frozen = summary.get("frozen", 0)
+    skipped = summary.get("skipped", 0)
+    if frozen:
+        zero_parts.append(f"{frozen} frozen")
+    if skipped:
+        zero_parts.append(f"{skipped} skipped")
+    return ", ".join(zero_parts) if zero_parts else "not loaded"
+
+
 def format_prd_status() -> str:
     """Return the ordered PRD roadmap summary for Telegram."""
     batch_rollups = _batch_rollups()
+    roadmap, completed_earlier = _load_prd_roadmap()
     lines = ["🗺️ PRD Roadmap"]
 
-    for idx, (label, batches) in enumerate(PRD_ROADMAP, start=1):
+    for idx, (label, batches) in enumerate(roadmap, start=1):
         summary = _merge_rollups(batches, batch_rollups)
         status = _label_status(summary)
         total = summary.get("total", 0)
-        complete = summary.get("complete", 0)
         running = summary.get("running", 0)
         pending = summary.get("pending", 0)
-        blocked = summary.get("blocked", 0) + summary.get("split", 0)
-        detail = f"{complete}/{total}" if total else "not loaded"
+        needs_split = summary.get("needs_split", 0)
+        blocked = summary.get("blocked", 0)
+        needs_attention = summary.get("needs_attention", 0)
+        skipped = summary.get("skipped", 0)
+        frozen = summary.get("frozen", 0)
+        detail = _stage_detail(summary)
         suffix_parts = []
         if running:
             suffix_parts.append(f"{running} running")
         if pending:
             suffix_parts.append(f"{pending} pending")
+        if needs_split:
+            suffix_parts.append(f"{needs_split} needs split")
         if blocked:
             suffix_parts.append(f"{blocked} blocked")
+        if needs_attention:
+            suffix_parts.append(f"{needs_attention} needs attention")
+        if skipped and total:
+            suffix_parts.append(f"{skipped} skipped")
+        if frozen and total:
+            suffix_parts.append(f"{frozen} frozen")
         suffix = f" ({', '.join(suffix_parts)})" if suffix_parts else ""
         lines.append(f"{idx}. {label} — {status} [{detail}]{suffix}")
 
     completed = []
-    for label, batches in PRD_COMPLETED:
+    for label, batches in completed_earlier:
         summary = _merge_rollups(batches, batch_rollups)
         if summary.get("total", 0) and summary.get("complete", 0) == summary.get("total", 0):
             completed.append(label)
@@ -2087,6 +3000,10 @@ def format_prd_status() -> str:
 
 def format_monitor_status() -> str:
     """Return a compact live queue monitor summary for Telegram."""
+    preferred_snapshot = _sdp_monitor_last_snapshot()
+    if preferred_snapshot:
+        return preferred_snapshot
+
     if not _queue_db_exists():
         return "📡 SDP Monitor\nQueue DB unavailable."
 
@@ -2094,15 +3011,31 @@ def format_monitor_status() -> str:
     total = counts["total"]
     complete = counts["complete"]
     pending = counts["pending"]
-    blocked = counts["blocked"] + counts["split"]
-    running_roots = counts["running"]
+    needs_split = counts["needs_split"]
+    blocked = counts["blocked"]
+    needs_attention = counts["needs_attention"]
+    running = counts["running"]
+    skipped = counts["skipped"]
+    frozen = counts["frozen"]
     percent = int(round((complete / total) * 100)) if total else 0
     runner_state = _runner_service_state()
     active = _active_task_snapshot()
+    if runner_state != "active":
+        active = None
 
     lines = ["📡 SDP Monitor"]
     lines.append(f"Progress: {complete}/{total} complete ({percent}%)")
-    lines.append(f"Queue: {pending} pending, {blocked} blocked, {running_roots} running roots")
+    queue_parts = [f"{pending} pending"]
+    if needs_split:
+        queue_parts.append(f"{needs_split} needs split")
+    queue_parts.extend([f"{blocked} blocked", f"{running} running"])
+    if needs_attention:
+        queue_parts.append(f"{needs_attention} needs attention")
+    if skipped:
+        queue_parts.append(f"{skipped} skipped")
+    if frozen:
+        queue_parts.append(f"{frozen} frozen")
+    lines.append("Queue: " + ", ".join(queue_parts))
     lines.append(f"Runner: {runner_state}")
     if active is None:
         lines.append("Current: idle")
@@ -2114,8 +3047,61 @@ def format_monitor_status() -> str:
         lines.append(f"Current: {current}")
         lines.append(f"Pair: {pair}")
         lines.append(f"Elapsed: {_format_elapsed(active['started_at'])}")
-    available = _available_agents(["claude", "codex", "gemini"])
-    lines.append("Available: " + ", ".join(available) if available else "Available: none")
+    drift = _queue_state_drift()
+    drift_parts = []
+    if drift["running_without_open"]:
+        drift_parts.append(f"{drift['running_without_open']} running without open run")
+    if drift["stale_open_runs"]:
+        drift_parts.append(f"{drift['stale_open_runs']} stale open runs")
+    if drift["duplicate_open_runs"]:
+        drift_parts.append(f"{drift['duplicate_open_runs']} duplicate open-run groups")
+    if drift_parts:
+        lines.append("State: drift — " + ", ".join(drift_parts))
+    gate = _latest_completion_gate_snapshot()
+    if gate is not None:
+        gate_parts = [gate["status"] or "unknown"]
+        if gate["summary"]:
+            gate_parts.append(_truncate_summary(gate["summary"]))
+        lines.append("Gate: " + " · ".join(gate_parts))
+    recent = _latest_completed_run_snapshot()
+    if recent is not None:
+        recent_parts = [recent["task_id"]]
+        if recent["verdict"]:
+            recent_parts.append(recent["verdict"])
+        pair = "→".join(
+            agent for agent in (recent["lead_agent"], recent["verify_agent"]) if agent
+        )
+        if pair:
+            recent_parts.append(pair)
+        lines.append("Recent: " + " · ".join(recent_parts))
+    lines.append(_provider_monitor_line())
+    all_agents = ("claude", "codex", "gemini")
+    quota_available = set(_available_agents(list(all_agents)))
+    selector_disabled = _selector_disabled_agents()
+    available = [agent for agent in all_agents if agent in quota_available and agent not in selector_disabled]
+    if not available and quota_available:
+        available = [agent for agent in all_agents if agent in quota_available]
+    exclusion_reasons: dict[str, list[str]] = {agent: [] for agent in all_agents}
+    for agent in all_agents:
+        if agent not in quota_available:
+            exclusion_reasons[agent].append("quota")
+        if agent in selector_disabled:
+            exclusion_reasons[agent].append("selector")
+    excluded = [
+        f"{agent} ({', '.join(exclusion_reasons[agent])})"
+        for agent in all_agents
+        if exclusion_reasons[agent]
+    ]
+    if available:
+        agent_line = "Available: " + ", ".join(available)
+        if excluded:
+            agent_line += " | Excluded: " + ", ".join(excluded)
+        lines.append(agent_line)
+    else:
+        agent_line = "Available: none"
+        if excluded:
+            agent_line += " | Excluded: " + ", ".join(excluded)
+        lines.append(agent_line)
     return "\n".join(lines)[:1200]
 
 
@@ -2159,9 +3145,117 @@ def format_quota_status() -> str:
     return text[:300]
 
 
+def _heartbeat_slot_key(now_local: datetime) -> str | None:
+    if now_local.minute not in {0, 30}:
+        return None
+    return now_local.strftime("%Y-%m-%d-%H") + f"-{now_local.minute:02d}"
+
+
+def _heartbeat_gallery_url() -> str | None:
+    for key in ("CYPHERCLAW_GALLERY_URL", "GALLERY_URL"):
+        value = os.environ.get(key, "").strip()
+        if value:
+            return value
+    return None
+
+
+def format_half_hour_heartbeat(now_local: datetime | None = None) -> tuple[str, dict[str, object]]:
+    """Return the compact half-hour heartbeat message plus observatory payload."""
+    current_time = now_local or datetime.now()
+
+    from server_health import check_health
+
+    health = check_health()
+    checks = health.get("checks", {})
+    counts = _root_queue_counts()
+    total = counts["total"]
+    complete = counts["complete"]
+    pending = counts["pending"]
+    needs_split = counts["needs_split"]
+    blocked = counts["blocked"]
+    running = counts["running"]
+    skipped = counts["skipped"]
+    frozen = counts["frozen"]
+    percent = int(round((complete / total) * 100)) if total else 0
+    available_agents = _available_agents(["claude", "codex", "gemini"])
+    pet_section = CypherClawArt.pet_xp_summary(pet_manager.pets)
+    gallery_url = _heartbeat_gallery_url()
+
+    try:
+        ollama = ollama_health()
+    except Exception:
+        ollama = {"healthy": False, "instances": []}
+
+    lines = [f"💓 CypherClaw Heartbeat · {current_time.strftime('%I:%M %p').lstrip('0')}"]
+    lines.append(f"⏱ Uptime: {checks.get('uptime', '?')}")
+    lines.append(f"💽 I/O: {checks.get('io_wait', '?')}")
+    lines.append(f"🧠 Memory: {checks.get('memory', '?')}")
+    lines.append(f"⚡ Load: {checks.get('load', '?')}")
+    agent_summary = ", ".join(available_agents) if available_agents else "none"
+    lines.append(f"🤖 Agents: {len(available_agents)}/3 available ({agent_summary})")
+    lines.append(
+        f"📡 SDP: {complete}/{total} complete ({percent}%) · "
+        f"{pending} pending"
+        + (f" · {needs_split} needs split" if needs_split else "")
+        + f" · {blocked} blocked · {running} running"
+        + (f" · {frozen} frozen" if frozen else "")
+    )
+    if skipped:
+        lines.append(f"🪓 Split parents: {skipped}")
+
+    # Ollama summary
+    ollama_parts: list[str] = []
+    for inst in ollama.get("instances", []):
+        name = inst.get("socket", "?")
+        if inst.get("healthy"):
+            models = ", ".join(inst.get("models", [])) or "no models"
+            latency = inst.get("latency_ms")
+            lat_str = f"{latency:.0f}ms" if latency is not None else "?"
+            ollama_parts.append(f"{name} ok({lat_str}) {models}")
+        else:
+            ollama_parts.append(f"{name} down")
+    if ollama_parts:
+        healthy_tag = "up" if ollama.get("healthy") else "down"
+        lines.append(f"🦙 Ollama ({healthy_tag}): {' · '.join(ollama_parts)}")
+    else:
+        lines.append("🦙 Ollama: unavailable")
+
+    lines.append("")
+    lines.append(pet_section)
+    if gallery_url:
+        lines.append("")
+        lines.append(f"🖼 Gallery: {gallery_url}")
+
+    payload = {
+        "slot": _heartbeat_slot_key(current_time) or current_time.isoformat(),
+        "complete": complete,
+        "total": total,
+        "pending": pending,
+        "needs_split": needs_split,
+        "blocked": blocked,
+        "running": running,
+        "skipped": skipped,
+        "frozen": frozen,
+        "percent": percent,
+        "available_agents": list(available_agents),
+        "agent_count": len(available_agents),
+        "uptime": str(checks.get("uptime", "?")),
+        "io_wait": str(checks.get("io_wait", "?")),
+        "memory": str(checks.get("memory", "?")),
+        "load": str(checks.get("load", "?")),
+        "gallery_url": gallery_url or "",
+        "ollama": ollama,
+    }
+    return "\n".join(lines)[:3500], payload
+
+
 def handle_builtin(text: str) -> bool:
     """Handle built-in slash commands. Returns True if handled."""
-    cmd = text.strip().split()[0].lower()
+    parts = text.strip().split()
+    if not parts:
+        return False
+    cmd = parts[0].lower()
+    args = parts[1:]
 
     if cmd == "/help":
         tg_send(_art.help_menu(BUILTIN_COMMANDS))
@@ -2172,7 +3266,20 @@ def handle_builtin(text: str) -> bool:
         scheds = [s for s in state.schedules if s.get("enabled", True)]
         n_artifacts = len(list_artifacts())
         n_convo = len(state.conversation)
-        tg_send(_art.status_display(n_convo, len(running), len(scheds), n_artifacts, pets=pet_manager.pets))
+        try:
+            ollama = ollama_health()
+        except Exception:
+            ollama = {"healthy": False, "instances": []}
+        tg_send(
+            _art.status_display(
+                n_convo,
+                len(running),
+                len(scheds),
+                n_artifacts,
+                pets=pet_manager.pets,
+                ollama=ollama,
+            )
+        )
         return True
 
     if cmd == "/quota":
@@ -2188,14 +3295,7 @@ def handle_builtin(text: str) -> bool:
         return True
 
     if cmd == "/tasks":
-        if not state.tasks:
-            tg_send("No tasks.")
-            return True
-        lines = []
-        for tid, t in sorted(state.tasks.items(), key=lambda x: x[1].get("created", ""), reverse=True)[:10]:
-            icon = {"running": "🔄", "done": "✅", "failed": "❌"}.get(t["status"], "❓")
-            lines.append(f"{icon} `{tid}` ({t['agent']}) — {t['status']}")
-        tg_send("\n".join(lines))
+        tg_send(format_tasks_status(args))
         return True
 
     if cmd == "/schedules":
@@ -2230,7 +3330,6 @@ def handle_builtin(text: str) -> bool:
         return True
 
     if cmd == "/feed":
-        parts = text.strip().split()
         agent = parts[1].lower() if len(parts) > 1 else "cypherclaw"
         if agent not in pet_manager.AGENTS:
             tg_send(f"Unknown pet: {agent}. Options: {', '.join(pet_manager.AGENTS)}")
@@ -2318,7 +3417,7 @@ def handle_builtin(text: str) -> bool:
                 ["promptclaw", "run", ".", "--task-file", str(task_file)],
                 capture_output=True, text=True, timeout=MAX_AGENT_TIMEOUT,
                 cwd=str(PROJECT_ROOT),
-                env={**os.environ, "PATH": f"{Path.home() / '.local' / 'bin'}:/usr/local/bin:/usr/bin:/bin"},
+                env=_child_process_env({"PATH": f"{Path.home() / '.local' / 'bin'}:/usr/local/bin:/usr/bin:/bin"}),
             )
             output = promptclaw_result.stdout.strip()
             if promptclaw_result.returncode == 0:

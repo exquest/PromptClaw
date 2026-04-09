@@ -177,6 +177,7 @@ class CypherClawArt:
         schedules: int,
         artifacts: int,
         pets: dict[str, "Pet"] | None = None,
+        ollama: dict[str, object] | None = None,
     ) -> str:
         # Pet portrait or default crab
         if pets and "cypherclaw" in pets:
@@ -196,7 +197,20 @@ class CypherClawArt:
             if pet_lines:
                 pet_section = "\n\n🐾 Pets:\n" + "\n".join(pet_lines)
 
-        return f"{header}{vitals}{pet_section}"
+        ollama_section = ""
+        if ollama is not None:
+            ollama_section = "\n\n🦙 Ollama:"
+            for inst in ollama.get("instances", []):
+                name = inst.get("socket", "?")
+                if inst.get("healthy"):
+                    models = ", ".join(inst.get("models", [])) or "no models loaded"
+                    latency = inst.get("latency_ms")
+                    lat_str = f"{latency:.0f}ms" if latency is not None else "?"
+                    ollama_section += f"\n  {name}: healthy ({lat_str}) · {models}"
+                else:
+                    ollama_section += f"\n  {name}: unreachable"
+
+        return f"{header}{vitals}{pet_section}{ollama_section}"
 
     # ── 5. greeting ──────────────────────────────────────────
     def greeting(self, pet_portrait: str | None = None) -> str:
