@@ -556,23 +556,31 @@ class AgentCommandResult:
     timed_out: bool = False
 
 
+def _local_only_enabled() -> bool:
+    value = os.environ.get("LOCAL_ONLY", "").strip().casefold()
+    return value in {"1", "true", "yes", "on"}
+
+
 def _available_agents(
     agents: list[str] | tuple[str, ...] | None = None,
     *,
     disabled_agents: set[str] | None = None,
 ) -> list[str]:
-    candidates = list(agents or ["claude", "codex", "gemini"])
+    if _local_only_enabled():
+        candidates = ["ollama"]
+    else:
+        candidates = list(agents or ["claude", "codex", "gemini"])
     disabled = set(disabled_agents or ())
     filtered = [agent for agent in candidates if agent not in disabled]
     if not filtered:
-        filtered = candidates
+        filtered = ["ollama"] if _local_only_enabled() else candidates
     try:
         available = quota_monitor.get_available_agents(filtered)
         if available:
-            return available
+            return ["ollama"] if _local_only_enabled() else available
     except Exception:
         pass
-    return filtered
+    return ["ollama"] if _local_only_enabled() else filtered
 
 
 def _best_available_agent(
@@ -581,7 +589,7 @@ def _best_available_agent(
     disabled_agents: set[str] | None = None,
 ) -> str:
     available = _available_agents(agents, disabled_agents=disabled_agents)
-    return available[0] if available else "gemini"
+    return available[0] if available else ("ollama" if _local_only_enabled() else "gemini")
 
 
 def _build_agent_command(agent: str, prompt: str) -> tuple[list[str], dict[str, str], bool]:

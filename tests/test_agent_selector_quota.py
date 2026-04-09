@@ -61,6 +61,28 @@ def _healthy_ollama(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 class TestAgentSelectorQuota:
+    def test_select_prefers_ollama_when_healthy_for_netops(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        monitor = quota_monitor.QuotaMonitor(poll_interval=0.01)
+        monkeypatch.setattr(
+            quota_monitor.QuotaMonitor,
+            "_load_provider_headroom",
+            lambda self, provider: (1.0, "local") if provider == "local" else (0.9, "observed"),
+        )
+        monitor.poll_once()
+
+        selector = agent_selector.AgentSelector(
+            observatory=None,
+            quota_monitor=monitor,
+            state_file=tmp_path / "selector-state.json",
+        )
+        monkeypatch.setattr(agent_selector.random, "random", lambda: 1.0)
+
+        assert selector.select("vpn firewall routing help", available_agents=["ollama", "codex", "gemini"]) == "ollama"
+
     def test_select_excludes_paused_provider(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         selector = agent_selector.AgentSelector(
             observatory=None,

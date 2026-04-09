@@ -148,3 +148,30 @@ def test_run_agent_ollama_uses_http_path_and_preserves_bookkeeping(
         "semaphore_released",
     ]
     assert observatory.healing_events == []
+
+
+def test_available_agents_local_only_restricts_to_ollama(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: list[list[str]] = []
+
+    monkeypatch.setenv("LOCAL_ONLY", "true")
+
+    def fake_get_available_agents(agents: list[str] | tuple[str, ...] | None = None) -> list[str]:
+        candidate_list = list(agents or [])
+        seen.append(candidate_list)
+        return candidate_list
+
+    monkeypatch.setattr(cypherclaw_daemon.quota_monitor, "get_available_agents", fake_get_available_agents)
+
+    assert cypherclaw_daemon._available_agents(["claude", "codex", "gemini"]) == ["ollama"]
+    assert seen == [["ollama"]]
+
+
+def test_best_available_agent_local_only_never_falls_back_to_cloud(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LOCAL_ONLY", "1")
+    monkeypatch.setattr(cypherclaw_daemon.quota_monitor, "get_available_agents", lambda agents=None: [])
+
+    assert cypherclaw_daemon._best_available_agent(["claude", "codex", "gemini"]) == "ollama"
