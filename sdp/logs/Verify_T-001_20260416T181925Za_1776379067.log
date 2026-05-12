@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3834 chars)
+---
+
+**Verdict: PASS**
+
+All 10 tests pass (4 ablation + 6 startup identity anchors). The implementation is a clean, stdlib-only, generic ablation engine that correctly:
+- Filters disabled rules while preserving order
+- Fails fast on unknown rule IDs
+- Delegates to `score_to_frequencies` as the no-rule default renderer
+- Exports the public API from `senseweave.render`
+
+One minor note logged: no test covers the `TypeError` path for rule objects missing both `.rule_id` and `.id` — code is correct, test coverage has a small gap. All candidate hardening items confirmed explicitly out-of-scope per spec and ESCALATIONS entry.

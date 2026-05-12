@@ -1,0 +1,33 @@
+[Unit]
+Description=CypherClaw Generation Worker
+Documentation=file:///home/user/cypherclaw/docs/runbooks/generation-backend.md
+After=cypherclaw-jack.service network-online.target
+Requires=cypherclaw-jack.service
+Wants=network-online.target
+ConditionPathExists=/home/user/cypherclaw
+ConditionPathExists=/home/user/cypherclaw/tools/generation_worker.py
+
+[Service]
+Type=simple
+User=user
+Group=user
+WorkingDirectory=/home/user/cypherclaw
+Environment=HOME=/home/user
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=/home/user/cypherclaw/.env
+ExecStart=/home/user/cypherclaw/.venv/bin/python3 /home/user/cypherclaw/tools/generation_worker.py
+Restart=always
+RestartSec=10
+LimitMEMLOCK=infinity
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cypherclaw-generation-worker
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/user/cypherclaw-data
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

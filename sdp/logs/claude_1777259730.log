@@ -1,0 +1,10 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (290 chars)
+---
+
+```json
+[{"id":"a","description":"Create SQLite schema and `GenerationQueue` class skeleton: define `queue_items` table (id, idempotency_key UNIQUE, payload JSON, status, attempts, created_at, updated_at), connection/init helper that creates the DB file and applies schema idempotently, and a constructor accepting a db path.","tier":"T1"},
+{"id":"b","description":"Implement idempotent `enqueue(payload, idempotency_key)`: INSERT ... ON CONFLICT(idempotency_key) DO NOTHING, return the existing or newly-created row id, and write tests covering first-insert, duplicate-key no-op, and concurrent enqueue returning the same id.","tier":"T1"},
+{"id":"c","description":"Implement `dequeue()`/`mark_done()`/`mark_failed()` state transitions with attempts increment and updated_at refresh, using a single transaction to claim the next pending item; add tests for claim ordering (FIFO), retry-on-failure, and no double-claim.","tier":"T2"},
+{"id":"d","description":"Wire `GenerationQueue` into the generation pipeline entry point (replace any in-memory queue), add a small integration test that enqueues a job, runs the worker loop once, and asserts the row reaches `done`; update progress.md and run-log.md.","tier":"T2"}]
+```

@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3925 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+All 6 articulation tests pass, full suite (2739) clean. The implementation is correct — gate ranges, `dur_sec = gate_time × nominal`, and both contour adjustments (×0.92 repeated pitch, ×1.05 upward leap) are right.
+
+**Blocking issue**: `ArticulationRule` is not exported from `my-claw/tools/senseweave/render/rules/__init__.py` and is never called in the active pipeline — same wiring gap as the recurring hardening pattern. The rule is currently dead code at runtime.
+
+Minor notes: missing tests for invalid-style fallback and sub-threshold leap, and the `3.0` semitone threshold should be a named constant.

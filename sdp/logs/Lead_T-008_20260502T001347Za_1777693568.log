@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1385 chars)
+---
+
+Done. T-008@20260502T001347Za committed as `e4ed61d`.
+
+**Summary:**
+- Added `src/cypherclaw/narrative_api/main.py` — exposes module-level `app: FastAPI` (built via `create_app`) for `uvicorn cypherclaw.narrative_api.main:app`. The `/health` route is wired through the existing `app.py` factory.
+- Pinned `fastapi`, `uvicorn`, `pydantic-settings`, `structlog` under a new `narrative-api` optional dep group in `pyproject.toml` (kept out of the base install — only `partitura`/`librosa` belong to PromptClaw core).
+- Extended `tests/test_narrative_api_main.py` with two regression tests: module exposes a `FastAPI` instance and `/health` returns 200 with `status`/`version`.
+- Validation: `pytest tests/ -x` → **3905 passed, 3 skipped** (was 3903), `ruff check src/ tests/` clean, `mypy src/` clean.

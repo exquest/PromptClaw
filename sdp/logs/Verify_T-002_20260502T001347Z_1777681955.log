@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2745 chars)
+---
+
+**Verdict: PASS**
+
+Summary of findings:
+
+- **Correctness** — Primary AC satisfied: tailing from a checkpoint returns only newer events. Client-side deduplication guard prevents checkpoint event leaking through even if the backing store returns it. `next_event_id` preserves checkpoint when result is empty.
+- **Completeness** — 8 tests cover all key scenarios. One minor coverage gap: no explicit test for `limit` out-of-bounds 422 (FastAPI handles it automatically, but no test documents the contract).
+- **Consistency** — Mirrors the T-001 memory pattern exactly: injectable deps, lazy deploy-side import, 503/502 error split, Pydantic response models.
+- **Security** — Read-only GET, no secret exposure, FastAPI query validation, exceptions converted to safe HTTP detail strings.
+- **Quality** — 3830 passed, 3 skipped. ruff clean, mypy clean. Startup hardening anchors (49 tests) pass.
+
+Report committed at `sdp/verification/t-002@20260502t001347z-verify.md`.

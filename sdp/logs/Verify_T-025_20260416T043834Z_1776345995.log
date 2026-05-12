@@ -1,0 +1,16 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high -p -
+Prompt delivered via: stdin (3058 chars)
+---
+
+**Verdict: PASS**
+
+All acceptance criteria verified:
+
+- **13/13 targeted tests pass** — diagnostics, degradation tolerance, independent flag loading, curriculum gating, preview/critique gating, suite downshift, and docs assertions all green.
+- **2239/2239 total tests pass** — zero regressions.
+- **Startup identity hardening confirmed** — `bootstrap_identity()` precedes `FirstBootAnnouncer` at both `daemon.py:2464` and `cypherclaw_daemon.py:3543`; all 6 identity persistence/wiring tests pass.
+- **Operator diagnostics** cover all 7 authority files with graceful `unknown`/`unavailable` degradation on missing or corrupt state.
+- **Rollout docs** include safe rollout order, all 4 env var names, and all 8 rollback file paths, verified by the test suite directly.
+- **Security clean** — all `/tmp` reads are defensively wrapped; no user input reaches the status surface unsanitized.
+
+Verification report committed at `sdp/verification/t-025@20260416t043834z-verify.md`.

@@ -1,0 +1,22 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1287 chars)
+---
+
+T-012@20260425T183959Zb done.
+
+**End-to-end verification:**
+- New `my-claw/tools/composer_quote_verify.py` captures the known room descriptor (via `sample_capture_verify.capture_known_room_sound`), then drives 3 post-piece `self_quote()` calls against a fake JACK self bus pre-loaded with the same 220 Hz tone.
+- Each piece's score summary echoes the descriptor's `arc_phase=rest` / `mood=content` / `mode=solo` and passes the daemon's gate (`arc_payoff=0.85, click_count=0`).
+- Verifier queries `samples/self/` rows in `index.sqlite` and asserts at least one self-quote shares motif/tag overlap (`acoustic_tags ∩ arc_phase`) with the original descriptor; logs the overlap and source song id.
+
+**CLI smoke run output (`composer_quote_verify.py --capture-root /tmp/t012zb_smoke`):**
+- `descriptor_acoustic_tags=['warm','sustained']`
+- `pieces_run=3, self_quotes_captured=3`
+- `motif_tag_overlap=['warm','sustained']`, `match_song_id=piece-1`
+- Final line: `SELF_QUOTE_MATCH_OK`
+
+**Change committed (`a7f8769`):**
+- `my-claw/tools/composer_quote_verify.py` — verifier + CLI (`SELF_QUOTE_MATCH_OK` / `NO_SELF_QUOTES` / `NO_MOTIF_TAG_MATCH`)
+- `tests/test_composer_quote_verify.py` — 5 tests covering 3-piece capture count, motif/tag overlap, arc-phase divergence rejection, CLI happy path, and CLI failure path
+
+**Validation:** `pytest tests/ -x` 3299 passed, `ruff check src/ tests/` clean, `mypy src/` clean. (Pre-existing mypy warnings on `sample_capture_daemon.py:25,96` for optional `cypherclaw.first_boot` / `jack` imports unchanged; no new mypy issues introduced by `composer_quote_verify.py`.)

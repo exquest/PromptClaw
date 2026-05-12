@@ -1,0 +1,2439 @@
+Command: codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-5.3-codex-spark -c model_reasoning_effort=xhigh -
+Prompt delivered via: stdin (2017 chars)
+---
+
+Verification report written and committed at:
+
+- `sdp/verification/t-008@20260408t223256z-verify.md`
+
+Verification outcome: **FAIL** (blocking issue)
+
+Key finding:
+- Runtime never invokes `bootstrap_identity` on startup, so first-boot identity creation is not guaranteed in live boot flow. `FirstBootAnnouncer` only reads an existing identity and skips when missing.
+
+Validation run:
+- `pip install -e '.[dev]' && pytest tests/ -x` succeeded: **1448 passed**.
+
+Committed as:
+- `b10920a` (replacing earlier empty-report commit `f24ae3a`)
+
+--- STDERR ---
+OpenAI Codex v0.118.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.3-codex-spark
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019d6f7d-b141-7b02-9b18-a8bf3d982385
+--------
+user
+# Verification: Task T-008@20260408T223256Z
+
+**Task:** Add instance identity bootstrap for the R750 home: generate `instance_id`, auto-generate artistic `instance_name`, record creation metadata.
+**Tier:** T1
+
+You are the VERIFY agent for this task. The LEAD agent has completed their work.
+
+## Acceptance Criteria
+
+- First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating
+
+## Review Checklist
+
+1. **Review recent commits:**
+   ```bash
+   git log --oneline -5
+   git diff HEAD~3 --stat
+   ```
+
+2. **Review code changes:**
+   ```bash
+   git diff HEAD~3
+   ```
+
+4. **Check ESCALATIONS.md** for any flagged issues.
+
+5. **Run the test suite:**
+   ```bash
+   pip install -e '.[dev]' && pytest tests/ -x
+   ```
+
+## Evaluation Criteria
+
+Evaluate the work against these five dimensions:
+
+1. **Correctness**: Does the output match the requirements/spec?
+2. **Completeness**: Are there gaps, missing edge cases, or unhandled scenarios?
+3. **Consistency**: Does the output follow established patterns and conventions?
+4. **Security**: Are there vulnerabilities, leaked secrets, or unsafe practices?
+5. **Quality**: Does the output meet the quality gates for this phase?
+
+## Output
+
+Write your verification report and all findings to this exact path:
+`sdp/verification/t-008@20260408t223256z-verify.md`
+Do not use a different filename or directory.
+
+Use this format:
+
+```markdown
+# Verification Report — T-008@20260408T223256Z
+
+**Verify Agent:** [your agent name]
+**Date:** [today]
+**Artifacts Reviewed:** [list files reviewed]
+
+## Correctness
+[assessment]
+
+## Completeness
+[assessment]
+
+## Consistency
+[assessment]
+
+## Security
+[assessment]
+
+## Quality
+[assessment]
+
+## Issues Found
+- [ ] [Issue — severity: blocking/minor]
+
+## Verdict: [PASS | PASS WITH NOTES | FAIL]
+
+## Notes for Lead Agent
+[specific items to address]
+```
+
+Commit the verification report.
+
+codex
+I’ll verify the three-commit window, inspect the identity bootstrap changes, check `ESCALATIONS.md`, run the requested test suite, and then write the report at `sdp/verification/t-008@20260408t223256z-verify.md` and commit it.
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && git log --oneline -5' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+75b6368 feat(identity): add instance identity bootstrap with artistic names [T-008@20260408T223256Z]
+9511f74 verify(T-007): PASS — ollama fallback exclusion verified, 1437 tests green
+46adfa5 fix(agent-selector): exclude unhealthy ollama fallback [T-007@20260408T223256Z]
+e03e50c verify(T-006): PASS — ollama health helpers verified, 1436 tests green
+f074bde fix(ollama): add health helpers [T-006@20260408T223256Z]
+
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && git diff HEAD~3 --stat' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ CHANGELOG.md                                      |   18 +
+ ESCALATIONS.md                                    |   12 +
+ docs/architecture.md                              |   14 +-
+ docs/command-reference.md                         |   52 +-
+ docs/handoff-protocol.md                          |   13 +-
+ docs/startup-wizard.md                            |    9 +-
+ my-claw/systemd/cypherclaw-sdp-runner.service     |   14 +-
+ my-claw/tools/agent_selector.py                   |    4 +-
+ my-claw/tools/context_pulse.py                    |   13 +-
+ my-claw/tools/cypherclaw_daemon.py                | 1350 ++++++++++++++++++---
+ my-claw/tools/dashboard_generator.py              |   11 +-
+ my-claw/tools/first_boot.py                       |   78 +-
+ my-claw/tools/gallery/fb_renderer.py              |   32 +-
+ my-claw/tools/gallery/gallery_display.py          |   60 +-
+ my-claw/tools/glyphweave/pet_sprites.py           |   30 +-
+ my-claw/tools/init_workdir.sh                     |    2 +-
+ my-claw/tools/preflight.py                        |   18 +
+ my-claw/tools/quota_monitor.py                    |   83 +-
+ my-claw/tools/researcher.py                       |   14 +-
+ my-claw/tools/safe_reboot.sh                      |    5 +-
+ my-claw/tools/sdp_runner_launcher.sh              |   38 +-
+ my-claw/tools/server_health.py                    |   16 +
+ my-claw/tools/tamagotchi.py                       |    4 +-
+ my-claw/tools/telegram.py                         |   50 +
+ pyproject.toml                                    |    1 +
+ sdp/verification/t-007@20260408t223256z-verify.md |   65 +
+ src/cypherclaw/__init__.py                        |   17 +-
+ src/cypherclaw/first_boot.py                      |   78 +-
+ tests/test_agent_selector_quota.py                |   36 +
+ tests/test_daemon_fallback.py                     |  756 +++++++++++-
+ tests/test_first_boot.py                          |  114 ++
+ tests/test_gallery.py                             |   49 +-
+ tests/test_glyphweave_runtime.py                  |    2 +
+ tests/test_preflight.py                           |   15 +
+ tests/test_quota_monitor.py                       |   26 +-
+ tests/test_resilience_runtime_scripts.py          |  267 +++-
+ tests/test_server_health.py                       |   10 +
+ tests/test_tamagotchi_runtime.py                  |    8 +
+ tests/test_telegram_runtime.py                    |   74 ++
+ 39 files changed, 3215 insertions(+), 243 deletions(-)
+
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && test -f ESCALATIONS.md && cat ESCALATIONS.md || echo 'ESCALATIONS.md not found'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+# Escalations
+
+Items requiring human review. Append-only per task.
+
+## T-001 (2026-04-01T18:55:24.984659+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-001 (2026-04-01T18:56:11.434931+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-001 (2026-04-01T18:56:41.692113+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-009@20260408T220341Z (2026-04-08T22:12:54.185469+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=85.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=85.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=85.0%
+
+## T-001@20260408T223256Z (2026-04-08T22:33:10.555043+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+
+## T-001@20260408T223256Z (2026-04-08T23:10:00+00:00)
+
+- **Reason:** Validation blocked by pre-existing repo issues
+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+
+## T-004@20260408T223256Z (2026-04-08T23:05:05.007269+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+
+## T-004@20260408T223256Z (2026-04-09T00:14:00+00:00)
+
+- **Reason:** Scope constraint on orchestration docs
+- **Details:** `AGENTS.md` asks for architecture/command/startup/changelog updates on orchestration changes, but this task also constrained edits to the bug-fix scope and those doc files already had unrelated local modifications. I limited the change set to the Ollama routing fix plus regression coverage and did not modify the product docs in this task.
+
+## T-007@20260408T223256Z (2026-04-08T23:29:49.940049+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=83.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=83.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=83.0%
+
+## T-007@20260408T223256Z (2026-04-08T23:37:23Z)
+
+- **Reason:** Shared local-provider health granularity
+- **Details:** The selector now excludes `ollama` when every configured Ollama route port is unhealthy and re-admits it when any configured port recovers. Health is tracked at the shared local-provider level, so a single-socket outage can still leave `ollama` eligible for categories routed to the down socket if another configured socket remains healthy.
+
+codex
+I’ve captured the recent commit history and escalations context. Next I’m inspecting the identity bootstrap implementation and related tests to validate each acceptance criterion before I run the requested full test command.
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && git show --stat --oneline --name-status HEAD' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+75b6368 feat(identity): add instance identity bootstrap with artistic names [T-008@20260408T223256Z]
+M	my-claw/tools/first_boot.py
+M	src/cypherclaw/__init__.py
+M	src/cypherclaw/first_boot.py
+M	tests/test_first_boot.py
+
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && git show -- src/cypherclaw/first_boot.py src/cypherclaw/__init__.py tests/test_first_boot.py my-claw/tools/first_boot.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+commit 75b63687681b1ba56d469786c8d163565e1d47b4
+Author: Anthony Ainsworth <anthony@cascadiantech.com>
+Date:   Wed Apr 8 16:46:06 2026 -0700
+
+    feat(identity): add instance identity bootstrap with artistic names [T-008@20260408T223256Z]
+    
+    - Add word-list-based artistic name generator (50 adjectives × 50 nouns)
+    - Add bootstrap_identity() for idempotent load-or-create on first boot
+    - Update default identity path to ~/.promptclaw/identity.json
+    - mint_identity() now generates artistic names instead of hex suffixes
+    - 11 new tests covering name generation, bootstrap lifecycle, and edge cases
+    
+    Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+diff --git a/my-claw/tools/first_boot.py b/my-claw/tools/first_boot.py
+index b491fd9..3609226 100644
+--- a/my-claw/tools/first_boot.py
++++ b/my-claw/tools/first_boot.py
+@@ -14,6 +14,7 @@ from __future__ import annotations
+ 
+ import json
+ import logging
++import random
+ import uuid
+ from dataclasses import asdict, dataclass, field
+ from datetime import datetime, timezone
+@@ -25,8 +26,47 @@ log = logging.getLogger("cypherclaw.first_boot")
+ Mode = Literal["standalone", "federated"]
+ 
+ # Default paths — overridable for testing via constructor args.
+-_DEFAULT_IDENTITY_PATH = Path("/home/user/cypherclaw/.promptclaw/identity.json")
+-_DEFAULT_ANNOUNCED_PATH = Path("/home/user/cypherclaw/.promptclaw/.first_boot_announced")
++_DEFAULT_IDENTITY_PATH = Path.home() / ".promptclaw" / "identity.json"
++_DEFAULT_ANNOUNCED_PATH = Path.home() / ".promptclaw" / ".first_boot_announced"
++
++# ── Artistic name generator ────────────────────────────────────
++
++_ADJECTIVES: tuple[str, ...] = (
++    "amber", "arcane", "astral", "blazing", "cobalt",
++    "crimson", "crystal", "dappled", "drifting", "dusted",
++    "echoing", "ember", "fading", "ferric", "flickering",
++    "gilded", "glinting", "hollow", "hushed", "ivory",
++    "jade", "latticed", "liminal", "lucid", "midnight",
++    "molten", "mossy", "nebula", "obsidian", "onyx",
++    "opal", "pearlescent", "phantom", "prismatic", "quilted",
++    "radiant", "rippled", "rusted", "sapphire", "shimmering",
++    "silken", "smoldering", "spectral", "tidal", "twilight",
++    "umbral", "veiled", "verdant", "woven", "zephyr",
++)
++
++_NOUNS: tuple[str, ...] = (
++    "anvil", "archive", "basilisk", "beacon", "cairn",
++    "canopy", "chimera", "citadel", "conduit", "crucible",
++    "drake", "ember", "falcon", "forge", "furnace",
++    "garnet", "glyph", "grotto", "harbor", "hearth",
++    "heron", "junction", "kiln", "labyrinth", "lantern",
++    "lattice", "loom", "monolith", "nexus", "obelisk",
++    "oracle", "parchment", "pinnacle", "prism", "quarry",
++    "raven", "relay", "ridge", "sanctum", "sentinel",
++    "shard", "sigil", "spire", "terrace", "thorn",
++    "totem", "turret", "vault", "vortex", "wellspring",
++)
++
++
++def generate_artistic_name(*, rng: random.Random | None = None) -> str:
++    """Generate an artistic instance name from word lists.
++
++    Returns a name like ``"molten-sigil"`` or ``"twilight-beacon"``.
++    """
++    r = rng or random.Random()  # noqa: S311
++    adj = r.choice(_ADJECTIVES)
++    noun = r.choice(_NOUNS)
++    return f"{adj}-{noun}"
+ 
+ 
+ @dataclass
+@@ -169,7 +209,7 @@ def mint_identity(
+     """Create and persist a new instance identity (IDLINE-002)."""
+     identity = InstanceIdentity(
+         instance_id=str(uuid.uuid4()),
+-        instance_name=instance_name or f"home-{uuid.uuid4().hex[:8]}",
++        instance_name=instance_name or generate_artistic_name(),
+         mode=mode,
+         created_at=datetime.now(timezone.utc).isoformat(),
+         release=release,
+@@ -179,3 +219,35 @@ def mint_identity(
+     identity_path.parent.mkdir(parents=True, exist_ok=True)
+     identity_path.write_text(json.dumps(identity.to_dict(), indent=2))
+     return identity
++
++
++def bootstrap_identity(
++    *,
++    mode: Mode = "standalone",
++    release: str = "",
++    parent_id: str | None = None,
++    identity_path: Path = _DEFAULT_IDENTITY_PATH,
++) -> InstanceIdentity:
++    """Load an existing identity or mint a new one on first boot.
++
++    If *identity_path* already contains a valid identity record it is
++    returned as-is.  Otherwise a fresh identity is minted, persisted,
++    and returned.
++    """
++    if identity_path.exists():
++        try:
++            payload = json.loads(identity_path.read_text())
++            identity = InstanceIdentity.from_dict(payload)
++            log.info("Loaded existing identity %s (%s)", identity.instance_id, identity.instance_name)
++            return identity
++        except (json.JSONDecodeError, KeyError, TypeError) as exc:
++            log.warning("Corrupt identity file, minting fresh: %s", exc)
++
++    identity = mint_identity(
++        mode=mode,
++        release=release,
++        parent_id=parent_id,
++        identity_path=identity_path,
++    )
++    log.info("Minted new identity %s (%s)", identity.instance_id, identity.instance_name)
++    return identity
+diff --git a/src/cypherclaw/__init__.py b/src/cypherclaw/__init__.py
+index a2eff01..c1d6632 100644
+--- a/src/cypherclaw/__init__.py
++++ b/src/cypherclaw/__init__.py
+@@ -1,6 +1,19 @@
+ """CypherClaw package compatibility surface during the src migration."""
+ 
+-from .first_boot import FirstBootAnnouncer, InstanceIdentity, mint_identity
++from .first_boot import (
++    FirstBootAnnouncer,
++    InstanceIdentity,
++    bootstrap_identity,
++    generate_artistic_name,
++    mint_identity,
++)
+ 
+-__all__ = ["FirstBootAnnouncer", "InstanceIdentity", "mint_identity", "__version__"]
++__all__ = [
++    "FirstBootAnnouncer",
++    "InstanceIdentity",
++    "__version__",
++    "bootstrap_identity",
++    "generate_artistic_name",
++    "mint_identity",
++]
+ __version__ = "3.0.0"
+diff --git a/src/cypherclaw/first_boot.py b/src/cypherclaw/first_boot.py
+index daec76f..0f5d31b 100644
+--- a/src/cypherclaw/first_boot.py
++++ b/src/cypherclaw/first_boot.py
+@@ -9,6 +9,7 @@ from __future__ import annotations
+ 
+ import json
+ import logging
++import random
+ import uuid
+ from dataclasses import asdict, dataclass, field
+ from datetime import datetime, timezone
+@@ -19,8 +20,47 @@ log = logging.getLogger("cypherclaw.first_boot")
+ 
+ Mode = Literal["standalone", "federated"]
+ 
+-_DEFAULT_IDENTITY_PATH = Path("/home/user/cypherclaw/.promptclaw/identity.json")
+-_DEFAULT_ANNOUNCED_PATH = Path("/home/user/cypherclaw/.promptclaw/.first_boot_announced")
++_DEFAULT_IDENTITY_PATH = Path.home() / ".promptclaw" / "identity.json"
++_DEFAULT_ANNOUNCED_PATH = Path.home() / ".promptclaw" / ".first_boot_announced"
++
++# ── Artistic name generator ────────────────────────────────────
++
++_ADJECTIVES: tuple[str, ...] = (
++    "amber", "arcane", "astral", "blazing", "cobalt",
++    "crimson", "crystal", "dappled", "drifting", "dusted",
++    "echoing", "ember", "fading", "ferric", "flickering",
++    "gilded", "glinting", "hollow", "hushed", "ivory",
++    "jade", "latticed", "liminal", "lucid", "midnight",
++    "molten", "mossy", "nebula", "obsidian", "onyx",
++    "opal", "pearlescent", "phantom", "prismatic", "quilted",
++    "radiant", "rippled", "rusted", "sapphire", "shimmering",
++    "silken", "smoldering", "spectral", "tidal", "twilight",
++    "umbral", "veiled", "verdant", "woven", "zephyr",
++)
++
++_NOUNS: tuple[str, ...] = (
++    "anvil", "archive", "basilisk", "beacon", "cairn",
++    "canopy", "chimera", "citadel", "conduit", "crucible",
++    "drake", "ember", "falcon", "forge", "furnace",
++    "garnet", "glyph", "grotto", "harbor", "hearth",
++    "heron", "junction", "kiln", "labyrinth", "lantern",
++    "lattice", "loom", "monolith", "nexus", "obelisk",
++    "oracle", "parchment", "pinnacle", "prism", "quarry",
++    "raven", "relay", "ridge", "sanctum", "sentinel",
++    "shard", "sigil", "spire", "terrace", "thorn",
++    "totem", "turret", "vault", "vortex", "wellspring",
++)
++
++
++def generate_artistic_name(*, rng: random.Random | None = None) -> str:
++    """Generate an artistic instance name from word lists.
++
++    Returns a name like ``"molten-sigil"`` or ``"twilight-beacon"``.
++    """
++    r = rng or random.Random()  # noqa: S311
++    adj = r.choice(_ADJECTIVES)
++    noun = r.choice(_NOUNS)
++    return f"{adj}-{noun}"
+ 
+ 
+ @dataclass
+@@ -132,7 +172,7 @@ def mint_identity(
+     """Create and persist a new instance identity."""
+     identity = InstanceIdentity(
+         instance_id=str(uuid.uuid4()),
+-        instance_name=instance_name or f"home-{uuid.uuid4().hex[:8]}",
++        instance_name=instance_name or generate_artistic_name(),
+         mode=mode,
+         created_at=datetime.now(timezone.utc).isoformat(),
+         release=release,
+@@ -142,3 +182,35 @@ def mint_identity(
+     identity_path.parent.mkdir(parents=True, exist_ok=True)
+     identity_path.write_text(json.dumps(identity.to_dict(), indent=2))
+     return identity
++
++
++def bootstrap_identity(
++    *,
++    mode: Mode = "standalone",
++    release: str = "",
++    parent_id: str | None = None,
++    identity_path: Path = _DEFAULT_IDENTITY_PATH,
++) -> InstanceIdentity:
++    """Load an existing identity or mint a new one on first boot.
++
++    If *identity_path* already contains a valid identity record it is
++    returned as-is.  Otherwise a fresh identity is minted, persisted,
++    and returned.
++    """
++    if identity_path.exists():
++        try:
++            payload = json.loads(identity_path.read_text())
++            identity = InstanceIdentity.from_dict(payload)
++            log.info("Loaded existing identity %s (%s)", identity.instance_id, identity.instance_name)
++            return identity
++        except (json.JSONDecodeError, KeyError, TypeError) as exc:
++            log.warning("Corrupt identity file, minting fresh: %s", exc)
++
++    identity = mint_identity(
++        mode=mode,
++        release=release,
++        parent_id=parent_id,
++        identity_path=identity_path,
++    )
++    log.info("Minted new identity %s (%s)", identity.instance_id, identity.instance_name)
++    return identity
+diff --git a/tests/test_first_boot.py b/tests/test_first_boot.py
+index 00a3bc1..63e4b4a 100644
+--- a/tests/test_first_boot.py
++++ b/tests/test_first_boot.py
+@@ -16,6 +16,8 @@ sys.path.insert(0, "/home/user/cypherclaw/src")
+ 
+ from cypherclaw.first_boot import (
+     FirstBootAnnouncer,
++    bootstrap_identity,
++    generate_artistic_name,
+     mint_identity,
+ )
+ 
+@@ -364,3 +366,115 @@ class TestFullIntegration:
+         assert announcer.maybe_announce() is None
+         mock_fn.assert_not_called()
+         assert not announced_path.exists()
++
++
++# ── Artistic name generation ───────────────────────────────────
++
++
++class TestGenerateArtisticName:
++    """Tests for the artistic instance name generator."""
++
++    def test_returns_adjective_dash_noun(self):
++        name = generate_artistic_name()
++        parts = name.split("-")
++        assert len(parts) == 2, f"Expected 'adjective-noun', got {name!r}"
++
++    def test_deterministic_with_seed(self):
++        import random
++
++        rng = random.Random(42)
++        name1 = generate_artistic_name(rng=rng)
++        rng2 = random.Random(42)
++        name2 = generate_artistic_name(rng=rng2)
++        assert name1 == name2
++
++    def test_different_seeds_produce_different_names(self):
++        import random
++
++        name1 = generate_artistic_name(rng=random.Random(1))
++        name2 = generate_artistic_name(rng=random.Random(999))
++        assert name1 != name2
++
++    def test_name_uses_lowercase_alpha(self):
++        import random
++
++        for seed in range(50):
++            name = generate_artistic_name(rng=random.Random(seed))
++            assert name == name.lower()
++            assert all(c.isalpha() or c == "-" for c in name)
++
++    def test_mint_identity_uses_artistic_name(self, tmp_path):
++        """mint_identity without explicit name should use an artistic name."""
++        path = tmp_path / "identity.json"
++        identity = mint_identity(identity_path=path)
++        parts = identity.instance_name.split("-")
++        assert len(parts) == 2
++        assert all(part.isalpha() for part in parts)
++
++
++# ── bootstrap_identity ─────────────────────────────────────────
++
++
++class TestBootstrapIdentity:
++    """Tests for the load-or-create bootstrap_identity function."""
++
++    def test_creates_new_on_first_boot(self, tmp_path):
++        path = tmp_path / "identity.json"
++        identity = bootstrap_identity(identity_path=path)
++
++        assert path.exists()
++        assert identity.instance_id
++        assert identity.instance_name
++        assert identity.mode == "standalone"
++
++    def test_loads_existing_on_subsequent_boot(self, tmp_path):
++        path = tmp_path / "identity.json"
++        first = bootstrap_identity(identity_path=path)
++        second = bootstrap_identity(identity_path=path)
++
++        assert first.instance_id == second.instance_id
++        assert first.instance_name == second.instance_name
++        assert first.created_at == second.created_at
++
++    def test_does_not_overwrite_existing(self, tmp_path):
++        path = tmp_path / "identity.json"
++        _write_identity(path, mode="federated", instance_id="keep-me",
++                        instance_name="precious-artifact")
++
++        identity = bootstrap_identity(identity_path=path)
++
++        assert identity.instance_id == "keep-me"
++        assert identity.instance_name == "precious-artifact"
++        assert identity.mode == "federated"
++
++    def test_recovers_from_corrupt_file(self, tmp_path):
++        path = tmp_path / "identity.json"
++        path.write_text("{corrupt json!!")
++
++        identity = bootstrap_identity(identity_path=path)
++
++        assert identity.instance_id  # fresh identity minted
++        assert path.exists()
++        data = json.loads(path.read_text())
++        assert data["instance_id"] == identity.instance_id
++
++    def test_creates_parent_directory(self, tmp_path):
++        path = tmp_path / "nested" / "deep" / "identity.json"
++        identity = bootstrap_identity(identity_path=path)
++
++        assert path.exists()
++        assert identity.instance_id
++
++    def test_preserves_mode_and_release(self, tmp_path):
++        path = tmp_path / "identity.json"
++        identity = bootstrap_identity(
++            mode="federated",
++            release="3.0.0",
++            parent_id="parent-abc",
++            identity_path=path,
++        )
++
++        assert identity.mode == "federated"
++        assert identity.release == "3.0.0"
++        assert identity.parent_id == "parent-abc"
++        assert identity.clone_timestamp is not None
+
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && git show -- my-claw/tools/first_boot.py my-claw/tools/init_workdir.sh my-claw/tools/preflight.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+commit 75b63687681b1ba56d469786c8d163565e1d47b4
+Author: Anthony Ainsworth <anthony@cascadiantech.com>
+Date:   Wed Apr 8 16:46:06 2026 -0700
+
+    feat(identity): add instance identity bootstrap with artistic names [T-008@20260408T223256Z]
+    
+    - Add word-list-based artistic name generator (50 adjectives × 50 nouns)
+    - Add bootstrap_identity() for idempotent load-or-create on first boot
+    - Update default identity path to ~/.promptclaw/identity.json
+    - mint_identity() now generates artistic names instead of hex suffixes
+    - 11 new tests covering name generation, bootstrap lifecycle, and edge cases
+    
+    Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+diff --git a/my-claw/tools/first_boot.py b/my-claw/tools/first_boot.py
+index b491fd9..3609226 100644
+--- a/my-claw/tools/first_boot.py
++++ b/my-claw/tools/first_boot.py
+@@ -14,6 +14,7 @@ from __future__ import annotations
+ 
+ import json
+ import logging
++import random
+ import uuid
+ from dataclasses import asdict, dataclass, field
+ from datetime import datetime, timezone
+@@ -25,8 +26,47 @@ log = logging.getLogger("cypherclaw.first_boot")
+ Mode = Literal["standalone", "federated"]
+ 
+ # Default paths — overridable for testing via constructor args.
+-_DEFAULT_IDENTITY_PATH = Path("/home/user/cypherclaw/.promptclaw/identity.json")
+-_DEFAULT_ANNOUNCED_PATH = Path("/home/user/cypherclaw/.promptclaw/.first_boot_announced")
++_DEFAULT_IDENTITY_PATH = Path.home() / ".promptclaw" / "identity.json"
++_DEFAULT_ANNOUNCED_PATH = Path.home() / ".promptclaw" / ".first_boot_announced"
++
++# ── Artistic name generator ────────────────────────────────────
++
++_ADJECTIVES: tuple[str, ...] = (
++    "amber", "arcane", "astral", "blazing", "cobalt",
++    "crimson", "crystal", "dappled", "drifting", "dusted",
++    "echoing", "ember", "fading", "ferric", "flickering",
++    "gilded", "glinting", "hollow", "hushed", "ivory",
++    "jade", "latticed", "liminal", "lucid", "midnight",
++    "molten", "mossy", "nebula", "obsidian", "onyx",
++    "opal", "pearlescent", "phantom", "prismatic", "quilted",
++    "radiant", "rippled", "rusted", "sapphire", "shimmering",
++    "silken", "smoldering", "spectral", "tidal", "twilight",
++    "umbral", "veiled", "verdant", "woven", "zephyr",
++)
++
++_NOUNS: tuple[str, ...] = (
++    "anvil", "archive", "basilisk", "beacon", "cairn",
++    "canopy", "chimera", "citadel", "conduit", "crucible",
++    "drake", "ember", "falcon", "forge", "furnace",
++    "garnet", "glyph", "grotto", "harbor", "hearth",
++    "heron", "junction", "kiln", "labyrinth", "lantern",
++    "lattice", "loom", "monolith", "nexus", "obelisk",
++    "oracle", "parchment", "pinnacle", "prism", "quarry",
++    "raven", "relay", "ridge", "sanctum", "sentinel",
++    "shard", "sigil", "spire", "terrace", "thorn",
++    "totem", "turret", "vault", "vortex", "wellspring",
++)
++
++
++def generate_artistic_name(*, rng: random.Random | None = None) -> str:
++    """Generate an artistic instance name from word lists.
++
++    Returns a name like ``"molten-sigil"`` or ``"twilight-beacon"``.
++    """
++    r = rng or random.Random()  # noqa: S311
++    adj = r.choice(_ADJECTIVES)
++    noun = r.choice(_NOUNS)
++    return f"{adj}-{noun}"
+ 
+ 
+ @dataclass
+@@ -169,7 +209,7 @@ def mint_identity(
+     """Create and persist a new instance identity (IDLINE-002)."""
+     identity = InstanceIdentity(
+         instance_id=str(uuid.uuid4()),
+-        instance_name=instance_name or f"home-{uuid.uuid4().hex[:8]}",
++        instance_name=instance_name or generate_artistic_name(),
+         mode=mode,
+         created_at=datetime.now(timezone.utc).isoformat(),
+         release=release,
+@@ -179,3 +219,35 @@ def mint_identity(
+     identity_path.parent.mkdir(parents=True, exist_ok=True)
+     identity_path.write_text(json.dumps(identity.to_dict(), indent=2))
+     return identity
++
++
++def bootstrap_identity(
++    *,
++    mode: Mode = "standalone",
++    release: str = "",
++    parent_id: str | None = None,
++    identity_path: Path = _DEFAULT_IDENTITY_PATH,
++) -> InstanceIdentity:
++    """Load an existing identity or mint a new one on first boot.
++
++    If *identity_path* already contains a valid identity record it is
++    returned as-is.  Otherwise a fresh identity is minted, persisted,
++    and returned.
++    """
++    if identity_path.exists():
++        try:
++            payload = json.loads(identity_path.read_text())
++            identity = InstanceIdentity.from_dict(payload)
++            log.info("Loaded existing identity %s (%s)", identity.instance_id, identity.instance_name)
++            return identity
++        except (json.JSONDecodeError, KeyError, TypeError) as exc:
++            log.warning("Corrupt identity file, minting fresh: %s", exc)
++
++    identity = mint_identity(
++        mode=mode,
++        release=release,
++        parent_id=parent_id,
++        identity_path=identity_path,
++    )
++    log.info("Minted new identity %s (%s)", identity.instance_id, identity.instance_name)
++    return identity
+
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && rg -n \"bootstrap_identity|mint_identity\\(|load_or|instance_name|identity.json|FirstBoot\" src my-claw tests" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+src/cypherclaw/first_boot.py:23:_DEFAULT_IDENTITY_PATH = Path.home() / ".promptclaw" / "identity.json"
+src/cypherclaw/first_boot.py:71:    instance_name: str
+src/cypherclaw/first_boot.py:86:            instance_name=payload["instance_name"],
+src/cypherclaw/first_boot.py:101:        "instance_name": identity.instance_name,
+src/cypherclaw/first_boot.py:114:class FirstBootAnnouncer:
+src/cypherclaw/first_boot.py:164:def mint_identity(
+src/cypherclaw/first_boot.py:167:    instance_name: str = "",
+src/cypherclaw/first_boot.py:175:        instance_name=instance_name or generate_artistic_name(),
+src/cypherclaw/first_boot.py:187:def bootstrap_identity(
+src/cypherclaw/first_boot.py:204:            log.info("Loaded existing identity %s (%s)", identity.instance_id, identity.instance_name)
+src/cypherclaw/first_boot.py:209:    identity = mint_identity(
+src/cypherclaw/first_boot.py:215:    log.info("Minted new identity %s (%s)", identity.instance_id, identity.instance_name)
+src/cypherclaw/__init__.py:4:    FirstBootAnnouncer,
+src/cypherclaw/__init__.py:6:    bootstrap_identity,
+src/cypherclaw/__init__.py:12:    "FirstBootAnnouncer",
+src/cypherclaw/__init__.py:15:    "bootstrap_identity",
+tests/test_first_boot.py:18:    FirstBootAnnouncer,
+tests/test_first_boot.py:19:    bootstrap_identity,
+tests/test_first_boot.py:32:        "instance_name": overrides.get("instance_name", "test-home"),
+tests/test_first_boot.py:45:    """Build a FirstBootAnnouncer wired to tmp_path with a mock announce_fn."""
+tests/test_first_boot.py:46:    identity_path = tmp_path / "identity.json"
+tests/test_first_boot.py:55:    announcer = FirstBootAnnouncer(
+tests/test_first_boot.py:84:            instance_name="my-home",
+tests/test_first_boot.py:94:        assert payload["instance_name"] == "my-home"
+tests/test_first_boot.py:173:        announcer2 = FirstBootAnnouncer(
+tests/test_first_boot.py:204:        announcer3 = FirstBootAnnouncer(
+tests/test_first_boot.py:221:        announcer = FirstBootAnnouncer(
+tests/test_first_boot.py:233:        identity_path = tmp_path / "identity.json"
+tests/test_first_boot.py:236:        announcer = FirstBootAnnouncer(
+tests/test_first_boot.py:249:        identity_path = tmp_path / "identity.json"
+tests/test_first_boot.py:253:        announcer = FirstBootAnnouncer(
+tests/test_first_boot.py:272:        id1 = mint_identity(identity_path=tmp_path / "id1.json")
+tests/test_first_boot.py:273:        id2 = mint_identity(identity_path=tmp_path / "id2.json")
+tests/test_first_boot.py:277:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:278:        identity = mint_identity(mode="federated", release="2.1.0", identity_path=path)
+tests/test_first_boot.py:286:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:287:        identity = mint_identity(
+tests/test_first_boot.py:297:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:298:        identity = mint_identity(mode="standalone", identity_path=path)
+tests/test_first_boot.py:311:        identity_path = tmp_path / "identity.json"
+tests/test_first_boot.py:315:        identity = mint_identity(
+tests/test_first_boot.py:326:        announcer = FirstBootAnnouncer(
+tests/test_first_boot.py:340:        announcer2 = FirstBootAnnouncer(
+tests/test_first_boot.py:349:        identity_path = tmp_path / "identity.json"
+tests/test_first_boot.py:353:        mint_identity(
+tests/test_first_boot.py:361:        announcer = FirstBootAnnouncer(
+tests/test_first_boot.py:408:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:409:        identity = mint_identity(identity_path=path)
+tests/test_first_boot.py:410:        parts = identity.instance_name.split("-")
+tests/test_first_boot.py:415:# ── bootstrap_identity ─────────────────────────────────────────
+tests/test_first_boot.py:419:    """Tests for the load-or-create bootstrap_identity function."""
+tests/test_first_boot.py:422:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:423:        identity = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:427:        assert identity.instance_name
+tests/test_first_boot.py:431:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:432:        first = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:433:        second = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:436:        assert first.instance_name == second.instance_name
+tests/test_first_boot.py:440:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:442:                        instance_name="precious-artifact")
+tests/test_first_boot.py:444:        identity = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:447:        assert identity.instance_name == "precious-artifact"
+tests/test_first_boot.py:451:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:454:        identity = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:462:        path = tmp_path / "nested" / "deep" / "identity.json"
+tests/test_first_boot.py:463:        identity = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:469:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:470:        identity = bootstrap_identity(
+my-claw/tools/daemon.py:102:from cypherclaw.first_boot import FirstBootAnnouncer
+my-claw/tools/daemon.py:2445:    _announcer = FirstBootAnnouncer(announce_fn=lambda payload: tg_send(
+my-claw/tools/daemon.py:2446:        f"🌐 Federation announcement: {payload['instance_name']} is online "
+my-claw/sdp/prd-r750-ollama-integration.md:24:| R750-010 | Add instance identity bootstrap for the R750 home: generate `instance_id`, auto-generate artistic `instance_name`, record creation metadata. | MUST | T1 | - First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating |
+my-claw/sdp/prd-instance-identity-and-lineage.md:18:| IDLINE-001 | Define a canonical home identity record containing `instance_id`, `instance_name`, creation timestamp, mode, version/release, and capability summary. | MUST | T1 | - Identity record has a documented schema<br/>- Runtime reads and writes one canonical identity file<br/>- Identity survives reboot and upgrade |
+my-claw/sdp/prd-instance-identity-and-lineage.md:20:| IDLINE-003 | Auto-generate an artistic `instance_name` during install/clone and support optional later rename with rename-history retention. | MUST | T1 | - New homes receive an auto-generated name<br/>- Operators can rename later<br/>- Prior names remain visible in audit/lineage history |
+my-claw/sdp/prd-clone-and-home-creation.md:18:2. Every home gets an auto-generated artistic `instance_name`, optionally renamed later.
+my-claw/sdp/prd-artist-plan-completion.md:17:| APC-003 | Implement visitor identification by running face detection and embedding match against the observer camera frame at a configurable interval. | MUST | T2 | - Reads `/tmp/observer_frame.jpg` on schedule<br/>- Publishes identity result to `/tmp/visitor_identity.json`<br/>- Handles missing frame, no faces, and multiple faces gracefully |
+my-claw/sdp/prd-artist-plan-completion.md:18:| APC-004 | Amend `inner_life/world_model.py` to read `/tmp/visitor_identity.json` and populate `visitor_name` and `visitor_confidence` fields on WorldModel. | MUST | T2 | - WorldModel exposes visitor identity with staleness tracking<br/>- Falls back to `someone_here` boolean when identity unavailable<br/>- Tests cover known person, unknown visitor, and stale/missing file |
+my-claw/sdp/prd-federation.md:43:Public identity stored in `.promptclaw/federation/identity.json`.
+my-claw/sdp/prd-federation.md:125:| FD-001 | Create `promptclaw/federation/identity.py` — Ed25519 keypair generation on first init. Store private key in `.promptclaw/federation/identity.key`, public identity in `identity.json`. Sign and verify message functions. Use `cryptography` library. | T1 |
+my-claw/sdp/prd-narrative-engine.md:109:Create `characters.py` with Character dataclass (id, name, want, need, awareness_score, arc_type, arc_position, Big Five personality traits, archetype_roles, conflicts, visual_tokens, signature_colors). CharacterEngine class with: load_or_create_cast() (creates 2+ characters if empty, seeding from archetypes), select_active_characters(beat_context), advance_character(character, event), voice_params(character). Starter cast: 3 abstract characters + 4 pet-mapped characters (7 total).
+my-claw/sdp/prd-narrative-engine.md:163:| NE-010 | Create `tools/narrative/characters.py` — Character dataclass with Big Five personality, want/need, awareness_score, arc_type, archetype_roles, conflicts, visual_tokens. CharacterEngine: load_or_create_cast (seeds 3 abstract + 4 pet-mapped characters), select_active_characters, advance_character, voice_params. | T2 | NE-005, NE-007 |
+my-claw/tools/first_boot.py:29:_DEFAULT_IDENTITY_PATH = Path.home() / ".promptclaw" / "identity.json"
+my-claw/tools/first_boot.py:77:    instance_name: str
+my-claw/tools/first_boot.py:92:            instance_name=d["instance_name"],
+my-claw/tools/first_boot.py:115:        "instance_name": identity.instance_name,
+my-claw/tools/first_boot.py:125:class FirstBootAnnouncer:
+my-claw/tools/first_boot.py:201:def mint_identity(
+my-claw/tools/first_boot.py:204:    instance_name: str = "",
+my-claw/tools/first_boot.py:212:        instance_name=instance_name or generate_artistic_name(),
+my-claw/tools/first_boot.py:224:def bootstrap_identity(
+my-claw/tools/first_boot.py:241:            log.info("Loaded existing identity %s (%s)", identity.instance_id, identity.instance_name)
+my-claw/tools/first_boot.py:246:    identity = mint_identity(
+my-claw/tools/first_boot.py:252:    log.info("Minted new identity %s (%s)", identity.instance_id, identity.instance_name)
+
+codex
+I found the new `bootstrap_identity` API and tests, and I’m now validating whether runtime startup paths actually call that API so identities persist across process restarts rather than being regenerated each launch.
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && rg -n \"FirstBootAnnouncer\\(|_announcer = FirstBootAnnouncer|mint_identity\\(|bootstrap_identity\\(\" my-claw/tools/daemon.py" in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && sed -n '1,320p' src/cypherclaw/first_boot.py" in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && sed -n '1,320p' my-claw/tools/first_boot.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+2445:    _announcer = FirstBootAnnouncer(announce_fn=lambda payload: tg_send(
+
+ succeeded in 0ms:
+"""First-boot federation announcement wiring.
+
+Implements FEDREAD-004: on the very first startup of a *federated* clone,
+emit an announcement containing identity, lineage skeleton, release, mode,
+capability summary, and publication status.
+
+Rules:
+- Federated clones announce on first boot.
+- Standalone instances never announce automatically.
+- A repeat boot of a federated clone does NOT re-announce.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import random
+import uuid
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Callable, Literal
+
+log = logging.getLogger("cypherclaw.first_boot")
+
+Mode = Literal["standalone", "federated"]
+
+# Default paths — overridable for testing via constructor args.
+_DEFAULT_IDENTITY_PATH = Path.home() / ".promptclaw" / "identity.json"
+_DEFAULT_ANNOUNCED_PATH = Path.home() / ".promptclaw" / ".first_boot_announced"
+
+# ── Artistic name generator ────────────────────────────────────
+
+_ADJECTIVES: tuple[str, ...] = (
+    "amber", "arcane", "astral", "blazing", "cobalt",
+    "crimson", "crystal", "dappled", "drifting", "dusted",
+    "echoing", "ember", "fading", "ferric", "flickering",
+    "gilded", "glinting", "hollow", "hushed", "ivory",
+    "jade", "latticed", "liminal", "lucid", "midnight",
+    "molten", "mossy", "nebula", "obsidian", "onyx",
+    "opal", "pearlescent", "phantom", "prismatic", "quilted",
+    "radiant", "rippled", "rusted", "sapphire", "shimmering",
+    "silken", "smoldering", "spectral", "tidal", "twilight",
+    "umbral", "veiled", "verdant", "woven", "zephyr",
+)
+
+_NOUNS: tuple[str, ...] = (
+    "anvil", "archive", "basilisk", "beacon", "cairn",
+    "canopy", "chimera", "citadel", "conduit", "crucible",
+    "drake", "ember", "falcon", "forge", "furnace",
+    "garnet", "glyph", "grotto", "harbor", "hearth",
+    "heron", "junction", "kiln", "labyrinth", "lantern",
+    "lattice", "loom", "monolith", "nexus", "obelisk",
+    "oracle", "parchment", "pinnacle", "prism", "quarry",
+    "raven", "relay", "ridge", "sanctum", "sentinel",
+    "shard", "sigil", "spire", "terrace", "thorn",
+    "totem", "turret", "vault", "vortex", "wellspring",
+)
+
+
+def generate_artistic_name(*, rng: random.Random | None = None) -> str:
+    """Generate an artistic instance name from word lists.
+
+    Returns a name like ``"molten-sigil"`` or ``"twilight-beacon"``.
+    """
+    r = rng or random.Random()  # noqa: S311
+    adj = r.choice(_ADJECTIVES)
+    noun = r.choice(_NOUNS)
+    return f"{adj}-{noun}"
+
+
+@dataclass
+class InstanceIdentity:
+    """Canonical home identity record (IDLINE-001)."""
+
+    instance_id: str
+    instance_name: str
+    mode: Mode
+    created_at: str
+    release: str
+    parent_id: str | None = None
+    clone_timestamp: str | None = None
+    capabilities: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> InstanceIdentity:
+        return cls(
+            instance_id=d["instance_id"],
+            instance_name=d["instance_name"],
+            mode=d["mode"],
+            created_at=d["created_at"],
+            release=d["release"],
+            parent_id=d.get("parent_id"),
+            clone_timestamp=d.get("clone_timestamp"),
+            capabilities=d.get("capabilities", []),
+        )
+
+
+def _build_announcement(identity: InstanceIdentity) -> dict[str, Any]:
+    """Build the first-boot announcement payload (FEDREAD-004).
+
+    Includes identity, lineage skeleton, release, mode, capability summary,
+    and publication status.  Excludes raw private memory and secrets.
+    """
+    lineage: dict[str, Any] = {
+        "parent_id": identity.parent_id,
+        "clone_timestamp": identity.clone_timestamp,
+    }
+    return {
+        "type": "first_boot_announcement",
+        "instance_id": identity.instance_id,
+        "instance_name": identity.instance_name,
+        "mode": identity.mode,
+        "release": identity.release,
+        "lineage": lineage,
+        "capabilities": identity.capabilities,
+        "publication_status": "local",
+        "announced_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+class FirstBootAnnouncer:
+    """Manages first-boot federation announcement logic.
+
+    Parameters
+    ----------
+    identity_path:
+        Path to the identity JSON file.
+    announced_path:
+        Marker file whose existence means "already announced".
+    announce_fn:
+        Callable invoked with the announcement payload dict when
+        announcing.  In production this posts to the federation bus;
+        in tests it can be a mock.
+    """
+
+    def __init__(
+        self,
+        *,
+        identity_path: Path = _DEFAULT_IDENTITY_PATH,
+        announced_path: Path = _DEFAULT_ANNOUNCED_PATH,
+        announce_fn: Callable[[dict[str, Any]], None] | None = None,
+    ) -> None:
+        self.identity_path = identity_path
+        self.announced_path = announced_path
+        self.announce_fn = announce_fn
+
+    # ── Public API ──────────────────────────────────────────────
+
+    def load_identity(self) -> InstanceIdentity | None:
+        """Load the instance identity from disk, or *None* if missing."""
+        if not self.identity_path.exists():
+            return None
+        try:
+            data = json.loads(self.identity_path.read_text())
+            return InstanceIdentity.from_dict(data)
+        except (json.JSONDecodeError, KeyError, TypeError) as exc:
+            log.warning("Failed to read identity file: %s", exc)
+            return None
+
+    def already_announced(self) -> bool:
+        """Return *True* if the first-boot marker file exists."""
+        return self.announced_path.exists()
+
+    def maybe_announce(self) -> dict[str, Any] | None:
+        """Run the first-boot announcement check.
+
+        Returns the announcement payload if an announcement was made,
+        or *None* if no announcement was needed.
+        """
+        identity = self.load_identity()
+        if identity is None:
+            log.debug("No identity file — skipping first-boot announcement")
+            return None
+
+        if identity.mode != "federated":
+            log.debug("Instance mode is '%s' — no announcement", identity.mode)
+            return None
+
+        if self.already_announced():
+            log.debug("First-boot already announced — skipping")
+            return None
+
+        payload = _build_announcement(identity)
+
+        if self.announce_fn is not None:
+            self.announce_fn(payload)
+
+        # Mark as announced so subsequent boots skip this.
+        self.announced_path.parent.mkdir(parents=True, exist_ok=True)
+        self.announced_path.write_text(
+            json.dumps({"announced_at": payload["announced_at"]}),
+        )
+        log.info("First-boot announcement sent for %s", identity.instance_id)
+        return payload
+
+
+def mint_identity(
+    *,
+    mode: Mode = "standalone",
+    instance_name: str = "",
+    release: str = "",
+    parent_id: str | None = None,
+    identity_path: Path = _DEFAULT_IDENTITY_PATH,
+) -> InstanceIdentity:
+    """Create and persist a new instance identity (IDLINE-002)."""
+    identity = InstanceIdentity(
+        instance_id=str(uuid.uuid4()),
+        instance_name=instance_name or generate_artistic_name(),
+        mode=mode,
+        created_at=datetime.now(timezone.utc).isoformat(),
+        release=release,
+        parent_id=parent_id,
+        clone_timestamp=datetime.now(timezone.utc).isoformat() if parent_id else None,
+    )
+    identity_path.parent.mkdir(parents=True, exist_ok=True)
+    identity_path.write_text(json.dumps(identity.to_dict(), indent=2))
+    return identity
+
+
+def bootstrap_identity(
+    *,
+    mode: Mode = "standalone",
+    release: str = "",
+    parent_id: str | None = None,
+    identity_path: Path = _DEFAULT_IDENTITY_PATH,
+) -> InstanceIdentity:
+    """Load an existing identity or mint a new one on first boot.
+
+    If *identity_path* already contains a valid identity record it is
+    returned as-is.  Otherwise a fresh identity is minted, persisted,
+    and returned.
+    """
+    if identity_path.exists():
+        try:
+            payload = json.loads(identity_path.read_text())
+            identity = InstanceIdentity.from_dict(payload)
+            log.info("Loaded existing identity %s (%s)", identity.instance_id, identity.instance_name)
+            return identity
+        except (json.JSONDecodeError, KeyError, TypeError) as exc:
+            log.warning("Corrupt identity file, minting fresh: %s", exc)
+
+    identity = mint_identity(
+        mode=mode,
+        release=release,
+        parent_id=parent_id,
+        identity_path=identity_path,
+    )
+    log.info("Minted new identity %s (%s)", identity.instance_id, identity.instance_name)
+    return identity
+
+ succeeded in 0ms:
+"""First-boot federation announcement wiring.
+
+Implements FEDREAD-004: on the very first startup of a federated clone,
+emit an announcement containing identity, lineage skeleton, release, mode,
+capability summary, and publication status.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import random
+import uuid
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Callable, Literal
+
+log = logging.getLogger("cypherclaw.first_boot")
+
+Mode = Literal["standalone", "federated"]
+
+_DEFAULT_IDENTITY_PATH = Path.home() / ".promptclaw" / "identity.json"
+_DEFAULT_ANNOUNCED_PATH = Path.home() / ".promptclaw" / ".first_boot_announced"
+
+# ── Artistic name generator ────────────────────────────────────
+
+_ADJECTIVES: tuple[str, ...] = (
+    "amber", "arcane", "astral", "blazing", "cobalt",
+    "crimson", "crystal", "dappled", "drifting", "dusted",
+    "echoing", "ember", "fading", "ferric", "flickering",
+    "gilded", "glinting", "hollow", "hushed", "ivory",
+    "jade", "latticed", "liminal", "lucid", "midnight",
+    "molten", "mossy", "nebula", "obsidian", "onyx",
+    "opal", "pearlescent", "phantom", "prismatic", "quilted",
+    "radiant", "rippled", "rusted", "sapphire", "shimmering",
+    "silken", "smoldering", "spectral", "tidal", "twilight",
+    "umbral", "veiled", "verdant", "woven", "zephyr",
+)
+
+_NOUNS: tuple[str, ...] = (
+    "anvil", "archive", "basilisk", "beacon", "cairn",
+    "canopy", "chimera", "citadel", "conduit", "crucible",
+    "drake", "ember", "falcon", "forge", "furnace",
+    "garnet", "glyph", "grotto", "harbor", "hearth",
+    "heron", "junction", "kiln", "labyrinth", "lantern",
+    "lattice", "loom", "monolith", "nexus", "obelisk",
+    "oracle", "parchment", "pinnacle", "prism", "quarry",
+    "raven", "relay", "ridge", "sanctum", "sentinel",
+    "shard", "sigil", "spire", "terrace", "thorn",
+    "totem", "turret", "vault", "vortex", "wellspring",
+)
+
+
+def generate_artistic_name(*, rng: random.Random | None = None) -> str:
+    """Generate an artistic instance name from word lists.
+
+    Returns a name like ``"molten-sigil"`` or ``"twilight-beacon"``.
+    """
+    r = rng or random.Random()  # noqa: S311
+    adj = r.choice(_ADJECTIVES)
+    noun = r.choice(_NOUNS)
+    return f"{adj}-{noun}"
+
+
+@dataclass
+class InstanceIdentity:
+    """Canonical home identity record."""
+
+    instance_id: str
+    instance_name: str
+    mode: Mode
+    created_at: str
+    release: str
+    parent_id: str | None = None
+    clone_timestamp: str | None = None
+    capabilities: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "InstanceIdentity":
+        return cls(
+            instance_id=payload["instance_id"],
+            instance_name=payload["instance_name"],
+            mode=payload["mode"],
+            created_at=payload["created_at"],
+            release=payload["release"],
+            parent_id=payload.get("parent_id"),
+            clone_timestamp=payload.get("clone_timestamp"),
+            capabilities=payload.get("capabilities", []),
+        )
+
+
+def _build_announcement(identity: InstanceIdentity) -> dict[str, Any]:
+    """Build the public first-boot announcement payload."""
+    return {
+        "type": "first_boot_announcement",
+        "instance_id": identity.instance_id,
+        "instance_name": identity.instance_name,
+        "mode": identity.mode,
+        "release": identity.release,
+        "lineage": {
+            "parent_id": identity.parent_id,
+            "clone_timestamp": identity.clone_timestamp,
+        },
+        "capabilities": identity.capabilities,
+        "publication_status": "local",
+        "announced_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+class FirstBootAnnouncer:
+    """Manage one-time first-boot announcements for federated clones."""
+
+    def __init__(
+        self,
+        *,
+        identity_path: Path = _DEFAULT_IDENTITY_PATH,
+        announced_path: Path = _DEFAULT_ANNOUNCED_PATH,
+        announce_fn: Callable[[dict[str, Any]], None] | None = None,
+    ) -> None:
+        self.identity_path = identity_path
+        self.announced_path = announced_path
+        self.announce_fn = announce_fn
+
+    def load_identity(self) -> InstanceIdentity | None:
+        """Load the persisted identity record, if present and valid."""
+        if not self.identity_path.exists():
+            return None
+
+        try:
+            payload = json.loads(self.identity_path.read_text())
+        except json.JSONDecodeError as exc:
+            log.warning("Failed to read identity file: %s", exc)
+            return None
+
+        try:
+            return InstanceIdentity.from_dict(payload)
+        except (KeyError, TypeError) as exc:
+            log.warning("Failed to read identity file: %s", exc)
+            return None
+
+    def already_announced(self) -> bool:
+        """Return whether the first-boot marker already exists."""
+        return self.announced_path.exists()
+
+    def maybe_announce(self) -> dict[str, Any] | None:
+        """Announce a federated clone once, then persist the marker."""
+        identity = self.load_identity()
+        if identity is None or identity.mode != "federated" or self.already_announced():
+            return None
+
+        payload = _build_announcement(identity)
+        if self.announce_fn is not None:
+            self.announce_fn(payload)
+
+        self.announced_path.parent.mkdir(parents=True, exist_ok=True)
+        self.announced_path.write_text(json.dumps({"announced_at": payload["announced_at"]}))
+        return payload
+
+
+def mint_identity(
+    *,
+    mode: Mode = "standalone",
+    instance_name: str = "",
+    release: str = "",
+    parent_id: str | None = None,
+    identity_path: Path = _DEFAULT_IDENTITY_PATH,
+) -> InstanceIdentity:
+    """Create and persist a new instance identity."""
+    identity = InstanceIdentity(
+        instance_id=str(uuid.uuid4()),
+        instance_name=instance_name or generate_artistic_name(),
+        mode=mode,
+        created_at=datetime.now(timezone.utc).isoformat(),
+        release=release,
+        parent_id=parent_id,
+        clone_timestamp=datetime.now(timezone.utc).isoformat() if parent_id else None,
+    )
+    identity_path.parent.mkdir(parents=True, exist_ok=True)
+    identity_path.write_text(json.dumps(identity.to_dict(), indent=2))
+    return identity
+
+
+def bootstrap_identity(
+    *,
+    mode: Mode = "standalone",
+    release: str = "",
+    parent_id: str | None = None,
+    identity_path: Path = _DEFAULT_IDENTITY_PATH,
+) -> InstanceIdentity:
+    """Load an existing identity or mint a new one on first boot.
+
+    If *identity_path* already contains a valid identity record it is
+    returned as-is.  Otherwise a fresh identity is minted, persisted,
+    and returned.
+    """
+    if identity_path.exists():
+        try:
+            payload = json.loads(identity_path.read_text())
+            identity = InstanceIdentity.from_dict(payload)
+            log.info("Loaded existing identity %s (%s)", identity.instance_id, identity.instance_name)
+            return identity
+        except (json.JSONDecodeError, KeyError, TypeError) as exc:
+            log.warning("Corrupt identity file, minting fresh: %s", exc)
+
+    identity = mint_identity(
+        mode=mode,
+        release=release,
+        parent_id=parent_id,
+        identity_path=identity_path,
+    )
+    log.info("Minted new identity %s (%s)", identity.instance_id, identity.instance_name)
+    return identity
+
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && rg -n "first_boot|identity.json|mint_identity|bootstrap_identity|InstanceIdentity|identity_path" sdp my-claw/tools src | head -n 200' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+src/cypherclaw/first_boot.py:19:log = logging.getLogger("cypherclaw.first_boot")
+src/cypherclaw/first_boot.py:23:_DEFAULT_IDENTITY_PATH = Path.home() / ".promptclaw" / "identity.json"
+src/cypherclaw/first_boot.py:24:_DEFAULT_ANNOUNCED_PATH = Path.home() / ".promptclaw" / ".first_boot_announced"
+src/cypherclaw/first_boot.py:67:class InstanceIdentity:
+src/cypherclaw/first_boot.py:83:    def from_dict(cls, payload: dict[str, Any]) -> "InstanceIdentity":
+src/cypherclaw/first_boot.py:96:def _build_announcement(identity: InstanceIdentity) -> dict[str, Any]:
+src/cypherclaw/first_boot.py:99:        "type": "first_boot_announcement",
+src/cypherclaw/first_boot.py:120:        identity_path: Path = _DEFAULT_IDENTITY_PATH,
+src/cypherclaw/first_boot.py:124:        self.identity_path = identity_path
+src/cypherclaw/first_boot.py:128:    def load_identity(self) -> InstanceIdentity | None:
+src/cypherclaw/first_boot.py:130:        if not self.identity_path.exists():
+src/cypherclaw/first_boot.py:134:            payload = json.loads(self.identity_path.read_text())
+src/cypherclaw/first_boot.py:140:            return InstanceIdentity.from_dict(payload)
+src/cypherclaw/first_boot.py:164:def mint_identity(
+src/cypherclaw/first_boot.py:170:    identity_path: Path = _DEFAULT_IDENTITY_PATH,
+src/cypherclaw/first_boot.py:171:) -> InstanceIdentity:
+src/cypherclaw/first_boot.py:173:    identity = InstanceIdentity(
+src/cypherclaw/first_boot.py:182:    identity_path.parent.mkdir(parents=True, exist_ok=True)
+src/cypherclaw/first_boot.py:183:    identity_path.write_text(json.dumps(identity.to_dict(), indent=2))
+src/cypherclaw/first_boot.py:187:def bootstrap_identity(
+src/cypherclaw/first_boot.py:192:    identity_path: Path = _DEFAULT_IDENTITY_PATH,
+src/cypherclaw/first_boot.py:193:) -> InstanceIdentity:
+src/cypherclaw/first_boot.py:196:    If *identity_path* already contains a valid identity record it is
+src/cypherclaw/first_boot.py:200:    if identity_path.exists():
+src/cypherclaw/first_boot.py:202:            payload = json.loads(identity_path.read_text())
+src/cypherclaw/first_boot.py:203:            identity = InstanceIdentity.from_dict(payload)
+src/cypherclaw/first_boot.py:209:    identity = mint_identity(
+src/cypherclaw/first_boot.py:213:        identity_path=identity_path,
+src/cypherclaw/__init__.py:3:from .first_boot import (
+src/cypherclaw/__init__.py:5:    InstanceIdentity,
+src/cypherclaw/__init__.py:6:    bootstrap_identity,
+src/cypherclaw/__init__.py:8:    mint_identity,
+src/cypherclaw/__init__.py:13:    "InstanceIdentity",
+src/cypherclaw/__init__.py:15:    "bootstrap_identity",
+src/cypherclaw/__init__.py:17:    "mint_identity",
+my-claw/tools/daemon.py:102:from cypherclaw.first_boot import FirstBootAnnouncer
+my-claw/tools/first_boot.py:24:log = logging.getLogger("cypherclaw.first_boot")
+my-claw/tools/first_boot.py:29:_DEFAULT_IDENTITY_PATH = Path.home() / ".promptclaw" / "identity.json"
+my-claw/tools/first_boot.py:30:_DEFAULT_ANNOUNCED_PATH = Path.home() / ".promptclaw" / ".first_boot_announced"
+my-claw/tools/first_boot.py:73:class InstanceIdentity:
+my-claw/tools/first_boot.py:89:    def from_dict(cls, d: dict[str, Any]) -> InstanceIdentity:
+my-claw/tools/first_boot.py:102:def _build_announcement(identity: InstanceIdentity) -> dict[str, Any]:
+my-claw/tools/first_boot.py:113:        "type": "first_boot_announcement",
+my-claw/tools/first_boot.py:130:    identity_path:
+my-claw/tools/first_boot.py:143:        identity_path: Path = _DEFAULT_IDENTITY_PATH,
+my-claw/tools/first_boot.py:147:        self.identity_path = identity_path
+my-claw/tools/first_boot.py:153:    def load_identity(self) -> InstanceIdentity | None:
+my-claw/tools/first_boot.py:155:        if not self.identity_path.exists():
+my-claw/tools/first_boot.py:158:            data = json.loads(self.identity_path.read_text())
+my-claw/tools/first_boot.py:159:            return InstanceIdentity.from_dict(data)
+my-claw/tools/first_boot.py:201:def mint_identity(
+my-claw/tools/first_boot.py:207:    identity_path: Path = _DEFAULT_IDENTITY_PATH,
+my-claw/tools/first_boot.py:208:) -> InstanceIdentity:
+my-claw/tools/first_boot.py:210:    identity = InstanceIdentity(
+my-claw/tools/first_boot.py:219:    identity_path.parent.mkdir(parents=True, exist_ok=True)
+my-claw/tools/first_boot.py:220:    identity_path.write_text(json.dumps(identity.to_dict(), indent=2))
+my-claw/tools/first_boot.py:224:def bootstrap_identity(
+my-claw/tools/first_boot.py:229:    identity_path: Path = _DEFAULT_IDENTITY_PATH,
+my-claw/tools/first_boot.py:230:) -> InstanceIdentity:
+my-claw/tools/first_boot.py:233:    If *identity_path* already contains a valid identity record it is
+my-claw/tools/first_boot.py:237:    if identity_path.exists():
+my-claw/tools/first_boot.py:239:            payload = json.loads(identity_path.read_text())
+my-claw/tools/first_boot.py:240:            identity = InstanceIdentity.from_dict(payload)
+my-claw/tools/first_boot.py:246:    identity = mint_identity(
+my-claw/tools/first_boot.py:250:        identity_path=identity_path,
+sdp/prd-snapshot.md:30:| R750-010 | Add instance identity bootstrap for the R750 home: generate `instance_id`, auto-generate artistic `instance_name`, record creation metadata. | MUST | T1 | - First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating |
+sdp/verification/t-001@20260408t223256z-verify.md:49:- Full suite (excluding pre-existing `test_first_boot.py` collection error): **1383 passed, 267 warnings** — no regressions.
+sdp/verification/t-001@20260408t223256z-verify.md:50:- The `test_first_boot.py` import failure (`cypherclaw` not importable from MacBook checkout) is a pre-existing repo issue documented in ESCALATIONS.md, not introduced by T-001.
+sdp/verification/t-001@20260408t223256z-verify.md:57:- [ ] `test_first_boot.py` collection failure blocks `pytest tests/ -x` cold run — severity: **minor** (pre-existing, documented in ESCALATIONS)
+sdp/logs/Lead_T-008_20260408T223256Z_1775691695.log:9:| First boot generates unique UUID `instance_id` | `mint_identity()` / `bootstrap_identity()` use `uuid.uuid4()` |
+sdp/logs/Lead_T-008_20260408T223256Z_1775691695.log:11:| Persists to `~/.promptclaw/identity.json` | Default path updated from hardcoded server path to `Path.home() / ".promptclaw" / "identity.json"` |
+sdp/logs/Lead_T-008_20260408T223256Z_1775691695.log:12:| Subsequent boots load without regenerating | `bootstrap_identity()` loads existing valid identity, only mints on first boot or corruption |
+sdp/task-graph.md:20:| 8 | T-008 | Add instance identity bootstrap for the R750 home: generate `instance_id`, auto-generate artistic `instance_name`, record creation metadata. | T1 | 3 | 3 | R750-010 | — | - First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating |
+sdp/verification/t-005@20260408t223256z-verify.md:40:**PASS.** 21/21 quota monitor tests green. Full suite: 1411 passed, 0 failures (excluding `test_first_boot.py`, which is a pre-existing collection-time import failure unrelated to this task and noted in `ESCALATIONS.md`). No regressions detected. Code is minimal and targeted — 10 lines added to `quota_monitor.py`, no unnecessary abstractions.
+sdp/logs/Lead_T-008_20260408T223256Z_1775691692.log:24:- First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating
+sdp/logs/Lead_T-008_20260408T223256Z_1775691692.log:30:{"type":"message","timestamp":"2026-04-08T23:41:35.205Z","role":"user","content":"# Retry: Task T-008@20260408T223256Z\n\n**Task:** Add instance identity bootstrap for the R750 home: generate `instance_id`, auto-generate artistic `instance_name`, record creation metadata.\n\n## Problem\n\nYour previous attempt produced **zero work** — no commits and no file changes were detected.\n\n## Instructions\n\n1. Re-read the task description above.\n2. Implement the required changes.\n3. **You MUST commit your work** using git before finishing.\n4. Commit message format: `<type>(scope): summary [T-008@20260408T223256Z]`\n5. Verify your work:\n   ```bash\n   pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/\n   ```\n\nDo not finish without committing at least one change.\n\n## Acceptance Criteria\n\n- First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating\n"}
+sdp/logs/Verify_T-001_20260408T223256Z_1775688621.log:15:**Suite:** 1383 passed (excluding pre-existing `test_first_boot.py` collection error).
+sdp/logs/Verify_T-002_20260408T223256Z_1775689010.log:127:2f7bd17 feat: sync agent_selector + first_boot from CypherClaw
+sdp/logs/Verify_T-002_20260408T223256Z_1775689010.log:158: src/cypherclaw/first_boot.py                       |  144 +++
+sdp/logs/Verify_T-002_20260408T223256Z_1775689010.log:286:- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+sdp/logs/Verify_T-002_20260408T223256Z_1775689010.log:690:tests/test_first_boot.py ...................                             [ 24%]
+sdp/logs/Lead_T-008_20260408T223256Z_1775691685.log:5:- First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating
+sdp/logs/Lead_T-008_20260408T223256Z_1775691685.log:41:{"type":"message","timestamp":"2026-04-08T23:41:29.033Z","role":"user","content":"# Task T-008@20260408T223256Z: Add instance identity bootstrap for the R750 home: generate `instance_id`, auto-generate artistic `instance_name`, record creation metadata.\n\n## Acceptance Criteria\n\n- First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating\n\n**Tier:** T1 — Light (Bug fix / config change / minor update)\n\n## Instructions\n\nRead the project's ADP documentation and understand existing patterns before making changes.\n\n**ADP Phases:** Implement → Verify → Commit\n\n1. Implement the fix or change described above.\n2. Ensure all existing tests pass.\n3. Add a regression test if the bug was not previously caught.\n4. Commit with a descriptive message: `fix(scope): short summary [T-008@20260408T223256Z]`\n\n## Rules\n\n- No spec required. Task description + commit message is sufficient.\n- Existing tests MUST pass after your change.\n- Follow existing code patterns and conventions.\n- Do not modify files outside the scope of this task.\n- Log any concerns to ESCALATIONS.md.\n\n## Validation\n\nRun before committing:\n```bash\npip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/\n```\n\nAll must pass.\n"}
+sdp/logs/Lead_T-008_20260408T223256Z_1775691689.log:24:- First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating
+sdp/logs/Lead_T-008_20260408T223256Z_1775691689.log:30:{"type":"message","timestamp":"2026-04-08T23:41:32.248Z","role":"user","content":"# Retry: Task T-008@20260408T223256Z\n\n**Task:** Add instance identity bootstrap for the R750 home: generate `instance_id`, auto-generate artistic `instance_name`, record creation metadata.\n\n## Problem\n\nYour previous attempt produced **zero work** — no commits and no file changes were detected.\n\n## Instructions\n\n1. Re-read the task description above.\n2. Implement the required changes.\n3. **You MUST commit your work** using git before finishing.\n4. Commit message format: `<type>(scope): summary [T-008@20260408T223256Z]`\n5. Verify your work:\n   ```bash\n   pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/\n   ```\n\nDo not finish without committing at least one change.\n\n## Acceptance Criteria\n\n- First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating\n"}
+sdp/logs/Lead_T-006_20260408T223256Z_1775690714.log:64:src/cypherclaw/first_boot.py
+sdp/logs/Lead_T-006_20260408T223256Z_1775690714.log:234:tests/test_first_boot.py
+sdp/logs/Lead_T-006_20260408T223256Z_1775690714.log:404:my-claw/tools/first_boot.py
+sdp/logs/Lead_T-006_20260408T223256Z_1775690714.log:1763:| R750-010 | Add instance identity bootstrap for the R750 home: generate `instance_id`, auto-generate artistic `instance_name`, record creation metadata. | MUST | T1 | - First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating |
+sdp/logs/Lead_T-006_20260408T223256Z_1775690714.log:3427:tests/test_first_boot.py ...................                             [ 24%]
+sdp/logs/Lead_T-004_20260408T223256Z_1775689515.log:73:src/cypherclaw/first_boot.py
+sdp/logs/Lead_T-004_20260408T223256Z_1775689515.log:128:tests/test_first_boot.py
+sdp/logs/Lead_T-004_20260408T223256Z_1775689515.log:11531:tests/test_first_boot.py ...................                             [ 24%]
+sdp/logs/Lead_T-004_20260408T223256Z_1775689515.log:14822:- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+sdp/logs/Lead_T-007_20260408T223256Z_1775691000.log:72:src/cypherclaw/first_boot.py
+sdp/logs/Lead_T-007_20260408T223256Z_1775691000.log:248:tests/test_first_boot.py
+sdp/logs/Lead_T-007_20260408T223256Z_1775691000.log:416:my-claw/tools/first_boot.py
+sdp/logs/Lead_T-007_20260408T223256Z_1775691000.log:2019:./sdp/logs/Verify_T-002_20260408T223256Z_1775689010.log:127:2f7bd17 feat: sync agent_selector + first_boot from CypherClaw
+sdp/logs/Lead_T-007_20260408T223256Z_1775691000.log:2475:./sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:7:The gate fix covered three areas: packaging/bootstrap in [pyproject.toml](/Users/anthony/Programming/PromptClaw/pyproject.toml), [src/cypherclaw/first_boot.py](/Users/anthony/Programming/PromptClaw/src/cypherclaw/first_boot.py), and [tests/conftest.py](/Users/anthony/Programming/PromptClaw/tests/conftest.py) so `cypherclaw.first_boot` is importable and `pip install -e '.[dev]'` works; repo-wide test lint cleanup across the failing test files; and two runtime regressions surfaced by the full suite in [maintenance_mode.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/maintenance_mode.py) and [senseweave_voice.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/synthesis/senseweave_voice.py). The Ollama acceptance remains green via [test_agent_selector_defaults.py](/Users/anthony/Programming/PromptClaw/tests/test_agent_selector_defaults.py).
+sdp/logs/Lead_T-007_20260408T223256Z_1775691000.log:7317:tests/test_first_boot.py:97:        assert payload["publication_status"] == "local"
+sdp/logs/Lead_T-007_20260408T223256Z_1775691000.log:7477:my-claw/tools/first_boot.py:80:        "publication_status": "local",
+sdp/logs/Lead_T-007_20260408T223256Z_1775691000.log:8239:| R750-010 | Add instance identity bootstrap for the R750 home: generate `instance_id`, auto-generate artistic `instance_name`, record creation metadata. | MUST | T1 | - First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating |
+sdp/logs/Lead_T-007_20260408T223256Z_1775691000.log:12786:tests/test_first_boot.py ...................                             [ 24%]
+sdp/logs/Lead_T-007_20260408T223256Z_1775691000.log:13392:- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+sdp/logs/Lead_T-007_20260408T223256Z_1775691000.log:14826:- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:17:- `pytest tests/ -x` stops at `tests/test_first_boot.py` with `ModuleNotFoundError: No module named 'cypherclaw'`
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:144:./tests/test_first_boot.py
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:855:./tests/test_first_boot.py:197:        # Verify the marker was written
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:922:./my-claw/tools/first_boot.py:3:Implements FEDREAD-004: on the very first startup of a *federated* clone,
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:926:./my-claw/sdp/prd-artist-plan-completion.md:17:| APC-003 | Implement visitor identification by running face detection and embedding match against the observer camera frame at a configurable interval. | MUST | T2 | - Reads `/tmp/observer_frame.jpg` on schedule<br/>- Publishes identity result to `/tmp/visitor_identity.json`<br/>- Handles missing frame, no faces, and multiple faces gracefully |
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:1252:| 8 | T-008 | Add instance identity bootstrap for the R750 home: generate `instance_id`, auto-generate artistic `instance_name`, record creation metadata. | T1 | 3 | 3 | R750-010 | — | - First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating |
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:1907:my-claw/tools/first_boot.py:27:# Default paths — overridable for testing via constructor args.
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:3000:| R750-010 | Add instance identity bootstrap for the R750 home: generate `instance_id`, auto-generate artistic `instance_name`, record creation metadata. | MUST | T1 | - First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating |
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:7118:__________________ ERROR collecting tests/test_first_boot.py ___________________
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:7119:ImportError while importing test module '/Users/anthony/Programming/PromptClaw/tests/test_first_boot.py'.
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:7124:tests/test_first_boot.py:17: in <module>
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:7125:    from cypherclaw.first_boot import (
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:7128:ERROR tests/test_first_boot.py
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:7366:The full suite is blocked by a repo-wide packaging/import issue unrelated to this task: collection fails in `tests/test_first_boot.py` because `cypherclaw` isn’t importable from this checkout. I’m still running the remaining exact validation commands so the final state is explicit rather than assumed.
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:8094:The repo-level validation confirms the blockers are pre-existing and broader than this task: `pytest` stops on a missing `cypherclaw` package import in `tests/test_first_boot.py`, and the exact lint/type commands target a non-existent `src/` tree. I’m doing one last pass on the touched files now, then I’ll decide whether the task can still be committed cleanly with those blockers called out.
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:8820:+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:9066:+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:9325:+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:9580:+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:9836:+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:10345:+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:10592:- `pytest tests/ -x` stops at `tests/test_first_boot.py` with `ModuleNotFoundError: No module named 'cypherclaw'`
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:10608:+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+sdp/logs/Lead_T-003_20260408T223256Z_1775689060.log:175:tests/test_first_boot.py
+sdp/logs/Lead_T-003_20260408T223256Z_1775689060.log:1066:| R750-010 | Add instance identity bootstrap for the R750 home: generate `instance_id`, auto-generate artistic `instance_name`, record creation metadata. | MUST | T1 | - First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating |
+sdp/logs/Lead_T-003_20260408T223256Z_1775689060.log:8336:tests/test_first_boot.py ...................                             [ 24%]
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:7:The gate fix covered three areas: packaging/bootstrap in [pyproject.toml](/Users/anthony/Programming/PromptClaw/pyproject.toml), [src/cypherclaw/first_boot.py](/Users/anthony/Programming/PromptClaw/src/cypherclaw/first_boot.py), and [tests/conftest.py](/Users/anthony/Programming/PromptClaw/tests/conftest.py) so `cypherclaw.first_boot` is importable and `pip install -e '.[dev]'` works; repo-wide test lint cleanup across the failing test files; and two runtime regressions surfaced by the full suite in [maintenance_mode.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/maintenance_mode.py) and [senseweave_voice.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/synthesis/senseweave_voice.py). The Ollama acceptance remains green via [test_agent_selector_defaults.py](/Users/anthony/Programming/PromptClaw/tests/test_agent_selector_defaults.py).
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:118:./tests/test_first_boot.py
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:1720:| R750-010 | Add instance identity bootstrap for the R750 home: generate `instance_id`, auto-generate artistic `instance_name`, record creation metadata. | MUST | T1 | - First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating |
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:2798:__________________ ERROR collecting tests/test_first_boot.py ___________________
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:2799:ImportError while importing test module '/Users/anthony/Programming/PromptClaw/tests/test_first_boot.py'.
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:2804:tests/test_first_boot.py:17: in <module>
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:2805:    from cypherclaw.first_boot import (
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:2808:ERROR tests/test_first_boot.py
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:2862:/bin/zsh -lc "sed -n '1,220p' tests/test_first_boot.py" in /Users/anthony/Programming/PromptClaw
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:2880:from cypherclaw.first_boot import (
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:2882:    mint_identity,
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:2907:    identity_path = tmp_path / "identity.json"
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:2908:    announced_path = tmp_path / ".first_boot_announced"
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:2910:    _write_identity(identity_path, mode=mode, parent_id=parent_id, **identity_kw)
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:2917:        identity_path=identity_path,
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:2930:    def test_announces_on_first_boot(self, tmp_path):
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:2937:        assert payload["type"] == "first_boot_announcement"
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3035:            identity_path=announcer.identity_path,
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3066:            identity_path=announcer.identity_path,
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3083:            identity_path=tmp_path / "does_not_exist.json",
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3086:/bin/zsh -lc "sed -n '220,420p' tests/test_first_boot.py" in /Users/anthony/Programming/PromptClaw
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3088:            identity_path=tmp_path / "does_not_exist.json",
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3099:        identity_path = tmp_path / "identity.json"
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3100:        identity_path.write_text("{bad json")
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3103:            identity_path=identity_path,
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3115:        identity_path = tmp_path / "identity.json"
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3116:        _write_identity(identity_path, mode="federated")
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3120:            identity_path=identity_path,
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3131:# ── mint_identity helper ─────────────────────────────────────────
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3135:    """Tests for the mint_identity convenience function."""
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3138:        id1 = mint_identity(identity_path=tmp_path / "id1.json")
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3139:        id2 = mint_identity(identity_path=tmp_path / "id2.json")
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3143:        path = tmp_path / "identity.json"
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3144:        identity = mint_identity(mode="federated", release="2.1.0", identity_path=path)
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3152:        path = tmp_path / "identity.json"
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3153:        identity = mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3156:            identity_path=path,
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3163:        path = tmp_path / "identity.json"
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3164:        identity = mint_identity(mode="standalone", identity_path=path)
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3177:        identity_path = tmp_path / "identity.json"
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3178:        announced_path = tmp_path / ".first_boot_announced"
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3181:        identity = mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3185:            identity_path=identity_path,
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3193:            identity_path=identity_path,
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3207:            identity_path=identity_path,
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3215:        identity_path = tmp_path / "identity.json"
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3216:        announced_path = tmp_path / ".first_boot_announced"
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3219:        mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3222:            identity_path=identity_path,
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3228:            identity_path=identity_path,
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3384:/bin/zsh -lc 'rg -n "first_boot|mint_identity|FirstBootAnnouncer" -S .' in /Users/anthony/Programming/PromptClaw
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3386:./ESCALATIONS.md:37:- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3387:./sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:17:- `pytest tests/ -x` stops at `tests/test_first_boot.py` with `ModuleNotFoundError: No module named 'cypherclaw'`
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3388:./sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:144:./tests/test_first_boot.py
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3389:./sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:855:./tests/test_first_boot.py:197:        # Verify the marker was written
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3390:./sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:922:./my-claw/tools/first_boot.py:3:Implements FEDREAD-004: on the very first startup of a *federated* clone,
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3391:./sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:1907:my-claw/tools/first_boot.py:27:# Default paths — overridable for testing via constructor args.
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3392:./sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:7118:__________________ ERROR collecting tests/test_first_boot.py ___________________
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3393:./sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:7119:ImportError while importing test module '/Users/anthony/Programming/PromptClaw/tests/test_first_boot.py'.
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3394:./sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:7124:tests/test_first_boot.py:17: in <module>
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3395:./sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:7125:    from cypherclaw.first_boot import (
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3396:./sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:7128:ERROR tests/test_first_boot.py
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3397:./sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:7366:The full suite is blocked by a repo-wide packaging/import issue unrelated to this task: collection fails in `tests/test_first_boot.py` because `cypherclaw` isn’t importable from this checkout. I’m still running the remaining exact validation commands so the final state is explicit rather than assumed.
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3398:./sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:8094:The repo-level validation confirms the blockers are pre-existing and broader than this task: `pytest` stops on a missing `cypherclaw` package import in `tests/test_first_boot.py`, and the exact lint/type commands target a non-existent `src/` tree. I’m doing one last pass on the touched files now, then I’ll decide whether the task can still be committed cleanly with those blockers called out.
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3399:./sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:8820:+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3400:./sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:9066:+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3401:./sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:9325:+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3402:./sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:9580:+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3403:./sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log:9836:+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && rg -n \"mint_identity\\(\"" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+src/cypherclaw/first_boot.py:164:def mint_identity(
+src/cypherclaw/first_boot.py:209:    identity = mint_identity(
+tests/test_first_boot.py:272:        id1 = mint_identity(identity_path=tmp_path / "id1.json")
+tests/test_first_boot.py:273:        id2 = mint_identity(identity_path=tmp_path / "id2.json")
+tests/test_first_boot.py:278:        identity = mint_identity(mode="federated", release="2.1.0", identity_path=path)
+tests/test_first_boot.py:287:        identity = mint_identity(
+tests/test_first_boot.py:298:        identity = mint_identity(mode="standalone", identity_path=path)
+tests/test_first_boot.py:315:        identity = mint_identity(
+tests/test_first_boot.py:353:        mint_identity(
+tests/test_first_boot.py:409:        identity = mint_identity(identity_path=path)
+my-claw/tools/first_boot.py:201:def mint_identity(
+my-claw/tools/first_boot.py:246:    identity = mint_identity(
+sdp/logs/Lead_T-008_20260408T223256Z_1775691695.log:9:| First boot generates unique UUID `instance_id` | `mint_identity()` / `bootstrap_identity()` use `uuid.uuid4()` |
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3138:        id1 = mint_identity(identity_path=tmp_path / "id1.json")
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3139:        id2 = mint_identity(identity_path=tmp_path / "id2.json")
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3144:        identity = mint_identity(mode="federated", release="2.1.0", identity_path=path)
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3153:        identity = mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3164:        identity = mint_identity(mode="standalone", identity_path=path)
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3181:        identity = mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3219:        mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3424:./tests/test_first_boot.py:270:        id1 = mint_identity(identity_path=tmp_path / "id1.json")
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3425:./tests/test_first_boot.py:271:        id2 = mint_identity(identity_path=tmp_path / "id2.json")
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3426:./tests/test_first_boot.py:276:        identity = mint_identity(mode="federated", release="2.1.0", identity_path=path)
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3427:./tests/test_first_boot.py:285:        identity = mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3428:./tests/test_first_boot.py:296:        identity = mint_identity(mode="standalone", identity_path=path)
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3430:./tests/test_first_boot.py:313:        identity = mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3434:./tests/test_first_boot.py:351:        mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3440:./my-claw/tools/first_boot.py:161:def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:3607:def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:4541:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:4743:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:4952:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:5232:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:5589:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:5798:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:6056:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:6321:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:6627:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:7270:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:7554:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:7879:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:8172:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:8460:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:8755:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:9057:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:9498:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:10437:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:10893:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:11219:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:11568:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:11972:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:12371:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:12777:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:13186:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:13587:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:14278:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:14814:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:15243:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:16410:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:16814:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:17229:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:17642:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:18173:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:18605:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:19015:+def mint_identity(
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log:19426:+def mint_identity(
+
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && rg -n \"identity\\.json|\\.promptclaw/identity|from_dict\\(|InstanceIdentity|bootstrap_identity|identity_path\" -g '"'!sdp/logs'"' -g '"'!sdp/task-graph.md'"'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+src/cypherclaw/first_boot.py:23:_DEFAULT_IDENTITY_PATH = Path.home() / ".promptclaw" / "identity.json"
+src/cypherclaw/first_boot.py:67:class InstanceIdentity:
+src/cypherclaw/first_boot.py:83:    def from_dict(cls, payload: dict[str, Any]) -> "InstanceIdentity":
+src/cypherclaw/first_boot.py:96:def _build_announcement(identity: InstanceIdentity) -> dict[str, Any]:
+src/cypherclaw/first_boot.py:120:        identity_path: Path = _DEFAULT_IDENTITY_PATH,
+src/cypherclaw/first_boot.py:124:        self.identity_path = identity_path
+src/cypherclaw/first_boot.py:128:    def load_identity(self) -> InstanceIdentity | None:
+src/cypherclaw/first_boot.py:130:        if not self.identity_path.exists():
+src/cypherclaw/first_boot.py:134:            payload = json.loads(self.identity_path.read_text())
+src/cypherclaw/first_boot.py:140:            return InstanceIdentity.from_dict(payload)
+src/cypherclaw/first_boot.py:170:    identity_path: Path = _DEFAULT_IDENTITY_PATH,
+src/cypherclaw/first_boot.py:171:) -> InstanceIdentity:
+src/cypherclaw/first_boot.py:173:    identity = InstanceIdentity(
+src/cypherclaw/first_boot.py:182:    identity_path.parent.mkdir(parents=True, exist_ok=True)
+src/cypherclaw/first_boot.py:183:    identity_path.write_text(json.dumps(identity.to_dict(), indent=2))
+src/cypherclaw/first_boot.py:187:def bootstrap_identity(
+src/cypherclaw/first_boot.py:192:    identity_path: Path = _DEFAULT_IDENTITY_PATH,
+src/cypherclaw/first_boot.py:193:) -> InstanceIdentity:
+src/cypherclaw/first_boot.py:196:    If *identity_path* already contains a valid identity record it is
+src/cypherclaw/first_boot.py:200:    if identity_path.exists():
+src/cypherclaw/first_boot.py:202:            payload = json.loads(identity_path.read_text())
+src/cypherclaw/first_boot.py:203:            identity = InstanceIdentity.from_dict(payload)
+src/cypherclaw/first_boot.py:213:        identity_path=identity_path,
+src/cypherclaw/__init__.py:5:    InstanceIdentity,
+src/cypherclaw/__init__.py:6:    bootstrap_identity,
+src/cypherclaw/__init__.py:13:    "InstanceIdentity",
+src/cypherclaw/__init__.py:15:    "bootstrap_identity",
+promptclaw/coherence/constitution.py:38:def _rule_from_dict(data: dict[str, Any]) -> Rule:
+promptclaw/coherence/constitution.py:106:                rules.append(_rule_from_dict(entry))
+sdp/prd-snapshot.md:30:| R750-010 | Add instance identity bootstrap for the R750 home: generate `instance_id`, auto-generate artistic `instance_name`, record creation metadata. | MUST | T1 | - First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating |
+tests/test_collaborative_canvas.py:143:        c2 = Canvas.from_dict(d)
+tests/test_collaborative_canvas.py:153:        c = Canvas.from_dict({"layers": {}})
+my-claw/sdp/prd-r750-ollama-integration.md:24:| R750-010 | Add instance identity bootstrap for the R750 home: generate `instance_id`, auto-generate artistic `instance_name`, record creation metadata. | MUST | T1 | - First boot generates a unique UUID instance_id<br/>- Artistic name generated from word lists<br/>- Identity record persists to `~/.promptclaw/identity.json`<br/>- Subsequent boots load existing identity without regenerating |
+tests/test_first_boot.py:19:    bootstrap_identity,
+tests/test_first_boot.py:46:    identity_path = tmp_path / "identity.json"
+tests/test_first_boot.py:49:    _write_identity(identity_path, mode=mode, parent_id=parent_id, **identity_kw)
+tests/test_first_boot.py:56:        identity_path=identity_path,
+tests/test_first_boot.py:174:            identity_path=announcer.identity_path,
+tests/test_first_boot.py:205:            identity_path=announcer.identity_path,
+tests/test_first_boot.py:222:            identity_path=tmp_path / "does_not_exist.json",
+tests/test_first_boot.py:233:        identity_path = tmp_path / "identity.json"
+tests/test_first_boot.py:234:        identity_path.write_text("{bad json")
+tests/test_first_boot.py:237:            identity_path=identity_path,
+tests/test_first_boot.py:249:        identity_path = tmp_path / "identity.json"
+tests/test_first_boot.py:250:        _write_identity(identity_path, mode="federated")
+tests/test_first_boot.py:254:            identity_path=identity_path,
+tests/test_first_boot.py:272:        id1 = mint_identity(identity_path=tmp_path / "id1.json")
+tests/test_first_boot.py:273:        id2 = mint_identity(identity_path=tmp_path / "id2.json")
+tests/test_first_boot.py:277:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:278:        identity = mint_identity(mode="federated", release="2.1.0", identity_path=path)
+tests/test_first_boot.py:286:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:290:            identity_path=path,
+tests/test_first_boot.py:297:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:298:        identity = mint_identity(mode="standalone", identity_path=path)
+tests/test_first_boot.py:311:        identity_path = tmp_path / "identity.json"
+tests/test_first_boot.py:319:            identity_path=identity_path,
+tests/test_first_boot.py:327:            identity_path=identity_path,
+tests/test_first_boot.py:341:            identity_path=identity_path,
+tests/test_first_boot.py:349:        identity_path = tmp_path / "identity.json"
+tests/test_first_boot.py:356:            identity_path=identity_path,
+tests/test_first_boot.py:362:            identity_path=identity_path,
+tests/test_first_boot.py:408:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:409:        identity = mint_identity(identity_path=path)
+tests/test_first_boot.py:415:# ── bootstrap_identity ─────────────────────────────────────────
+tests/test_first_boot.py:419:    """Tests for the load-or-create bootstrap_identity function."""
+tests/test_first_boot.py:422:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:423:        identity = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:431:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:432:        first = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:433:        second = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:440:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:444:        identity = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:451:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:454:        identity = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:462:        path = tmp_path / "nested" / "deep" / "identity.json"
+tests/test_first_boot.py:463:        identity = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:469:        path = tmp_path / "identity.json"
+tests/test_first_boot.py:470:        identity = bootstrap_identity(
+tests/test_first_boot.py:474:            identity_path=path,
+my-claw/sdp/prd-artist-plan-completion.md:17:| APC-003 | Implement visitor identification by running face detection and embedding match against the observer camera frame at a configurable interval. | MUST | T2 | - Reads `/tmp/observer_frame.jpg` on schedule<br/>- Publishes identity result to `/tmp/visitor_identity.json`<br/>- Handles missing frame, no faces, and multiple faces gracefully |
+my-claw/sdp/prd-artist-plan-completion.md:18:| APC-004 | Amend `inner_life/world_model.py` to read `/tmp/visitor_identity.json` and populate `visitor_name` and `visitor_confidence` fields on WorldModel. | MUST | T2 | - WorldModel exposes visitor identity with staleness tracking<br/>- Falls back to `someone_here` boolean when identity unavailable<br/>- Tests cover known person, unknown visitor, and stale/missing file |
+tests/test_midi_state.py:161:        ms2 = MidiState.from_dict(d)
+tests/test_midi_state.py:189:        ms = MidiState.from_dict({})
+tests/test_midi_state.py:194:        ms = MidiState.from_dict({"notes_on": [60, 64], "last_note": 64})
+my-claw/tools/first_boot.py:29:_DEFAULT_IDENTITY_PATH = Path.home() / ".promptclaw" / "identity.json"
+my-claw/tools/first_boot.py:73:class InstanceIdentity:
+my-claw/tools/first_boot.py:89:    def from_dict(cls, d: dict[str, Any]) -> InstanceIdentity:
+my-claw/tools/first_boot.py:102:def _build_announcement(identity: InstanceIdentity) -> dict[str, Any]:
+my-claw/tools/first_boot.py:130:    identity_path:
+my-claw/tools/first_boot.py:143:        identity_path: Path = _DEFAULT_IDENTITY_PATH,
+my-claw/tools/first_boot.py:147:        self.identity_path = identity_path
+my-claw/tools/first_boot.py:153:    def load_identity(self) -> InstanceIdentity | None:
+my-claw/tools/first_boot.py:155:        if not self.identity_path.exists():
+my-claw/tools/first_boot.py:158:            data = json.loads(self.identity_path.read_text())
+my-claw/tools/first_boot.py:159:            return InstanceIdentity.from_dict(data)
+my-claw/tools/first_boot.py:207:    identity_path: Path = _DEFAULT_IDENTITY_PATH,
+my-claw/tools/first_boot.py:208:) -> InstanceIdentity:
+my-claw/tools/first_boot.py:210:    identity = InstanceIdentity(
+my-claw/tools/first_boot.py:219:    identity_path.parent.mkdir(parents=True, exist_ok=True)
+my-claw/tools/first_boot.py:220:    identity_path.write_text(json.dumps(identity.to_dict(), indent=2))
+my-claw/tools/first_boot.py:224:def bootstrap_identity(
+my-claw/tools/first_boot.py:229:    identity_path: Path = _DEFAULT_IDENTITY_PATH,
+my-claw/tools/first_boot.py:230:) -> InstanceIdentity:
+my-claw/tools/first_boot.py:233:    If *identity_path* already contains a valid identity record it is
+my-claw/tools/first_boot.py:237:    if identity_path.exists():
+my-claw/tools/first_boot.py:239:            payload = json.loads(identity_path.read_text())
+my-claw/tools/first_boot.py:240:            identity = InstanceIdentity.from_dict(payload)
+my-claw/tools/first_boot.py:250:        identity_path=identity_path,
+my-claw/tools/senseweave/midi_state.py:142:    def from_dict(cls, data: dict) -> "MidiState":
+my-claw/sdp/prd-federation.md:43:Public identity stored in `.promptclaw/federation/identity.json`.
+my-claw/sdp/prd-federation.md:125:| FD-001 | Create `promptclaw/federation/identity.py` — Ed25519 keypair generation on first init. Store private key in `.promptclaw/federation/identity.key`, public identity in `identity.json`. Sign and verify message functions. Use `cryptography` library. | T1 |
+my-claw/tools/senseweave/collaborative_canvas.py:109:    def from_dict(cls, data: dict) -> Canvas:
+my-claw/tools/senseweave/collaborative_canvas.py:192:        return Canvas.from_dict(data)
+
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && pip install -e '.[dev]' && pytest tests/ -x" in /Users/anthony/Programming/PromptClaw
+ succeeded in 12903ms:
+Obtaining file:///Users/anthony/Programming/PromptClaw
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: mypy>=1.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.19.1)
+Requirement already satisfied: pytest>=8.0 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (8.3.5)
+Requirement already satisfied: ruff>=0.9 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.9.2)
+Requirement already satisfied: typing_extensions>=4.6.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (4.15.0)
+Requirement already satisfied: mypy_extensions>=1.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: pathspec>=0.9.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.10.3)
+Requirement already satisfied: librt>=0.6.2 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.8.1)
+Requirement already satisfied: iniconfig in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.1.1)
+Requirement already satisfied: packaging in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (23.2)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.5.0)
+Building wheels for collected packages: promptclaw
+  Building editable for promptclaw (pyproject.toml): started
+  Building editable for promptclaw (pyproject.toml): finished with status 'done'
+  Created wheel for promptclaw: filename=promptclaw-3.0.0-0.editable-py3-none-any.whl size=5839 sha256=d83adc919d548d1d50279178864c0d784c35151b2387b20c52cfdf6c06292068
+  Stored in directory: /private/var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/pip-ephem-wheel-cache-brnlnyr9/wheels/ab/f4/89/0cacd29874f6252d7c6bef0fca4c14839da91ab6a8d842965e
+Successfully built promptclaw
+Installing collected packages: promptclaw
+  Attempting uninstall: promptclaw
+    Found existing installation: promptclaw 3.0.0
+    Uninstalling promptclaw-3.0.0:
+      Successfully uninstalled promptclaw-3.0.0
+Successfully installed promptclaw-3.0.0
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1448 items
+
+tests/test_accompaniment.py ...........................                  [  1%]
+tests/test_agent_runtime.py ..                                           [  2%]
+tests/test_agent_selector_defaults.py .                                  [  2%]
+tests/test_agent_selector_quota.py .......                               [  2%]
+tests/test_antenna_to_skin.py .................................          [  4%]
+tests/test_art_engine_runtime.py ....                                    [  5%]
+tests/test_audio_analysis.py ...............................             [  7%]
+tests/test_bootstrap.py ..                                               [  7%]
+tests/test_breath_to_filter.py .............................             [  9%]
+tests/test_check_status_runtime.py ..                                    [  9%]
+tests/test_coherence_engine.py ..............                            [ 10%]
+tests/test_coherence_integration.py ............                         [ 11%]
+tests/test_collaborative_canvas.py ......................                [ 12%]
+tests/test_config.py ..                                                  [ 12%]
+tests/test_constitution.py .......................                       [ 14%]
+tests/test_contact_listener_runtime.py ....                              [ 14%]
+tests/test_contact_mic_calibration_runtime.py ....                       [ 15%]
+tests/test_context_pulse_runtime.py .                                    [ 15%]
+tests/test_continuous_learner.py ..................                      [ 16%]
+tests/test_cypherclaw_runtime.py .....                                   [ 16%]
+tests/test_daemon_concurrency_compat.py ...                              [ 16%]
+tests/test_daemon_fallback.py ...............                            [ 18%]
+tests/test_daemon_scheduler.py ..                                        [ 18%]
+tests/test_dashboard_generator.py ...................................... [ 20%]
+.......                                                                  [ 21%]
+tests/test_dashboard_generator_runtime.py ...                            [ 21%]
+tests/test_decision_store.py .........                                   [ 22%]
+tests/test_doctor.py ...                                                 [ 22%]
+tests/test_event_store.py .......                                        [ 22%]
+tests/test_first_boot.py ..............................                  [ 24%]
+tests/test_gallery.py ..........................                         [ 26%]
+tests/test_garden_watcher.py ........................................... [ 29%]
+.                                                                        [ 29%]
+tests/test_gemini_image_runtime.py ...                                   [ 29%]
+tests/test_generative_scores.py ........................................ [ 32%]
+.........................                                                [ 34%]
+tests/test_glyphweave_cli.py ....                                        [ 34%]
+tests/test_glyphweave_runtime.py ....                                    [ 34%]
+tests/test_graduation.py ......................                          [ 36%]
+tests/test_healer_runtime.py .....                                       [ 36%]
+tests/test_healthcheck_script_runtime.py ..                              [ 36%]
+tests/test_inner_life.py ..................................              [ 39%]
+tests/test_keyboard_chat.py .............................                [ 41%]
+tests/test_lifeimprover_bridge_runtime.py .....                          [ 41%]
+tests/test_macbook_codex_monitor.py ....                                 [ 41%]
+tests/test_maintenance_mode.py .....                                     [ 42%]
+tests/test_melodic_mind.py ............................................. [ 45%]
+.........................................................                [ 49%]
+tests/test_midi_state.py .......................................         [ 52%]
+tests/test_mood_mirror.py .....................................          [ 54%]
+tests/test_observatory_authority.py .....                                [ 54%]
+tests/test_observatory_runtime.py ..                                     [ 55%]
+tests/test_observatory_verification.py ..                                [ 55%]
+tests/test_ollama_health.py ......                                       [ 55%]
+tests/test_ollama_invoke.py ...                                          [ 55%]
+tests/test_ollama_routing.py ...................                         [ 57%]
+tests/test_ollama_run_agent.py .                                         [ 57%]
+tests/test_ops_helpers_runtime.py ....                                   [ 57%]
+tests/test_orchestral_form.py ...............................            [ 59%]
+tests/test_orchestrator.py ...                                           [ 59%]
+tests/test_pareidolia_art_engine.py .......                              [ 60%]
+tests/test_pareidolia_characters.py .................................    [ 62%]
+tests/test_pareidolia_color.py ......................................... [ 65%]
+........................................................................ [ 70%]
+....                                                                     [ 70%]
+tests/test_pedals_to_key.py ............................                 [ 72%]
+tests/test_porch_eye.py ..................................               [ 74%]
+tests/test_preflight.py ......                                           [ 75%]
+tests/test_project_scanner_runtime.py ....                               [ 75%]
+tests/test_quota_monitor.py .....................                        [ 77%]
+tests/test_research_runtime.py .....                                     [ 77%]
+tests/test_resilience_runtime_scripts.py ..............                  [ 78%]
+tests/test_reviewer_runtime.py ...                                       [ 78%]
+tests/test_room_listener_runtime.py ........                             [ 79%]
+tests/test_router.py .....                                               [ 79%]
+tests/test_runtime_checkpoint.py ...                                     [ 79%]
+tests/test_runtime_paths.py ..                                           [ 79%]
+tests/test_scene_composer.py ......................................      [ 82%]
+tests/test_senseweave_voice.py ..........................                [ 84%]
+tests/test_sensor_fusion.py ...............................              [ 86%]
+tests/test_sensory_journal.py ............................               [ 88%]
+tests/test_server_health.py ...                                          [ 88%]
+tests/test_startle.py ................................                   [ 90%]
+tests/test_tamagotchi_runtime.py ......                                  [ 91%]
+tests/test_telegram_runtime.py ......                                    [ 91%]
+tests/test_theramini_duet.py ..........................................  [ 94%]
+tests/test_theramini_listener_runtime.py ........                        [ 95%]
+tests/test_trust.py ................                                     [ 96%]
+tests/test_voice_manager_v2.py ......................................... [ 98%]
+............                                                             [ 99%]
+tests/test_wizard.py ...                                                 [100%]
+
+=============================== warnings summary ===============================
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+  /Users/anthony/Programming/PromptClaw/tests/test_gallery.py:108: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(result.getdata()), list(canvas.getdata()))
+
+tests/test_pareidolia_characters.py: 189 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:85: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pixels = list(img.getdata())
+
+tests/test_pareidolia_characters.py: 21 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:254: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    rendered[name] = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:310: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:314: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:316: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:339: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_low = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:343: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_high = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:326: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:352: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:331: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:333: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:361: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:376: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:366: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:368: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_add_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:429: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:451: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_with_palette
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:443: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:434: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:436: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:481: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_curious_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:554: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_happy_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:542: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_neutral_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:536: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sad_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:548: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sleeping_eyes_no_highlights
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:560: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:571: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_bush
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:621: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:615: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:609: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:585: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_without_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:591: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:597: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:603: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:642: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:661: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:674: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    basalt_pixels = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:678: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pebble_pixels = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:870: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+====================== 1448 passed, 267 warnings in 8.99s ======================
+
+codex
+I confirmed the full suite requested by the task now runs cleanly. I’m now checking whether the bootstrap function is actually invoked by startup/preflight paths to ensure persistence semantics are reachable in real execution, not just unit tests.
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && rg -n \"FirstBootAnnouncer|identity\\.json|bootstrap_identity|mint_identity|identity_path|announced\" my-claw/tools/preflight.py my-claw/tools/daemon.py my-claw/tools/cypherclaw_daemon.py my-claw/tools/init_workdir.sh" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+my-claw/tools/daemon.py:102:from cypherclaw.first_boot import FirstBootAnnouncer
+my-claw/tools/daemon.py:2445:    _announcer = FirstBootAnnouncer(announce_fn=lambda payload: tg_send(
+
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && sed -n '2420,2495p' my-claw/tools/daemon.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+        _handle_pipeline_status()
+        return True
+
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Main loop
+# ---------------------------------------------------------------------------
+
+def poll_loop() -> None:
+    log.info("CypherClaw v2 daemon started")
+
+    # Kill any orphaned agent processes from previous crashes
+    _kill_orphan_agents()
+
+    # Start I/O watchdog — circuit breaker for disk I/O saturation
+    global _watchdog
+    _watchdog = IOWatchdog(alert_fn=tg_send)
+    _watchdog.start()
+    log.info("I/O watchdog started")
+
+    tg_send(_art.startup_banner(pets=pet_manager.pets))
+
+    # First-boot federation announcement (FEDREAD-004)
+    _announcer = FirstBootAnnouncer(announce_fn=lambda payload: tg_send(
+        f"🌐 Federation announcement: {payload['instance_name']} is online "
+        f"(mode={payload['mode']}, release={payload['release']})"
+    ))
+    _announcer.maybe_announce()
+
+    scheduler = Scheduler()
+    scheduler.start()
+    last_msg_time = time.time()
+    pets_sleeping = False
+
+    while True:
+        try:
+            # Notify systemd watchdog that we are alive
+            _notify_watchdog()
+
+            # Check file-based inbox for MacBook Claude messages
+            _inbox_path = "/run/cypherclaw-tmp/inbox.jsonl"
+            try:
+                if os.path.exists(_inbox_path) and os.path.getsize(_inbox_path) > 0:
+                    with open(_inbox_path, "r") as _inf:
+                        _inbox_lines = _inf.readlines()
+                    # Clear inbox
+                    with open(_inbox_path, "w") as _inf:
+                        pass
+                    for _line in _inbox_lines:
+                        try:
+                            _msg_data = json.loads(_line.strip())
+                            _inbox_text = _msg_data.get("text", "").strip()
+                            _inbox_source = _msg_data.get("source", "macbook")
+                            if _inbox_text:
+                                if _inbox_source == "keyboard":
+                                    log.info("Keyboard: %s", _inbox_text[:100])
+                                    state.add_message("user", _inbox_text)
+                                else:
+                                    log.info("Inbox (MacBook Claude): %s", _inbox_text[:100])
+                                    state.add_message("user", f"\U0001f5a5\ufe0f MacBook Claude: {_inbox_text}")
+                                    tg_send(f"\U0001f5a5\ufe0f *MacBook Claude:* {_inbox_text[:500]}")
+                                # Process as a regular message
+                                fast = fast_route(_inbox_text)
+                                if fast is not None:
+                                    execute_plan(fast)
+                                elif _inbox_text.startswith("/") and handle_builtin(_inbox_text):
+                                    pass
+                                else:
+                                    steps = route_message(_inbox_text)
+                                    execute_plan(steps)
+                        except Exception as _ie:
+                            log.warning("Inbox message error: %s", _ie)
+            except Exception:
+                pass
+
+codex
+I confirmed there is a critical integration gap: the new bootstrap helper exists and tests pass, but the daemon startup path never calls it, so an identity is still not guaranteed on first boot. I’ll encode this in the verification report with severity and commit it to the required verification path.
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && date '+%Y-%m-%d %H:%M:%S %z'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+2026-04-08 16:47:12 -0700
+
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && cat > sdp/verification/t-008@20260408t223256z-verify.md <<'EOF'
+# Verification Report — T-008@20260408T223256Z
+
+**Verify Agent:** codex
+**Date:** 2026-04-08 16:47:12 -0700
+**Artifacts Reviewed:** [src/cypherclaw/first_boot.py](/Users/anthony/Programming/PromptClaw/src/cypherclaw/first_boot.py), [my-claw/tools/first_boot.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/first_boot.py), [tests/test_first_boot.py](/Users/anthony/Programming/PromptClaw/tests/test_first_boot.py), [src/cypherclaw/__init__.py](/Users/anthony/Programming/PromptClaw/src/cypherclaw/__init__.py), [my-claw/tools/daemon.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/daemon.py), [ESCALATIONS.md](/Users/anthony/Programming/PromptClaw/ESCALATIONS.md), [sdp/verification/t-007@20260408t223256z-verify.md](/Users/anthony/Programming/PromptClaw/sdp/verification/t-007@20260408t223256z-verify.md)
+
+## Correctness
+"'`bootstrap_identity` and `generate_artistic_name` are correctly implemented and write an identity record using UUIDs and randomized adjective-noun names. The code includes persistence and idempotent load behavior. However, the runtime startup path does not invoke identity bootstrap, so the “first boot generates” behavior is not proven in the actual boot flow.
+
+## Completeness
+The implementation has unit coverage for `bootstrap_identity` and name generation, including corrupt-file and persistence cases. Integration coverage is missing: there is no call site that runs bootstrap during system startup.
+
+## Consistency
+Changes follow existing patterns and extend both `my-claw/tools/first_boot.py` and `src/cypherclaw/first_boot.py` symmetrically. Export additions in `__init__.py` are consistent.
+
+## Security
+No secret material is handled in this change, and identity files are created under `~/.promptclaw` with normal JSON permissions (no explicit hardening). No immediate security regressions are evident from the diff.
+
+## Quality
+Tests for the new behavior pass, and the commit is scoped and readable. But the feature is incomplete operationally because the bootstrap path is not exercised by runtime flow.
+
+## Issues Found
+- [ ] Runtime does not call `bootstrap_identity` on startup, so identity files are not guaranteed to be created automatically on first boot (for example, startup loop creates `FirstBootAnnouncer` and then only reads identity for announcement). Severity: blocking
+
+## Verdict: FAIL
+
+## Notes for Lead Agent
+- Wire `bootstrap_identity()` into the first-boot execution path before first-boot announcement logic (e.g., in daemon startup) and persist the returned identity.
+- Ensure startup writes identity only once and reuses it across subsequent boots to satisfy acceptance "Subsequent boots load existing identity without regenerating."
+- Add at least one integration test for startup wiring (or command path simulation) that demonstrates identity creation on first run and reuse on second run.
+- Re-run `pip install -e '"'.[dev]' && pytest tests/ -x"'` after integration changes.
+EOF' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+codex
+I’ve written the report draft to the required path and am now committing it. I’ll quickly amend formatting if needed before finalizing with the exact verdict and next steps.
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M CHANGELOG.md
+ M ESCALATIONS.md
+ M docs/architecture.md
+ M docs/command-reference.md
+ M docs/handoff-protocol.md
+ M docs/startup-wizard.md
+ M my-claw/systemd/cypherclaw-sdp-runner.service
+ M my-claw/tools/context_pulse.py
+ M my-claw/tools/cypherclaw_daemon.py
+ M my-claw/tools/dashboard_generator.py
+ M my-claw/tools/gallery/fb_renderer.py
+ M my-claw/tools/gallery/gallery_display.py
+ M my-claw/tools/glyphweave/pet_sprites.py
+ M my-claw/tools/init_workdir.sh
+ M my-claw/tools/preflight.py
+ M my-claw/tools/researcher.py
+ M my-claw/tools/safe_reboot.sh
+ M my-claw/tools/sdp_runner_launcher.sh
+ M my-claw/tools/server_health.py
+ M my-claw/tools/tamagotchi.py
+ M my-claw/tools/telegram.py
+ M pyproject.toml
+ M tests/test_daemon_fallback.py
+ M tests/test_gallery.py
+ M tests/test_glyphweave_runtime.py
+ M tests/test_preflight.py
+ M tests/test_resilience_runtime_scripts.py
+ M tests/test_server_health.py
+ M tests/test_tamagotchi_runtime.py
+ M tests/test_telegram_runtime.py
+?? Scarlett
+?? docs/20260402-cypherclaw-embodiment-prd.md
+?? docs/20260402-cypherclaw-embodiment-research-brief.md
+?? docs/contact-mic-calibration-protocol.md
+?? my-claw/sdp/prd-r750-ollama-integration.md
+?? my-claw/tools/contact_mic_calibration.py
+?? my-claw/tools/daemon.py
+?? my-claw/tools/runtime_paths.py
+?? progress.md
+?? promptclaw/glyphweave_cli.py
+?? sdp/assumption-log.md
+?? sdp/clarification-register.md
+?? sdp/domain-model.md
+?? sdp/implementation-plan.md
+?? sdp/logs/
+?? sdp/notifications.log
+?? sdp/prd-snapshot.md
+?? sdp/requirements-register.md
+?? sdp/run-log.md
+?? sdp/self-improvement/
+?? sdp/task-graph.md
+?? sdp/telemetry/
+?? sdp/templates/
+?? sdp/verification/t-008@20260408t223256z-verify.md
+?? tests/test_contact_mic_calibration_runtime.py
+?? tests/test_daemon_scheduler.py
+?? tests/test_glyphweave_cli.py
+?? tests/test_runtime_paths.py
+
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && cat > sdp/verification/t-008@20260408t223256z-verify.md <<'EOF'
+# Verification Report — T-008@20260408T223256Z
+
+**Verify Agent:** codex
+**Date:** 2026-04-08 16:47:12 -0700
+**Artifacts Reviewed:** [src/cypherclaw/first_boot.py](/Users/anthony/Programming/PromptClaw/src/cypherclaw/first_boot.py), [my-claw/tools/first_boot.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/first_boot.py), [tests/test_first_boot.py](/Users/anthony/Programming/PromptClaw/tests/test_first_boot.py), [src/cypherclaw/__init__.py](/Users/anthony/Programming/PromptClaw/src/cypherclaw/__init__.py), [my-claw/tools/daemon.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/daemon.py), [ESCALATIONS.md](/Users/anthony/Programming/PromptClaw/ESCALATIONS.md)
+
+## Correctness
+"'`bootstrap_identity` and `generate_artistic_name` are implemented correctly and include UUID instance IDs, adjective-noun names, persistence, and load-once logic. Runtime usage is not fully wired: startup code currently only attempts to load identity for announcement and does not bootstrap when missing, so identity creation on first boot is not guaranteed.
+
+## Completeness
+Functional unit coverage is good for new helper functions, including existing-record reuse and corrupt-file recovery. There is no end-to-end integration that proves first-boot identity creation during normal startup.
+
+## Consistency
+The implementation follows existing dataclass patterns and mirrors behavior across `src` and `my-claw` copies of `first_boot.py`. Public API exports were updated in `src/cypherclaw/__init__.py` in a consistent way.
+
+## Security
+No sensitive credentials are introduced. Identity data is stored as JSON under `~/.promptclaw` with no explicit permission hardening; this is unchanged relative to the previous model and not a new exposure in this commit.
+
+## Quality
+Tests requested by the user pass after installation (`1448 passed`). Code is scoped and readable, but acceptance is not satisfied at runtime without startup integration.
+
+## Issues Found
+- [ ] Runtime does not invoke `bootstrap_identity` on startup, so the identity file is never guaranteed to be created automatically at first run. Severity: blocking
+
+## Verdict: FAIL
+
+## Notes for Lead Agent
+- Add `bootstrap_identity()` invocation in startup flow (before `FirstBootAnnouncer`) so first boots mint and persist identity automatically.
+- Ensure this path is used on both standalone and federated modes.
+- Add an integration test that exercises startup and verifies identity persistence between boots.
+- Re-run `pip install -e '"'.[dev]' && pytest tests/ -x"'` after wiring the startup path.
+EOF' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && cat > sdp/verification/t-008@20260408t223256z-verify.md <<'EOF'
+# Verification Report — T-008@20260408T223256Z
+
+**Verify Agent:** codex
+**Date:** 2026-04-08 16:47:12 -0700
+**Artifacts Reviewed:** [src/cypherclaw/first_boot.py](/Users/anthony/Programming/PromptClaw/src/cypherclaw/first_boot.py), [my-claw/tools/first_boot.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/first_boot.py), [tests/test_first_boot.py](/Users/anthony/Programming/PromptClaw/tests/test_first_boot.py), [src/cypherclaw/__init__.py](/Users/anthony/Programming/PromptClaw/src/cypherclaw/__init__.py), [my-claw/tools/daemon.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/daemon.py), [ESCALATIONS.md](/Users/anthony/Programming/PromptClaw/ESCALATIONS.md)
+
+## Correctness
+"'`bootstrap_identity` and `generate_artistic_name` are implemented correctly and include UUID instance IDs, adjective-noun names, persistence, and load-once logic. Runtime usage is not fully wired: startup code currently only attempts to load identity for announcement and does not bootstrap when missing, so identity creation on first boot is not guaranteed.
+
+## Completeness
+Functional unit coverage is good for new helper functions, including existing-record reuse and corrupt-file recovery. There is no end-to-end integration that proves first-boot identity creation during normal startup.
+
+## Consistency
+The implementation follows existing dataclass patterns and mirrors behavior across `src` and `my-claw` copies of `first_boot.py`. Public API exports were updated in `src/cypherclaw/__init__.py` in a consistent way.
+
+## Security
+No sensitive credentials are introduced. Identity data is stored as JSON under `~/.promptclaw` with no explicit permission hardening; this is unchanged relative to the previous model and not a new exposure in this commit.
+
+## Quality
+Tests requested by the user pass after installation (`1448 passed`). Code is scoped and readable, but acceptance is not satisfied at runtime without startup integration.
+
+## Issues Found
+- [ ] Runtime does not invoke `bootstrap_identity` on startup, so the identity file is never guaranteed to be created automatically at first run. Severity: blocking
+
+## Verdict: FAIL
+
+## Notes for Lead Agent
+- Add `bootstrap_identity()` invocation in startup flow (before `FirstBootAnnouncer`) so first boots mint and persist identity automatically.
+- Ensure this path is used on both standalone and federated modes.
+- Add an integration test that exercises startup and verifies identity persistence between boots.
+- Re-run `pip install -e '"'.[dev]' && pytest tests/ -x"'` after wiring the startup path.
+EOF' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && cat > sdp/verification/t-008@20260408t223256z-verify.md <<EOF
+# Verification Report — T-008@20260408T223256Z
+
+**Verify Agent:** codex
+**Date:** 2026-04-08 16:47:12 -0700
+**Artifacts Reviewed:** [src/cypherclaw/first_boot.py](/Users/anthony/Programming/PromptClaw/src/cypherclaw/first_boot.py), [my-claw/tools/first_boot.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/first_boot.py), [tests/test_first_boot.py](/Users/anthony/Programming/PromptClaw/tests/test_first_boot.py), [src/cypherclaw/__init__.py](/Users/anthony/Programming/PromptClaw/src/cypherclaw/__init__.py), [my-claw/tools/daemon.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/daemon.py), [ESCALATIONS.md](/Users/anthony/Programming/PromptClaw/ESCALATIONS.md)
+
+## Correctness
+`bootstrap_identity` and `generate_artistic_name` are implemented correctly and include UUID instance IDs, adjective-noun names, persistence, and load-once logic. Runtime usage is not fully wired: startup code currently only attempts to load identity for announcement and does not bootstrap when missing, so identity creation on first boot is not guaranteed.
+
+## Completeness
+Functional unit coverage is good for new helper functions, including existing-record reuse and corrupt-file recovery. There is no end-to-end integration that proves first-boot identity creation during normal startup.
+
+## Consistency
+The implementation follows existing dataclass patterns and mirrors behavior across `src` and `my-claw` copies of `first_boot.py`. Public API exports were updated in `src/cypherclaw/__init__.py` in a consistent way.
+
+## Security
+No sensitive credentials are introduced. Identity data is stored as JSON under `~/.promptclaw` with no explicit permission hardening; this is unchanged relative to the previous model and not a new exposure in this commit.
+
+## Quality
+Tests requested by the user pass after installation (`1448 passed`). Code is scoped and readable, but acceptance is not satisfied at runtime without startup integration.
+
+## Issues Found
+- [ ] Runtime does not invoke `bootstrap_identity` on startup, so the identity file is never guaranteed to be created automatically at first run. Severity: blocking
+
+## Verdict: FAIL
+
+## Notes for Lead Agent
+- Add `bootstrap_identity()` invocation in startup flow (before `FirstBootAnnouncer`) so first boots mint and persist identity automatically.
+- Ensure this path is used on both standalone and federated modes.
+- Add an integration test that exercises startup and verifies identity persistence between boots.
+- Re-run `pip install -e '"'.[dev]' && pytest tests/ -x"'` after wiring the startup path.
+EOF' in /Users/anthony/Programming/PromptClaw
+ exited 1 in 0ms:
+zsh:1: command not found: bootstrap_identity
+zsh:1: command not found: generate_artistic_name
+zsh:1: command not found: src
+zsh:1: command not found: my-claw
+zsh:1: command not found: first_boot.py
+zsh:1: permission denied: src/cypherclaw/__init__.py
+zsh:1: permission denied: /Users/anthony/.promptclaw
+zsh:1: command not found: 1448
+zsh:1: command not found: bootstrap_identity
+zsh: parse error near `()'
+zsh:1: parse error in command substitution
+
+codex
+I’ve finished drafting the verification report and verified the required test command ran successfully; next I’m committing the report file exactly at the requested path and returning the final status.
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && git add sdp/verification/t-008@20260408t223256z-verify.md && git commit -m "verify(T-008): add verification report for identity bootstrap"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+[feat/graceful-degradation f24ae3a] verify(T-008): add verification report for identity bootstrap
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 sdp/verification/t-008@20260408t223256z-verify.md
+
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && wc -c sdp/verification/t-008@20260408t223256z-verify.md' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+       0 sdp/verification/t-008@20260408t223256z-verify.md
+
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && cat > sdp/verification/t-008@20260408t223256z-verify.md <<'EOF'
+# Verification Report — T-008@20260408T223256Z
+
+**Verify Agent:** codex
+**Date:** 2026-04-08 16:47:12 -0700
+**Artifacts Reviewed:** [src/cypherclaw/first_boot.py](/Users/anthony/Programming/PromptClaw/src/cypherclaw/first_boot.py), [my-claw/tools/first_boot.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/first_boot.py), [tests/test_first_boot.py](/Users/anthony/Programming/PromptClaw/tests/test_first_boot.py), [src/cypherclaw/__init__.py](/Users/anthony/Programming/PromptClaw/src/cypherclaw/__init__.py), [my-claw/tools/daemon.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/daemon.py), [ESCALATIONS.md](/Users/anthony/Programming/PromptClaw/ESCALATIONS.md)
+
+## Correctness
+bootstrap_identity and generate_artistic_name are implemented correctly and include UUID instance IDs, adjective-noun names, persistence, and load-once logic. Runtime usage is not fully wired: startup code currently only attempts to load identity for announcement and does not bootstrap when missing, so identity creation on first boot is not guaranteed.
+
+## Completeness
+Functional unit coverage is good for new helper functions, including existing-record reuse and corrupt-file recovery. There is no end-to-end integration that proves first-boot identity creation during normal startup.
+
+## Consistency
+The implementation follows existing dataclass patterns and mirrors behavior across src and my-claw copies of first_boot.py. Public API exports were updated in src/cypherclaw/__init__.py in a consistent way.
+
+## Security
+No sensitive credentials are introduced. Identity data is stored as JSON under ~/.promptclaw with no explicit permission hardening; this is unchanged relative to the previous model and not a new exposure in this commit.
+
+## Quality
+Tests requested by the user pass after installation (1448 passed). Code is scoped and readable, but acceptance is not satisfied at runtime without startup integration.
+
+## Issues Found
+- [ ] Runtime does not invoke bootstrap_identity on startup, so the identity file is never guaranteed to be created automatically at first run. Severity: blocking
+
+## Verdict: FAIL
+
+## Notes for Lead Agent
+- Add bootstrap_identity() invocation in startup flow (before FirstBootAnnouncer) so first boots mint and persist identity automatically.
+- Ensure this path is used on both standalone and federated modes.
+- Add an integration test that exercises startup and verifies identity persistence between boots.
+- Re-run pip install -e '.[dev]' && pytest tests/ -x after wiring the startup path.
+EOF
+wc -c sdp/verification/t-008@20260408t223256z-verify.md" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+    2532 sdp/verification/t-008@20260408t223256z-verify.md
+
+codex
+I found the first commit accidentally recorded an empty report file, so I replaced it with the full required report content and I’m committing that fix now.
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && git add sdp/verification/t-008@20260408t223256z-verify.md && git commit -m "verify(T-008): correct report content for instance identity bootstrap"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+[feat/graceful-degradation b10920a] verify(T-008): correct report content for instance identity bootstrap
+ 1 file changed, 31 insertions(+)
+
+codex
+Verification report written and committed at:
+
+- `sdp/verification/t-008@20260408t223256z-verify.md`
+
+Verification outcome: **FAIL** (blocking issue)
+
+Key finding:
+- Runtime never invokes `bootstrap_identity` on startup, so first-boot identity creation is not guaranteed in live boot flow. `FirstBootAnnouncer` only reads an existing identity and skips when missing.
+
+Validation run:
+- `pip install -e '.[dev]' && pytest tests/ -x` succeeded: **1448 passed**.
+
+Committed as:
+- `b10920a` (replacing earlier empty-report commit `f24ae3a`)
+tokens used
+83,757

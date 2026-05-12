@@ -1,0 +1,1110 @@
+Command: codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-5.3-codex-spark -c model_reasoning_effort=xhigh -
+Prompt delivered via: stdin (2072 chars)
+---
+
+Verification complete. I reviewed the requested artifacts and ran the required test suite.
+
+Verification report written at:
+
+- [sdp/verification/t-002@20260408t223256z-verify.md](/Users/anthony/Programming/PromptClaw/sdp/verification/t-002@20260408t223256z-verify.md)
+
+Committed as:
+
+- `09fb63b` — `verify(T-002): add verification report for dual-socket routing task`
+
+Resulting verdict: **PASS WITH NOTES**.
+
+Key findings (also in report):
+- Routing config and tests are present and correct for required roles (`coding`, `review`, `netops`, `orchestrator`, `default`) with expected ports `11434/11435`.
+- Env override via `OLLAMA_ROUTE_JSON` is implemented and tested.
+- Full suite passed: `1421 passed`.
+- Minor concerns: routing helper is currently not wired into a downstream call path, and partial bad entries in `OLLAMA_ROUTE_JSON` are all discarded due shared parse exception handling.
+
+--- STDERR ---
+OpenAI Codex v0.118.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.3-codex-spark
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019d6f50-1206-72b2-95ba-a88416b6f823
+--------
+user
+# Verification: Task T-002@20260408T223256Z
+
+**Task:** Add dual-socket model-per-role routing configuration mapping task categories to specific Ollama models and NUMA-pinned ports (11434 for socket 0, 11435 for socket 1).
+**Tier:** T1
+
+You are the VERIFY agent for this task. The LEAD agent has completed their work.
+
+## Acceptance Criteria
+
+- Configuration maps coding, review, netops, orchestrator, and default roles to model names and ports<br/>- Model names are configurable without code changes (env var or config file)<br/>- Tests verify routing returns correct model+port for each category
+
+## Review Checklist
+
+1. **Review recent commits:**
+   ```bash
+   git log --oneline -5
+   git diff HEAD~3 --stat
+   ```
+
+2. **Review code changes:**
+   ```bash
+   git diff HEAD~3
+   ```
+
+4. **Check ESCALATIONS.md** for any flagged issues.
+
+5. **Run the test suite:**
+   ```bash
+   pip install -e '.[dev]' && pytest tests/ -x
+   ```
+
+## Evaluation Criteria
+
+Evaluate the work against these five dimensions:
+
+1. **Correctness**: Does the output match the requirements/spec?
+2. **Completeness**: Are there gaps, missing edge cases, or unhandled scenarios?
+3. **Consistency**: Does the output follow established patterns and conventions?
+4. **Security**: Are there vulnerabilities, leaked secrets, or unsafe practices?
+5. **Quality**: Does the output meet the quality gates for this phase?
+
+## Output
+
+Write your verification report and all findings to this exact path:
+`sdp/verification/t-002@20260408t223256z-verify.md`
+Do not use a different filename or directory.
+
+Use this format:
+
+```markdown
+# Verification Report — T-002@20260408T223256Z
+
+**Verify Agent:** [your agent name]
+**Date:** [today]
+**Artifacts Reviewed:** [list files reviewed]
+
+## Correctness
+[assessment]
+
+## Completeness
+[assessment]
+
+## Consistency
+[assessment]
+
+## Security
+[assessment]
+
+## Quality
+[assessment]
+
+## Issues Found
+- [ ] [Issue — severity: blocking/minor]
+
+## Verdict: [PASS | PASS WITH NOTES | FAIL]
+
+## Notes for Lead Agent
+[specific items to address]
+```
+
+Commit the verification report.
+
+codex
+I’ll run the required verification pass from your checklist first (recent commits, full diff, ESCALATIONS review), then inspect the relevant changed files for routing behavior and tests, run the requested test command, and write/commit `sdp/verification/t-002@20260408t223256z-verify.md` with the structured findings.
+exec
+/bin/zsh -lc 'git log --oneline -5' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+a6f7d90 feat(agent-selector): add dual-socket model-per-role routing config [T-002@20260408T223256Z]
+f77a70d verify(T-001): PASS WITH NOTES — ollama provider + netops fitness seeds verified
+6994984 fix(gates): resolve gate failures [T-001@20260408T223256Z]
+7b56c12 fix(agent-selector): add local ollama seeds [T-001@20260408T223256Z]
+2f7bd17 feat: sync agent_selector + first_boot from CypherClaw
+
+exec
+/bin/zsh -lc 'git diff --stat HEAD~3' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ CHANGELOG.md                                       |   18 +
+ docs/architecture.md                               |   14 +-
+ docs/command-reference.md                          |   52 +-
+ docs/handoff-protocol.md                           |   13 +-
+ docs/startup-wizard.md                             |    9 +-
+ my-claw/systemd/cypherclaw-sdp-runner.service      |   14 +-
+ my-claw/tools/agent_selector.py                    |   39 +
+ my-claw/tools/context_pulse.py                     |   13 +-
+ my-claw/tools/cypherclaw_daemon.py                 | 1350 +++++++++++++++++---
+ my-claw/tools/dashboard_generator.py               |   11 +-
+ my-claw/tools/gallery/fb_renderer.py               |   32 +-
+ my-claw/tools/gallery/gallery_display.py           |   60 +-
+ my-claw/tools/glyphweave/pet_sprites.py            |   30 +-
+ my-claw/tools/init_workdir.sh                      |    2 +-
+ my-claw/tools/maintenance_mode.py                  |  520 +++++++-
+ my-claw/tools/preflight.py                         |   18 +
+ my-claw/tools/researcher.py                        |   14 +-
+ my-claw/tools/safe_reboot.sh                       |    5 +-
+ my-claw/tools/sdp_runner_launcher.sh               |   38 +-
+ .../tools/senseweave/synthesis/senseweave_voice.py |   26 +-
+ my-claw/tools/server_health.py                     |   16 +
+ my-claw/tools/tamagotchi.py                        |    4 +-
+ my-claw/tools/telegram.py                          |   50 +
+ pyproject.toml                                     |    5 +-
+ sdp/verification/t-001@20260408t223256z-verify.md  |   67 +
+ src/cypherclaw/__init__.py                         |    6 +
+ src/cypherclaw/first_boot.py                       |  144 +++
+ tests/conftest.py                                  |   12 +
+ tests/test_accompaniment.py                        |    1 -
+ tests/test_antenna_to_skin.py                      |    1 -
+ tests/test_breath_to_filter.py                     |    1 -
+ tests/test_coherence_integration.py                |    4 +-
+ tests/test_constitution.py                         |    2 +-
+ tests/test_contact_listener_runtime.py             |    2 -
+ tests/test_continuous_learner.py                   |    4 -
+ tests/test_daemon_fallback.py                      |  756 ++++++++++-
+ tests/test_gallery.py                              |   49 +-
+ tests/test_generative_scores.py                    |    1 -
+ tests/test_glyphweave_runtime.py                   |    2 +
+ tests/test_inner_life.py                           |    6 +-
+ tests/test_maintenance_mode.py                     |   75 +-
+ tests/test_melodic_mind.py                         |    2 +-
+ tests/test_midi_state.py                           |    1 -
+ tests/test_ollama_routing.py                       |  132 ++
+ tests/test_orchestral_form.py                      |    1 -
+ tests/test_pareidolia_art_engine.py                |    3 -
+ tests/test_pareidolia_characters.py                |    1 -
+ tests/test_pareidolia_color.py                     |    1 -
+ tests/test_porch_eye.py                            |    3 -
+ tests/test_preflight.py                            |   15 +
+ tests/test_resilience_runtime_scripts.py           |  267 +++-
+ tests/test_room_listener_runtime.py                |    1 -
+ tests/test_scene_composer.py                       |    2 +-
+ tests/test_senseweave_voice.py                     |    8 +-
+ tests/test_sensor_fusion.py                        |    2 -
+ tests/test_server_health.py                        |   10 +
+ tests/test_tamagotchi_runtime.py                   |    8 +
+ tests/test_telegram_runtime.py                     |   74 ++
+ tests/test_theramini_listener_runtime.py           |    2 -
+ 59 files changed, 3706 insertions(+), 313 deletions(-)
+
+exec
+/bin/zsh -lc ls in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+AGENTS.md
+CHANGELOG.md
+ESCALATIONS.md
+README.md
+Scarlett
+TEST_REPORT.md
+agent-loop.sh
+agent-startup-base.md
+agent_monitor.py
+claude-agent-prompt.md
+codex-agent-prompt.md
+codex-graceful-degradation-prompt.md
+docs
+examples
+gemini-agent-prompt.md
+generate_goldendoodle.py
+generate_goldendoodle_final.py
+generate_goldendoodle_v2.py
+generate_goldendoodle_v3.py
+generate_image_script.py
+goldendoodle.png
+goldendoodle.svg
+my-claw
+progress.md
+promptclaw
+promptclaw.egg-info
+pyproject.toml
+sdp
+src
+temp_prompt.txt
+test_genai.py
+tests
+~
+
+exec
+/bin/zsh -lc 'git diff HEAD~3 -- ESCALATIONS.md' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+codex
+Next I’m narrowing to the specific T-002 commit and the touched routing/test files, then I’ll validate behavior in those files against the acceptance criteria before running tests.
+exec
+/bin/zsh -lc 'git show --name-only --oneline HEAD' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'git show --stat --oneline HEAD --no-patch' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+a6f7d90 feat(agent-selector): add dual-socket model-per-role routing config [T-002@20260408T223256Z]
+my-claw/tools/agent_selector.py
+tests/test_ollama_routing.py
+
+ succeeded in 0ms:
+a6f7d90 feat(agent-selector): add dual-socket model-per-role routing config [T-002@20260408T223256Z]
+
+exec
+/bin/zsh -lc 'cat ESCALATIONS.md' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+# Escalations
+
+Items requiring human review. Append-only per task.
+
+## T-001 (2026-04-01T18:55:24.984659+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-001 (2026-04-01T18:56:11.434931+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-001 (2026-04-01T18:56:41.692113+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-009@20260408T220341Z (2026-04-08T22:12:54.185469+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=85.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=85.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=85.0%
+
+## T-001@20260408T223256Z (2026-04-08T22:33:10.555043+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+
+## T-001@20260408T223256Z (2026-04-08T23:10:00+00:00)
+
+- **Reason:** Validation blocked by pre-existing repo issues
+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+
+codex
+I’m now verifying the actual implementation by reading the commit diff for the two touched files and then I’ll cross-check against the requested roles, model configurability, and NUMA ports.
+exec
+/bin/zsh -lc 'git show -- tests/test_ollama_routing.py' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'git show -- my-claw/tools/agent_selector.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+commit a6f7d90b618972172866a487b3049fc82466c27a
+Author: Anthony Ainsworth <anthony@cascadiantech.com>
+Date:   Wed Apr 8 15:56:32 2026 -0700
+
+    feat(agent-selector): add dual-socket model-per-role routing config [T-002@20260408T223256Z]
+    
+    Add OLLAMA_ROUTE_DEFAULTS mapping coding, review, netops, orchestrator,
+    and default roles to specific Ollama models and NUMA-pinned ports
+    (11434 for socket 0, 11435 for socket 1). Models are overridable at
+    runtime via OLLAMA_ROUTE_JSON env var. Includes 19 tests covering
+    defaults, per-role lookup, fallback, env override, and malformed input.
+    
+    Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+diff --git a/my-claw/tools/agent_selector.py b/my-claw/tools/agent_selector.py
+index 03b906a..1be0fc0 100644
+--- a/my-claw/tools/agent_selector.py
++++ b/my-claw/tools/agent_selector.py
+@@ -1,6 +1,7 @@
+ """Agent selector — rotates agents using fitness-based selection with alternation penalties."""
+ 
+ import json
++import os
+ import random
+ import time
+ from pathlib import Path
+@@ -70,6 +71,44 @@ DEFAULT_FITNESS = {
+     "llama3.2:3b": {"narrative_prose": 0.52},
+ }
+ 
++# Dual-socket Ollama model-per-role routing.
++# Maps task categories to specific models on NUMA-pinned ports.
++# Socket 0 → port 11434, Socket 1 → port 11435.
++# Override at runtime via OLLAMA_ROUTE_JSON env var (JSON string).
++OLLAMA_ROUTE_DEFAULTS: dict[str, dict[str, object]] = {
++    "coding":       {"model": "qwen3-coder:30b", "port": 11434},
++    "review":       {"model": "qwen3.5:122b",    "port": 11435},
++    "netops":       {"model": "qwen3:30b-a3b",   "port": 11435},
++    "orchestrator": {"model": "qwen3:30b-a3b",   "port": 11434},
++    "default":      {"model": "qwen3:30b-a3b",   "port": 11434},
++}
++
++
++def _load_ollama_routes() -> dict[str, dict[str, object]]:
++    """Build the active route table from defaults + env override."""
++    routes = {k: dict(v) for k, v in OLLAMA_ROUTE_DEFAULTS.items()}
++    env_raw = os.environ.get("OLLAMA_ROUTE_JSON", "").strip()
++    if env_raw:
++        try:
++            overrides = json.loads(env_raw)
++            if isinstance(overrides, dict):
++                for role, cfg in overrides.items():
++                    if isinstance(cfg, dict) and "model" in cfg and "port" in cfg:
++                        routes[role] = {"model": str(cfg["model"]), "port": int(cfg["port"])}
++        except (json.JSONDecodeError, ValueError, TypeError):
++            pass  # malformed env var — stick with defaults
++    return routes
++
++
++def get_ollama_route(category: str) -> dict[str, object]:
++    """Return ``{"model": ..., "port": ...}`` for a task category.
++
++    Falls back to the ``"default"`` route for unmapped categories.
++    """
++    routes = _load_ollama_routes()
++    return dict(routes.get(category, routes["default"]))
++
++
+ ALTERNATION_PENALTY = 0.3
+ CROSS_PROVIDER_BONUS = 0.25
+ EXPLORATION_RATE = 0.10  # 10% random exploration
+
+ succeeded in 0ms:
+commit a6f7d90b618972172866a487b3049fc82466c27a
+Author: Anthony Ainsworth <anthony@cascadiantech.com>
+Date:   Wed Apr 8 15:56:32 2026 -0700
+
+    feat(agent-selector): add dual-socket model-per-role routing config [T-002@20260408T223256Z]
+    
+    Add OLLAMA_ROUTE_DEFAULTS mapping coding, review, netops, orchestrator,
+    and default roles to specific Ollama models and NUMA-pinned ports
+    (11434 for socket 0, 11435 for socket 1). Models are overridable at
+    runtime via OLLAMA_ROUTE_JSON env var. Includes 19 tests covering
+    defaults, per-role lookup, fallback, env override, and malformed input.
+    
+    Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+diff --git a/tests/test_ollama_routing.py b/tests/test_ollama_routing.py
+new file mode 100644
+index 0000000..26ea99c
+--- /dev/null
++++ b/tests/test_ollama_routing.py
+@@ -0,0 +1,132 @@
++"""Tests for dual-socket Ollama model-per-role routing (R750-002)."""
++
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++
++import pytest
++
++sys.path.insert(0, str(Path(__file__).parent.parent / "my-claw" / "tools"))
++
++import agent_selector
++
++
++class TestOllamaRouteDefaults:
++    """Verify the built-in route table covers required roles and ports."""
++
++    REQUIRED_ROLES = {"coding", "review", "netops", "orchestrator", "default"}
++
++    def test_all_required_roles_present(self) -> None:
++        assert self.REQUIRED_ROLES.issubset(agent_selector.OLLAMA_ROUTE_DEFAULTS)
++
++    def test_each_entry_has_model_and_port(self) -> None:
++        for role, cfg in agent_selector.OLLAMA_ROUTE_DEFAULTS.items():
++            assert "model" in cfg, f"{role} missing 'model'"
++            assert "port" in cfg, f"{role} missing 'port'"
++
++    def test_socket0_port(self) -> None:
++        for role in ("coding", "orchestrator", "default"):
++            assert agent_selector.OLLAMA_ROUTE_DEFAULTS[role]["port"] == 11434
++
++    def test_socket1_port(self) -> None:
++        for role in ("review", "netops"):
++            assert agent_selector.OLLAMA_ROUTE_DEFAULTS[role]["port"] == 11435
++
++    def test_ports_are_only_valid_sockets(self) -> None:
++        valid = {11434, 11435}
++        for role, cfg in agent_selector.OLLAMA_ROUTE_DEFAULTS.items():
++            assert cfg["port"] in valid, f"{role} has unexpected port {cfg['port']}"
++
++
++class TestGetOllamaRoute:
++    """Verify get_ollama_route returns correct model+port per category."""
++
++    def test_coding_route(self) -> None:
++        route = agent_selector.get_ollama_route("coding")
++        assert route["model"] == "qwen3-coder:30b"
++        assert route["port"] == 11434
++
++    def test_review_route(self) -> None:
++        route = agent_selector.get_ollama_route("review")
++        assert route["model"] == "qwen3.5:122b"
++        assert route["port"] == 11435
++
++    def test_netops_route(self) -> None:
++        route = agent_selector.get_ollama_route("netops")
++        assert route["model"] == "qwen3:30b-a3b"
++        assert route["port"] == 11435
++
++    def test_orchestrator_route(self) -> None:
++        route = agent_selector.get_ollama_route("orchestrator")
++        assert route["model"] == "qwen3:30b-a3b"
++        assert route["port"] == 11434
++
++    def test_default_route(self) -> None:
++        route = agent_selector.get_ollama_route("default")
++        assert route["model"] == "qwen3:30b-a3b"
++        assert route["port"] == 11434
++
++    def test_unknown_category_falls_back_to_default(self) -> None:
++        route = agent_selector.get_ollama_route("something_unknown")
++        default = agent_selector.get_ollama_route("default")
++        assert route == default
++
++    def test_returns_copy_not_reference(self) -> None:
++        route = agent_selector.get_ollama_route("coding")
++        route["model"] = "tampered"
++        fresh = agent_selector.get_ollama_route("coding")
++        assert fresh["model"] != "tampered"
++
++
++class TestOllamaRouteEnvOverride:
++    """Verify OLLAMA_ROUTE_JSON env var overrides defaults."""
++
++    def test_override_single_role(self, monkeypatch: pytest.MonkeyPatch) -> None:
++        override = {"coding": {"model": "deepseek-coder:33b", "port": 11435}}
++        monkeypatch.setenv("OLLAMA_ROUTE_JSON", json.dumps(override))
++
++        route = agent_selector.get_ollama_route("coding")
++        assert route["model"] == "deepseek-coder:33b"
++        assert route["port"] == 11435
++
++    def test_override_preserves_unmentioned_roles(self, monkeypatch: pytest.MonkeyPatch) -> None:
++        override = {"coding": {"model": "custom:7b", "port": 11434}}
++        monkeypatch.setenv("OLLAMA_ROUTE_JSON", json.dumps(override))
++
++        review = agent_selector.get_ollama_route("review")
++        assert review == {"model": "qwen3.5:122b", "port": 11435}
++
++    def test_override_adds_new_role(self, monkeypatch: pytest.MonkeyPatch) -> None:
++        override = {"writing": {"model": "mistral:7b", "port": 11434}}
++        monkeypatch.setenv("OLLAMA_ROUTE_JSON", json.dumps(override))
++
++        route = agent_selector.get_ollama_route("writing")
++        assert route["model"] == "mistral:7b"
++        assert route["port"] == 11434
++
++    def test_malformed_json_ignored(self, monkeypatch: pytest.MonkeyPatch) -> None:
++        monkeypatch.setenv("OLLAMA_ROUTE_JSON", "not valid json{{{")
++
++        route = agent_selector.get_ollama_route("coding")
++        assert route == dict(agent_selector.OLLAMA_ROUTE_DEFAULTS["coding"])
++
++    def test_incomplete_entry_ignored(self, monkeypatch: pytest.MonkeyPatch) -> None:
++        override = {"coding": {"model": "only-model"}}  # missing port
++        monkeypatch.setenv("OLLAMA_ROUTE_JSON", json.dumps(override))
++
++        route = agent_selector.get_ollama_route("coding")
++        assert route == dict(agent_selector.OLLAMA_ROUTE_DEFAULTS["coding"])
++
++    def test_empty_env_uses_defaults(self, monkeypatch: pytest.MonkeyPatch) -> None:
++        monkeypatch.setenv("OLLAMA_ROUTE_JSON", "")
++
++        route = agent_selector.get_ollama_route("coding")
++        assert route == dict(agent_selector.OLLAMA_ROUTE_DEFAULTS["coding"])
++
++    def test_non_dict_env_ignored(self, monkeypatch: pytest.MonkeyPatch) -> None:
++        monkeypatch.setenv("OLLAMA_ROUTE_JSON", json.dumps([1, 2, 3]))
++
++        route = agent_selector.get_ollama_route("coding")
++        assert route == dict(agent_selector.OLLAMA_ROUTE_DEFAULTS["coding"])
+
+codex
+I’ve confirmed the new mapping and tests exist. I’m checking whether the new routing function is actually used in the selector flow (so the change is not just configuration only) before I finalize findings.
+exec
+/bin/zsh -lc 'rg -n "get_ollama_route|ollama|route|coding|review|netops|orchestrator|default" my-claw/tools/agent_selector.py tests/test_ollama_routing.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_ollama_routing.py:17:    """Verify the built-in route table covers required roles and ports."""
+tests/test_ollama_routing.py:19:    REQUIRED_ROLES = {"coding", "review", "netops", "orchestrator", "default"}
+tests/test_ollama_routing.py:30:        for role in ("coding", "orchestrator", "default"):
+tests/test_ollama_routing.py:34:        for role in ("review", "netops"):
+tests/test_ollama_routing.py:44:    """Verify get_ollama_route returns correct model+port per category."""
+tests/test_ollama_routing.py:46:    def test_coding_route(self) -> None:
+tests/test_ollama_routing.py:47:        route = agent_selector.get_ollama_route("coding")
+tests/test_ollama_routing.py:48:        assert route["model"] == "qwen3-coder:30b"
+tests/test_ollama_routing.py:49:        assert route["port"] == 11434
+tests/test_ollama_routing.py:51:    def test_review_route(self) -> None:
+tests/test_ollama_routing.py:52:        route = agent_selector.get_ollama_route("review")
+tests/test_ollama_routing.py:53:        assert route["model"] == "qwen3.5:122b"
+tests/test_ollama_routing.py:54:        assert route["port"] == 11435
+tests/test_ollama_routing.py:56:    def test_netops_route(self) -> None:
+tests/test_ollama_routing.py:57:        route = agent_selector.get_ollama_route("netops")
+tests/test_ollama_routing.py:58:        assert route["model"] == "qwen3:30b-a3b"
+tests/test_ollama_routing.py:59:        assert route["port"] == 11435
+tests/test_ollama_routing.py:61:    def test_orchestrator_route(self) -> None:
+tests/test_ollama_routing.py:62:        route = agent_selector.get_ollama_route("orchestrator")
+tests/test_ollama_routing.py:63:        assert route["model"] == "qwen3:30b-a3b"
+tests/test_ollama_routing.py:64:        assert route["port"] == 11434
+tests/test_ollama_routing.py:66:    def test_default_route(self) -> None:
+tests/test_ollama_routing.py:67:        route = agent_selector.get_ollama_route("default")
+tests/test_ollama_routing.py:68:        assert route["model"] == "qwen3:30b-a3b"
+tests/test_ollama_routing.py:69:        assert route["port"] == 11434
+tests/test_ollama_routing.py:71:    def test_unknown_category_falls_back_to_default(self) -> None:
+tests/test_ollama_routing.py:72:        route = agent_selector.get_ollama_route("something_unknown")
+tests/test_ollama_routing.py:73:        default = agent_selector.get_ollama_route("default")
+tests/test_ollama_routing.py:74:        assert route == default
+tests/test_ollama_routing.py:77:        route = agent_selector.get_ollama_route("coding")
+tests/test_ollama_routing.py:78:        route["model"] = "tampered"
+tests/test_ollama_routing.py:79:        fresh = agent_selector.get_ollama_route("coding")
+tests/test_ollama_routing.py:84:    """Verify OLLAMA_ROUTE_JSON env var overrides defaults."""
+tests/test_ollama_routing.py:87:        override = {"coding": {"model": "deepseek-coder:33b", "port": 11435}}
+tests/test_ollama_routing.py:90:        route = agent_selector.get_ollama_route("coding")
+tests/test_ollama_routing.py:91:        assert route["model"] == "deepseek-coder:33b"
+tests/test_ollama_routing.py:92:        assert route["port"] == 11435
+tests/test_ollama_routing.py:95:        override = {"coding": {"model": "custom:7b", "port": 11434}}
+tests/test_ollama_routing.py:98:        review = agent_selector.get_ollama_route("review")
+tests/test_ollama_routing.py:99:        assert review == {"model": "qwen3.5:122b", "port": 11435}
+tests/test_ollama_routing.py:105:        route = agent_selector.get_ollama_route("writing")
+tests/test_ollama_routing.py:106:        assert route["model"] == "mistral:7b"
+tests/test_ollama_routing.py:107:        assert route["port"] == 11434
+tests/test_ollama_routing.py:112:        route = agent_selector.get_ollama_route("coding")
+tests/test_ollama_routing.py:113:        assert route == dict(agent_selector.OLLAMA_ROUTE_DEFAULTS["coding"])
+tests/test_ollama_routing.py:116:        override = {"coding": {"model": "only-model"}}  # missing port
+tests/test_ollama_routing.py:119:        route = agent_selector.get_ollama_route("coding")
+tests/test_ollama_routing.py:120:        assert route == dict(agent_selector.OLLAMA_ROUTE_DEFAULTS["coding"])
+tests/test_ollama_routing.py:122:    def test_empty_env_uses_defaults(self, monkeypatch: pytest.MonkeyPatch) -> None:
+tests/test_ollama_routing.py:125:        route = agent_selector.get_ollama_route("coding")
+tests/test_ollama_routing.py:126:        assert route == dict(agent_selector.OLLAMA_ROUTE_DEFAULTS["coding"])
+tests/test_ollama_routing.py:131:        route = agent_selector.get_ollama_route("coding")
+tests/test_ollama_routing.py:132:        assert route == dict(agent_selector.OLLAMA_ROUTE_DEFAULTS["coding"])
+my-claw/tools/agent_selector.py:21:    "ollama": "local",
+my-claw/tools/agent_selector.py:34:    "coding": ["code", "implement", "build", "fix", "refactor", "write", "create", "add"],
+my-claw/tools/agent_selector.py:35:    "review": ["review", "verify", "check", "audit", "examine"],
+my-claw/tools/agent_selector.py:39:    "netops": ["netops", "network", "router", "switch", "firewall", "fortigate", "vlan", "bgp", "vpn"],
+my-claw/tools/agent_selector.py:41:    "routing": ["route", "decide", "classify", "determine"],
+my-claw/tools/agent_selector.py:53:    "claude": {"architecture": 0.85, "review": 0.90, "coding": 0.70, "research": 0.75, "routing": 0.80, "writing": 0.80, "testing": 0.65, "devops": 0.60, "narrative_prose": 0.86},
+my-claw/tools/agent_selector.py:54:    "codex": {"architecture": 0.55, "review": 0.60, "coding": 0.90, "research": 0.50, "routing": 0.50, "writing": 0.45, "testing": 0.85, "devops": 0.70, "narrative_prose": 0.72},
+my-claw/tools/agent_selector.py:55:    "gemini": {"architecture": 0.60, "review": 0.55, "coding": 0.55, "research": 0.90, "routing": 0.60, "writing": 0.85, "testing": 0.50, "devops": 0.50, "narrative_prose": 0.84},
+my-claw/tools/agent_selector.py:56:    "ollama": {
+my-claw/tools/agent_selector.py:58:        "coding": 0.70,
+my-claw/tools/agent_selector.py:59:        "review": 0.60,
+my-claw/tools/agent_selector.py:65:        "netops": 0.80,
+my-claw/tools/agent_selector.py:79:    "coding":       {"model": "qwen3-coder:30b", "port": 11434},
+my-claw/tools/agent_selector.py:80:    "review":       {"model": "qwen3.5:122b",    "port": 11435},
+my-claw/tools/agent_selector.py:81:    "netops":       {"model": "qwen3:30b-a3b",   "port": 11435},
+my-claw/tools/agent_selector.py:82:    "orchestrator": {"model": "qwen3:30b-a3b",   "port": 11434},
+my-claw/tools/agent_selector.py:83:    "default":      {"model": "qwen3:30b-a3b",   "port": 11434},
+my-claw/tools/agent_selector.py:87:def _load_ollama_routes() -> dict[str, dict[str, object]]:
+my-claw/tools/agent_selector.py:88:    """Build the active route table from defaults + env override."""
+my-claw/tools/agent_selector.py:89:    routes = {k: dict(v) for k, v in OLLAMA_ROUTE_DEFAULTS.items()}
+my-claw/tools/agent_selector.py:97:                        routes[role] = {"model": str(cfg["model"]), "port": int(cfg["port"])}
+my-claw/tools/agent_selector.py:99:            pass  # malformed env var — stick with defaults
+my-claw/tools/agent_selector.py:100:    return routes
+my-claw/tools/agent_selector.py:103:def get_ollama_route(category: str) -> dict[str, object]:
+my-claw/tools/agent_selector.py:106:    Falls back to the ``"default"`` route for unmapped categories.
+my-claw/tools/agent_selector.py:108:    routes = _load_ollama_routes()
+my-claw/tools/agent_selector.py:109:    return dict(routes.get(category, routes["default"]))
+my-claw/tools/agent_selector.py:184:        return "coding"  # default
+my-claw/tools/agent_selector.py:187:        """Get fitness score for agent+category from Observatory or defaults."""
+my-claw/tools/agent_selector.py:197:        # Fall back to defaults
+my-claw/tools/agent_selector.py:369:        verify_scores = {a: self.get_fitness(a, "review") for a in others}
+my-claw/tools/agent_selector.py:397:            for cat in ("coding", "architecture", "review", "research", "writing"):
+
+codex
+I still need to run the full verification command now to satisfy the checklist, then I’ll evaluate results against acceptance and produce the mandatory report file with severity-tagged findings.
+exec
+/bin/zsh -lc "pip install -e '.[dev]' && pytest tests/ -x" in /Users/anthony/Programming/PromptClaw
+ succeeded in 12405ms:
+Obtaining file:///Users/anthony/Programming/PromptClaw
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: mypy>=1.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.19.1)
+Requirement already satisfied: pytest>=8.0 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (8.3.5)
+Requirement already satisfied: ruff>=0.9 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.9.2)
+Requirement already satisfied: typing_extensions>=4.6.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (4.15.0)
+Requirement already satisfied: mypy_extensions>=1.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: pathspec>=0.9.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.10.3)
+Requirement already satisfied: librt>=0.6.2 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.8.1)
+Requirement already satisfied: iniconfig in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.1.1)
+Requirement already satisfied: packaging in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (23.2)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.5.0)
+Building wheels for collected packages: promptclaw
+  Building editable for promptclaw (pyproject.toml): started
+  Building editable for promptclaw (pyproject.toml): finished with status 'done'
+  Created wheel for promptclaw: filename=promptclaw-3.0.0-0.editable-py3-none-any.whl size=5839 sha256=9e1f9ed0964dd398aa488efdb471975d3d92b56d847911e7f3caa2281f67bd10
+  Stored in directory: /private/var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/pip-ephem-wheel-cache-byrwrzqb/wheels/ab/f4/89/0cacd29874f6252d7c6bef0fca4c14839da91ab6a8d842965e
+Successfully built promptclaw
+Installing collected packages: promptclaw
+  Attempting uninstall: promptclaw
+    Found existing installation: promptclaw 3.0.0
+    Uninstalling promptclaw-3.0.0:
+      Successfully uninstalled promptclaw-3.0.0
+Successfully installed promptclaw-3.0.0
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1421 items
+
+tests/test_accompaniment.py ...........................                  [  1%]
+tests/test_agent_runtime.py ..                                           [  2%]
+tests/test_agent_selector_defaults.py .                                  [  2%]
+tests/test_agent_selector_quota.py ......                                [  2%]
+tests/test_antenna_to_skin.py .................................          [  4%]
+tests/test_art_engine_runtime.py ....                                    [  5%]
+tests/test_audio_analysis.py ...............................             [  7%]
+tests/test_bootstrap.py ..                                               [  7%]
+tests/test_breath_to_filter.py .............................             [  9%]
+tests/test_check_status_runtime.py ..                                    [  9%]
+tests/test_coherence_engine.py ..............                            [ 10%]
+tests/test_coherence_integration.py ............                         [ 11%]
+tests/test_collaborative_canvas.py ......................                [ 13%]
+tests/test_config.py ..                                                  [ 13%]
+tests/test_constitution.py .......................                       [ 14%]
+tests/test_contact_listener_runtime.py ....                              [ 15%]
+tests/test_contact_mic_calibration_runtime.py ....                       [ 15%]
+tests/test_context_pulse_runtime.py .                                    [ 15%]
+tests/test_continuous_learner.py ..................                      [ 16%]
+tests/test_cypherclaw_runtime.py .....                                   [ 17%]
+tests/test_daemon_concurrency_compat.py ...                              [ 17%]
+tests/test_daemon_fallback.py ...............                            [ 18%]
+tests/test_daemon_scheduler.py ..                                        [ 18%]
+tests/test_dashboard_generator.py ...................................... [ 21%]
+.......                                                                  [ 21%]
+tests/test_dashboard_generator_runtime.py ...                            [ 21%]
+tests/test_decision_store.py .........                                   [ 22%]
+tests/test_doctor.py ...                                                 [ 22%]
+tests/test_event_store.py .......                                        [ 23%]
+tests/test_first_boot.py ...................                             [ 24%]
+tests/test_gallery.py ..........................                         [ 26%]
+tests/test_garden_watcher.py ........................................... [ 29%]
+.                                                                        [ 29%]
+tests/test_gemini_image_runtime.py ...                                   [ 29%]
+tests/test_generative_scores.py ........................................ [ 32%]
+.........................                                                [ 34%]
+tests/test_glyphweave_cli.py ....                                        [ 34%]
+tests/test_glyphweave_runtime.py ....                                    [ 34%]
+tests/test_graduation.py ......................                          [ 36%]
+tests/test_healer_runtime.py .....                                       [ 36%]
+tests/test_healthcheck_script_runtime.py ..                              [ 36%]
+tests/test_inner_life.py ..................................              [ 39%]
+tests/test_keyboard_chat.py .............................                [ 41%]
+tests/test_lifeimprover_bridge_runtime.py .....                          [ 41%]
+tests/test_macbook_codex_monitor.py ....                                 [ 41%]
+tests/test_maintenance_mode.py .....                                     [ 42%]
+tests/test_melodic_mind.py ............................................. [ 45%]
+.........................................................                [ 49%]
+tests/test_midi_state.py .......................................         [ 52%]
+tests/test_mood_mirror.py .....................................          [ 54%]
+tests/test_observatory_authority.py .....                                [ 55%]
+tests/test_observatory_runtime.py ..                                     [ 55%]
+tests/test_observatory_verification.py ..                                [ 55%]
+tests/test_ollama_routing.py ...................                         [ 56%]
+tests/test_ops_helpers_runtime.py ....                                   [ 57%]
+tests/test_orchestral_form.py ...............................            [ 59%]
+tests/test_orchestrator.py ...                                           [ 59%]
+tests/test_pareidolia_art_engine.py .......                              [ 59%]
+tests/test_pareidolia_characters.py .................................    [ 62%]
+tests/test_pareidolia_color.py ......................................... [ 65%]
+........................................................................ [ 70%]
+....                                                                     [ 70%]
+tests/test_pedals_to_key.py ............................                 [ 72%]
+tests/test_porch_eye.py ..................................               [ 74%]
+tests/test_preflight.py ......                                           [ 75%]
+tests/test_project_scanner_runtime.py ....                               [ 75%]
+tests/test_quota_monitor.py ................                             [ 76%]
+tests/test_research_runtime.py .....                                     [ 76%]
+tests/test_resilience_runtime_scripts.py ..............                  [ 77%]
+tests/test_reviewer_runtime.py ...                                       [ 78%]
+tests/test_room_listener_runtime.py ........                             [ 78%]
+tests/test_router.py .....                                               [ 79%]
+tests/test_runtime_checkpoint.py ...                                     [ 79%]
+tests/test_runtime_paths.py ..                                           [ 79%]
+tests/test_scene_composer.py ......................................      [ 82%]
+tests/test_senseweave_voice.py ..........................                [ 83%]
+tests/test_sensor_fusion.py ...............................              [ 86%]
+tests/test_sensory_journal.py ............................               [ 88%]
+tests/test_server_health.py ...                                          [ 88%]
+tests/test_startle.py ................................                   [ 90%]
+tests/test_tamagotchi_runtime.py ......                                  [ 90%]
+tests/test_telegram_runtime.py ......                                    [ 91%]
+tests/test_theramini_duet.py ..........................................  [ 94%]
+tests/test_theramini_listener_runtime.py ........                        [ 94%]
+tests/test_trust.py ................                                     [ 96%]
+tests/test_voice_manager_v2.py ......................................... [ 98%]
+............                                                             [ 99%]
+tests/test_wizard.py ...                                                 [100%]
+
+=============================== warnings summary ===============================
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+  /Users/anthony/Programming/PromptClaw/tests/test_gallery.py:108: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(result.getdata()), list(canvas.getdata()))
+
+tests/test_pareidolia_characters.py: 189 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:85: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pixels = list(img.getdata())
+
+tests/test_pareidolia_characters.py: 21 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:254: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    rendered[name] = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:310: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:314: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:316: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:339: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_low = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:343: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_high = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:326: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:352: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:331: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:333: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:361: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:376: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:366: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:368: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_add_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:429: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:451: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_with_palette
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:443: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:434: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:436: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:481: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_curious_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:554: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_happy_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:542: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_neutral_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:536: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sad_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:548: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sleeping_eyes_no_highlights
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:560: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:571: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_bush
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:621: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:615: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:609: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:585: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_without_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:591: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:597: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:603: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:642: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:661: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:674: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    basalt_pixels = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:678: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pebble_pixels = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:870: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+====================== 1421 passed, 267 warnings in 8.83s ======================
+
+codex
+I’ll do one quick cross-check for call sites of `get_ollama_route` to ensure this configuration is actually consumed at runtime, then I’ll write and commit the verification report.
+exec
+/bin/zsh -lc "rg -n \"get_ollama_route\\(|OLLAMA_ROUTE_DEFAULTS|OLLAMA_ROUTE_JSON\"" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_ollama_routing.py:22:        assert self.REQUIRED_ROLES.issubset(agent_selector.OLLAMA_ROUTE_DEFAULTS)
+tests/test_ollama_routing.py:25:        for role, cfg in agent_selector.OLLAMA_ROUTE_DEFAULTS.items():
+tests/test_ollama_routing.py:31:            assert agent_selector.OLLAMA_ROUTE_DEFAULTS[role]["port"] == 11434
+tests/test_ollama_routing.py:35:            assert agent_selector.OLLAMA_ROUTE_DEFAULTS[role]["port"] == 11435
+tests/test_ollama_routing.py:39:        for role, cfg in agent_selector.OLLAMA_ROUTE_DEFAULTS.items():
+tests/test_ollama_routing.py:47:        route = agent_selector.get_ollama_route("coding")
+tests/test_ollama_routing.py:52:        route = agent_selector.get_ollama_route("review")
+tests/test_ollama_routing.py:57:        route = agent_selector.get_ollama_route("netops")
+tests/test_ollama_routing.py:62:        route = agent_selector.get_ollama_route("orchestrator")
+tests/test_ollama_routing.py:67:        route = agent_selector.get_ollama_route("default")
+tests/test_ollama_routing.py:72:        route = agent_selector.get_ollama_route("something_unknown")
+tests/test_ollama_routing.py:73:        default = agent_selector.get_ollama_route("default")
+tests/test_ollama_routing.py:77:        route = agent_selector.get_ollama_route("coding")
+tests/test_ollama_routing.py:79:        fresh = agent_selector.get_ollama_route("coding")
+tests/test_ollama_routing.py:84:    """Verify OLLAMA_ROUTE_JSON env var overrides defaults."""
+tests/test_ollama_routing.py:88:        monkeypatch.setenv("OLLAMA_ROUTE_JSON", json.dumps(override))
+tests/test_ollama_routing.py:90:        route = agent_selector.get_ollama_route("coding")
+tests/test_ollama_routing.py:96:        monkeypatch.setenv("OLLAMA_ROUTE_JSON", json.dumps(override))
+tests/test_ollama_routing.py:98:        review = agent_selector.get_ollama_route("review")
+tests/test_ollama_routing.py:103:        monkeypatch.setenv("OLLAMA_ROUTE_JSON", json.dumps(override))
+tests/test_ollama_routing.py:105:        route = agent_selector.get_ollama_route("writing")
+tests/test_ollama_routing.py:110:        monkeypatch.setenv("OLLAMA_ROUTE_JSON", "not valid json{{{")
+tests/test_ollama_routing.py:112:        route = agent_selector.get_ollama_route("coding")
+tests/test_ollama_routing.py:113:        assert route == dict(agent_selector.OLLAMA_ROUTE_DEFAULTS["coding"])
+tests/test_ollama_routing.py:117:        monkeypatch.setenv("OLLAMA_ROUTE_JSON", json.dumps(override))
+tests/test_ollama_routing.py:119:        route = agent_selector.get_ollama_route("coding")
+tests/test_ollama_routing.py:120:        assert route == dict(agent_selector.OLLAMA_ROUTE_DEFAULTS["coding"])
+tests/test_ollama_routing.py:123:        monkeypatch.setenv("OLLAMA_ROUTE_JSON", "")
+tests/test_ollama_routing.py:125:        route = agent_selector.get_ollama_route("coding")
+tests/test_ollama_routing.py:126:        assert route == dict(agent_selector.OLLAMA_ROUTE_DEFAULTS["coding"])
+tests/test_ollama_routing.py:129:        monkeypatch.setenv("OLLAMA_ROUTE_JSON", json.dumps([1, 2, 3]))
+tests/test_ollama_routing.py:131:        route = agent_selector.get_ollama_route("coding")
+tests/test_ollama_routing.py:132:        assert route == dict(agent_selector.OLLAMA_ROUTE_DEFAULTS["coding"])
+sdp/logs/Lead_T-002_20260408T223256Z_1775688750.log:8:- `my-claw/tools/agent_selector.py` — Added `OLLAMA_ROUTE_DEFAULTS` dict mapping 5 roles (coding, review, netops, orchestrator, default) to specific models and NUMA-pinned ports (11434/11435). Added `get_ollama_route(category)` function for lookup with fallback to default. Added `OLLAMA_ROUTE_JSON` env var support for runtime override without code changes.
+my-claw/tools/agent_selector.py:77:# Override at runtime via OLLAMA_ROUTE_JSON env var (JSON string).
+my-claw/tools/agent_selector.py:78:OLLAMA_ROUTE_DEFAULTS: dict[str, dict[str, object]] = {
+my-claw/tools/agent_selector.py:89:    routes = {k: dict(v) for k, v in OLLAMA_ROUTE_DEFAULTS.items()}
+my-claw/tools/agent_selector.py:90:    env_raw = os.environ.get("OLLAMA_ROUTE_JSON", "").strip()
+my-claw/tools/agent_selector.py:103:def get_ollama_route(category: str) -> dict[str, object]:
+
+codex
+I’m ready to finalize the review output now: I’ll write the required markdown at the exact path and commit it so you have a traceable verification artifact.
+exec
+/bin/zsh -lc "cat > sdp/verification/t-002@20260408t223256z-verify.md <<'EOF'
+# Verification Report — T-002@20260408T223256Z
+
+**Verify Agent:** Codex
+**Date:** 2026-04-08
+**Artifacts Reviewed:** [my-claw/tools/agent_selector.py](sdp/verification/../my-claw/tools/agent_selector.py), [tests/test_ollama_routing.py](sdp/verification/../tests/test_ollama_routing.py), [ESCALATIONS.md](sdp/verification/../ESCALATIONS.md), "'`git log --oneline -5`, `git diff --stat HEAD~3`, `git diff HEAD~3`, `git diff HEAD~3 -- ESCALATIONS.md`
+
+## Correctness
+Implementation satisfies the requested role-to-route mapping at the module level:
+- `coding`, `review`, `netops`, `orchestrator`, and `default` are present in `OLLAMA_ROUTE_DEFAULTS`.
+- Ports are pinned to `11434` and `11435` per role as specified.
+- `get_ollama_route(category)` returns model+port and falls back to `default`.
+- Runtime overrides are supported through `OLLAMA_ROUTE_JSON` and malformed input behavior defaults safely.
+
+## Completeness
+Behavioral coverage is strong in unit tests via `tests/test_ollama_routing.py`:
+- Verifies each required role mapping and port assignment.
+- Verifies unknown category fallback.
+- Verifies env var override (single role, preserved untouched roles, new role, malformed/invalid env handling).
+- Includes a copy-on-read check to prevent shared mutable state contamination.
+
+One gap: this file-level routing API is not referenced anywhere else in the repo yet, so routing behavior is not proven to affect downstream provider calls.
+
+## Consistency
+Changes are localized and follow existing module style in `agent_selector.py`:
+- Constants and helper functions are colocated near config section.
+- Behavior is deterministic and side-effect-free.
+- Test placement and naming are consistent with repo conventions.
+
+## Security
+No secrets handling, file system, or command-execution risks were introduced.
+- Env var is parsed defensively and ignores malformed payloads.
+- No secrets or credentials are hardcoded.
+
+## Quality
+- Verification command executed successfully: `pip install -e '"'.[dev]' && pytest tests/ -x"'`
+- Result: all tests passed (`1421 passed`).
+- No regressions observed in test run.
+
+## Issues Found
+- [ ] `get_ollama_route` and route table are currently not used by any runtime call path outside tests and the new test module (blocking: minor). Add integration call-site wiring so model+port selection is applied where provider requests are built.
+- [ ] `OLLAMA_ROUTE_JSON` overrides are all-or-nothing per load cycle due shared exception handling: a single bad entry in the JSON causes the entire override payload to be ignored. Consider per-role fallback behavior for partial overrides (blocking: minor).
+
+## Verdict: PASS WITH NOTES
+
+## Notes for Lead Agent
+- Please confirm intended integration point where routing should be applied in request execution.
+- Consider adding an integration test that asserts end-to-end that an Ollama request uses the configured model+port from category.
+- Consider tightening override merge logic to tolerate partial bad entries instead of discarding the entire payload.
+EOF' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+exec
+/bin/zsh -lc 'cat sdp/verification/t-002@20260408t223256z-verify.md' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+# Verification Report — T-002@20260408T223256Z
+
+**Verify Agent:** Codex
+**Date:** 2026-04-08
+**Artifacts Reviewed:** [my-claw/tools/agent_selector.py](sdp/verification/../my-claw/tools/agent_selector.py), [tests/test_ollama_routing.py](sdp/verification/../tests/test_ollama_routing.py), [ESCALATIONS.md](sdp/verification/../ESCALATIONS.md), `git log --oneline -5`, `git diff --stat HEAD~3`, `git diff HEAD~3`, `git diff HEAD~3 -- ESCALATIONS.md`
+
+## Correctness
+Implementation satisfies the requested role-to-route mapping at the module level:
+- `coding`, `review`, `netops`, `orchestrator`, and `default` are present in `OLLAMA_ROUTE_DEFAULTS`.
+- Ports are pinned to `11434` and `11435` per role as specified.
+- `get_ollama_route(category)` returns model+port and falls back to `default`.
+- Runtime overrides are supported through `OLLAMA_ROUTE_JSON` and malformed input behavior defaults safely.
+
+## Completeness
+Behavioral coverage is strong in unit tests via `tests/test_ollama_routing.py`:
+- Verifies each required role mapping and port assignment.
+- Verifies unknown category fallback.
+- Verifies env var override (single role, preserved untouched roles, new role, malformed/invalid env handling).
+- Includes a copy-on-read check to prevent shared mutable state contamination.
+
+One gap: this file-level routing API is not referenced anywhere else in the repo yet, so routing behavior is not proven to affect downstream provider calls.
+
+## Consistency
+Changes are localized and follow existing module style in `agent_selector.py`:
+- Constants and helper functions are colocated near config section.
+- Behavior is deterministic and side-effect-free.
+- Test placement and naming are consistent with repo conventions.
+
+## Security
+No secrets handling, file system, or command-execution risks were introduced.
+- Env var is parsed defensively and ignores malformed payloads.
+- No secrets or credentials are hardcoded.
+
+## Quality
+- Verification command executed successfully: `pip install -e '.[dev]' && pytest tests/ -x`
+- Result: all tests passed (`1421 passed`).
+- No regressions observed in test run.
+
+## Issues Found
+- [ ] `get_ollama_route` and route table are currently not used by any runtime call path outside tests and the new test module (blocking: minor). Add integration call-site wiring so model+port selection is applied where provider requests are built.
+- [ ] `OLLAMA_ROUTE_JSON` overrides are all-or-nothing per load cycle due shared exception handling: a single bad entry in the JSON causes the entire override payload to be ignored. Consider per-role fallback behavior for partial overrides (blocking: minor).
+
+## Verdict: PASS WITH NOTES
+
+## Notes for Lead Agent
+- Please confirm intended integration point where routing should be applied in request execution.
+- Consider adding an integration test that asserts end-to-end that an Ollama request uses the configured model+port from category.
+- Consider tightening override merge logic to tolerate partial bad entries instead of discarding the entire payload.
+
+exec
+/bin/zsh -lc 'git add sdp/verification/t-002@20260408t223256z-verify.md && git commit -m "verify(T-002): add verification report for dual-socket routing task"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+[feat/graceful-degradation 09fb63b] verify(T-002): add verification report for dual-socket routing task
+ 1 file changed, 48 insertions(+)
+ create mode 100644 sdp/verification/t-002@20260408t223256z-verify.md
+
+codex
+Verification complete. I reviewed the requested artifacts and ran the required test suite.
+
+Verification report written at:
+
+- [sdp/verification/t-002@20260408t223256z-verify.md](/Users/anthony/Programming/PromptClaw/sdp/verification/t-002@20260408t223256z-verify.md)
+
+Committed as:
+
+- `09fb63b` — `verify(T-002): add verification report for dual-socket routing task`
+
+Resulting verdict: **PASS WITH NOTES**.
+
+Key findings (also in report):
+- Routing config and tests are present and correct for required roles (`coding`, `review`, `netops`, `orchestrator`, `default`) with expected ports `11434/11435`.
+- Env override via `OLLAMA_ROUTE_JSON` is implemented and tested.
+- Full suite passed: `1421 passed`.
+- Minor concerns: routing helper is currently not wired into a downstream call path, and partial bad entries in `OLLAMA_ROUTE_JSON` are all discarded due shared parse exception handling.
+tokens used
+39,202

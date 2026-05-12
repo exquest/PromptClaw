@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1322 chars)
+---
+
+Task T-001@20260427T001208Zc complete. Summary:
+
+**`client_replicate.py`** — `generate()` now wires submit → poll → download, returning `{audio_bytes, model_used, prediction_id, latency_ms}`. Added `_download_output`, `_coerce_output_to_bytes`, `_fetch_bytes` (urllib-based, bounded by `timeout_sec`) handling URL strings, lists, FileOutput readers, and inline bytes.
+
+**`client_local.py`, `client_modal.py`** — return type bumped to `dict[str, Any]` to keep `GenerationClient` Protocol parity tests green.
+
+**`tests/test_generation_replicate_retry.py`** — 14 new tests covering download branches and the wired `generate()` flow; updated 2 existing retry-loop tests to mock the new poll/download steps; added the zero-reload poll test the Zb verify report flagged.
+
+Validation: 3645 passed, 2 skipped; ruff clean; mypy clean for `src/` (pre-existing `soundfile` stub gap in unrelated `storage.py`).
+
+Committed as `42eda75`.

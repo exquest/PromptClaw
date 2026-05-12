@@ -1,0 +1,2744 @@
+Command: codex exec --dangerously-bypass-approvals-and-sandbox -c model_reasoning_effort=xhigh -m gpt-5.5 -
+Prompt delivered via: stdin (1349 chars)
+---
+
+Implemented and committed:
+
+`01c34bb docs(escalations): document narrative auth token [T-006@20260502T001347Zb]`
+
+Changed [ESCALATIONS.md](/Users/anthony/Programming/PromptClaw/ESCALATIONS.md) to add `## Auth Token (optional)` covering `NARRATIVE_AUTH_TOKEN`, systemd `Environment=` / drop-in placement, defense-in-depth wording, and client `X-Narrative-Auth` usage.
+
+Updated [tests/test_escalations_lingering.py](/Users/anthony/Programming/PromptClaw/tests/test_escalations_lingering.py) with a static regression test for that section.
+
+Validation passed:
+- `pip install -e '.[dev]'`
+- `pytest tests/ -x --tb=short` (`3869 passed, 3 skipped`)
+- `ruff check src/ tests/`
+- `mypy src/`
+
+I staged and committed only the two scoped files. The repo still has unrelated pre-existing dirty/untracked files.
+
+--- STDERR ---
+OpenAI Codex v0.125.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019de669-b551-7b22-9986-15459a3f45c1
+--------
+user
+<!--
+  sdp-cli agent-specific template for codex
+  Edit this file to tune how codex handles lead_t1.md.
+  The shipped default lives at src/sdp/prompts/templates/lead_t1.md.
+  Delete this file to revert to the default.
+-->
+# Task T-006@20260502T001347Zb: Add 'Auth Token (optional)' section to ESCALATIONS.md describing how to set `NARRATIVE_AUTH_TOKEN` for defense-in-depth, where to place it (systemd unit `Environment=` or drop-in), and how clients pass it.
+
+
+**Tier:** T1
+
+## Instructions
+
+Handle this directly. Skip broad discovery and do not write a spec.
+
+1. Read only the file(s) you expect to change and the closest relevant tests.
+2. Make the smallest change that satisfies the task.
+3. Add or update a regression test when behavior changes.
+4. Run focused validation, then broader checks if needed.
+5. Commit as soon as the change works: `<type>(scope): summary [T-006@20260502T001347Zb]`
+
+## Rules
+
+- Stay in scope; no unrelated cleanup.
+- Follow existing patterns and type hints.
+- Record blocking assumptions in `ESCALATIONS.md`.
+- Do not finish with uncommitted changes you introduced for this task.
+- Do not clean, revert, commit, or otherwise normalize unrelated pre-existing
+  workspace changes.
+
+## Validation
+
+Run before committing:
+```bash
+pip install -e '.[dev]'
+pytest tests/ -x --tb=short
+ruff check src/ tests/
+mypy src/
+```
+
+codex
+I’ll make the scoped documentation change in `ESCALATIONS.md`, check for any nearby doc validation patterns, then run the requested validation and commit only the files I touch.
+exec
+/bin/zsh -lc "sed -n '1,220p' ESCALATIONS.md" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+# Escalations
+
+Items requiring human review. Append-only per task.
+
+## Lingering
+
+Systemd `--user` units (e.g. `cypherclaw-narrative-api.service`) only survive
+after the operator's interactive session ends if **linger** is enabled for that
+account. Without linger, the user systemd manager is torn down on SSH logout
+and the service stops with it, defeating CN-013 / CN-015 (service must restart
+automatically across reboot and remain active without an attached session).
+
+Enable linger once per host, as root:
+
+```bash
+sudo loginctl enable-linger <user>
+```
+
+Verify:
+
+```bash
+loginctl show-user <user> -p Linger
+# expected: Linger=yes
+```
+
+If the output is `Linger=no`, the unit will not auto-start on boot and will
+not survive logout — re-run the `enable-linger` command above. This is the
+same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+under "Loginctl linger state for current user".
+
+## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+
+- **Reason:** Deploy-side narrative event store is not checked into this workspace
+- **Details:** Exploration confirmed this PromptClaw checkout contains the HTTP wrapper (`src/cypherclaw/narrative_api/`) and tests, while the PRD states the real `cypherclaw.narrative` engine and world-state SQLite live on the CypherClaw host. This task will follow the existing event-store injection/lazy-import pattern from `GET /events`, using in-memory injected stores for tests and a deploy-time `cypherclaw.narrative.events.NarrativeEventStore` import for production. No new dependencies are planned.
+- **Reason:** Database migration scope
+- **Details:** `POST /events` appends through the existing event-store abstraction and does not add tables, columns, or foreign keys. The PRD's `domain` column migration is CN-001/T-007, so this slice will not introduce a migration. The API will still default omitted event domains to `shared` so it matches the future migration default.
+- **Reason:** Generated hardening bullets are outside the narrative event endpoint
+- **Details:** The recurring self-critique, resource-governor, and startup-identity checks target SenseWeave composition/playback and daemon startup files, not `cypherclaw.narrative_api`. This task will not bundle those unrelated changes; existing hardening tests will be used as verification anchors where practical.
+- **Reason:** Validation and hardening-anchor results
+- **Details:** Required validation passed: `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` completed with `3834 passed, 3 skipped`, ruff clean, and mypy clean. The explicit hardening-anchor command `pytest tests/test_self_critique.py tests/test_resource_governor.py tests/test_governor_integration.py -q` also passed with `65 passed`. No new dependencies or migrations were introduced.
+
+## T-001@20260502T001347Z (2026-05-02T00:13:47Z)
+
+- **Reason:** Narrative engine implementation is deploy-side, not checked into this workspace
+- **Details:** The imported PRD and SDP snapshot state that `NarrativeMemory` lives in the existing CypherClaw narrative engine at `~/cypherclaw/src/cypherclaw/narrative/`, but this PromptClaw checkout only contains the new HTTP-service queue artifacts and the adjacent `src/cypherclaw/image_api/` FastAPI pattern. This task will implement `POST /memory/search` as a thin wrapper with an injectable memory searcher for tests and a lazy deploy-time import of `cypherclaw.narrative.memory.NarrativeMemory`. No new third-party dependencies or database migrations are required.
+- **Reason:** Generated startup hardening checks are outside the memory endpoint surface
+- **Details:** The auto-generated hardening bullets reference `bootstrap_identity()` and `FirstBootAnnouncer`, which belong to the daemon startup identity flow. This task does not alter startup or orchestration behavior; existing regression anchors `tests/test_first_boot.py` and `tests/test_governor_integration.py` will be re-run during verification.
+- **Reason:** Validation and hardening-anchor results
+- **Details:** The required validation block passed (`pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`) with `3822 passed, 3 skipped`, ruff clean, and mypy clean. The explicit startup hardening anchor command `pytest tests/test_first_boot.py tests/test_governor_integration.py -q` passed with `49 passed`. No new dependencies or migrations were introduced.
+
+## T-015@20260427T001208Z (2026-04-27T00:12:08Z)
+
+- **Reason:** Queue worker entrypoint is not present in this checkout
+- **Details:** The requested systemd unit points to the specified contract path `/home/user/cypherclaw/tools/generation_worker.py`, but `my-claw/tools/generation_worker.py` is not checked in. This task stayed scoped to the requested unit and runbook documentation; deploying the unit requires that worker entrypoint to exist at the target path.
+
+## T-011@20260427T001208Z (2026-04-27T00:12:08Z)
+
+- **Reason:** Auto-generated hardening bullets are out of scope for an operator runbook
+- **Details:** This task is documentation-only — a new operator runbook at `docs/runbooks/generation-backend.md` plus a static regression test at `tests/test_runbook_generation_backend.py`. The auto-generated candidate-hardening bullets (re-verify `bootstrap_identity()` invocation in startup, ensure standalone+federated paths, add an integration test for identity persistence between boots) target the daemon identity bootstrap surface, which is unrelated to the generation-backend runbook scope and was already addressed under T-032@c (see prior ESCALATIONS entry confirming both daemon entrypoints call `bootstrap_identity()` before `FirstBootAnnouncer`). No runtime, schema, or migration changes are introduced by this task. No new dependencies are added — the static doc test uses the same stdlib-only pattern as `tests/test_cypherclaw_sampler_artistic_intent.py`.
+
+## T-032@20260427T001208Zc (2026-04-27T00:12:08Z)
+
+- **Reason:** Cap-source and soak-artifact assumption
+- **Details:** Exploration found no checked-in `/tmp/generation_status.json` soak snapshots or generation daily-spend chart for CCG-032. This subtask therefore verifies the committed T-032b `sdp/telemetry/steady-state-cost.csv` artifact. The cost-model document's only concrete daily USD cap is the default `$5.00` generation daily cap, so the cap verifier defaults to `$5.00` while exposing a CLI override. The recurring hardening bullets about `revise_score(...)`, resource-governor playback budget application, and `bootstrap_identity()` startup ordering are outside this cap-summary surface; existing tree checks show `revise_score` is already imported/called in `tracker_compiler.py` and `duet_composer.py`, resource-governor tests exist, and both daemon entrypoints call `bootstrap_identity()` before `FirstBootAnnouncer`.
+
+## T-032@20260427T001208Za (2026-04-27T00:12:08Z)
+
+- **Reason:** Cost-model documentation scope assumptions
+- **Details:** This subtask is documentation-only under `sdp/telemetry/` and adds no runtime schema, database columns, dependencies, or orchestration behavior. The auto-generated hardening bullets about self-critique wiring, resource-governor enforcement, and daemon identity bootstrap are unrelated to this cost-model reference and remain out of scope for this task. `progress.md` was already generated and dirty before this run, so the task update is limited to the T-032a line.
+
+## T-001 (2026-04-01T18:55:24.984659+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-001 (2026-04-01T18:56:11.434931+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-001 (2026-04-01T18:56:41.692113+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-009@20260408T220341Z (2026-04-08T22:12:54.185469+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=85.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=85.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=85.0%
+
+## T-001@20260408T223256Z (2026-04-08T22:33:10.555043+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+
+## T-001@20260408T223256Z (2026-04-08T23:10:00+00:00)
+
+- **Reason:** Validation blocked by pre-existing repo issues
+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+
+## T-004@20260408T223256Z (2026-04-08T23:05:05.007269+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+
+## T-004@20260408T223256Z (2026-04-09T00:14:00+00:00)
+
+- **Reason:** Scope constraint on orchestration docs
+- **Details:** `AGENTS.md` asks for architecture/command/startup/changelog updates on orchestration changes, but this task also constrained edits to the bug-fix scope and those doc files already had unrelated local modifications. I limited the change set to the Ollama routing fix plus regression coverage and did not modify the product docs in this task.
+
+## T-007@20260408T223256Z (2026-04-08T23:29:49.940049+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=83.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=83.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=83.0%
+
+## T-007@20260408T223256Z (2026-04-08T23:37:23Z)
+
+- **Reason:** Shared local-provider health granularity
+- **Details:** The selector now excludes `ollama` when every configured Ollama route port is unhealthy and re-admits it when any configured port recovers. Health is tracked at the shared local-provider level, so a single-socket outage can still leave `ollama` eligible for categories routed to the down socket if another configured socket remains healthy.
+
+## T-010@20260408T223256Za (2026-04-09T00:02:48.014232+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=83.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=83.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=83.0%
+
+## T-010@20260408T223256Za (2026-04-09T00:24:00+00:00)
+
+- **Reason:** Scope and latency assumptions
+- **Details:** This split task only adds the daemon-side `ollama_health()` helper for dual sockets `11434` and `11435`; `/status` integration and Telegram `/local` formatting remain assigned to sibling subtasks `T-010@20260408T223256Zb` and `T-010@20260408T223256Zc`. Response latency is treated as daemon-side wall-clock time for the health probe; unreachable instances should return an unhealthy status, an empty model list, and `latency_ms` of `None` instead of raising.
+
+## T-010@20260408T223256Zc (2026-04-09T00:34:30+00:00)
+
+- **Reason:** Missing `/local` surface and status-endpoint assumption
+- **Details:** The current tree has no Telegram `/local` built-in and no separate daemon `/status` JSON endpoint. This task will add a shared in-process status snapshot consumed by both `/status` and the new `/local` command so `/local` can format Ollama health without duplicating probes. Scope is limited to the base `/local` status view; `/local bench` and `/local stats` remain out of scope for T-010c. No new dependencies are planned.
+
+## T-011@20260408T223256Z (2026-04-09T00:41:41.054077+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=82.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=82.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=82.0%
+
+## T-011@20260408T223256Z (2026-04-09T01:05:00+00:00)
+
+- **Reason:** LOCAL_ONLY scope assumption
+- **Details:** This task treats `LOCAL_ONLY` as a daemon-level LLM routing guard. When enabled, all daemon agent-execution paths that would otherwise target `claude`, `codex`, or `gemini` are coerced to `ollama`, including router fallback and explicit step payloads. Non-agent operational commands (for example Telegram delivery, shell built-ins, or health probes) remain unchanged. No new dependencies are planned.
+
+## T-012@20260408T223256Z (2026-04-09T01:30:00+00:00)
+
+- **Reason:** Transport and dependency scope assumptions
+- **Details:** This task uses stdlib-only HTTP probing (`urllib.request`) and `subprocess` for `tailscale status --json` — no new external dependencies. The identity endpoint is probed over plain HTTP on port 8443 (matching the federation PRD convention); TLS/signing verification is deferred to a future federation identity task (FD-001/FD-005). The module lives in `promptclaw/federation/discovery.py` following the PRD architecture layout. Peers are identified by `instance_id` for merge deduplication. Offline Tailscale peers are excluded from probing.
+
+## T-021@20260416T043834Z (2026-04-16T05:00:00+00:00)
+
+- **Reason:** Candidate hardening items are out of scope
+- **Details:** The auto-generated hardening checks reference `bootstrap_identity` and `FirstBootAnnouncer`, which belong to the federation/identity subsystem. This task (self-critique and revision passes for music composition) has no relation to the startup identity flow. No new dependencies required; stdlib only.
+
+## T-022@20260416T043834Z (2026-04-16T05:30:00+00:00)
+
+- **Reason:** Candidate hardening items are out of scope
+- **Details:** The auto-generated hardening checks reference `bootstrap_identity` and `FirstBootAnnouncer`, which belong to the federation/identity subsystem. This task (live-buffer and sample-bank abstractions) has no relation to the startup identity flow. No new dependencies required; stdlib only.
+
+## T-022@20260416T043834Z (2026-04-16T05:30:01+00:00)
+
+- **Reason:** Previous lead left out-of-scope changes
+- **Details:** The previous lead (gemini) bundled lint cleanup across 37+ unrelated files alongside the T-022 work. These out-of-scope changes were discarded via `git checkout HEAD --` to keep the commit scoped to T-022 only. The in-scope lint fix (removing 3 unused imports from `tests/test_live_buffer.py` flagged by ruff) was retained.
+
+## T-022@20260416T043834Z (2026-04-16T12:14:16.858992+00:00)
+
+- **Reason:** Verify model rejected by provider
+- **Details:** The verify model was rejected by the provider CLI. This is a configuration error, not a code issue. Fix the model ID and re-run. Error: OpenAI Codex v0.120.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.3-codex-spark
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effor...
+
+## T-022@20260416T043834Z (2026-04-16T12:19:34Z)
+
+- **Reason:** Manual verification state repair
+- **Details:** Local verification passed after the provider-model escalation, but `sdp-cli tasks manual-verify` could not record the result because an active `sdp-cli run` process (PID 69939) owns `.sdp/run.lock`. The lock was not removed. Candidate hardening was checked explicitly: both startup entrypoints call `bootstrap_identity()` before `FirstBootAnnouncer`, and `pytest tests/test_first_boot.py tests/test_governor_integration.py -q` passed. No new dependencies were added.
+
+## T-023@20260416T043834Z (2026-04-16T13:00:00+00:00)
+
+- **Reason:** Candidate hardening items are out of scope
+- **Details:** The auto-generated hardening checks reference `bootstrap_identity` and `FirstBootAnnouncer`, which belong to the federation/identity subsystem. This task (installation-aware acoustic ecology policies) has no relation to the startup identity flow. The new module `acoustic_ecology.py` is a pure-function policy layer with no I/O and no state files — it cannot affect startup sequencing. No new dependencies required; stdlib only.
+
+## T-024@20260416T043834Z (2026-04-16T14:00:00+00:00)
+
+- **Reason:** Candidate hardening items are out of scope
+- **Details:** The auto-generated hardening checks reference `bootstrap_identity` and `FirstBootAnnouncer`, which belong to the federation/identity subsystem. This task (artistic identity portfolio reporting) has no relation to the startup identity flow. The new module `portfolio_report.py` is a pure-function reporting layer with no I/O and no state files — it derives summaries from data passed to it and cannot affect startup sequencing. No new dependencies required; stdlib only.
+
+## T-025@20260416T043834Z (2026-04-16T14:45:00+00:00)
+
+- **Reason:** Rollout-control scope and startup hardening verification
+- **Details:** This task adds stdlib-only SenseWeave diagnostics and environment-backed feature flags; no new dependencies are required. The candidate startup hardening items remain covered by the existing startup flow: both daemon entrypoints call `bootstrap_identity()` before `FirstBootAnnouncer`, and `tests/test_first_boot.py::TestStartupIdentityPersistence` plus `tests/test_governor_integration.py::TestStartupIdentityWiring` were re-run as regression anchors.
+
+## T-017@20260416T054258Z (2026-04-16T18:20:59.864442+00:00)
+
+- **Reason:** Lead provider unavailable
+- **Details:** Lead provider/runtime failures were observed across available agents (claude, codex). Latest signal: [Errno 2] No such file or directory: 'codex'
+
+## T-017@20260416T054258Z (2026-04-16T18:21:16.577357+00:00)
+
+- **Reason:** Lead provider unavailable
+- **Details:** Lead provider/runtime failures were observed across available agents (claude, codex). Latest signal: env: claude: No such file or directory
+
+## T-018@20260416T054258Z (2026-04-16T18:54:48.048819+00:00)
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/assumption-log.md
+ M sdp/clarification-register.md
+ M sdp/domain-model.md
+ M sdp/implementation-plan.md
+ M sdp/logs/Lead_T-014_20260427T001208Z_1777312399.log
+ M sdp/logs/Verify_T-014_20260427T001208Z_1777312500.log
+ M sdp/logs/self-repair.log
+ M sdp/notifications.log
+ M sdp/prd-snapshot.md
+ M sdp/requirements-register.md
+ M sdp/run-log.md
+ M sdp/runner.log
+ M sdp/task-graph.md
+ M src/cypherclaw/image_api/app.py
+?? .coverage
+?? prd-cypherclaw-narrative-http-service.md
+?? scripts/
+?? sdp/fractal-reports/
+?? sdp/logs/Lead_T-001_20260502T001347Z_1777680873.log
+?? sdp/logs/Lead_T-002_20260502T001347Z_1777681670.log
+?? sdp/logs/Lead_T-003_20260502T001347Z_1777682127.log
+?? sdp/logs/Lead_T-004_20260502T001347Za_1777683764.log
+?? sdp/logs/Lead_T-004_20260502T001347Zb_1777684197.log
+?? sdp/logs/Lead_T-004_20260502T001347Zc_1777684547.log
+?? sdp/logs/Lead_T-004_20260502T001347Zc_1777684884.log
+?? sdp/logs/Lead_T-005_20260502T001347Z_1777682789.log
+?? sdp/logs/Lead_T-006_20260502T001347Za_1777686947.log
+?? sdp/logs/Lead_T-006_20260502T001347Zb_1777687180.log
+?? sdp/logs/Lead_T-009_20260502T001347Z_1777683308.log
+?? sdp/logs/Lead_T-010_20260502T001347Z_1777685584.log
+?? sdp/logs/Lead_T-011_20260502T001347Z_1777686063.log
+?? sdp/logs/Lead_T-015_20260427T001208Z_1777312678.log
+?? sdp/logs/Lead_T-016_20260427T001208Z_1777313161.log
+?? sdp/logs/Lead_T-017_20260427T001208Z_1777313911.log
+?? sdp/logs/Lead_T-018_20260427T001208Z_1777314526.log
+?? sdp/logs/Lead_T-019_20260427T001208Za_1777314963.log
+?? sdp/logs/Lead_T-019_20260427T001208Zb_1777315392.log
+?? sdp/logs/Lead_T-019_20260427T001208Zc_1777315643.log
+?? sdp/logs/Lead_T-019_20260427T001208Zd_1777316247.log
+?? sdp/logs/Lead_T-020_20260427T001208Z_1777316523.log
+?? sdp/logs/Lead_T-021_20260427T001208Z_1777317194.log
+?? sdp/logs/Verify_T-001_20260502T001347Z_1777681507.log
+?? sdp/logs/Verify_T-002_20260502T001347Z_1777681955.log
+?? sdp/logs/Verify_T-003_20260502T001347Z_1777682581.log
+?? sdp/logs/Verify_T-004_20260502T001347Za_1777683936.log
+?? sdp/logs/Verify_T-004_20260502T001347Zb_1777684382.log
+?? sdp/logs/Verify_T-004_20260502T001347Zc_1777684750.log
+?? sdp/logs/Verify_T-004_20260502T001347Zc_1777685329.log
+?? sdp/logs/Verify_T-005_20260502T001347Z_1777683173.log
+?? sdp/logs/Verify_T-006_20260502T001347Za_1777687098.log
+?? sdp/logs/Verify_T-009_20260502T001347Z_1777683571.log
+?? sdp/logs/Verify_T-010_20260502T001347Z_1777685891.log
+?? sdp/logs/Verify_T-011_20260502T001347Z_1777686787.log
+?? sdp/logs/Verify_T-015_20260427T001208Z_1777313000.log
+?? sdp/logs/Verify_T-016_20260427T001208Z_1777313684.log
+?? sdp/logs/Verify_T-017_20260427T001208Z_1777314354.log
+?? sdp/logs/Verify_T-018_20260427T001208Z_1777314777.log
+?? sdp/logs/Verify_T-019_20260427T001208Za_1777315202.log
+?? sdp/logs/Verify_T-019_20260427T001208Zb_1777315522.log
+?? sdp/logs/Verify_T-019_20260427T001208Zc_1777315966.log
+?? sdp/logs/Verify_T-019_20260427T001208Zd_1777316422.log
+?? sdp/logs/Verify_T-020_20260427T001208Z_1777316917.log
+?? sdp/logs/Verify_T-021_20260427T001208Z_1777317409.log
+?? sdp/logs/claude_1777683720.log
+?? sdp/logs/claude_1777686903.log
+?? sdp/telemetry/prompt-review-2026-05-02.md
+?? sdp/verification/t-006@20260502t001347za-verify.md
+?? sdp/verification/t-014@20260427t001208z-verify.md
+?? sdp/verification/t-019@20260427t001208zb-verify.md
+?? sdp/verification/t-019@20260427t001208zd-verify.md
+?? specs/external/
+?? verification_reports/completion-gate-20260427T191819Z.json
+?? verification_reports/completion-gate-20260427T191819Z.md
+
+exec
+/bin/zsh -lc 'rg -n "ESCALATIONS|NARRATIVE_AUTH_TOKEN|Auth Token|auth token|Environment=" tests docs src README.md pyproject.toml' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+src/cypherclaw/narrative_api/__main__.py:22:    app = create_app(auth_token=os.environ.get("NARRATIVE_AUTH_TOKEN") or None)
+src/cypherclaw/narrative_api/app.py:73:            "NARRATIVE_AUTH_TOKEN is unset or empty; shared-secret auth is disabled."
+src/cypherclaw/narrative_api/app.py:84:                detail="invalid or missing narrative auth token",
+docs/r750-bare-metal-runbook.md:658:Environment="OLLAMA_HOST=0.0.0.0:11434"
+docs/r750-bare-metal-runbook.md:659:Environment="OLLAMA_MODELS=/data/ollama-0/models"
+docs/r750-bare-metal-runbook.md:660:Environment="OLLAMA_NUM_THREAD=12"
+docs/r750-bare-metal-runbook.md:661:Environment="OLLAMA_KEEP_ALIVE=-1"
+docs/r750-bare-metal-runbook.md:662:Environment="OLLAMA_FLASH_ATTENTION=1"
+docs/r750-bare-metal-runbook.md:663:Environment="OLLAMA_KV_CACHE_TYPE=q8_0"
+docs/r750-bare-metal-runbook.md:664:Environment="HOME=/data/ollama-0"
+docs/r750-bare-metal-runbook.md:693:Environment="OLLAMA_HOST=0.0.0.0:11435"
+docs/r750-bare-metal-runbook.md:694:Environment="OLLAMA_MODELS=/data/ollama-1/models"
+docs/r750-bare-metal-runbook.md:695:Environment="OLLAMA_NUM_THREAD=12"
+docs/r750-bare-metal-runbook.md:696:Environment="OLLAMA_KEEP_ALIVE=-1"
+docs/r750-bare-metal-runbook.md:697:Environment="OLLAMA_FLASH_ATTENTION=1"
+docs/r750-bare-metal-runbook.md:698:Environment="OLLAMA_KV_CACHE_TYPE=q8_0"
+docs/r750-bare-metal-runbook.md:699:Environment="HOME=/data/ollama-1"
+docs/runbooks/generation-backend.md:186:#   Environment=CYPHERCLAW_GENERATION_DAILY_CAP_USD=10.0
+docs/runbooks/generation-backend.md:191:# Environment=CYPHERCLAW_GENERATION_DAILY_CAP_USD=2.0
+docs/r750-application-deployment-plan.md:393:Environment=PATH=/home/anthony/.local/bin:/usr/local/bin:/usr/bin:/bin
+docs/r750-application-deployment-plan.md:394:Environment=GEMINI_IMAGE_MODEL=gemini-3.1-flash-image-preview
+docs/r750-application-deployment-plan.md:395:Environment=PYTHONUNBUFFERED=1
+docs/r750-application-deployment-plan.md:396:Environment=TMPDIR=/run/cypherclaw-tmp
+docs/r750-application-deployment-plan.md:397:Environment=OLLAMA_URL=http://localhost:11434
+docs/r750-application-deployment-plan.md:419:Environment=HOME=/home/anthony
+docs/r750-application-deployment-plan.md:420:Environment=PATH=/home/anthony/.local/bin:/home/anthony/cypherclaw/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+docs/r750-application-deployment-plan.md:421:Environment=TMPDIR=/run/cypherclaw-tmp
+docs/r750-application-deployment-plan.md:422:Environment=PYTHONPATH=/home/anthony/sdp-cli/src
+docs/r750-application-deployment-plan.md:423:Environment=TERM=dumb
+docs/r750-application-deployment-plan.md:424:Environment=PYTHONUNBUFFERED=1
+docs/r750-application-deployment-plan.md:459:Environment=PYTHONPATH=/home/anthony/cypherclaw/src
+docs/r750-application-deployment-plan.md:460:Environment=TMPDIR=/run/cypherclaw-tmp
+docs/r750-application-deployment-plan.md:461:Environment=PYTHONUNBUFFERED=1
+docs/r750-application-deployment-plan.md:510:Environment=PYTHONPATH=/home/anthony/cypherclaw/tools
+docs/r750-application-deployment-plan.md:511:Environment=OLLAMA_URL=http://localhost:11434
+docs/r750-application-deployment-plan.md:512:Environment=GALLERY_DIR=/data/promptclaw/gallery
+docs/discovery_20260329_092950.md:646:/home/user/cypherclaw/ESCALATIONS.md
+docs/discovery_20260329_092950.md:4672:/home/user/cypherclaw/.claude/worktrees/agent-a55ac8eb/ESCALATIONS.md
+docs/discovery_20260329_092950.md:4837:/home/user/cypherclaw/.claude/worktrees/agent-ab42d2ba/ESCALATIONS.md
+docs/discovery_20260329_092950.md:5012:/home/user/cypherclaw/ESCALATIONS.md
+tests/test_cypherclaw_boot_runtime.py:61:    assert 'Environment="OLLAMA_HOST=127.0.0.1:11435"' in unit
+tests/test_cypherclaw_boot_runtime.py:62:    assert 'Environment="OLLAMA_MODELS=/usr/share/ollama/.ollama/models"' in unit
+tests/test_cypherclaw_narrative_api_service.py:26:    assert "Environment=PYTHONUNBUFFERED=1" in unit
+tests/test_escalations_lingering.py:1:"""Static regression test for the 'Lingering' section in ESCALATIONS.md (T-006)."""
+tests/test_escalations_lingering.py:6:ESCALATIONS = Path("ESCALATIONS.md")
+tests/test_escalations_lingering.py:10:    return ESCALATIONS.read_text(encoding="utf-8")
+tests/test_escalations_lingering.py:15:    assert "## Lingering" in content, "ESCALATIONS.md must have a top-level 'Lingering' section"
+tests/test_resilience_runtime_scripts.py:548:    assert "Environment=PATH=/home/user/.local/bin:/home/user/cypherclaw/.venv/bin" in runner_unit
+tests/test_resilience_runtime_scripts.py:549:    assert "Environment=PYTHONPATH=/home/user/sdp-cli/src" in runner_unit
+tests/test_narrative_api_main.py:37:    monkeypatch.setenv("NARRATIVE_AUTH_TOKEN", "token-123")
+
+codex
+I found existing auth wiring in the narrative API and a static `ESCALATIONS.md` test. The workspace already has unrelated dirty files, so I’ll keep the commit limited to the documentation/test files for this task.
+exec
+/bin/zsh -lc "sed -n '1,180p' tests/test_escalations_lingering.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Static regression test for the 'Lingering' section in ESCALATIONS.md (T-006)."""
+from __future__ import annotations
+
+from pathlib import Path
+
+ESCALATIONS = Path("ESCALATIONS.md")
+
+
+def _text() -> str:
+    return ESCALATIONS.read_text(encoding="utf-8")
+
+
+def test_escalations_has_lingering_section() -> None:
+    content = _text()
+    assert "## Lingering" in content, "ESCALATIONS.md must have a top-level 'Lingering' section"
+
+
+def test_lingering_section_documents_enable_linger() -> None:
+    content = _text()
+    assert "loginctl enable-linger" in content
+    assert "loginctl show-user" in content
+    assert "-p Linger" in content
+    assert "Linger=yes" in content
+
+exec
+/bin/zsh -lc "sed -n '1,110p' tests/test_narrative_api_main.py" in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc "sed -n '1,130p' src/cypherclaw/narrative_api/app.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Regression checks for the ``cypherclaw.narrative_api`` entry point."""
+from __future__ import annotations
+
+from typing import Any
+from unittest.mock import MagicMock
+
+import pytest
+
+
+def test_main_resolves_host_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    from cypherclaw.narrative_api import __main__ as entry
+
+    monkeypatch.setenv("NARRATIVE_BIND_HOST", "100.74.35.114")
+    assert entry._resolve_host() == "100.74.35.114"
+
+    monkeypatch.delenv("NARRATIVE_BIND_HOST", raising=False)
+    assert entry._resolve_host() == "127.0.0.1"
+
+
+def test_main_resolves_port_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    from cypherclaw.narrative_api import __main__ as entry
+
+    monkeypatch.setenv("NARRATIVE_BIND_PORT", "9001")
+    assert entry._resolve_port() == 9001
+
+    monkeypatch.delenv("NARRATIVE_BIND_PORT", raising=False)
+    assert entry._resolve_port() == 8765
+
+
+def test_main_invokes_uvicorn_with_resolved_settings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from cypherclaw.narrative_api import __main__ as entry
+
+    monkeypatch.setenv("NARRATIVE_BIND_HOST", "100.74.35.114")
+    monkeypatch.setenv("NARRATIVE_BIND_PORT", "8765")
+    monkeypatch.setenv("NARRATIVE_AUTH_TOKEN", "token-123")
+
+    captured: dict[str, Any] = {}
+
+    def fake_create_app(**kwargs: Any) -> str:
+        captured["create_kwargs"] = kwargs
+        return "fake-app"
+
+    def fake_run(app: Any, **kwargs: Any) -> None:
+        captured["app"] = app
+        captured["run_kwargs"] = kwargs
+
+    monkeypatch.setattr(entry, "create_app", fake_create_app)
+    monkeypatch.setattr(entry.uvicorn, "run", fake_run)
+    monkeypatch.setattr("cypherclaw.first_boot.bootstrap_identity", lambda **kwargs: MagicMock())
+
+    entry.main()
+
+    assert captured["app"] == "fake-app"
+    assert captured["run_kwargs"]["host"] == "100.74.35.114"
+    assert captured["run_kwargs"]["port"] == 8765
+    assert captured["create_kwargs"]["auth_token"] == "token-123"
+
+
+def test_main_calls_bootstrap_identity() -> None:
+    """Verify that main() calls bootstrap_identity() for startup hardening."""
+    import ast
+    from pathlib import Path
+
+    source = Path("src/cypherclaw/narrative_api/__main__.py").read_text()
+    tree = ast.parse(source)
+
+    # Find main() function
+    main_fn = None
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == "main":
+            main_fn = node
+            break
+
+    assert main_fn is not None, "main() function not found"
+
+    # Extract all call names in main()
+    calls = []
+    for node in ast.walk(main_fn):
+        if isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Name):
+                calls.append(node.func.id)
+            elif isinstance(node.func, ast.Attribute):
+                calls.append(node.func.attr)
+
+    assert "bootstrap_identity" in calls, (
+        "main() must call bootstrap_identity() for startup hardening"
+    )
+
+ succeeded in 0ms:
+"""FastAPI app exposing the CypherClaw narrative API."""
+from __future__ import annotations
+
+import importlib
+import logging
+import time
+import urllib.request
+from typing import Any, Callable
+
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, status
+
+from .beats import (
+    NarrativeEngineUnavailableError,
+    build_default_narrative_engine,
+    generate_next_beat,
+)
+from .events import (
+    EventStoreUnavailableError,
+    append_world_event,
+    build_default_event_store,
+    list_world_events,
+)
+from .memory import (
+    MemoryUnavailableError,
+    build_default_memory,
+    search_narrative_memory,
+)
+from .schemas import (
+    EventCreateRequest,
+    EventListResponse,
+    EventRecord,
+    MemorySearchRequest,
+    MemorySearchResponse,
+    NextBeatRequest,
+)
+
+logger = logging.getLogger(__name__)
+
+MemoryFactory = Callable[[], Any]
+EventStoreFactory = Callable[[], Any]
+NarrativeEngineFactory = Callable[[], Any]
+HealthChecker = Callable[[], bool]
+
+
+def create_app(
+    *,
+    memory: Any | None = None,
+    memory_factory: MemoryFactory | None = None,
+    event_store: Any | None = None,
+    event_store_factory: EventStoreFactory | None = None,
+    narrative_engine: Any | None = None,
+    narrative_engine_factory: NarrativeEngineFactory | None = None,
+    narrative_engine_checker: HealthChecker | None = None,
+    ollama_checker: HealthChecker | None = None,
+    auth_token: str | None = None,
+) -> FastAPI:
+    """Create the narrative API app.
+
+    Tests inject ``memory``, ``event_store``, and ``narrative_engine`` directly.
+    Production leaves them unset so request paths lazily import the deploy-side
+    implementations.
+
+    When ``auth_token`` is a non-empty string, every endpoint requires the
+    request to carry a matching ``X-Narrative-Auth`` header. When unset or
+    empty, auth is disabled. T-010 owns the env-var pull and startup warning.
+    """
+
+    app = FastAPI(title="cypherclaw-narrative-api", version="0.1.0")
+    started_at = time.monotonic()
+
+    if not auth_token:
+        logger.warning(
+            "NARRATIVE_AUTH_TOKEN is unset or empty; shared-secret auth is disabled."
+        )
+
+    def require_auth(
+        x_narrative_auth: str | None = Header(default=None),
+    ) -> None:
+        if not auth_token:
+            return
+        if x_narrative_auth != auth_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="invalid or missing narrative auth token",
+            )
+
+    def get_memory() -> Any:
+        if memory is not None:
+            return memory
+        if memory_factory is not None:
+            return memory_factory()
+        return build_default_memory()
+
+    def get_event_store() -> Any:
+        if event_store is not None:
+            return event_store
+        if event_store_factory is not None:
+            return event_store_factory()
+        return build_default_event_store()
+
+    def get_narrative_engine() -> Any:
+        if narrative_engine is not None:
+            return narrative_engine
+        if narrative_engine_factory is not None:
+            return narrative_engine_factory()
+        return build_default_narrative_engine()
+
+    def check_world_db() -> bool:
+        store = get_event_store()
+        list_world_events(
+            store,
+            since_event_id=None,
+            domain_filter=None,
+            limit=1,
+        )
+        return True
+
+    @app.get("/health")
+    def health() -> dict[str, object]:
+        narrative_engine_importable = _run_health_check(
+            narrative_engine_checker or _default_narrative_engine_importable
+        )
+        world_db_reachable = _run_health_check(check_world_db)
+        ollama_reachable = _run_health_check(
+            ollama_checker or _default_ollama_reachable
+        )
+        healthy = (
+            narrative_engine_importable
+            and world_db_reachable
+            and ollama_reachable
+
+exec
+/bin/zsh -lc "sed -n '1,80p' tests/test_cypherclaw_narrative_api_service.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Regression checks for the CypherClaw Narrative API systemd unit."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def _read(path: str) -> str:
+    return (ROOT / path).read_text()
+
+
+def test_narrative_api_service_targets_default_boot_as_user() -> None:
+    path = "my-claw/systemd/cypherclaw-narrative-api.service"
+    unit = _read(path)
+
+    # Unit metadata
+    assert "Description=CypherClaw Narrative API" in unit
+    assert "After=network-online.target" in unit
+    assert "Wants=network-online.target" in unit
+
+    # Service execution
+    assert "Type=simple" in unit
+    assert "EnvironmentFile=-%h/cypherclaw/.env" in unit
+    assert "Environment=PYTHONUNBUFFERED=1" in unit
+    assert "WorkingDirectory=%h/cypherclaw" in unit
+    assert "ExecStart=%h/cypherclaw/.venv/bin/python3 -m cypherclaw.narrative_api" in unit
+
+    # Reliability policy
+    assert "Restart=on-failure" in unit
+    assert "RestartSec=5" in unit
+    assert "StartLimitIntervalSec=300" in unit
+    assert "StartLimitBurst=10" in unit
+
+    # Logging
+    assert "StandardOutput=journal" in unit
+    assert "StandardError=journal" in unit
+    assert "SyslogIdentifier=cypherclaw-narrative-api" in unit
+
+    # Installation
+    assert "[Install]" in unit
+    assert "WantedBy=default.target" in unit
+
+codex
+The section needs to document an existing runtime contract: `NARRATIVE_AUTH_TOKEN` is read by the entry point, and requests must send it as `X-Narrative-Auth`. I’m adding a static regression assertion alongside the existing `ESCALATIONS.md` checks.
+apply patch
+patch: completed
+/Users/anthony/Programming/PromptClaw/ESCALATIONS.md
+/Users/anthony/Programming/PromptClaw/tests/test_escalations_lingering.py
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754d3c92a30aab05a2a7a8939477df95bcfc..c2d2d74d12ce718d68f4a236bef0043691586ee6
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d73876e287792524c6e0f7480912e86598ab41..a0f53833a6904cbf07ab1e1965e1231299a2ebc4
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754d3c92a30aab05a2a7a8939477df95bcfc..c2d2d74d12ce718d68f4a236bef0043691586ee6
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d73876e287792524c6e0f7480912e86598ab41..a0f53833a6904cbf07ab1e1965e1231299a2ebc4
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+codex
+The edit is in place. I’m running the focused doc test first, then I’ll run the full requested validation block before committing.
+exec
+/bin/zsh -lc 'pytest tests/test_escalations_lingering.py -q' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'git diff -- ESCALATIONS.md tests/test_escalations_lingering.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754..c2d2d74 100644
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@ not survive logout — re-run the `enable-linger` command above. This is the
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d7387..a0f5383 100644
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@ def test_lingering_section_documents_enable_linger() -> None:
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754d3c92a30aab05a2a7a8939477df95bcfc..c2d2d74d12ce718d68f4a236bef0043691586ee6
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d73876e287792524c6e0f7480912e86598ab41..a0f53833a6904cbf07ab1e1965e1231299a2ebc4
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+ succeeded in 832ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+...                                                                      [100%]
+3 passed in 0.11s
+
+codex
+Focused validation passed (`3 passed`). I’m starting the requested full validation in order: install, full tests, ruff, then mypy.
+exec
+/bin/zsh -lc "pip install -e '.[dev]'" in /Users/anthony/Programming/PromptClaw
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754d3c92a30aab05a2a7a8939477df95bcfc..c2d2d74d12ce718d68f4a236bef0043691586ee6
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d73876e287792524c6e0f7480912e86598ab41..a0f53833a6904cbf07ab1e1965e1231299a2ebc4
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+ succeeded in 2777ms:
+Obtaining file:///Users/anthony/Programming/PromptClaw
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: partitura<2,>=1.8 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.8.0)
+Requirement already satisfied: librosa<1,>=0.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.11.0)
+Requirement already satisfied: mypy>=1.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.19.1)
+Requirement already satisfied: pytest>=8.0 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (8.3.5)
+Requirement already satisfied: ruff>=0.9 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.9.2)
+Requirement already satisfied: audioread>=2.1.9 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (3.1.0)
+Requirement already satisfied: numba>=0.51.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.59.0)
+Requirement already satisfied: numpy>=1.22.3 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.26.0)
+Requirement already satisfied: scipy>=1.6.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.11.4)
+Requirement already satisfied: scikit-learn>=1.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.2)
+Requirement already satisfied: joblib>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.0)
+Requirement already satisfied: decorator>=4.3.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (5.1.1)
+Requirement already satisfied: soundfile>=0.12.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.13.1)
+Requirement already satisfied: pooch>=1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.9.0)
+Requirement already satisfied: soxr>=0.3.2 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: typing_extensions>=4.1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (4.15.0)
+Requirement already satisfied: lazy_loader>=0.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.3)
+Requirement already satisfied: msgpack>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.3)
+Requirement already satisfied: lxml in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.9.3)
+Requirement already satisfied: lark-parser in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (0.12.0)
+Requirement already satisfied: xmlschema in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.3.1)
+Requirement already satisfied: mido in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (1.3.3)
+Requirement already satisfied: mypy_extensions>=1.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: pathspec>=0.9.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.10.3)
+Requirement already satisfied: librt>=0.6.2 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.8.1)
+Requirement already satisfied: llvmlite<0.43,>=0.42.0dev0 in /opt/anaconda3/lib/python3.11/site-packages (from numba>=0.51.0->librosa<1,>=0.10->promptclaw==3.0.0) (0.42.0)
+Requirement already satisfied: platformdirs>=2.5.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (4.5.1)
+Requirement already satisfied: packaging>=20.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (23.2)
+Requirement already satisfied: requests>=2.19.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.32.3)
+Requirement already satisfied: iniconfig in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.1.1)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.5.0)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.4)
+Requirement already satisfied: idna<4,>=2.5 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (3.4)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.6.3)
+Requirement already satisfied: certifi>=2017.4.17 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2026.1.4)
+Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from scikit-learn>=1.1.0->librosa<1,>=0.10->promptclaw==3.0.0) (2.2.0)
+Requirement already satisfied: cffi>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.0)
+Requirement already satisfied: pycparser in /opt/anaconda3/lib/python3.11/site-packages (from cffi>=1.0->soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.21)
+Requirement already satisfied: elementpath<6.0.0,>=5.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from xmlschema->partitura<2,>=1.8->promptclaw==3.0.0) (5.1.1)
+Building wheels for collected packages: promptclaw
+  Building editable for promptclaw (pyproject.toml): started
+  Building editable for promptclaw (pyproject.toml): finished with status 'done'
+  Created wheel for promptclaw: filename=promptclaw-3.0.0-0.editable-py3-none-any.whl size=5894 sha256=5775ba081083fa45e76555fb26592c1d4246f08faf8ba3215a8e1a03112eeebd
+  Stored in directory: /private/var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/pip-ephem-wheel-cache-9d99609u/wheels/ab/f4/89/0cacd29874f6252d7c6bef0fca4c14839da91ab6a8d842965e
+Successfully built promptclaw
+Installing collected packages: promptclaw
+  Attempting uninstall: promptclaw
+    Found existing installation: promptclaw 3.0.0
+    Uninstalling promptclaw-3.0.0:
+      Successfully uninstalled promptclaw-3.0.0
+Successfully installed promptclaw-3.0.0
+
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754d3c92a30aab05a2a7a8939477df95bcfc..c2d2d74d12ce718d68f4a236bef0043691586ee6
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d73876e287792524c6e0f7480912e86598ab41..a0f53833a6904cbf07ab1e1965e1231299a2ebc4
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+codex
+Install completed cleanly. I’m running the full test suite now with the exact requested pytest flags.
+exec
+/bin/zsh -lc 'pytest tests/ -x --tb=short' in /Users/anthony/Programming/PromptClaw
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754d3c92a30aab05a2a7a8939477df95bcfc..c2d2d74d12ce718d68f4a236bef0043691586ee6
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d73876e287792524c6e0f7480912e86598ab41..a0f53833a6904cbf07ab1e1965e1231299a2ebc4
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754d3c92a30aab05a2a7a8939477df95bcfc..c2d2d74d12ce718d68f4a236bef0043691586ee6
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d73876e287792524c6e0f7480912e86598ab41..a0f53833a6904cbf07ab1e1965e1231299a2ebc4
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754d3c92a30aab05a2a7a8939477df95bcfc..c2d2d74d12ce718d68f4a236bef0043691586ee6
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d73876e287792524c6e0f7480912e86598ab41..a0f53833a6904cbf07ab1e1965e1231299a2ebc4
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+codex
+The full suite is past the midpoint and the new static test is included in the run. No failure has surfaced so far.
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754d3c92a30aab05a2a7a8939477df95bcfc..c2d2d74d12ce718d68f4a236bef0043691586ee6
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d73876e287792524c6e0f7480912e86598ab41..a0f53833a6904cbf07ab1e1965e1231299a2ebc4
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754d3c92a30aab05a2a7a8939477df95bcfc..c2d2d74d12ce718d68f4a236bef0043691586ee6
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d73876e287792524c6e0f7480912e86598ab41..a0f53833a6904cbf07ab1e1965e1231299a2ebc4
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754d3c92a30aab05a2a7a8939477df95bcfc..c2d2d74d12ce718d68f4a236bef0043691586ee6
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d73876e287792524c6e0f7480912e86598ab41..a0f53833a6904cbf07ab1e1965e1231299a2ebc4
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+ succeeded in 35082ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3872 items
+
+tests/test_accompaniment.py ...........................                  [  0%]
+tests/test_acoustic_ecology.py .................................         [  1%]
+tests/test_agent_runtime.py ..                                           [  1%]
+tests/test_agent_selector_defaults.py .                                  [  1%]
+tests/test_agent_selector_quota.py ........                              [  1%]
+tests/test_agogic_rule.py ...                                            [  1%]
+tests/test_antenna_to_skin.py .................................          [  2%]
+tests/test_archive_daemon_runtime.py .                                   [  2%]
+tests/test_archive_paths.py .....                                        [  2%]
+tests/test_arrangement_engine.py ....................................... [  3%]
+                                                                         [  3%]
+tests/test_art_engine_runtime.py ....                                    [  4%]
+tests/test_articulation.py ......                                        [  4%]
+tests/test_artist_identity.py .......................................... [  5%]
+.........                                                                [  5%]
+tests/test_artistic_identity.py .                                        [  5%]
+tests/test_audio_analysis.py .....................................       [  6%]
+tests/test_audio_novelty.py ....                                         [  6%]
+tests/test_bootstrap.py ..                                               [  6%]
+tests/test_breath_to_filter.py .............................             [  7%]
+tests/test_cadence_engine.py .......                                     [  7%]
+tests/test_call_response.py ..........                                   [  7%]
+tests/test_capstone_engine.py ...                                        [  7%]
+tests/test_capture_alias.py ..                                           [  7%]
+tests/test_cast_planner.py .............                                 [  8%]
+tests/test_character_registry.py ......                                  [  8%]
+tests/test_check_status_runtime.py ..                                    [  8%]
+tests/test_client_local.py ..                                            [  8%]
+tests/test_client_modal.py ..                                            [  8%]
+tests/test_coherence_engine.py ..............                            [  8%]
+tests/test_coherence_integration.py ............                         [  9%]
+tests/test_collaborative_canvas.py ......................                [  9%]
+tests/test_commission_context.py ..                                      [  9%]
+tests/test_composer_quote_verify.py .....                                [ 10%]
+tests/test_config.py ..                                                  [ 10%]
+tests/test_constitution.py .......................                       [ 10%]
+tests/test_contact_listener_runtime.py ....                              [ 10%]
+tests/test_contact_mic_calibration_runtime.py ....                       [ 10%]
+tests/test_context_pulse_runtime.py .                                    [ 10%]
+tests/test_continuous_learner.py ......................                  [ 11%]
+tests/test_counterpoint_pipeline.py ...........................          [ 12%]
+tests/test_counterpoint_rules.py ....................................... [ 13%]
+......................                                                   [ 13%]
+tests/test_course_critique.py ...............................            [ 14%]
+tests/test_cypherclaw_audio_runtime.py .....                             [ 14%]
+tests/test_cypherclaw_av_stack_service.py ...                            [ 14%]
+tests/test_cypherclaw_boot_runtime.py .......                            [ 14%]
+tests/test_cypherclaw_musicianship_roadmap.py ..                         [ 14%]
+tests/test_cypherclaw_narrative_api_service.py .                         [ 15%]
+tests/test_cypherclaw_runtime.py .....                                   [ 15%]
+tests/test_cypherclaw_sampler_architecture.py .......                    [ 15%]
+tests/test_cypherclaw_sampler_artistic_intent.py .....                   [ 15%]
+tests/test_daemon_concurrency_compat.py ...                              [ 15%]
+tests/test_daemon_fallback.py ...............                            [ 15%]
+tests/test_daemon_scheduler.py ..                                        [ 15%]
+tests/test_daemon_status_ollama.py .......                               [ 16%]
+tests/test_dashboard_generator.py ...................................... [ 17%]
+.......                                                                  [ 17%]
+tests/test_dashboard_generator_runtime.py ...                            [ 17%]
+tests/test_decision_store.py .........                                   [ 17%]
+tests/test_doctor.py ...                                                 [ 17%]
+tests/test_dsp_scene_lab.py ................                             [ 18%]
+tests/test_duration_contrast_rule.py .......                             [ 18%]
+tests/test_ear_engine.py ............                                    [ 18%]
+tests/test_emsd_curriculum.py ...............                            [ 18%]
+tests/test_emsd_performance.py ....                                      [ 19%]
+tests/test_emsd_runtime.py ...                                           [ 19%]
+tests/test_escalations_lingering.py ...                                  [ 19%]
+tests/test_event_store.py .......                                        [ 19%]
+tests/test_executable_curriculum.py ...                                  [ 19%]
+tests/test_face_display_sample_status.py ....                            [ 19%]
+tests/test_federation_discovery.py ........                              [ 19%]
+tests/test_final_rit.py ...                                              [ 19%]
+tests/test_first_boot.py ...................................             [ 20%]
+tests/test_form_grammar.py ..                                            [ 20%]
+tests/test_fractal_form.py ...............                               [ 21%]
+tests/test_functional_harmony.py ...............................         [ 22%]
+tests/test_gallery.py ..........................                         [ 22%]
+tests/test_gallery_x11_runtime.py ...                                    [ 22%]
+tests/test_garden_watcher.py ........................................... [ 23%]
+.                                                                        [ 23%]
+tests/test_gemini_image_runtime.py ...                                   [ 23%]
+tests/test_generation_budget.py ..................                       [ 24%]
+tests/test_generation_cache.py ....                                      [ 24%]
+tests/test_generation_client_protocol.py ....                            [ 24%]
+tests/test_generation_composer_hook.py ..........                        [ 24%]
+tests/test_generation_conditioner.py .......................             [ 25%]
+tests/test_generation_e2e_cypherclaw.py s                                [ 25%]
+tests/test_generation_health.py ............                             [ 25%]
+tests/test_generation_live_modal.py s                                    [ 25%]
+tests/test_generation_live_replicate.py s                                [ 25%]
+tests/test_generation_queue.py .....................                     [ 26%]
+tests/test_generation_replicate_retry.py ............................... [ 27%]
+..................                                                       [ 27%]
+tests/test_generation_request.py .....................                   [ 28%]
+tests/test_generation_storage.py ....                                    [ 28%]
+tests/test_generation_validate.py .......                                [ 28%]
+tests/test_generation_worker.py .....                                    [ 28%]
+tests/test_generative_scores.py ........................................ [ 29%]
+.............................................                            [ 30%]
+tests/test_genre_literacy.py ............                                [ 31%]
+tests/test_glyphweave_cli.py ....                                        [ 31%]
+tests/test_glyphweave_runtime.py ....                                    [ 31%]
+tests/test_governor_integration.py ..............                        [ 31%]
+tests/test_graduation.py ......................                          [ 32%]
+tests/test_groove_engine.py ............................................ [ 33%]
+......................................                                   [ 34%]
+tests/test_harmonic_planner.py .........                                 [ 34%]
+tests/test_healer_runtime.py .....                                       [ 34%]
+tests/test_healthcheck_script_runtime.py ...                             [ 34%]
+tests/test_hook_engine.py .................                              [ 35%]
+tests/test_human_phrase_capture_verify.py .                              [ 35%]
+tests/test_image_api_app.py ........                                     [ 35%]
+tests/test_image_api_jobs_db.py ............                             [ 35%]
+tests/test_image_api_s3_uploader.py ....                                 [ 35%]
+tests/test_image_api_spec_parser.py ...................                  [ 36%]
+tests/test_image_api_worker.py ........                                  [ 36%]
+tests/test_inkplate_display.py ....                                      [ 36%]
+tests/test_inner_life.py ...................................             [ 37%]
+tests/test_instrument_patches.py ........                                [ 37%]
+tests/test_ixml_chunk_writer.py .......                                  [ 38%]
+tests/test_keyboard_chat.py ..............................               [ 38%]
+tests/test_lifeimprover_bridge_runtime.py .....                          [ 38%]
+tests/test_listener_review.py .....                                      [ 39%]
+tests/test_live_buffer.py ...                                            [ 39%]
+tests/test_local_command_runtime.py ....                                 [ 39%]
+tests/test_lung_capacity_rule.py .......                                 [ 39%]
+tests/test_macbook_codex_monitor.py ....                                 [ 39%]
+tests/test_maintenance_mode.py .....                                     [ 39%]
+tests/test_master_bus.py ......                                          [ 39%]
+tests/test_master_smooth_scd.py ...                                      [ 39%]
+tests/test_melodic_mind.py ............................................. [ 41%]
+..........................................................               [ 42%]
+tests/test_metric_accent_rule.py ....                                    [ 42%]
+tests/test_microtiming.py .....................                          [ 43%]
+tests/test_midi_keyboard_listener_runtime.py .....                       [ 43%]
+tests/test_midi_state.py .......................................         [ 44%]
+tests/test_mix_engine.py ..............................                  [ 45%]
+tests/test_mix_verify.py ............................................... [ 46%]
+                                                                         [ 46%]
+tests/test_mood_mirror.py .....................................          [ 47%]
+tests/test_motif_lifecycle.py ............................               [ 48%]
+tests/test_motif_memory.py ...............                               [ 48%]
+tests/test_music_theory.py ............................................. [ 49%]
+........................................                                 [ 50%]
+tests/test_music_tracker.py ..........................................   [ 51%]
+tests/test_music_tracker_runtime.py .................................... [ 52%]
+........                                                                 [ 52%]
+tests/test_musical_integration_runtime.py .                              [ 52%]
+tests/test_musical_marathon_integration.py ..                            [ 52%]
+tests/test_narrative_api_beats.py .........                              [ 53%]
+tests/test_narrative_api_events.py .....................                 [ 53%]
+tests/test_narrative_api_health.py ..                                    [ 53%]
+tests/test_narrative_api_main.py ....                                    [ 53%]
+tests/test_narrative_api_memory.py ...........                           [ 54%]
+tests/test_narrative_envelope.py ..............                          [ 54%]
+tests/test_observatory_authority.py .....                                [ 54%]
+tests/test_observatory_runtime.py ..                                     [ 54%]
+tests/test_observatory_verification.py ..                                [ 54%]
+tests/test_observer_vision_runtime.py ..............                     [ 55%]
+tests/test_ollama_daemon_health.py ...                                   [ 55%]
+tests/test_ollama_health.py ......                                       [ 55%]
+tests/test_ollama_invoke.py ...                                          [ 55%]
+tests/test_ollama_routing.py ...................                         [ 55%]
+tests/test_ollama_run_agent.py .......                                   [ 56%]
+tests/test_operator_diagnostics.py ...................                   [ 56%]
+tests/test_operator_diagnostics_sample_status.py ....                    [ 56%]
+tests/test_ops_helpers_runtime.py ....                                   [ 56%]
+tests/test_orchestral_form.py ...............................            [ 57%]
+tests/test_orchestrator.py ...                                           [ 57%]
+tests/test_pareidolia_art_engine.py .......                              [ 57%]
+tests/test_pareidolia_characters.py .................................    [ 58%]
+tests/test_pareidolia_color.py ......................................... [ 59%]
+........................................................................ [ 61%]
+....                                                                     [ 61%]
+tests/test_pedals_to_key.py ............................                 [ 62%]
+tests/test_phrase_arch.py ..........                                     [ 62%]
+tests/test_phrase_capture.py ........................                    [ 63%]
+tests/test_phrase_capture_runtime.py ...                                 [ 63%]
+tests/test_phrase_tracker.py ............                                [ 63%]
+tests/test_piece_brief.py ........                                       [ 63%]
+tests/test_piece_commission.py ....                                      [ 63%]
+tests/test_piece_queue.py ..                                             [ 64%]
+tests/test_porch_eye.py ..................................               [ 64%]
+tests/test_portfolio_report.py .........................                 [ 65%]
+tests/test_practice_curriculum.py ..                                     [ 65%]
+tests/test_preflight.py ......                                           [ 65%]
+tests/test_presence_engine.py ............                               [ 66%]
+tests/test_procedural_arc.py .....                                       [ 66%]
+tests/test_production_course_integration.py ..........                   [ 66%]
+tests/test_production_course_knowledge_base.py ...                       [ 66%]
+tests/test_project_scanner_runtime.py ....                               [ 66%]
+tests/test_prosody_engine.py ........                                    [ 66%]
+tests/test_punctuation_rule.py ............                              [ 67%]
+tests/test_quota_monitor.py .....................                        [ 67%]
+tests/test_reharmonizer.py ...                                           [ 67%]
+tests/test_render_ablation.py ....                                       [ 67%]
+tests/test_render_antipatterns.py ..........................             [ 68%]
+tests/test_render_audio_sidecar.py ...                                   [ 68%]
+tests/test_render_debugger.py ..                                         [ 68%]
+tests/test_render_diff.py ................                               [ 69%]
+tests/test_render_events.py ....................                         [ 69%]
+tests/test_render_export.py ......                                       [ 69%]
+tests/test_render_features.py ...                                        [ 69%]
+tests/test_render_metrics.py ..............                              [ 70%]
+tests/test_render_pass.py ....................                           [ 70%]
+tests/test_render_replay.py ..                                           [ 70%]
+tests/test_render_seed.py .............                                  [ 71%]
+tests/test_render_worm.py ..........                                     [ 71%]
+tests/test_repertoire_memory.py .................                        [ 71%]
+tests/test_repertoire_memory_score_tree.py .                             [ 71%]
+tests/test_research_runtime.py .....                                     [ 71%]
+tests/test_resilience_runtime_scripts.py ..............                  [ 72%]
+tests/test_resource_governor.py ..........................               [ 72%]
+tests/test_restraint.py ...                                              [ 73%]
+tests/test_reviewer_runtime.py ...                                       [ 73%]
+tests/test_role_gate_integration.py .................................... [ 74%]
+....                                                                     [ 74%]
+tests/test_room_listener_runtime.py ..................                   [ 74%]
+tests/test_room_presence_daemon.py ......                                [ 74%]
+tests/test_router.py .....                                               [ 74%]
+tests/test_row_automation.py ...........                                 [ 75%]
+tests/test_runbook_generation_backend.py ......                          [ 75%]
+tests/test_runtime_checkpoint.py ...                                     [ 75%]
+tests/test_runtime_paths.py ..                                           [ 75%]
+tests/test_sample_capture_daemon.py .................................... [ 76%]
+.............                                                            [ 76%]
+tests/test_sample_capture_service_verify.py ....                         [ 76%]
+tests/test_sample_capture_verify.py ....                                 [ 76%]
+tests/test_sample_dsp_activity.py ...........                            [ 77%]
+tests/test_sample_event_renderer.py .....                                [ 77%]
+tests/test_sample_lab.py ....                                            [ 77%]
+tests/test_sample_library.py ......................                      [ 78%]
+tests/test_sample_library_import.py ...                                  [ 78%]
+tests/test_sample_playback_engine.py .......                             [ 78%]
+tests/test_sample_record_audio_analysis.py .............                 [ 78%]
+tests/test_sample_record_context.py ..........                           [ 78%]
+tests/test_sample_record_json.py ..............                          [ 79%]
+tests/test_sample_record_skeleton.py .........                           [ 79%]
+tests/test_sample_selector.py ..................                         [ 79%]
+tests/test_sample_status.py .....                                        [ 80%]
+tests/test_sampler_buffers.py ...............                            [ 80%]
+tests/test_sampler_dispatch.py ....................................      [ 81%]
+tests/test_sampler_effects.py .......................................... [ 82%]
+.......                                                                  [ 82%]
+tests/test_sampler_fx_mode_verify.py ...                                 [ 82%]
+tests/test_sampler_scheduler.py ...........                              [ 83%]
+tests/test_scene_composer.py ......................................      [ 84%]
+tests/test_score_tree.py .                                               [ 84%]
+tests/test_score_tree_composer.py .......................                [ 84%]
+tests/test_score_tree_pipeline.py .                                      [ 84%]
+tests/test_sdp_cost_extractor.py ............                            [ 84%]
+tests/test_sdp_telemetry_cost_model.py ....                              [ 85%]
+tests/test_self_critique.py .........................                    [ 85%]
+tests/test_self_listener_quote_verify.py ......                          [ 85%]
+tests/test_self_listener_tracker_runtime.py ...............              [ 86%]
+tests/test_senseweave_rollout_controls.py .....                          [ 86%]
+tests/test_senseweave_voice.py ..........................                [ 87%]
+tests/test_sensor_fusion.py ...............................              [ 87%]
+tests/test_sensor_intent_rule.py ....                                    [ 87%]
+tests/test_sensory_journal.py ............................               [ 88%]
+tests/test_server_health.py ...                                          [ 88%]
+tests/test_silence_budget_rule.py .................                      [ 89%]
+tests/test_sound_palette_lab.py ..                                       [ 89%]
+tests/test_startle.py ................................                   [ 90%]
+tests/test_supercollider_recipes.py ...                                  [ 90%]
+tests/test_sw_sampler.py .......................................         [ 91%]
+tests/test_syncopation_features.py .........................             [ 91%]
+tests/test_synthdef_registry.py ...................................      [ 92%]
+tests/test_synthesis_architecture_registry.py .......................... [ 93%]
+.......                                                                  [ 93%]
+tests/test_tamagotchi_runtime.py ......                                  [ 93%]
+tests/test_telegram_runtime.py ......                                    [ 93%]
+tests/test_theramini_duet.py ........................................... [ 94%]
+.........                                                                [ 95%]
+tests/test_theramini_listener_runtime.py ............                    [ 95%]
+tests/test_tracker_cadence.py ............                               [ 95%]
+tests/test_tracker_compiler.py ................                          [ 96%]
+tests/test_tracker_variation.py .....                                    [ 96%]
+tests/test_trust.py ................                                     [ 96%]
+tests/test_usage_journal.py .......................                      [ 97%]
+tests/test_usage_journal_integration.py .                                [ 97%]
+tests/test_voice_aliases.py .......                                      [ 97%]
+tests/test_voice_interpretation_rules.py ............................... [ 98%]
+..                                                                       [ 98%]
+tests/test_voice_manager_v2.py ......................................... [ 99%]
+............                                                             [ 99%]
+tests/test_voice_shaping.py ....                                         [ 99%]
+tests/test_wizard.py ...                                                 [100%]
+
+=============================== warnings summary ===============================
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163: DeprecationWarning: module 'sre_parse' is deprecated
+    import sre_parse
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164: DeprecationWarning: module 'sre_constants' is deprecated
+    import sre_constants
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25
+  /opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    from pkg_resources import resource_stream, resource_exists
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google.cloud')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(parent)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('ruamel')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('zope')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:16: DeprecationWarning: 'aifc' is deprecated and slated for removal in Python 3.13
+    import aifc
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:17: DeprecationWarning: 'audioop' is deprecated and slated for removal in Python 3.13
+    import audioop
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:19: DeprecationWarning: 'sunau' is deprecated and slated for removal in Python 3.13
+    import sunau
+
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+  /Users/anthony/Programming/PromptClaw/tests/test_gallery.py:108: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(result.getdata()), list(canvas.getdata()))
+
+tests/test_pareidolia_characters.py: 189 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:85: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pixels = list(img.getdata())
+
+tests/test_pareidolia_characters.py: 21 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:254: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    rendered[name] = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:310: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:314: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:316: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:339: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_low = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:343: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_high = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:326: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:352: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:331: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:333: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:361: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:376: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:366: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:368: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_add_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:429: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:451: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_with_palette
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:443: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:434: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:436: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:481: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_curious_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:554: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_happy_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:542: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_neutral_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:536: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sad_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:548: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sleeping_eyes_no_highlights
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:560: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:571: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_bush
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:621: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:615: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:609: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:585: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_without_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:591: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:597: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:603: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:642: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:661: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:674: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    basalt_pixels = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:678: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pebble_pixels = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:870: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================ 3869 passed, 3 skipped, 296 warnings in 33.45s ================
+
+codex
+Full pytest passed (`3869 passed, 3 skipped`). I’m running `ruff` and then `mypy` now.
+exec
+/bin/zsh -lc 'ruff check src/ tests/' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+All checks passed!
+
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754d3c92a30aab05a2a7a8939477df95bcfc..c2d2d74d12ce718d68f4a236bef0043691586ee6
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d73876e287792524c6e0f7480912e86598ab41..a0f53833a6904cbf07ab1e1965e1231299a2ebc4
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+exec
+/bin/zsh -lc 'mypy src/' in /Users/anthony/Programming/PromptClaw
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754d3c92a30aab05a2a7a8939477df95bcfc..c2d2d74d12ce718d68f4a236bef0043691586ee6
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d73876e287792524c6e0f7480912e86598ab41..a0f53833a6904cbf07ab1e1965e1231299a2ebc4
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+ succeeded in 433ms:
+Success: no issues found in 30 source files
+
+codex
+All requested validation commands passed. I’m checking the final diff and status so the commit includes only the scoped `ESCALATIONS.md` and static test changes.
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M ESCALATIONS.md
+ M progress.md
+ M sdp/assumption-log.md
+ M sdp/clarification-register.md
+ M sdp/domain-model.md
+ M sdp/implementation-plan.md
+ M sdp/logs/Lead_T-014_20260427T001208Z_1777312399.log
+ M sdp/logs/Verify_T-014_20260427T001208Z_1777312500.log
+ M sdp/logs/self-repair.log
+ M sdp/notifications.log
+ M sdp/prd-snapshot.md
+ M sdp/requirements-register.md
+ M sdp/run-log.md
+ M sdp/runner.log
+ M sdp/task-graph.md
+ M src/cypherclaw/image_api/app.py
+ M tests/test_escalations_lingering.py
+?? .coverage
+?? prd-cypherclaw-narrative-http-service.md
+?? scripts/
+?? sdp/fractal-reports/
+?? sdp/logs/Lead_T-001_20260502T001347Z_1777680873.log
+?? sdp/logs/Lead_T-002_20260502T001347Z_1777681670.log
+?? sdp/logs/Lead_T-003_20260502T001347Z_1777682127.log
+?? sdp/logs/Lead_T-004_20260502T001347Za_1777683764.log
+?? sdp/logs/Lead_T-004_20260502T001347Zb_1777684197.log
+?? sdp/logs/Lead_T-004_20260502T001347Zc_1777684547.log
+?? sdp/logs/Lead_T-004_20260502T001347Zc_1777684884.log
+?? sdp/logs/Lead_T-005_20260502T001347Z_1777682789.log
+?? sdp/logs/Lead_T-006_20260502T001347Za_1777686947.log
+?? sdp/logs/Lead_T-006_20260502T001347Zb_1777687180.log
+?? sdp/logs/Lead_T-009_20260502T001347Z_1777683308.log
+?? sdp/logs/Lead_T-010_20260502T001347Z_1777685584.log
+?? sdp/logs/Lead_T-011_20260502T001347Z_1777686063.log
+?? sdp/logs/Lead_T-015_20260427T001208Z_1777312678.log
+?? sdp/logs/Lead_T-016_20260427T001208Z_1777313161.log
+?? sdp/logs/Lead_T-017_20260427T001208Z_1777313911.log
+?? sdp/logs/Lead_T-018_20260427T001208Z_1777314526.log
+?? sdp/logs/Lead_T-019_20260427T001208Za_1777314963.log
+?? sdp/logs/Lead_T-019_20260427T001208Zb_1777315392.log
+?? sdp/logs/Lead_T-019_20260427T001208Zc_1777315643.log
+?? sdp/logs/Lead_T-019_20260427T001208Zd_1777316247.log
+?? sdp/logs/Lead_T-020_20260427T001208Z_1777316523.log
+?? sdp/logs/Lead_T-021_20260427T001208Z_1777317194.log
+?? sdp/logs/Verify_T-001_20260502T001347Z_1777681507.log
+?? sdp/logs/Verify_T-002_20260502T001347Z_1777681955.log
+?? sdp/logs/Verify_T-003_20260502T001347Z_1777682581.log
+?? sdp/logs/Verify_T-004_20260502T001347Za_1777683936.log
+?? sdp/logs/Verify_T-004_20260502T001347Zb_1777684382.log
+?? sdp/logs/Verify_T-004_20260502T001347Zc_1777684750.log
+?? sdp/logs/Verify_T-004_20260502T001347Zc_1777685329.log
+?? sdp/logs/Verify_T-005_20260502T001347Z_1777683173.log
+?? sdp/logs/Verify_T-006_20260502T001347Za_1777687098.log
+?? sdp/logs/Verify_T-009_20260502T001347Z_1777683571.log
+?? sdp/logs/Verify_T-010_20260502T001347Z_1777685891.log
+?? sdp/logs/Verify_T-011_20260502T001347Z_1777686787.log
+?? sdp/logs/Verify_T-015_20260427T001208Z_1777313000.log
+?? sdp/logs/Verify_T-016_20260427T001208Z_1777313684.log
+?? sdp/logs/Verify_T-017_20260427T001208Z_1777314354.log
+?? sdp/logs/Verify_T-018_20260427T001208Z_1777314777.log
+?? sdp/logs/Verify_T-019_20260427T001208Za_1777315202.log
+?? sdp/logs/Verify_T-019_20260427T001208Zb_1777315522.log
+?? sdp/logs/Verify_T-019_20260427T001208Zc_1777315966.log
+?? sdp/logs/Verify_T-019_20260427T001208Zd_1777316422.log
+?? sdp/logs/Verify_T-020_20260427T001208Z_1777316917.log
+?? sdp/logs/Verify_T-021_20260427T001208Z_1777317409.log
+?? sdp/logs/claude_1777683720.log
+?? sdp/logs/claude_1777686903.log
+?? sdp/telemetry/prompt-review-2026-05-02.md
+?? sdp/verification/t-006@20260502t001347za-verify.md
+?? sdp/verification/t-014@20260427t001208z-verify.md
+?? sdp/verification/t-019@20260427t001208zb-verify.md
+?? sdp/verification/t-019@20260427t001208zd-verify.md
+?? specs/external/
+?? verification_reports/completion-gate-20260427T191819Z.json
+?? verification_reports/completion-gate-20260427T191819Z.md
+
+exec
+/bin/zsh -lc 'git diff -- ESCALATIONS.md tests/test_escalations_lingering.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754..c2d2d74 100644
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@ not survive logout — re-run the `enable-linger` command above. This is the
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d7387..a0f5383 100644
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@ def test_lingering_section_documents_enable_linger() -> None:
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754d3c92a30aab05a2a7a8939477df95bcfc..c2d2d74d12ce718d68f4a236bef0043691586ee6
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d73876e287792524c6e0f7480912e86598ab41..a0f53833a6904cbf07ab1e1965e1231299a2ebc4
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+codex
+The final diff is scoped to the two intended files. I’m staging only those files and committing with the requested task id.
+exec
+/bin/zsh -lc 'git add ESCALATIONS.md tests/test_escalations_lingering.py && git commit -m "docs(escalations): document narrative auth token [T-006@20260502T001347Zb]"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+[feat/graceful-degradation 01c34bb] docs(escalations): document narrative auth token [T-006@20260502T001347Zb]
+ 2 files changed, 40 insertions(+)
+
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754d3c92a30aab05a2a7a8939477df95bcfc..c2d2d74d12ce718d68f4a236bef0043691586ee6
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d73876e287792524c6e0f7480912e86598ab41..a0f53833a6904cbf07ab1e1965e1231299a2ebc4
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+exec
+/bin/zsh -lc 'git show --stat --oneline --no-renames HEAD' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+01c34bb docs(escalations): document narrative auth token [T-006@20260502T001347Zb]
+ ESCALATIONS.md                      | 30 ++++++++++++++++++++++++++++++
+ tests/test_escalations_lingering.py | 10 ++++++++++
+ 2 files changed, 40 insertions(+)
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/assumption-log.md
+ M sdp/clarification-register.md
+ M sdp/domain-model.md
+ M sdp/implementation-plan.md
+ M sdp/logs/Lead_T-014_20260427T001208Z_1777312399.log
+ M sdp/logs/Verify_T-014_20260427T001208Z_1777312500.log
+ M sdp/logs/self-repair.log
+ M sdp/notifications.log
+ M sdp/prd-snapshot.md
+ M sdp/requirements-register.md
+ M sdp/run-log.md
+ M sdp/runner.log
+ M sdp/task-graph.md
+ M src/cypherclaw/image_api/app.py
+?? .coverage
+?? prd-cypherclaw-narrative-http-service.md
+?? scripts/
+?? sdp/fractal-reports/
+?? sdp/logs/Lead_T-001_20260502T001347Z_1777680873.log
+?? sdp/logs/Lead_T-002_20260502T001347Z_1777681670.log
+?? sdp/logs/Lead_T-003_20260502T001347Z_1777682127.log
+?? sdp/logs/Lead_T-004_20260502T001347Za_1777683764.log
+?? sdp/logs/Lead_T-004_20260502T001347Zb_1777684197.log
+?? sdp/logs/Lead_T-004_20260502T001347Zc_1777684547.log
+?? sdp/logs/Lead_T-004_20260502T001347Zc_1777684884.log
+?? sdp/logs/Lead_T-005_20260502T001347Z_1777682789.log
+?? sdp/logs/Lead_T-006_20260502T001347Za_1777686947.log
+?? sdp/logs/Lead_T-006_20260502T001347Zb_1777687180.log
+?? sdp/logs/Lead_T-009_20260502T001347Z_1777683308.log
+?? sdp/logs/Lead_T-010_20260502T001347Z_1777685584.log
+?? sdp/logs/Lead_T-011_20260502T001347Z_1777686063.log
+?? sdp/logs/Lead_T-015_20260427T001208Z_1777312678.log
+?? sdp/logs/Lead_T-016_20260427T001208Z_1777313161.log
+?? sdp/logs/Lead_T-017_20260427T001208Z_1777313911.log
+?? sdp/logs/Lead_T-018_20260427T001208Z_1777314526.log
+?? sdp/logs/Lead_T-019_20260427T001208Za_1777314963.log
+?? sdp/logs/Lead_T-019_20260427T001208Zb_1777315392.log
+?? sdp/logs/Lead_T-019_20260427T001208Zc_1777315643.log
+?? sdp/logs/Lead_T-019_20260427T001208Zd_1777316247.log
+?? sdp/logs/Lead_T-020_20260427T001208Z_1777316523.log
+?? sdp/logs/Lead_T-021_20260427T001208Z_1777317194.log
+?? sdp/logs/Verify_T-001_20260502T001347Z_1777681507.log
+?? sdp/logs/Verify_T-002_20260502T001347Z_1777681955.log
+?? sdp/logs/Verify_T-003_20260502T001347Z_1777682581.log
+?? sdp/logs/Verify_T-004_20260502T001347Za_1777683936.log
+?? sdp/logs/Verify_T-004_20260502T001347Zb_1777684382.log
+?? sdp/logs/Verify_T-004_20260502T001347Zc_1777684750.log
+?? sdp/logs/Verify_T-004_20260502T001347Zc_1777685329.log
+?? sdp/logs/Verify_T-005_20260502T001347Z_1777683173.log
+?? sdp/logs/Verify_T-006_20260502T001347Za_1777687098.log
+?? sdp/logs/Verify_T-009_20260502T001347Z_1777683571.log
+?? sdp/logs/Verify_T-010_20260502T001347Z_1777685891.log
+?? sdp/logs/Verify_T-011_20260502T001347Z_1777686787.log
+?? sdp/logs/Verify_T-015_20260427T001208Z_1777313000.log
+?? sdp/logs/Verify_T-016_20260427T001208Z_1777313684.log
+?? sdp/logs/Verify_T-017_20260427T001208Z_1777314354.log
+?? sdp/logs/Verify_T-018_20260427T001208Z_1777314777.log
+?? sdp/logs/Verify_T-019_20260427T001208Za_1777315202.log
+?? sdp/logs/Verify_T-019_20260427T001208Zb_1777315522.log
+?? sdp/logs/Verify_T-019_20260427T001208Zc_1777315966.log
+?? sdp/logs/Verify_T-019_20260427T001208Zd_1777316422.log
+?? sdp/logs/Verify_T-020_20260427T001208Z_1777316917.log
+?? sdp/logs/Verify_T-021_20260427T001208Z_1777317409.log
+?? sdp/logs/claude_1777683720.log
+?? sdp/logs/claude_1777686903.log
+?? sdp/telemetry/prompt-review-2026-05-02.md
+?? sdp/verification/t-006@20260502t001347za-verify.md
+?? sdp/verification/t-014@20260427t001208z-verify.md
+?? sdp/verification/t-019@20260427t001208zb-verify.md
+?? sdp/verification/t-019@20260427t001208zd-verify.md
+?? specs/external/
+?? verification_reports/completion-gate-20260427T191819Z.json
+?? verification_reports/completion-gate-20260427T191819Z.md
+
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754d3c92a30aab05a2a7a8939477df95bcfc..c2d2d74d12ce718d68f4a236bef0043691586ee6
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d73876e287792524c6e0f7480912e86598ab41..a0f53833a6904cbf07ab1e1965e1231299a2ebc4
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+codex
+Implemented and committed:
+
+`01c34bb docs(escalations): document narrative auth token [T-006@20260502T001347Zb]`
+
+Changed [ESCALATIONS.md](/Users/anthony/Programming/PromptClaw/ESCALATIONS.md) to add `## Auth Token (optional)` covering `NARRATIVE_AUTH_TOKEN`, systemd `Environment=` / drop-in placement, defense-in-depth wording, and client `X-Narrative-Auth` usage.
+
+Updated [tests/test_escalations_lingering.py](/Users/anthony/Programming/PromptClaw/tests/test_escalations_lingering.py) with a static regression test for that section.
+
+Validation passed:
+- `pip install -e '.[dev]'`
+- `pytest tests/ -x --tb=short` (`3869 passed, 3 skipped`)
+- `ruff check src/ tests/`
+- `mypy src/`
+
+I staged and committed only the two scoped files. The repo still has unrelated pre-existing dirty/untracked files.
+diff --git a/ESCALATIONS.md b/ESCALATIONS.md
+index c1c7754d3c92a30aab05a2a7a8939477df95bcfc..c2d2d74d12ce718d68f4a236bef0043691586ee6
+--- a/ESCALATIONS.md
++++ b/ESCALATIONS.md
+@@ -28,6 +28,36 @@
+ same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+ under "Loginctl linger state for current user".
+ 
++## Auth Token (optional)
++
++`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
++defense-in-depth. It is optional and does not replace host firewalling,
++Tailscale ACLs, loopback binding, or other network controls. When unset or
++empty, the service starts with shared-secret auth disabled.
++
++Set the token in the systemd user unit with an `Environment=` line:
++
++```ini
++[Service]
++Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
++```
++
++For local overrides, prefer a drop-in instead of editing the installed unit:
++
++```bash
++systemctl --user edit cypherclaw-narrative-api.service
++systemctl --user daemon-reload
++systemctl --user restart cypherclaw-narrative-api.service
++```
++
++Clients pass the same token on every request with the `X-Narrative-Auth`
++header:
++
++```bash
++curl -H "X-Narrative-Auth: <long-random-token>" \
++  http://127.0.0.1:8765/health
++```
++
+ ## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+ 
+ - **Reason:** Deploy-side narrative event store is not checked into this workspace
+diff --git a/tests/test_escalations_lingering.py b/tests/test_escalations_lingering.py
+index 53d73876e287792524c6e0f7480912e86598ab41..a0f53833a6904cbf07ab1e1965e1231299a2ebc4
+--- a/tests/test_escalations_lingering.py
++++ b/tests/test_escalations_lingering.py
+@@ -21,3 +21,13 @@
+     assert "loginctl show-user" in content
+     assert "-p Linger" in content
+     assert "Linger=yes" in content
++
++
++def test_auth_token_section_documents_runtime_contract() -> None:
++    content = _text()
++    assert "## Auth Token (optional)" in content
++    assert "NARRATIVE_AUTH_TOKEN" in content
++    assert "defense-in-depth" in content
++    assert "Environment=NARRATIVE_AUTH_TOKEN=" in content
++    assert "systemctl --user edit cypherclaw-narrative-api.service" in content
++    assert "X-Narrative-Auth" in content
+
+2026-05-02T02:01:54.350496Z ERROR codex_core::session: failed to record rollout items: thread 019de669-b551-7b22-9986-15459a3f45c1 not found
+tokens used
+45,557

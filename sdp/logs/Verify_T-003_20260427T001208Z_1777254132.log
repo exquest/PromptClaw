@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3106 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+Verification complete. Report at `sdp/verification/t-003@20260427t001208z-verify.md`. All 5 acceptance criteria met; 3618 tests pass (1 skipped — the live Modal test, correctly gated).
+
+Three minor notes logged for the Lead:
+1. **Cost fallback**: spec says `0.0` when `predict_time_sec` is absent; implementation uses `latency_ms / 1000.0` (slight overstatement, not blocking)
+2. **No test for `modal=None` path** (SDK not installed raises `GenerationError`)
+3. **No test for exception propagation** from `func.remote()`
+
+The recurring `bootstrap_identity`/`FirstBootAnnouncer` hardening checks are confirmed out of scope — `ModalClient` is a pure network client with no startup flow, consistent with the established ESCALATIONS.md pattern.

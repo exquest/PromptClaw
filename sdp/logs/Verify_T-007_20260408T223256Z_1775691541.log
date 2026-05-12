@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high -p -
+Prompt delivered via: stdin (1997 chars)
+---
+
+**Verdict: PASS**
+
+1437/1437 tests green. All three acceptance criteria verified:
+
+- **Unhealthy Ollama excluded** — `_runtime_unavailable_agents` live-checks ports on every `get_available_agents` call and blocks the agent.
+- **Cloud fallback via existing fitness logic** — the quota-filtered list (Ollama absent) flows into the unchanged category/fitness/headroom selection path.
+- **Recovery** — health is re-checked live on the next call; no restart needed.
+
+Two minor notes logged (redundant guard + unreachable branch in `_eligible_agents`), neither blocking. The multi-port `any()` granularity tradeoff is already documented in ESCALATIONS.md.
+
+Report committed at `sdp/verification/t-007@20260408t223256z-verify.md` (9511f74).

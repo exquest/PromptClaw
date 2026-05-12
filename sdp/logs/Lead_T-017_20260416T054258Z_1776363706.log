@@ -1,0 +1,18 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1613 chars)
+---
+
+Committed. Here's what T-017 delivered:
+
+**5 new functions in `groove_engine.py`:**
+- `swing_offset_for_step` — signed swing offset per step position
+- `meter_rows_per_bar` — deterministic row count for 4/4, 3/4, 6/8, 5/4, 7/8, free
+- `ioi_ratios_for_subdivision` — IOI pairs for swing/shuffle/dotted/triplet/straight
+- `meter_policy_for_phase` — arc-phase-specific GrooveProfiles (Divination=free/rubato, Emergence=4/4, Convergence=7/8+polyrhythm, etc.)
+- `polyrhythm_cycle_length` — LCM of grouping pair
+
+**Metadata stamping** — groove_meter, groove_subdivision, groove_timing, groove_phrase_breath, groove_metric_modulation now flow into every TrackerStep and scene metadata.
+
+**Tracker integration** — `build_scene_from_score` applies `arc_phase` meter policies and `transition_metric_ratio` overrides without changing row scheduling.
+
+All 2476 tests pass, ruff and mypy clean.

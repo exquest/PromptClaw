@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3771 chars)
+---
+
+frac-0088 complete. Summary:
+
+- **Spec**: `specs/frac-0088-spec.md` — deepen `tests/test_midi_state.py` from depth 1 to 2 by adding an end-to-end test class plus a depth gate.
+- **Tests**: 
+  - `tests/test_midi_state.py` — added `MidiStateEndToEndTests` driving a chord-with-controllers MIDI session through `MidiState`'s public surface, asserting live state, JSON-safe `to_dict()` snapshot, `from_dict()` round-trip, and `note_to_name`/`name_to_note` integration.
+  - `tests/test_test_midi_state_depth.py` — depth gate requiring `MidiStateEndToEndTests` and depth ≥ 2.
+- **Validation**: `pytest tests/ -x` → 4566 passed, 3 skipped; `ruff check` clean; `mypy src/` clean.
+- **Identity-hardening anchors**: 11 startup tests (CLI, first-boot persistence, mode persistence, governor wiring, ASGI import) all green.
+- **Docs**: `CHANGELOG.md` (Unreleased) and `progress.md` updated; committed as `d6f0cbb feat(senseweave): deepen midi state tests [frac-0088]`.

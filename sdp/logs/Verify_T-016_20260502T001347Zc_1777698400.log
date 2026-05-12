@@ -1,0 +1,2370 @@
+Command: codex exec --dangerously-bypass-approvals-and-sandbox -c model_reasoning_effort=xhigh -m gpt-5.3-codex-spark -
+Prompt delivered via: stdin (3250 chars)
+---
+
+Completed.
+
+I verified the task and committed the required report at:
+
+- `sdp/verification/t-016@20260502t001347zc-verify.md`
+- Commit: `5e64eee`
+
+Checks performed:
+
+- `git log --oneline -5`
+- `git diff --stat HEAD~3`
+- `git diff HEAD~3`
+- `git show` of `97aa8e7` (README task commit)
+- `ESCALATIONS.md` review
+- Requested test suite command:
+  - `pip install -e '.[dev]' && pytest tests/ -x`
+  - Result: **3920 passed, 3 skipped**
+
+Findings:
+
+- `README.md` includes the new “Smoke test from Deniable” section with all requested items:
+  - Tailscale + `NARRATIVE_BASE_URL` prereqs
+  - exact invocations (including `--verbose`)
+  - expected output shape
+  - exit-code semantics
+  - troubleshooting note pointing to `tailscale status`
+- Mandatory hardening bullets for `/world/entities` behavior are already represented in `tests/test_narrative_api_entities.py` in current tree (domain defaults/filtering/pagination behavior covered).
+- No new blocking issues introduced by this task.
+
+Verdict in report: **PASS**.
+
+--- STDERR ---
+OpenAI Codex v0.125.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.3-codex-spark
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019de714-ea5c-7d60-b3fe-623640a8e963
+--------
+user
+# Verification: Task T-016@20260502T001347Zc
+
+**Task:** Add a 'Smoke test from Deniable' section to the cypherclaw repo README documenting: prerequisites (Tailscale connected to cypherclaw, NARRATIVE_BASE_URL env var), exact invocation (`python scripts/smoke_narrative.py` and `--verbose`), expected output shape, and exit-code semantics. Include a one-line troubleshooting note pointing to Tailscale status if connection fails.
+**Tier:** T1
+
+You are the VERIFY agent for this task. The LEAD agent has completed their work.
+
+
+## Review Checklist
+
+1. **Review recent commits:**
+   ```bash
+   git log --oneline -5
+   git diff HEAD~3 --stat
+   ```
+
+2. **Review code changes:**
+   ```bash
+   git diff HEAD~3
+   ```
+
+4. **Check ESCALATIONS.md** for any flagged issues.
+
+5. **Run the test suite:**
+   ```bash
+   pip install -e '.[dev]' && pytest tests/ -x
+   ```
+
+## Evaluation Criteria
+
+Evaluate the work against these five dimensions:
+
+1. **Correctness**: Does the output match the requirements/spec?
+2. **Completeness**: Are there gaps, missing edge cases, or unhandled scenarios?
+3. **Consistency**: Does the output follow established patterns and conventions?
+4. **Security**: Are there vulnerabilities, leaked secrets, or unsafe practices?
+5. **Quality**: Does the output meet the quality gates for this phase?
+
+## Output
+
+Write your verification report and all findings to this exact path:
+`sdp/verification/t-016@20260502t001347zc-verify.md`
+Do not use a different filename or directory.
+
+Use this format:
+
+```markdown
+# Verification Report — T-016@20260502T001347Zc
+
+**Verify Agent:** [your agent name]
+**Date:** [today]
+**Artifacts Reviewed:** [list files reviewed]
+
+## Correctness
+[assessment]
+
+## Completeness
+[assessment]
+
+## Consistency
+[assessment]
+
+## Security
+[assessment]
+
+## Quality
+[assessment]
+
+## Issues Found
+- [ ] [Issue — severity: blocking/minor]
+
+## Verdict: [PASS | PASS WITH NOTES | FAIL]
+
+## Notes for Lead Agent
+[specific items to address]
+```
+
+Commit the verification report.
+
+## Candidate Hardening (Auto-Generated)
+
+Use the recurring failure patterns below as mandatory hardening checks:
+- Enforce behavioral regression tests before completion: **No tests for `GET /world/entities` — severity: blocking.** The acceptance criterion is not exercised. A `tests/test_narrative_api_entities.py` covering at minimum: (a) `domain=deniable` returns only deniable+shared; (b) no domain defaults to shared; (c) `type` filter; (d) pagination (`limit`, `offset`) must be added before this task is considered done..
+- Address this recurring failure mode explicitly: **Pagination may underdeliver under native-paginating stores — severity: minor.** If the backing store honours `limit`/`offset` natively but ignores `domain_filter`, post-filtering silently returns fewer than `limit` items per page. Consider fetching with a multiplier or delegating full pagination responsibility to the store..
+- Address this recurring failure mode explicitly: `domain=deniable` → only entities with `domain in {"deniable", "shared"}` returned..
+- Address this recurring failure mode explicitly: No `domain` param → only `domain="shared"` entities returned..
+- Address this recurring failure mode explicitly: `type=character` filter narrows results..
+
+codex
+I’ll verify the completed change by checking the last few commits, reviewing the diff for the last 3 commits, and confirming `ESCALATIONS.md` plus the required smoke-test docs update in place. Then I’ll run the requested test command and record findings in the mandated report file.
+exec
+/bin/zsh -lc "git log --oneline -5 && echo '---' && git diff --stat HEAD~3 && echo '---' && git diff --name-only HEAD~3" in /Users/anthony/Programming/PromptClaw
+ succeeded in 451ms:
+ progress.md                                        |    26 +-
+ .../Lead_T-008_20260502T001347Za_1777693568.log    |    11 +
+ .../Lead_T-008_20260502T001347Zb_1777694063.log    |    10 +
+ .../Lead_T-008_20260502T001347Zc_1777694466.log    |  2198 +
+ .../Lead_T-008_20260502T001347Zd_1777695347.log    |    13 +
+ .../Lead_T-014_20260502T001347Z_1777692393.log     |     5 +
+ .../Lead_T-015_20260502T001347Z_1777692683.log     | 52205 +++++++++++++++++++
+ .../Lead_T-016_20260502T001347Za_1777696378.log    |     5 +
+ .../Lead_T-016_20260502T001347Za_1777696890.log    |    14 +
+ .../Lead_T-016_20260502T001347Za_1777697150.log    |    14 +
+ .../Lead_T-016_20260502T001347Zb_1777697407.log    | 20753 ++++++++
+ .../Lead_T-016_20260502T001347Zc_1777698005.log    |     5 +
+ .../Lead_T-016_20260502T001347Zc_1777698304.log    |    13 +
+ .../Lead_T-016_20260502T001347Zc_1777698316.log    |     5 +
+ sdp/logs/Lead_frac-0001_1777695674.log             | 24811 +++++++++
+ .../Verify_T-008_20260502T001347Za_1777693879.log  |   231 +
+ .../Verify_T-008_20260502T001347Zb_1777694254.log  |    17 +
+ .../Verify_T-008_20260502T001347Zc_1777695092.log  |    15 +
+ .../Verify_T-008_20260502T001347Zd_1777695549.log  |   172 +
+ .../Verify_T-014_20260502T001347Z_1777692450.log   |    19 +
+ .../Verify_T-015_20260502T001347Z_1777693354.log   |    14 +
+ .../Verify_T-016_20260502T001347Za_1777696574.log  |   239 +
+ .../Verify_T-016_20260502T001347Za_1777697082.log  |  4877 ++
+ .../Verify_T-016_20260502T001347Za_1777697283.log  |  2005 +
+ .../Verify_T-016_20260502T001347Zb_1777697832.log  |    14 +
+ .../Verify_T-016_20260502T001347Zc_1777698142.log  |   205 +
+ sdp/logs/Verify_frac-0001_1777696227.log           |    15 +
+ sdp/logs/claude_1777693491.log                     |     5 +
+ sdp/logs/claude_1777696326.log                     |     5 +
+ sdp/notifications.log                              |     9 +
+ sdp/run-log.md                                     |     9 +
+ sdp/runner.log                                     |  3986 ++
+ sdp/telemetry/prompt-review-2026-05-02.md          |    36 +-
+ sdp/templates/candidates/lead_t2/v004.md           |    83 +
+ sdp/templates/candidates/verify/v004.md            |    97 +
+ sdp/verification/t-008@20260502t001347zd-verify.md |    91 +
+ sdp/verification/t-016@20260502t001347za-verify.md |    32 +-
+ 37 files changed, 112229 insertions(+), 35 deletions(-)
+---
+progress.md
+sdp/logs/Lead_T-008_20260502T001347Za_1777693568.log
+sdp/logs/Lead_T-008_20260502T001347Zb_1777694063.log
+sdp/logs/Lead_T-008_20260502T001347Zc_1777694466.log
+sdp/logs/Lead_T-008_20260502T001347Zd_1777695347.log
+sdp/logs/Lead_T-014_20260502T001347Z_1777692393.log
+sdp/logs/Lead_T-015_20260502T001347Z_1777692683.log
+sdp/logs/Lead_T-016_20260502T001347Za_1777696378.log
+sdp/logs/Lead_T-016_20260502T001347Za_1777696890.log
+sdp/logs/Lead_T-016_20260502T001347Za_1777697150.log
+sdp/logs/Lead_T-016_20260502T001347Zb_1777697407.log
+sdp/logs/Lead_T-016_20260502T001347Zc_1777698005.log
+sdp/logs/Lead_T-016_20260502T001347Zc_1777698304.log
+sdp/logs/Lead_T-016_20260502T001347Zc_1777698316.log
+sdp/logs/Lead_frac-0001_1777695674.log
+sdp/logs/Verify_T-008_20260502T001347Za_1777693879.log
+sdp/logs/Verify_T-008_20260502T001347Zb_1777694254.log
+sdp/logs/Verify_T-008_20260502T001347Zc_1777695092.log
+sdp/logs/Verify_T-008_20260502T001347Zd_1777695549.log
+sdp/logs/Verify_T-014_20260502T001347Z_1777692450.log
+sdp/logs/Verify_T-015_20260502T001347Z_1777693354.log
+sdp/logs/Verify_T-016_20260502T001347Za_1777696574.log
+sdp/logs/Verify_T-016_20260502T001347Za_1777697082.log
+sdp/logs/Verify_T-016_20260502T001347Za_1777697283.log
+sdp/logs/Verify_T-016_20260502T001347Zb_1777697832.log
+sdp/logs/Verify_T-016_20260502T001347Zc_1777698142.log
+sdp/logs/Verify_frac-0001_1777696227.log
+sdp/logs/claude_1777693491.log
+sdp/logs/claude_1777696326.log
+sdp/notifications.log
+sdp/run-log.md
+sdp/runner.log
+sdp/telemetry/prompt-review-2026-05-02.md
+sdp/templates/candidates/lead_t2/v004.md
+sdp/templates/candidates/verify/v004.md
+sdp/verification/t-008@20260502t001347zd-verify.md
+sdp/verification/t-016@20260502t001347za-verify.md
+
+codex
+I found the task commits (`97aa8e7`, `4fc5542`) and the diff history is dominated by generated SDP logs. Next I’m checking the actual task-related files: README updates, the previous verify note, and `ESCALATIONS.md`, then I’ll run the requested tests.
+exec
+/bin/zsh -lc 'git show --name-only --oneline 4fc5542' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'git show --name-only --oneline 97aa8e7' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+4fc5542 verify(T-016@20260502T001347Zc): PASS — README smoke test documentation
+sdp/verification/t-016 @20260502t001347zc-verify.md
+
+ succeeded in 0ms:
+97aa8e7 docs(readme): add Smoke test from Deniable section [T-016@20260502T001347Zc]
+README.md
+
+exec
+/bin/zsh -lc "[ -f ESCALATIONS.md ] && cat ESCALATIONS.md || echo 'ESCALATIONS.md not found'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+# Escalations
+
+Items requiring human review. Append-only per task.
+
+## frac-0001 assumptions
+
+- **Reason:** Catalog deepening scope and generated startup hardening checks
+- **Details:** This task targets `my-claw/curriculum/catalog.py`, the EMSD catalog helpers, and related tests. The auto-generated startup hardening checks for `bootstrap_identity()` and `FirstBootAnnouncer` are already implemented in both daemon startup paths and will be re-run as regression anchors instead of changing startup code here. No new dependencies, migrations, provider secrets, or agent commands are required.
+
+## Lingering
+
+Systemd `--user` units (e.g. `cypherclaw-narrative-api.service`) only survive
+after the operator's interactive session ends if **linger** is enabled for that
+account. Without linger, the user systemd manager is torn down on SSH logout
+and the service stops with it, defeating CN-013 / CN-015 (service must restart
+automatically across reboot and remain active without an attached session).
+
+Enable linger once per host, as root:
+
+```bash
+sudo loginctl enable-linger <user>
+```
+
+Verify:
+
+```bash
+loginctl show-user <user> -p Linger
+# expected: Linger=yes
+```
+
+If the output is `Linger=no`, the unit will not auto-start on boot and will
+not survive logout — re-run the `enable-linger` command above. This is the
+same gap captured in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`
+under "Loginctl linger state for current user".
+
+## Auth Token (optional)
+
+`NARRATIVE_AUTH_TOKEN` enables a shared-secret check on the narrative API as
+defense-in-depth. It is optional and does not replace host firewalling,
+Tailscale ACLs, loopback binding, or other network controls. When unset or
+empty, the service starts with shared-secret auth disabled.
+
+Set the token in the systemd user unit with an `Environment=` line:
+
+```ini
+[Service]
+Environment=NARRATIVE_AUTH_TOKEN=<long-random-token>
+```
+
+For local overrides, prefer a drop-in instead of editing the installed unit:
+
+```bash
+systemctl --user edit cypherclaw-narrative-api.service
+systemctl --user daemon-reload
+systemctl --user restart cypherclaw-narrative-api.service
+```
+
+Clients pass the same token on every request with the `X-Narrative-Auth`
+header:
+
+```bash
+curl -H "X-Narrative-Auth: <long-random-token>" \
+  http://127.0.0.1:8765/health
+```
+
+## Network Allowlist
+
+Deniable Mac reaches the CypherClaw narrative API over Tailscale. If any
+upstream firewall, router ACL, or cloud security group sits between Deniable
+and CypherClaw, Deniable's current Tailscale IPv4 address must be added to
+that allowlist or the narrative API calls will be silently dropped.
+
+Look up Deniable's current Tailscale IPv4 on the Deniable host:
+
+```bash
+tailscale ip -4
+# expected: a single 100.x.y.z address
+```
+
+Add that address to the upstream allowlist:
+
+```
+# Deniable Mac Tailscale IPv4 (replace placeholder with `tailscale ip -4` output)
+<DENIABLE_TAILSCALE_IPV4>
+```
+
+Re-run `tailscale ip -4` and update the allowlist whenever Deniable is
+re-tailnetted or its node identity is reset, since the 100.x.y.z address can
+change.
+
+## T-003@20260502T001347Z (2026-05-02T00:13:47Z)
+
+- **Reason:** Deploy-side narrative event store is not checked into this workspace
+- **Details:** Exploration confirmed this PromptClaw checkout contains the HTTP wrapper (`src/cypherclaw/narrative_api/`) and tests, while the PRD states the real `cypherclaw.narrative` engine and world-state SQLite live on the CypherClaw host. This task will follow the existing event-store injection/lazy-import pattern from `GET /events`, using in-memory injected stores for tests and a deploy-time `cypherclaw.narrative.events.NarrativeEventStore` import for production. No new dependencies are planned.
+- **Reason:** Database migration scope
+- **Details:** `POST /events` appends through the existing event-store abstraction and does not add tables, columns, or foreign keys. The PRD's `domain` column migration is CN-001/T-007, so this slice will not introduce a migration. The API will still default omitted event domains to `shared` so it matches the future migration default.
+- **Reason:** Generated hardening bullets are outside the narrative event endpoint
+- **Details:** The recurring self-critique, resource-governor, and startup-identity checks target SenseWeave composition/playback and daemon startup files, not `cypherclaw.narrative_api`. This task will not bundle those unrelated changes; existing hardening tests will be used as verification anchors where practical.
+- **Reason:** Validation and hardening-anchor results
+- **Details:** Required validation passed: `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` completed with `3834 passed, 3 skipped`, ruff clean, and mypy clean. The explicit hardening-anchor command `pytest tests/test_self_critique.py tests/test_resource_governor.py tests/test_governor_integration.py -q` also passed with `65 passed`. No new dependencies or migrations were introduced.
+
+## T-015@20260502T001347Z (2026-05-02T00:13:47Z)
+
+- **Reason:** Deploy-side entity persistence method is not checked into this workspace
+- **Details:** Exploration confirmed this PromptClaw checkout owns the narrative HTTP wrapper (`src/cypherclaw/narrative_api/`) and tests, while the real CypherClaw narrative world store remains deploy-side. This task will apply `StateMutation` objects in the wrapper against the normalized entity record, then persist the full updated entity through duck-typed store methods such as `update_entity`, `patch_entity`, `save_entity`, `upsert_entity`, or `record_entity`. Tests will use injected in-memory stores. If no persistence method exists, the endpoint will surface HTTP `502` rather than pretending the mutation persisted.
+- **Reason:** Database migration scope
+- **Details:** `PATCH /world/entities/{entity_id}` mutates the existing `properties` JSON payload on an existing entity and does not add tables, columns, or foreign keys. No migration is required.
+- **Reason:** Generated hardening bullets are outside this HTTP endpoint surface
+- **Details:** The auto-generated self-critique, resource-governor, and daemon identity bullets target SenseWeave composition/playback and daemon startup paths. This task will not bundle those unrelated changes; the existing hardening-anchor tests will be re-run during verification where practical.
+- **Reason:** StateMutation wire-shape compatibility assumption
+- **Details:** The Deniable integration spec defines `StateMutation(target_entity, operation, field, value)`. Because this endpoint also carries `{entity_id}` in the path, requests may include `target_entity` for spec parity; when present it must match the path entity ID. Bare field paths such as `current_state` are treated as `properties.current_state`, and explicit `properties.<path>` is also accepted.
+- **Reason:** Validation and hardening-anchor results
+- **Details:** Required validation passed: `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` completed with `3903 passed, 3 skipped`, ruff clean, and mypy clean. The explicit hardening-anchor command `pytest tests/test_self_critique.py tests/test_resource_governor.py tests/test_governor_integration.py tests/test_first_boot.py -q` passed with `100 passed`. No new dependencies or migrations were introduced.
+
+## T-001@20260502T001347Z (2026-05-02T00:13:47Z)
+
+- **Reason:** Narrative engine implementation is deploy-side, not checked into this workspace
+- **Details:** The imported PRD and SDP snapshot state that `NarrativeMemory` lives in the existing CypherClaw narrative engine at `~/cypherclaw/src/cypherclaw/narrative/`, but this PromptClaw checkout only contains the new HTTP-service queue artifacts and the adjacent `src/cypherclaw/image_api/` FastAPI pattern. This task will implement `POST /memory/search` as a thin wrapper with an injectable memory searcher for tests and a lazy deploy-time import of `cypherclaw.narrative.memory.NarrativeMemory`. No new third-party dependencies or database migrations are required.
+- **Reason:** Generated startup hardening checks are outside the memory endpoint surface
+- **Details:** The auto-generated hardening bullets reference `bootstrap_identity()` and `FirstBootAnnouncer`, which belong to the daemon startup identity flow. This task does not alter startup or orchestration behavior; existing regression anchors `tests/test_first_boot.py` and `tests/test_governor_integration.py` will be re-run during verification.
+- **Reason:** Validation and hardening-anchor results
+- **Details:** The required validation block passed (`pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`) with `3822 passed, 3 skipped`, ruff clean, and mypy clean. The explicit startup hardening anchor command `pytest tests/test_first_boot.py tests/test_governor_integration.py -q` passed with `49 passed`. No new dependencies or migrations were introduced.
+
+## T-015@20260427T001208Z (2026-04-27T00:12:08Z)
+
+- **Reason:** Queue worker entrypoint is not present in this checkout
+- **Details:** The requested systemd unit points to the specified contract path `/home/user/cypherclaw/tools/generation_worker.py`, but `my-claw/tools/generation_worker.py` is not checked in. This task stayed scoped to the requested unit and runbook documentation; deploying the unit requires that worker entrypoint to exist at the target path.
+
+## T-011@20260427T001208Z (2026-04-27T00:12:08Z)
+
+- **Reason:** Auto-generated hardening bullets are out of scope for an operator runbook
+- **Details:** This task is documentation-only — a new operator runbook at `docs/runbooks/generation-backend.md` plus a static regression test at `tests/test_runbook_generation_backend.py`. The auto-generated candidate-hardening bullets (re-verify `bootstrap_identity()` invocation in startup, ensure standalone+federated paths, add an integration test for identity persistence between boots) target the daemon identity bootstrap surface, which is unrelated to the generation-backend runbook scope and was already addressed under T-032@c (see prior ESCALATIONS entry confirming both daemon entrypoints call `bootstrap_identity()` before `FirstBootAnnouncer`). No runtime, schema, or migration changes are introduced by this task. No new dependencies are added — the static doc test uses the same stdlib-only pattern as `tests/test_cypherclaw_sampler_artistic_intent.py`.
+
+## T-032@20260427T001208Zc (2026-04-27T00:12:08Z)
+
+- **Reason:** Cap-source and soak-artifact assumption
+- **Details:** Exploration found no checked-in `/tmp/generation_status.json` soak snapshots or generation daily-spend chart for CCG-032. This subtask therefore verifies the committed T-032b `sdp/telemetry/steady-state-cost.csv` artifact. The cost-model document's only concrete daily USD cap is the default `$5.00` generation daily cap, so the cap verifier defaults to `$5.00` while exposing a CLI override. The recurring hardening bullets about `revise_score(...)`, resource-governor playback budget application, and `bootstrap_identity()` startup ordering are outside this cap-summary surface; existing tree checks show `revise_score` is already imported/called in `tracker_compiler.py` and `duet_composer.py`, resource-governor tests exist, and both daemon entrypoints call `bootstrap_identity()` before `FirstBootAnnouncer`.
+
+## T-032@20260427T001208Za (2026-04-27T00:12:08Z)
+
+- **Reason:** Cost-model documentation scope assumptions
+- **Details:** This subtask is documentation-only under `sdp/telemetry/` and adds no runtime schema, database columns, dependencies, or orchestration behavior. The auto-generated hardening bullets about self-critique wiring, resource-governor enforcement, and daemon identity bootstrap are unrelated to this cost-model reference and remain out of scope for this task. `progress.md` was already generated and dirty before this run, so the task update is limited to the T-032a line.
+
+## T-001 (2026-04-01T18:55:24.984659+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-001 (2026-04-01T18:56:11.434931+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-001 (2026-04-01T18:56:41.692113+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-009@20260408T220341Z (2026-04-08T22:12:54.185469+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=85.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=85.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=85.0%
+
+## T-001@20260408T223256Z (2026-04-08T22:33:10.555043+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+
+## T-001@20260408T223256Z (2026-04-08T23:10:00+00:00)
+
+- **Reason:** Validation blocked by pre-existing repo issues
+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+
+## T-004@20260408T223256Z (2026-04-08T23:05:05.007269+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+
+## T-004@20260408T223256Z (2026-04-09T00:14:00+00:00)
+
+- **Reason:** Scope constraint on orchestration docs
+- **Details:** `AGENTS.md` asks for architecture/command/startup/changelog updates on orchestration changes, but this task also constrained edits to the bug-fix scope and those doc files already had unrelated local modifications. I limited the change set to the Ollama routing fix plus regression coverage and did not modify the product docs in this task.
+
+## T-007@20260408T223256Z (2026-04-08T23:29:49.940049+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=83.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=83.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=83.0%
+
+## T-007@20260408T223256Z (2026-04-08T23:37:23Z)
+
+- **Reason:** Shared local-provider health granularity
+- **Details:** The selector now excludes `ollama` when every configured Ollama route port is unhealthy and re-admits it when any configured port recovers. Health is tracked at the shared local-provider level, so a single-socket outage can still leave `ollama` eligible for categories routed to the down socket if another configured socket remains healthy.
+
+## T-010@20260408T223256Za (2026-04-09T00:02:48.014232+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=83.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=83.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=83.0%
+
+## T-010@20260408T223256Za (2026-04-09T00:24:00+00:00)
+
+- **Reason:** Scope and latency assumptions
+- **Details:** This split task only adds the daemon-side `ollama_health()` helper for dual sockets `11434` and `11435`; `/status` integration and Telegram `/local` formatting remain assigned to sibling subtasks `T-010@20260408T223256Zb` and `T-010@20260408T223256Zc`. Response latency is treated as daemon-side wall-clock time for the health probe; unreachable instances should return an unhealthy status, an empty model list, and `latency_ms` of `None` instead of raising.
+
+## T-010@20260408T223256Zc (2026-04-09T00:34:30+00:00)
+
+- **Reason:** Missing `/local` surface and status-endpoint assumption
+- **Details:** The current tree has no Telegram `/local` built-in and no separate daemon `/status` JSON endpoint. This task will add a shared in-process status snapshot consumed by both `/status` and the new `/local` command so `/local` can format Ollama health without duplicating probes. Scope is limited to the base `/local` status view; `/local bench` and `/local stats` remain out of scope for T-010c. No new dependencies are planned.
+
+## T-011@20260408T223256Z (2026-04-09T00:41:41.054077+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=82.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=82.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=82.0%
+
+## T-011@20260408T223256Z (2026-04-09T01:05:00+00:00)
+
+- **Reason:** LOCAL_ONLY scope assumption
+- **Details:** This task treats `LOCAL_ONLY` as a daemon-level LLM routing guard. When enabled, all daemon agent-execution paths that would otherwise target `claude`, `codex`, or `gemini` are coerced to `ollama`, including router fallback and explicit step payloads. Non-agent operational commands (for example Telegram delivery, shell built-ins, or health probes) remain unchanged. No new dependencies are planned.
+
+## T-012@20260408T223256Z (2026-04-09T01:30:00+00:00)
+
+- **Reason:** Transport and dependency scope assumptions
+- **Details:** This task uses stdlib-only HTTP probing (`urllib.request`) and `subprocess` for `tailscale status --json` — no new external dependencies. The identity endpoint is probed over plain HTTP on port 8443 (matching the federation PRD convention); TLS/signing verification is deferred to a future federation identity task (FD-001/FD-005). The module lives in `promptclaw/federation/discovery.py` following the PRD architecture layout. Peers are identified by `instance_id` for merge deduplication. Offline Tailscale peers are excluded from probing.
+
+## T-021@20260416T043834Z (2026-04-16T05:00:00+00:00)
+
+- **Reason:** Candidate hardening items are out of scope
+- **Details:** The auto-generated hardening checks reference `bootstrap_identity` and `FirstBootAnnouncer`, which belong to the federation/identity subsystem. This task (self-critique and revision passes for music composition) has no relation to the startup identity flow. No new dependencies required; stdlib only.
+
+## T-022@20260416T043834Z (2026-04-16T05:30:00+00:00)
+
+- **Reason:** Candidate hardening items are out of scope
+- **Details:** The auto-generated hardening checks reference `bootstrap_identity` and `FirstBootAnnouncer`, which belong to the federation/identity subsystem. This task (live-buffer and sample-bank abstractions) has no relation to the startup identity flow. No new dependencies required; stdlib only.
+
+## T-022@20260416T043834Z (2026-04-16T05:30:01+00:00)
+
+- **Reason:** Previous lead left out-of-scope changes
+- **Details:** The previous lead (gemini) bundled lint cleanup across 37+ unrelated files alongside the T-022 work. These out-of-scope changes were discarded via `git checkout HEAD --` to keep the commit scoped to T-022 only. The in-scope lint fix (removing 3 unused imports from `tests/test_live_buffer.py` flagged by ruff) was retained.
+
+## T-022@20260416T043834Z (2026-04-16T12:14:16.858992+00:00)
+
+- **Reason:** Verify model rejected by provider
+- **Details:** The verify model was rejected by the provider CLI. This is a configuration error, not a code issue. Fix the model ID and re-run. Error: OpenAI Codex v0.120.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.3-codex-spark
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effor...
+
+## T-022@20260416T043834Z (2026-04-16T12:19:34Z)
+
+- **Reason:** Manual verification state repair
+- **Details:** Local verification passed after the provider-model escalation, but `sdp-cli tasks manual-verify` could not record the result because an active `sdp-cli run` process (PID 69939) owns `.sdp/run.lock`. The lock was not removed. Candidate hardening was checked explicitly: both startup entrypoints call `bootstrap_identity()` before `FirstBootAnnouncer`, and `pytest tests/test_first_boot.py tests/test_governor_integration.py -q` passed. No new dependencies were added.
+
+## T-023@20260416T043834Z (2026-04-16T13:00:00+00:00)
+
+- **Reason:** Candidate hardening items are out of scope
+- **Details:** The auto-generated hardening checks reference `bootstrap_identity` and `FirstBootAnnouncer`, which belong to the federation/identity subsystem. This task (installation-aware acoustic ecology policies) has no relation to the startup identity flow. The new module `acoustic_ecology.py` is a pure-function policy layer with no I/O and no state files — it cannot affect startup sequencing. No new dependencies required; stdlib only.
+
+## T-024@20260416T043834Z (2026-04-16T14:00:00+00:00)
+
+- **Reason:** Candidate hardening items are out of scope
+- **Details:** The auto-generated hardening checks reference `bootstrap_identity` and `FirstBootAnnouncer`, which belong to the federation/identity subsystem. This task (artistic identity portfolio reporting) has no relation to the startup identity flow. The new module `portfolio_report.py` is a pure-function reporting layer with no I/O and no state files — it derives summaries from data passed to it and cannot affect startup sequencing. No new dependencies required; stdlib only.
+
+## T-025@20260416T043834Z (2026-04-16T14:45:00+00:00)
+
+- **Reason:** Rollout-control scope and startup hardening verification
+- **Details:** This task adds stdlib-only SenseWeave diagnostics and environment-backed feature flags; no new dependencies are required. The candidate startup hardening items remain covered by the existing startup flow: both daemon entrypoints call `bootstrap_identity()` before `FirstBootAnnouncer`, and `tests/test_first_boot.py::TestStartupIdentityPersistence` plus `tests/test_governor_integration.py::TestStartupIdentityWiring` were re-run as regression anchors.
+
+## T-017@20260416T054258Z (2026-04-16T18:20:59.864442+00:00)
+
+- **Reason:** Lead provider unavailable
+- **Details:** Lead provider/runtime failures were observed across available agents (claude, codex). Latest signal: [Errno 2] No such file or directory: 'codex'
+
+## T-017@20260416T054258Z (2026-04-16T18:21:16.577357+00:00)
+
+- **Reason:** Lead provider unavailable
+- **Details:** Lead provider/runtime failures were observed across available agents (claude, codex). Latest signal: env: claude: No such file or directory
+
+## T-018@20260416T054258Z (2026-04-16T18:54:48.048819+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-018@20260416T054258Z timed out twice. Run sdp-cli tasks split T-018@20260416T054258Z to break it down.
+
+## T-018@20260416T054258Zb (2026-04-16T20:00:00+00:00)
+
+- **Reason:** Candidate hardening items are out of scope
+- **Details:** The auto-generated hardening checks reference `bootstrap_identity`, `FirstBootAnnouncer` (federation/identity subsystem), and resource governor budget enforcement (resource_governor.py). This task adds dissonance/resolution metadata to `counterpoint_rules.py` — a pure-function analysis layer with no I/O, no state files, and no interaction with startup sequencing or resource budgets. The `revise_score()` pipeline integration hardening item is already addressed: `revise_score` is imported and called in both `tracker_compiler.py` (line 18/1357) and `duet_composer.py` (line 80/838). No new dependencies required; stdlib only.
+
+## T-024@20260416T054258Z (2026-04-16T22:35:00+00:00)
+
+- **Reason:** Startup hardening scope and dependency assumptions
+- **Details:** This task turns the production-course curriculum into executable exercise metadata and generated scaffolds. The auto-generated hardening checks for `bootstrap_identity` and `FirstBootAnnouncer` belong to the startup identity subsystem and are already addressed in the current tree: both `my-claw/tools/daemon.py` and `my-claw/tools/cypherclaw_daemon.py` call `bootstrap_identity()` before `FirstBootAnnouncer`, while `tests/test_first_boot.py` and `tests/test_governor_integration.py` cover persistence and wiring for standalone/federated startup paths. No new dependencies or migrations are required.
+
+## T-001@20260416T181925Za (2026-04-16T18:19:25Z)
+
+- **Reason:** Render-ablation scope and startup hardening assumption
+- **Details:** This split task implements the pure core ablation engine for the CypherClaw humanization render layer. The concrete `RenderPass`, `PerformedPart`, and R1-R12 rules are not present in this checkout yet and remain assigned to sibling/future tasks, so the ablation function will accept an injected active rule set and renderer. The auto-generated hardening checks for `bootstrap_identity` and `FirstBootAnnouncer` are unrelated to this render utility and are already addressed by existing startup tests; those tests will be re-run as verification anchors. No new dependencies or migrations are required.
+
+## T-021@20260416T181925Z (2026-04-17T02:52:12.828073+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-021@20260416T181925Z timed out twice. Run sdp-cli tasks split T-021@20260416T181925Z to break it down.
+
+## T-038@20260416T181925Z (2026-04-17T00:00:00+00:00)
+
+- **Reason:** Candidate hardening items are out of scope
+- **Details:** The auto-generated hardening checks reference `bootstrap_identity`, `FirstBootAnnouncer` (startup identity subsystem), resource governor budget enforcement, and `revise_score` pipeline integration. This task couples the narrative engine (procedural arc) to SectionEnvelope selection — a pure-function mapping layer with no I/O, no state files, and no interaction with startup sequencing, resource budgets, or the self-critique pipeline. The `revise_score()` integration is already addressed in both `tracker_compiler.py` and `duet_composer.py`. No new dependencies or migrations are required.
+
+## T-039@20260416T181925Z (2026-04-17T00:00:00+00:00)
+
+- **Reason:** Dependency and startup hardening assumptions
+- **Details:** T-039 requires a real librosa analysis path for audio-rendered SSM and Foote novelty extraction, so `librosa>=0.10,<1` is being added as a project dependency. The auto-generated startup hardening checks are already wired in both daemon entrypoints (`bootstrap_identity()` runs before `FirstBootAnnouncer`), and this task will add a focused standalone/federated identity persistence regression test rather than modifying startup flow. No database migrations are required.
+
+## T-001@20260425T183959Zd (2026-04-25T00:00:00+00:00)
+
+- **Reason:** Sampler buffer cap scope and hardening assumptions
+- **Details:** This split task is limited to `my-claw/tools/senseweave/sampler_buffers.py` and `tests/test_sampler_buffers.py`. The implementation will keep the existing `BufferLoader` shape, route overflow eviction through the `on_sampler_free()` path, and add a full load/evict-cycle regression test at the default 64-buffer cap. The auto-generated hardening items referencing `bootstrap_identity()` and `FirstBootAnnouncer` belong to the startup identity subsystem and are out of scope for this sampler buffer utility; that startup wiring is already covered elsewhere in the tree. No new dependencies or migrations are required.
+
+## T-008@20260425T183959Zd (2026-04-25T18:39:59Z)
+
+- **Reason:** Capture write-path scope assumption
+- **Details:** Exploration confirmed that `my-claw/tools/sample_capture_daemon.py` currently contains the ring buffer, interesting-moment detector, and contextual/acoustic tag helpers, but no persistence API or detector loop that writes captured samples into an index. This task will treat the missing seam as the write-path itself: add a stdlib-only capture store/index layer that invokes `build_sample_tags()` during sample save and persists those tags into `index.sqlite`. No new dependencies or migrations are required. The generated startup-hardening checks were verified against the current tree rather than reimplemented here: `pytest tests/test_first_boot.py tests/test_governor_integration.py -q` passed, and the full validation command (`pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`) also passed after the capture-index work landed.
+
+## T-013@20260425T183959Za (2026-04-25T00:00:00+00:00)
+
+- **Reason:** Quintet documentation scope and generated-progress assumption
+- **Details:** Exploration found that sampler-focused modules already exist (`sample_capture_daemon.py`, `sampler_buffers.py`, `sampler_dispatch.py`, `synthesis/sampler_effects.scd`, and sampler anti-pattern checks), but the canonical identity file and its regression tests still describe a quartet (`artist_identity.py`, `tests/test_artist_identity.py`). This subtask will update `docs/cypherclaw-musicianship-roadmap.md` to present the quintet as the active ensemble direction with an explicit partial-rollout status snapshot rather than claiming full runtime convergence. No new dependencies or migrations are required. `progress.md` is marked as generated and already has unrelated in-flight edits, so task progress will be recorded as a minimal task-line update only instead of restructuring the generated report.
+
+## T-013@20260425T183959Zb (2026-04-25T18:39:59Z)
+
+- **Reason:** Sampler-architecture documentation scope and out-of-scope hardening checks
+- **Details:** This subtask delivers the CCS-033 architecture document at `docs/cypherclaw-sampler-architecture.md` plus its regression test at `tests/test_cypherclaw_sampler_architecture.py`. The document describes only the *currently landed* sampler subsystem (capture daemon, smoke verifier, `BufferLoader`, `SamplerDispatcher`, `sampler_effects.scd`, the `sampler_dominating` / `sampler_silent_quintet_member` detectors, and the existing master-bus / composer / diagnostics seams) and explicitly flags `SampleLibrary`, `SampleSelector`, `sw_sampler.scd`, and quintet convergence in `artist_identity.py` as still pending so it does not overstate completion. Cross-links to the upstream PRD (`my-claw/sdp/prd-cypherclaw-sampler.md`) and the musicianship roadmap (`docs/cypherclaw-musicianship-roadmap.md`) keep the artistic intent and the longer status snapshot in their canonical homes rather than duplicating them here. No new dependencies, no migrations, and no runtime code changes are required. The auto-generated hardening items referencing `bootstrap_identity()` invocation, `FirstBootAnnouncer` sequencing, standalone/federated coverage, and startup integration tests are out of scope for a documentation subtask: the `bootstrap_identity()` invocation already lives in `sample_capture_daemon.py::main` and the startup paths are already covered by `tests/test_first_boot.py` and `tests/test_governor_integration.py`. This mirrors the established out-of-scope escalation pattern from T-008@20260425T183959Zd and the sibling T-013@20260425T183959Za. The artistic-intent companion document (`docs/cypherclaw-sampler-artistic-intent.md`) is the remaining CCS-033 sibling and is left for a follow-up subtask.
+
+## T-013@20260425T183959Zc (2026-04-25T19:10:00Z)
+
+- **Reason:** Artistic-intent documentation scope and generated-progress constraint
+- **Details:** Exploration confirmed that CCS-033's remaining work is the one-page artistic-intent companion at `docs/cypherclaw-sampler-artistic-intent.md`. The sampler PRD (`my-claw/sdp/prd-cypherclaw-sampler.md`) remains the canonical source for the three usages and five principles; the new page will restate that intent in a shorter listener-facing form focused on aesthetic goals, the sampler's role inside the quintet, and the intended listener experience, while cross-linking the PRD, the roadmap, and the architecture document instead of duplicating their implementation detail. This subtask is documentation-only: no runtime code changes, no migrations, and no new dependencies are required. The generated candidate hardening items about `revise_score()` integration, resource-governor budget enforcement, and `bootstrap_identity()` sequencing are out of scope for this doc task and were verified as unrelated to the affected files. Because `progress.md` is generated and already contains unrelated in-flight state changes, its exploration update is limited to the single T-013@20260425T183959Zc task line rather than a broader manual rewrite.
+
+## T-014@20260425T183959Za (2026-04-25T19:30:00Z)
+
+- **Reason:** Service-wiring assumptions and generated-hardening scope
+- **Details:** Exploration mapped `CCS-020` to the current tree: `my-claw/systemd/` has no `cypherclaw-sample-capture.service`, `cypherclaw_boot.sh` does not yet start that service, and existing CypherClaw units consistently run as `User=user` from `/home/user/cypherclaw` with the project virtualenv at `/home/user/cypherclaw/.venv/bin/python3`. The repo references `cypherclaw-jack.service` from other units but does not define that unit locally, so this task assumes it is a host-managed prerequisite and wires the dependency without inventing a second JACK service. No new dependencies or migrations are required. The auto-generated `bootstrap_identity()` hardening items are already covered elsewhere in the current tree; because this task touches boot/service startup, the existing startup identity tests will be re-run as verification anchors rather than reworking unrelated startup code.
+
+## T-014@20260425T183959Zc (2026-04-25T23:05:00Z)
+
+## T-033@20260425T183959Z (2026-04-25T00:00:00+00:00)
+
+- **Reason:** Sample-library migration scope and source-corpus assumptions
+- **Details:** Exploration found that `my-claw/tools/senseweave/sample_library.py` already provides the canonical `SampleRecord` / `SampleLibrary` seam, but the store currently persists only query columns and has no provenance-capable `extras` round-trip or import script. This task will add a repo-backed importer at `my-claw/tools/sample_library_import.py`, extend the library store with a backward-compatible inline SQLite schema upgrade that preserves the full serialized `SampleRecord`, and track the real migration manifest separately from generated audio output. The import target is assumed to be the repo-local `samples/` root so copied audio lands under `samples/library/` while tracked code/docs stay small; `.gitignore` will be updated accordingly if needed. No dedicated `field recordings` folder was discoverable in Anthony's home, so the real migration corpus is assumed to be the 96 clearly classifiable audio stems under `/Users/anthony/Documents/from worker drive/Song Stems` plus 5 handpicked single-file recordings from `/Users/anthony/Downloads`, for a total of 101 imported samples. No new third-party dependencies or external migration framework are required; implementation will use stdlib `argparse`, `tomllib`, `hashlib`, and `shutil`.
+- **Reason:** Candidate hardening items are out of scope
+- **Details:** The auto-generated hardening checks reference `bootstrap_identity()` startup sequencing and standalone/federated first-boot coverage, which belong to the startup identity subsystem. This task is confined to the sampler library/import path and will not alter daemon startup flow; existing startup identity coverage remains the authority for those checks.
+
+- **Reason:** Live systemd verification host assumption
+- **Details:** Exploration confirmed that this checkout is running on macOS and does not provide local `systemctl`, while the target Linux host is reachable as `cypherclaw` over non-interactive SSH. This task will add a repo-backed verifier tool that supports both local Linux execution and `--host cypherclaw` remote execution, then use that remote path for the real `kill -9` / restart validation. No new dependencies or migrations are required.
+
+## T-021@20260425T183959Za (2026-04-26T03:37:26Z)
+
+- **Reason:** Sampler diagnostics scope and hardening assumptions
+- **Details:** Exploration confirmed that the affected surface is `my-claw/tools/senseweave/operator_diagnostics.py`, which already derives `sample_source` through the shared `senseweave.sample_status.sample_status_text(...)` helper used by the face display. `sample_dsp_activity.json` is the sampler plan/intention state, while `sample_playback_state.json` is the live execution/playback state; this task is scoped to combining those two authorities into one human-readable operator line and corresponding tests/docs updates, with no new dependencies or migrations. The auto-generated hardening items about self-critique pipeline wiring, resource-governor budget enforcement, and startup identity sequencing are unrelated to this diagnostics-formatting subtask, so they will be treated as verification anchors against the current tree rather than broadened into unrelated code changes here.
+
+## T-021@20260425T183959Za (2026-04-26T03:45:08Z)
+
+- **Reason:** Hardening-anchor verification
+- **Details:** Full validation passed (`pip install -e '.[dev]'`, `pytest tests/ -x`, `ruff check src/ tests/`, `mypy src/`). The recurring hardening anchors were also rechecked explicitly without broadening scope: `tests/test_self_critique.py::TestPipelineIntegration::{test_tracker_compiler_uses_revise_score,test_fallback_path_uses_revise_score}` passed for self-critique wiring, `tests/test_resource_governor.py` passed for budget enforcement, and `tests/test_governor_integration.py::TestStartupIdentityWiring` passed for `bootstrap_identity()` ordering.
+
+## T-016@20260425T183959Zd (2026-04-25T19:45:00Z)
+
+- **Reason:** Planner integration and selector-ownership assumptions
+- **Details:** Exploration found that `my-claw/tools/senseweave/cast_planner.py` already supports opt-in sampler metadata attachment through a selector Protocol, but the current planner seam is still piece-agnostic: it does not derive selector kwargs from a piece fixture and does not return assembled cast entries that carry sampler metadata forward for verification. There is still no concrete `senseweave.sample_library.SampleSelector` implementation in this checkout, so this task will keep the selector dependency Protocol-based and add a piece-aware cast-assembly helper around `select_cast_ids` instead of inventing a new library module. `target_character` will be taken from explicit piece data when present and otherwise fall back to `(patch_name,)` for piece-level sampler selection hints. Because `progress.md` is generated and already has unrelated queue-state edits, the exploration update there is limited to the single `T-016@20260425T183959Zd` line rather than a broader manual rewrite. The generated hardening items about `revise_score()`, resource-governor budget enforcement, and startup identity sequencing were rechecked during exploration and are out of scope for this cast-planner utility task; no new dependencies or migrations are required.
+
+## T-018@20260425T183959Zd (2026-04-25T19:35:00-07:00)
+
+- **Reason:** Active-song capture wiring and metadata-scope assumptions
+- **Details:** Exploration confirmed that the current T-018 split already provides the three required seams: `PhraseTracker` annotates both live listeners with `phrase_started` / `phrase_ended`, `PhraseCaptureWriter` can persist keyboard `.mid` and Theramini `.wav` phrases plus a validated sidecar schema, and `/tmp/composer_state.json` is the only existing authority file that carries the current song/key context. This subtask will therefore close the verifier note by wiring capture directly into `midi_keyboard_listener.py` and `theramini_listener.py` instead of inventing a second daemon-side JACK recapture path. Active-song tags will be derived from `/tmp/composer_state.json` (`song`, `key`, and tempo when present). The locked sidecar schema from T-018@20260425T183959Zc only permits `instrument`, `song_id`, `key`, `tempo`, `timestamp`, `duration`, and `source`, so the broader PRD idea of a separate `human_player` tag remains out of scope for this split. No new dependencies or migrations are required. Because `progress.md` is generated and already carries unrelated queue-state edits, the exploration update there is limited to the single `T-018@20260425T183959Zd` task line. The generated startup-hardening items around `bootstrap_identity()` remain covered by the existing daemon entrypoints and their regression tests and are unrelated to this listener-capture task.
+
+## T-021@20260425T183959Zc (2026-04-25T20:05:00-07:00)
+
+- **Reason:** Missing inkplate-renderer seam and generated-progress constraint
+- **Details:** Exploration found no landed `inkplate` module or e-ink renderer in this checkout; CCS-027 only references the face/inkplate surfaces in PRDs and docs. This subtask will therefore introduce a small repo-backed `my-claw/tools/inkplate_display.py` renderer seam that consumes the existing combined `face_display_sample_status_text(...)` helper and truncates the sampler line against an injectable e-ink pixel width instead of inventing unrelated UI behavior. `progress.md` is marked generated and already contains unrelated queue-state edits, so the exploration update there is limited to the single `T-021@20260425T183959Zc` task line rather than a broader manual rewrite. The generated hardening items about self-critique wiring, resource-governor budget enforcement, and startup identity sequencing are already covered elsewhere in the current tree and will be re-run as verification anchors rather than broadened into this display task. No new dependencies or migrations are required.
+
+## T-021@20260425T183959Zc (2026-04-25T20:20:00-07:00)
+
+- **Reason:** Hardening-anchor verification
+- **Details:** Full validation passed (`pip install -e '.[dev]'`, `pytest tests/ -x`, `ruff check src/ tests/`, `mypy src/`). The recurring hardening anchors were also rechecked explicitly without broadening scope: `tests/test_self_critique.py::TestPipelineIntegration::{test_tracker_compiler_uses_revise_score,test_fallback_path_uses_revise_score}` passed for self-critique wiring, `tests/test_resource_governor.py` passed for budget enforcement, and `tests/test_governor_integration.py::TestStartupIdentityWiring` passed for `bootstrap_identity()` ordering.
+
+## T-022@20260425T183959Zd (2026-04-25T20:40:00-07:00)
+
+- **Reason:** Journal-schema scope and hardening-anchor assumptions
+- **Details:** Exploration mapped this subtask to the active score-tree tracker path rather than the older freeform solo path. `tracker_compiler.py` already routes final score selection through `revise_score()`, `music_tracker.py` already projects sample-gesture source/mode/transform metadata into tracker scenes and sample lanes, and `music_tracker_runtime.py` already owns the end-to-end event-emission seam used by playback tests. The missing piece is the post-piece journal contract in `senseweave.usage_journal.py`: it currently persists only `piece_id`, `timestamp`, `samples_played`, and `arc_payoff`, while the sampler PRD (`my-claw/sdp/prd-cypherclaw-sampler.md`, CCS-028) expects a richer per-piece entry including sample usage, transformations, mode, and clicks. This task will extend that journal seam in a backward-compatible way and add a real compose → gate → compile → schedule → journal regression test rather than inventing a new playback pipeline. No new dependencies or migrations are required. `progress.md` is generated and already dirty, so the exploration update there is limited to the single `T-022@20260425T183959Zd` task line. The recurring hardening anchors about `revise_score()` wiring, resource-governor budget enforcement, and startup identity sequencing will be re-run during verification, but only the journal/track-runtime area is in scope for code changes here.
+
+## T-022@20260425T183959Zd (2026-04-25T21:05:00-07:00)
+
+- **Reason:** Validation and extra-lint results
+- **Details:** The required validation block passed cleanly: `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` completed with `3478 passed`, `ruff` clean on `src/ tests/`, and `mypy` clean on `src/`. The recurring hardening anchors also remained green as part of that run, including `tests/test_self_critique.py`, `tests/test_resource_governor.py`, and `tests/test_governor_integration.py`. Because the repo lint target does not cover `my-claw/`, an extra `ruff check` was run on the modified journal/runtime/test files and passed; a broader `ruff check` that included the whole existing `my-claw/tools/duet_composer.py` file surfaced long-standing unrelated lint debt (unused imports, mid-file imports, one-line statements) outside this task's change scope, but `python -m py_compile my-claw/tools/duet_composer.py` passed and the targeted tests covering the modified tracker path stayed green. No new dependencies or migrations were introduced.
+
+## 2026-04-27
+- **T-003@20260427T001208Z**: Added `modal` as an optional dependency for the generation client.
+
+## T-004@20260427T001208Z (2026-04-27T00:12:08Z)
+
+- **Reason:** Generation-client scope and startup-hardening assumption
+- **Details:** Exploration found the affected area is `my-claw/tools/senseweave/generation/`, where `ReplicateClient` and `ModalClient` expose the shared `generate(self, request: Any) -> Any` surface and tests import `senseweave` by adding `my-claw/tools` to `sys.path`. This task will add a stdlib-only `LocalAdaClient` stub and an explicit `GenerationClient` Protocol in `client_local.py`; no GPU libraries, migrations, or new dependencies are required. The auto-generated hardening checks about `bootstrap_identity()` and `FirstBootAnnouncer` belong to the startup identity subsystem and are already covered by `tests/test_first_boot.py` and `tests/test_governor_integration.py`, which will be re-run as verification anchors without broadening this task's code scope.
+
+## T-005@20260427T001208Z (2026-04-27T00:12:08Z)
+
+- **Reason:** Live-test scope and dependency on T-001 submission body
+- **Details:** Exploration confirmed the affected area is `my-claw/tools/senseweave/generation/client_replicate.py` plus `tests/conftest.py`, where the existing `--run-live-modal` flag/marker pair is the closest precedent. T-005 adds a parallel `--run-live-replicate` flag, a `live_replicate` marker, and `tests/test_generation_live_replicate.py` shaped like `tests/test_generation_live_modal.py`. The test is doubly gated: the conftest hook skips it without `--run-live-replicate`, and the test body skips when `REPLICATE_API_TOKEN` is unset. End-to-end execution depends on `ReplicateClient._submit_prediction` shipping under T-001 (currently `needs_split`), which is consistent with how the Modal live test landed alongside the still-stub-tier protocol parity tests under T-003. No new dependencies or migrations are required. The recurring hardening anchors about `bootstrap_identity()`, resource-governor budget enforcement, and `revise_score()` wiring remain covered by `tests/test_first_boot.py`, `tests/test_governor_integration.py`, `tests/test_resource_governor.py`, and `tests/test_self_critique.py` and were re-run as verification anchors without broadening this task's scope.
+
+## T-008@20260427T001208Zc (2026-04-27T00:12:08Z)
+
+- **Reason:** Queue-state naming and startup-hardening scope assumptions
+- **Details:** Exploration confirmed the existing T-008a/b queue schema uses `queue_items` with `status="queued"` as the pending state, so this task treats "pending" in the brief as the existing queued state rather than renaming the schema/status contract. The auto-generated hardening checks for `bootstrap_identity()` and `FirstBootAnnouncer` belong to the startup identity subsystem and are already covered by existing startup tests (`tests/test_first_boot.py`, `tests/test_governor_integration.py`); this generation-queue transition task has no startup path changes. No new dependencies or database migrations are required.
+
+## T-004@20260502T001347Zb (2026-05-02T01:10:41Z)
+
+- **Reason:** Service activation blocked by non-systemd host
+- **Details:** The requested commands were attempted from this checkout, but the active host is Darwin (`afdasdfeeee.local`) and neither `systemctl` nor `loginctl` is available. `systemctl --user daemon-reload`, `systemctl --user enable --now cypherclaw-narrative-api.service`, and `loginctl enable-linger user` all fail with `command not found` here. The service must be activated on the Linux CypherClaw service host as the systemd user (`user` per `my-claw/systemd/cypherclaw-narrative-api.service`) with the unit installed at `~/.config/systemd/user/cypherclaw-narrative-api.service`.
+
+## T-004@20260502T001347Zc (2026-05-02T01:17:22Z)
+
+- **Reason:** Narrative API not yet deployed to cypherclaw — verification cannot return PASS
+- **Details:** Verification was executed against the live Linux host `cypherclaw` over non-interactive SSH (the same path used for T-033@20260425T183959Z). Captured evidence is in `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md`. Findings: (1) `~/.config/systemd/user/cypherclaw-narrative-api.service` does not exist on the host; (2) `systemctl --user status` reports the unit could not be found, `is-active` is `inactive`, `is-enabled` is `not-found`; (3) `journalctl --user -u cypherclaw-narrative-api.service` shows `-- No entries --`; (4) no port matching the narrative-api binding appears in `ss -ltn`; (5) `Linger=no` for the service user (must become `yes` per CN-013/CN-015); (6) the underlying `cypherclaw.narrative_api` Python package has not been deployed to `~/cypherclaw/src/cypherclaw/` — only the in-process `narrative/` engine is present. The unit file authored under T-004@Za and the activation runbook captured under T-004@Zb are correct; the gap is a deploy step (sync `src/cypherclaw/narrative_api/` and `my-claw/systemd/cypherclaw-narrative-api.service` from this PromptClaw checkout to the cypherclaw host, then run the documented `daemon-reload` / `enable --now` / `enable-linger` commands). The Tailscale interface is up on the host (`100.74.35.114`, `fd7a:115c:a1e0::9e36:2372`), so the CN-002 binding constraint is satisfiable once the unit starts.
+
+## T-011@20260502T001347Z (2026-05-02T01:36:00Z)
+
+- **Reason:** StoryBeat wire-shape and deploy-side engine assumptions
+- **Details:** Exploration found no deploy-side `cypherclaw.narrative.engine.NarrativeEngine` package in this PromptClaw checkout; production still needs the package deployed on the CypherClaw host. T-011 therefore follows the existing narrative API lazy-import pattern and tests through injected fake engines. Deniable's `world_bridge.py` treats the `StoryBeat` response as an engine-owned raw payload with required `id`, `cycle_number`, and `arc_position`, so the endpoint should serialize the in-process beat without adding null/default response-model fields. No new dependencies, database columns, or migrations are required. The generated hardening bullets about SenseWeave self-critique/resource-governor wiring and daemon identity startup are unrelated to the `/beats/next` wrapper; startup identity is already covered by existing narrative API main/startup tests.
+
+exec
+/bin/zsh -lc 'git show --name-only --oneline 87e0a59' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+87e0a59 chore(sdp): flush runner log and Lead/Verify logs through T-016@20260502T001347Zc
+progress.md
+sdp/logs/Lead_T-008_20260502T001347Za_1777693568.log
+sdp/logs/Lead_T-008_20260502T001347Zb_1777694063.log
+sdp/logs/Lead_T-008_20260502T001347Zc_1777694466.log
+sdp/logs/Lead_T-008_20260502T001347Zd_1777695347.log
+sdp/logs/Lead_T-014_20260502T001347Z_1777692393.log
+sdp/logs/Lead_T-015_20260502T001347Z_1777692683.log
+sdp/logs/Lead_T-016_20260502T001347Za_1777696378.log
+sdp/logs/Lead_T-016_20260502T001347Za_1777696890.log
+sdp/logs/Lead_T-016_20260502T001347Za_1777697150.log
+sdp/logs/Lead_T-016_20260502T001347Zb_1777697407.log
+sdp/logs/Lead_T-016_20260502T001347Zc_1777698005.log
+sdp/logs/Lead_T-016_20260502T001347Zc_1777698304.log
+sdp/logs/Lead_T-016_20260502T001347Zc_1777698316.log
+sdp/logs/Lead_frac-0001_1777695674.log
+sdp/logs/Verify_T-008_20260502T001347Za_1777693879.log
+sdp/logs/Verify_T-008_20260502T001347Zb_1777694254.log
+sdp/logs/Verify_T-008_20260502T001347Zc_1777695092.log
+sdp/logs/Verify_T-008_20260502T001347Zd_1777695549.log
+sdp/logs/Verify_T-014_20260502T001347Z_1777692450.log
+sdp/logs/Verify_T-015_20260502T001347Z_1777693354.log
+sdp/logs/Verify_T-016_20260502T001347Za_1777696574.log
+sdp/logs/Verify_T-016_20260502T001347Za_1777697082.log
+sdp/logs/Verify_T-016_20260502T001347Za_1777697283.log
+sdp/logs/Verify_T-016_20260502T001347Zb_1777697832.log
+sdp/logs/Verify_T-016_20260502T001347Zc_1777698142.log
+sdp/logs/Verify_frac-0001_1777696227.log
+sdp/logs/claude_1777693491.log
+sdp/logs/claude_1777696326.log
+sdp/notifications.log
+sdp/run-log.md
+sdp/runner.log
+sdp/telemetry/prompt-review-2026-05-02.md
+sdp/templates/candidates/lead_t2/v004.md
+sdp/templates/candidates/verify/v004.md
+sdp/verification/t-008@20260502t001347zd-verify.md
+sdp/verification/t-016@20260502t001347za-verify.md
+
+exec
+/bin/zsh -lc 'git show 97aa8e7 -- README.md' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+commit 97aa8e75515400aa9274c603c7d97b2ab852a90b
+Author: Anthony Ainsworth <anthony@cascadiantech.com>
+Date:   Fri May 1 22:01:38 2026 -0700
+
+    docs(readme): add Smoke test from Deniable section [T-016@20260502T001347Zc]
+    
+    Documents the Deniable operator workflow for the cypherclaw narrative
+    smoke probe: prerequisites (Tailscale + NARRATIVE_BASE_URL), exact
+    invocation incl. --verbose, expected per-endpoint output shape, exit-code
+    semantics, and a troubleshooting note pointing to `tailscale status`.
+
+diff --git a/README.md b/README.md
+index 68541d0..d81ce61 100644
+--- a/README.md
++++ b/README.md
+@@ -205,6 +205,61 @@ python3 scripts/smoke_narrative.py \
+ The token, when supplied, is sent in the `X-Narrative-Auth` header that
+ `cypherclaw.narrative_api` enforces when `NARRATIVE_AUTH_TOKEN` is set.
+ 
++### Smoke test from Deniable
++
++Run the smoke probe from the Deniable operator's Mac to confirm the cypherclaw
++narrative API is reachable and healthy over Tailscale.
++
++**Prerequisites**
++
++- Tailscale is running on the Mac and connected to the `cypherclaw` node
++  (verify with `tailscale status`).
++- `NARRATIVE_BASE_URL` is exported, e.g.
++  `export NARRATIVE_BASE_URL=http://cypherclaw:8765` (or the Tailscale IP
++  `http://100.x.y.z:8765`). If unset, the script falls back to
++  `http://cypherclaw:8765`.
++
++**Invocation**
++
++```bash
++python scripts/smoke_narrative.py
++python scripts/smoke_narrative.py --verbose
++```
++
++`--verbose` appends `body=<first-200-chars>` to each line so response payloads
++can be eyeballed.
++
++**Expected output shape**
++
++One line per probed endpoint, in the form `METHOD PATH -> STATUS`, preceded by
++a `smoke_narrative: base_url=...` header:
++
++```text
++smoke_narrative: base_url=http://cypherclaw:8765
++GET /health -> 200
++POST /memory/search -> 200
++POST /beats/next -> 200
++GET /world/entities?limit=1 -> 200
++GET /world/entities/<id> -> 200
++GET /events?limit=1 -> 200
++```
++
++When `--verbose` is set, each line is suffixed with `body=...` (newlines
++escaped). If the entity list is empty, the per-entity GET prints
++`GET /world/entities/{entity_id} -> SKIP no entity id returned` and is not
++counted as a failure.
++
++**Exit-code semantics**
++
++- `0` — every probed endpoint returned a 2xx status.
++- `1` — any endpoint returned non-2xx, timed out, or failed to connect. Failed
++  requests print `METHOD PATH -> ERROR <detail>` before the script exits.
++
++**Troubleshooting**
++
++If the script reports connection errors, first check `tailscale status` to
++confirm the Mac has an active connection to the `cypherclaw` node.
++
+ ## Docs
+ 
+ - `docs/coherence-foundations.md` — research basis (60+ papers)
+
+codex
+I’ve confirmed the README change content is present in the lead commit. I’ll now validate whether the required verification artifact exists and whether its content matches this task’s requested format before running the test suite.
+exec
+/bin/zsh -lc "ls -1 sdp/verification && [ -f sdp/verification/t-016@20260502t001347zc-verify.md ] && sed -n '1,220p' sdp/verification/t-016@20260502t001347zc-verify.md" in /Users/anthony/Programming/PromptClaw
+ exited 1 in 0ms:
+evidence
+frac-0001-verify.md
+t-001 @20260425t183959zb-verify.md
+t-001@20260408t223256z-verify.md
+t-001@20260416t043834z-manual-verify.md
+t-001@20260416t043834z-verify.md
+t-001@20260416t054258z-verify.md
+t-001@20260416t181925za-verify.md
+t-001@20260416t181925zb-verify.md
+t-001@20260416t181925zc-verify.md
+t-001@20260425t183959za-verify.md
+t-001@20260425t183959zb-verify.md
+t-001@20260425t183959zc-verify.md
+t-001@20260425t183959zd-verify.md
+t-001@20260427t001208za-verify.md
+t-001@20260427t001208zb-verify.md
+t-001@20260427t001208zc-verify.md
+t-001@20260427t001208zd-verify.md
+t-001@20260502t001347z-verify.md
+t-002 @20260425t183959zb-verify.md
+t-002@20260408t223256z-verify.md
+t-002@20260416t043834z-verify.md
+t-002@20260416t054258z-verify.md
+t-002@20260416t181925z-verify.md
+t-002@20260425t183959za-verify.md
+t-002@20260425t183959zb-verify.md
+t-002@20260425t183959zc-verify.md
+t-002@20260425t183959zd-verify.md
+t-002@20260427t001208z-verify.md
+t-002@20260502t001347z-verify.md
+t-003@20260408t223256z-verify.md
+t-003@20260416t043834z-verify.md
+t-003@20260416t054258z-verify.md
+t-003@20260416t181925z-verify.md
+t-003@20260425t183959z-verify.md
+t-003@20260427t001208z-verify.md
+t-003@20260502t001347z-verify.md
+t-004@20260408t223256z-verify.md
+t-004@20260416t043834z-verify.md
+t-004@20260416t054258z-verify.md
+t-004@20260416t181925z-verify.md
+t-004@20260425t183959z-verify.md
+t-004@20260427t001208z-verify.md
+t-004@20260502t001347za-verify.md
+t-004@20260502t001347zb-verify.md
+t-004@20260502t001347zc-verify.md
+t-005@20260408t223256z-verify.md
+t-005@20260416t043834z-verify.md
+t-005@20260416t054258z-verify.md
+t-005@20260416t181925z-verify.md
+t-005@20260425t183959za-verify.md
+t-005@20260425t183959zb-verify.md
+t-005@20260425t183959zc-verify.md
+t-005@20260425t183959zd-verify.md
+t-005@20260427t001208z-verify.md
+t-005@20260502t001347z-verify.md
+t-006 @20260502t001347za-verify.md
+t-006 @20260502t001347zc-verify.md
+t-006@20260408t223256z-verify.md
+t-006@20260416t043834z-verify.md
+t-006@20260416t054258z-verify.md
+t-006@20260416t181925z-verify.md
+t-006@20260425t183959z-verify.md
+t-006@20260427t001208z-verify.md
+t-006@20260502t001347za-verify.md
+t-006@20260502t001347zb-verify.md
+t-006@20260502t001347zc-verify.md
+t-007@20260408t223256z-verify.md
+t-007@20260416t043834z-verify.md
+t-007@20260416t054258z-verify.md
+t-007@20260416t181925z-verify.md
+t-007@20260425t183959z-verify.md
+t-007@20260427t001208z-verify.md
+t-007@20260502t001347za-verify.md
+t-007@20260502t001347zb-verify.md
+t-007@20260502t001347zc-verify.md
+t-008 @20260502t001347zd-verify.md
+t-008@20260408t223256z-verify.md
+t-008@20260416t043834z-verify.md
+t-008@20260416t054258z-verify.md
+t-008@20260416t181925z-verify.md
+t-008@20260425t183959za-verify.md
+t-008@20260425t183959zb-verify.md
+t-008@20260425t183959zc-verify.md
+t-008@20260425t183959zd-verify.md
+t-008@20260427t001208za-verify.md
+t-008@20260427t001208zb-verify.md
+t-008@20260427t001208zc-verify.md
+t-008@20260427t001208zd-verify.md
+t-008@20260502t001347za-verify.md
+t-008@20260502t001347zb-verify.md
+t-008@20260502t001347zc-verify.md
+t-008@20260502t001347zd-verify.md
+t-009 @20260425t183959z-verify.md
+t-009@20260408t223256z-verify.md
+t-009@20260416t043834z-verify.md
+t-009@20260416t054258z-verify.md
+t-009@20260416t181925z-verify.md
+t-009@20260425t183959z-verify.md
+t-009@20260427t001208z-verify.md
+t-009@20260502t001347z-verify.md
+t-010@20260408t223256za-verify.md
+t-010@20260408t223256zb-verify.md
+t-010@20260408t223256zc-verify.md
+t-010@20260416t043834z-verify.md
+t-010@20260416t054258z-verify.md
+t-010@20260416t181925z-verify.md
+t-010@20260425t183959z-verify.md
+t-010@20260427t001208z-verify.md
+t-010@20260502t001347z-verify.md
+t-011@20260408t223256z-verify.md
+t-011@20260416t043834z-verify.md
+t-011@20260416t054258z-verify.md
+t-011@20260416t181925z-verify.md
+t-011@20260425t183959z-verify.md
+t-011@20260427t001208z-verify.md
+t-011@20260502t001347z-verify.md
+t-012 @20260425t183959zc-verify.md
+t-012@20260408t223256z-verify.md
+t-012@20260416t043834z-manual-verify.md
+t-012@20260416t054258z-verify.md
+t-012@20260416t181925z-verify.md
+t-012@20260425t183959za-verify.md
+t-012@20260425t183959zb-verify.md
+t-012@20260425t183959zc-verify.md
+t-012@20260425t183959zd-smoke-report.md
+t-012@20260425t183959zd-verify.md
+t-012@20260427t001208z-verify.md
+t-012@20260502t001347z-verify.md
+t-013 @20260502t001347z-verify.md
+t-013@20260416t043834z-verify.md
+t-013@20260416t054258z-verify.md
+t-013@20260416t181925z-verify.md
+t-013@20260425t183959za-verify.md
+t-013@20260425t183959zb-verify.md
+t-013@20260425t183959zc-verify.md
+t-013@20260427t001208z-verify.md
+t-013@20260502t001347z-verify.md
+t-014 @20260427t001208z-verify.md
+t-014 @20260502t001347z-verify.md
+t-014@20260416t043834z-verify.md
+t-014@20260416t054258z-verify.md
+t-014@20260416t181925z-verify.md
+t-014@20260425t183959za-verify.md
+t-014@20260425t183959zb-verify.md
+t-014@20260425t183959zc-verify.md
+t-014@20260427t001208z-verify.md
+t-014@20260502t001347z-verify.md
+t-015 @20260425t183959zd-verify.md
+t-015@20260416t043834z-verify.md
+t-015@20260416t054258z-verify.md
+t-015@20260416t181925z-verify.md
+t-015@20260425t183959za-verify.md
+t-015@20260425t183959zb-verify.md
+t-015@20260425t183959zc-verify.md
+t-015@20260425t183959zd-verify.md
+t-015@20260427t001208z-verify.md
+t-015@20260502t001347z-verify.md
+t-016 @20260425t183959za-verify.md
+t-016 @20260425t183959zb-verify.md
+t-016 @20260502t001347zc-verify.md
+t-016@20260416t043834z-verify.md
+t-016@20260416t054258z-verify.md
+t-016@20260416t181925z-verify.md
+t-016@20260425t183959za-verify.md
+t-016@20260425t183959zb-verify.md
+t-016@20260425t183959zc-verify.md
+t-016@20260425t183959zd-verify.md
+t-016@20260427t001208z-verify.md
+t-016@20260502t001347za-verify.md
+t-016@20260502t001347zb-verify.md
+t-017@20260416t043834z-verify.md
+t-017@20260416t054258z-verify.md
+t-017@20260416t181925z-verify.md
+t-017@20260425t183959z-verify.md
+t-017@20260427t001208z-verify.md
+t-018 @20260416t054258za-verify.md
+t-018 @20260416t054258zd-verify.md
+t-018 @20260425t183959zc-verify.md
+t-018@20260416t043834z-verify.md
+t-018@20260416t054258za-verify.md
+t-018@20260416t054258zb-verify.md
+t-018@20260416t054258zc-verify.md
+t-018@20260416t054258zd-verify.md
+t-018@20260416t181925za-verify.md
+t-018@20260416t181925zb-verify.md
+t-018@20260416t181925zc-verify.md
+t-018@20260416t181925zd-verify.md
+t-018@20260425t183959za-verify.md
+t-018@20260425t183959zb-verify.md
+t-018@20260425t183959zc-verify.md
+t-018@20260425t183959zd-verify.md
+t-018@20260427t001208z-verify.md
+t-019 @20260425t183959z-verify.md
+t-019 @20260427t001208zb-verify.md
+t-019 @20260427t001208zd-verify.md
+t-019@20260416t043834z-verify.md
+t-019@20260416t054258z-verify.md
+t-019@20260416t181925z-verify.md
+t-019@20260425t183959z-verify.md
+t-019@20260427t001208za-verify.md
+t-019@20260427t001208zb-verify.md
+t-019@20260427t001208zc-verify.md
+t-019@20260427t001208zd-verify.md
+t-020@20260416t043834z-verify.md
+t-020@20260416t054258z-verify.md
+t-020@20260416t181925z-verify.md
+t-020@20260425t183959za-verify.md
+t-020@20260425t183959zb-verify.md
+t-020@20260425t183959zc-verify.md
+t-020@20260427t001208z-verify.md
+t-021@20260416t043834z-verify.md
+t-021@20260416t054258z-verify.md
+t-021@20260416t181925za-verify.md
+t-021@20260416t181925zb-verify.md
+t-021@20260416t181925zc-verify.md
+t-021@20260425t183959za-verify.md
+t-021@20260425t183959zb-verify.md
+t-021@20260425t183959zc-verify.md
+t-021@20260425t183959zd-verify.md
+t-021@20260427t001208z-verify.md
+t-022 @20260425t183959zc-verify.md
+t-022@20260416t043834z-verify.md
+t-022@20260416t054258z-verify.md
+t-022@20260416t181925z-verify.md
+t-022@20260425t183959za-verify.md
+t-022@20260425t183959zb-verify.md
+t-022@20260425t183959zc-verify.md
+t-022@20260425t183959zd-verify.md
+t-022@20260427t001208z-verify.md
+t-023 @20260427t001208zc-verify.md
+t-023@20260416t043834z-verify.md
+t-023@20260416t054258z-verify.md
+t-023@20260416t181925z-verify.md
+t-023@20260425t183959z-verify.md
+t-023@20260427t001208za-verify.md
+t-023@20260427t001208zb-verify.md
+t-023@20260427t001208zc-verify.md
+t-024 @20260416t181925z-verify.md
+t-024 @20260425t183959zd-verify.md
+t-024@20260416t043834z-verify.md
+t-024@20260416t054258z-verify.md
+t-024@20260416t181925z-verify.md
+t-024@20260425t183959za-verify.md
+t-024@20260425t183959zb-verify.md
+t-024@20260425t183959zc-verify.md
+t-024@20260425t183959zd-verify.md
+t-024@20260427t001208z-verify.md
+t-025@20260416t043834z-verify.md
+t-025@20260416t054258z-verify.md
+t-025@20260416t181925z-verify.md
+t-025@20260425t183959z-verify.md
+t-025@20260427t001208z-verify.md
+t-026 @20260425t183959z-verify.md
+t-026@20260416t181925z-verify.md
+t-026@20260425t183959z-verify.md
+t-026@20260427t001208z-verify.md
+t-027@20260416t181925z-verify.md
+t-027@20260425t183959za-verify.md
+t-027@20260425t183959zb-verify.md
+t-027@20260425t183959zc-verify.md
+t-027@20260425t183959zd-verify.md
+t-027@20260427t001208z-verify.md
+t-028@20260416t181925z-verify.md
+t-028@20260425t183959z-verify.md
+t-028@20260427t001208z-verify.md
+t-029 @20260425t183959zc-verify.md
+t-029@20260416t181925z-verify.md
+t-029@20260425t183959za-verify.md
+t-029@20260425t183959zb-verify.md
+t-029@20260425t183959zc-verify.md
+t-029@20260427t001208z-verify.md
+t-030@20260416t181925z-verify.md
+t-030@20260425t183959za-verify.md
+t-030@20260425t183959zb-verify.md
+t-030@20260425t183959zc-verify.md
+t-030@20260427t001208z-verify.md
+t-031@20260416t181925z-verify.md
+t-031@20260425t183959z-verify.md
+t-031@20260427t001208z-verify.md
+t-032@20260416t181925z-verify.md
+t-032@20260425t183959z-verify.md
+t-032@20260427t001208za-verify.md
+t-032@20260427t001208zb-verify.md
+t-032@20260427t001208zc-verify.md
+t-033@20260416t181925z-verify.md
+t-033@20260425t183959z-verify.md
+t-034@20260416t181925z-verify.md
+t-035@20260416t181925z-verify.md
+t-036@20260416t181925z-verify.md
+t-037@20260416t181925z-verify.md
+t-038@20260416t181925z-verify.md
+t-039@20260416t181925z-verify.md
+t-040@20260416t181925z-verify.md
+
+exec
+/bin/zsh -lc 'rg -n "" sdp/verification | head -n 20' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+sdp/verification/t-014@20260416t181925z-verify.md:1:# Verification Report — T-014@20260416T181925Z
+sdp/verification/t-014@20260416t181925z-verify.md:2:
+sdp/verification/t-014@20260416t181925z-verify.md:3:**Verify Agent:** Claude Sonnet 4.6 (VERIFY)
+sdp/verification/t-014@20260416t181925z-verify.md:4:**Date:** 2026-04-16
+sdp/verification/t-014@20260416t181925z-verify.md:5:**Artifacts Reviewed:**
+sdp/verification/t-014@20260416t181925z-verify.md:6:- `my-claw/tools/senseweave/render/metrics.py`
+sdp/verification/t-014@20260416t181925z-verify.md:7:- `my-claw/tools/senseweave/render/pass_.py`
+sdp/verification/t-014@20260416t181925z-verify.md:8:- `tests/test_render_metrics.py`
+sdp/verification/t-014@20260416t181925z-verify.md:9:
+sdp/verification/t-014@20260416t181925z-verify.md:10:## Correctness
+sdp/verification/t-014@20260416t181925z-verify.md:11:
+sdp/verification/t-014@20260416t181925z-verify.md:12:All nine metrics are implemented and return values: IOI CoV, velocity σ, DNVR, pitch H1, GS, tempo ρ₁, LZ76, novelty peaks, silence_ms. Pass bands match the research-documented ranges exactly (PASS_BANDS dict). The flat-line control correctly fails all nine bands and the full-stack fixture correctly falls within all nine bands. Both tests pass.
+sdp/verification/t-014@20260416t181925z-verify.md:13:
+sdp/verification/t-014@20260416t181925z-verify.md:14:Minor concern: three metrics use trivial Boolean proxies rather than proper formulas:
+sdp/verification/t-014@20260416t181925z-verify.md:15:- **GS**: `0.75 if vel_sigma > 0 else 0.0` — not Grooving Similarity proper
+sdp/verification/t-014@20260416t181925z-verify.md:16:- **tempo ρ₁**: `0.85 if len(set(tempo_curve)) > 1 else 0.0` — not lag-1 autocorrelation
+sdp/verification/t-014@20260416t181925z-verify.md:17:- **LZ76**: `0.55 if vel_sigma > 0 else 0.1` — not Lempel-Ziv complexity
+sdp/verification/t-014@20260416t181925z-verify.md:18:
+sdp/verification/t-014@20260416t181925z-verify.md:19:These proxies are deterministic and tests are constructed to pass/fail them correctly, but the formulas do not match the metrics named. Flagged as minor (test contracts hold; stubs are acknowledged implicitly by the dict-path design).
+sdp/verification/t-014@20260416t181925z-verify.md:20:
+
+exec
+/bin/zsh -lc "ls -1 sdp/verification | rg 't-016@20260502t001347'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+t-016@20260502t001347za-verify.md
+t-016@20260502t001347zb-verify.md
+
+exec
+/bin/zsh -lc "ls -1b sdp/verification | rg 't-016\\ @20260502t001347zc'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+t-016 @20260502t001347zc-verify.md
+
+codex
+I’ve confirmed there’s a mismatch between the required artifact path and the existing verification output file naming. I’ll inspect the current candidate report, run the requested test suite command, then write the required report at the exact path.
+exec
+/bin/zsh -lc "sed -n '1,220p' 'sdp/verification/t-016 @20260502t001347zc-verify.md'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+# Verification Report — T-016 @sdp/logs/Verify_T-016_20260502T001347Zc_1777698142.log
+
+**Verify Agent:** gemini-3-flash-preview
+**Date:** Friday, May 1, 2026
+**Artifacts Reviewed:**
+- `README.md`
+- `scripts/smoke_narrative.py`
+- `tests/test_smoke_narrative_script.py`
+- `src/cypherclaw/narrative_api/app.py`
+- `src/cypherclaw/narrative_api/entities.py`
+- `tests/test_narrative_api_entities.py`
+- `CHANGELOG.md`
+
+## Correctness
+The `README.md` correctly includes the 'Smoke test from Deniable' section with all requested information:
+- **Prerequisites:** Tailscale connection and `NARRATIVE_BASE_URL` are documented.
+- **Invocation:** Both standard and `--verbose` invocations are documented.
+- **Output shape:** The expected output shape (including the `SKIP` behavior for empty entities) is documented and matches the script's behavior.
+- **Exit-code semantics:** `0` for success, `1` for any failure (including connection errors).
+- **Troubleshooting:** A one-line note pointing to `tailscale status` is included.
+
+## Completeness
+The implementation is complete according to the task description. The LEAD agent also extended the smoke test script to cover more endpoints (`/memory/search`, `/beats/next`, `/world/entities`, `/events`) and updated the documentation to reflect this increased coverage.
+
+## Consistency
+The documentation in the new section is internally consistent and matches the script's behavior. While there is a slight redundancy with an older section in `README.md`, both are now consistent with the actual implementation (`GET /health` and dual `X-Narrative-Auth`/`Authorization: Bearer` headers).
+
+## Security
+No credentials are logged. The script correctly handles optional tokens without leaking them in output.
+
+## Quality
+The documentation is clear and professional. The accompanying tests in `tests/test_smoke_narrative_script.py` and `tests/test_narrative_api_entities.py` provide solid regression coverage. Specifically, the "underdelivery" risk in pagination is addressed in the code by fetching with a multiplier.
+
+## Issues Found
+None.
+
+## Verdict: PASS
+
+## Notes for Lead Agent
+The documentation correctly reflects the choice to use `/health` (aligning with the actual API) rather than `/healthz`/`/readyz` (which was a previous contract mismatch). The dual header support in the script ensures compatibility with different auth enforcement modes.
+
+exec
+/bin/zsh -lc "pip install -e '.[dev]' && pytest tests/ -x" in /Users/anthony/Programming/PromptClaw
+ succeeded in 42525ms:
+Obtaining file:///Users/anthony/Programming/PromptClaw
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: partitura<2,>=1.8 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.8.0)
+Requirement already satisfied: librosa<1,>=0.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.11.0)
+Requirement already satisfied: mypy>=1.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.19.1)
+Requirement already satisfied: pytest>=8.0 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (8.3.5)
+Requirement already satisfied: ruff>=0.9 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.9.2)
+Requirement already satisfied: audioread>=2.1.9 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (3.1.0)
+Requirement already satisfied: numba>=0.51.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.59.0)
+Requirement already satisfied: numpy>=1.22.3 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.26.0)
+Requirement already satisfied: scipy>=1.6.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.11.4)
+Requirement already satisfied: scikit-learn>=1.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.2)
+Requirement already satisfied: joblib>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.0)
+Requirement already satisfied: decorator>=4.3.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (5.1.1)
+Requirement already satisfied: soundfile>=0.12.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.13.1)
+Requirement already satisfied: pooch>=1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.9.0)
+Requirement already satisfied: soxr>=0.3.2 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: typing_extensions>=4.1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (4.15.0)
+Requirement already satisfied: lazy_loader>=0.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.3)
+Requirement already satisfied: msgpack>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.3)
+Requirement already satisfied: lxml in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.9.3)
+Requirement already satisfied: lark-parser in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (0.12.0)
+Requirement already satisfied: xmlschema in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.3.1)
+Requirement already satisfied: mido in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (1.3.3)
+Requirement already satisfied: mypy_extensions>=1.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: pathspec>=0.9.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.10.3)
+Requirement already satisfied: librt>=0.6.2 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.8.1)
+Requirement already satisfied: llvmlite<0.43,>=0.42.0dev0 in /opt/anaconda3/lib/python3.11/site-packages (from numba>=0.51.0->librosa<1,>=0.10->promptclaw==3.0.0) (0.42.0)
+Requirement already satisfied: platformdirs>=2.5.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (4.5.1)
+Requirement already satisfied: packaging>=20.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (23.2)
+Requirement already satisfied: requests>=2.19.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.32.3)
+Requirement already satisfied: iniconfig in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.1.1)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.5.0)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.4)
+Requirement already satisfied: idna<4,>=2.5 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (3.4)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.6.3)
+Requirement already satisfied: certifi>=2017.4.17 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2026.1.4)
+Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from scikit-learn>=1.1.0->librosa<1,>=0.10->promptclaw==3.0.0) (2.2.0)
+Requirement already satisfied: cffi>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.0)
+Requirement already satisfied: pycparser in /opt/anaconda3/lib/python3.11/site-packages (from cffi>=1.0->soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.21)
+Requirement already satisfied: elementpath<6.0.0,>=5.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from xmlschema->partitura<2,>=1.8->promptclaw==3.0.0) (5.1.1)
+Building wheels for collected packages: promptclaw
+  Building editable for promptclaw (pyproject.toml): started
+  Building editable for promptclaw (pyproject.toml): finished with status 'done'
+  Created wheel for promptclaw: filename=promptclaw-3.0.0-0.editable-py3-none-any.whl size=7047 sha256=5b4c3bdea1a4879aaaabf05e2374e40adc0e33b98c5e71d6b392cc5f30c7a5a8
+  Stored in directory: /private/var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/pip-ephem-wheel-cache-1vey3yo1/wheels/ab/f4/89/0cacd29874f6252d7c6bef0fca4c14839da91ab6a8d842965e
+Successfully built promptclaw
+Installing collected packages: promptclaw
+  Attempting uninstall: promptclaw
+    Found existing installation: promptclaw 3.0.0
+    Uninstalling promptclaw-3.0.0:
+      Successfully uninstalled promptclaw-3.0.0
+Successfully installed promptclaw-3.0.0
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3923 items
+
+tests/test_accompaniment.py ...........................                  [  0%]
+tests/test_acoustic_ecology.py .................................         [  1%]
+tests/test_agent_runtime.py ..                                           [  1%]
+tests/test_agent_selector_defaults.py .                                  [  1%]
+tests/test_agent_selector_quota.py ........                              [  1%]
+tests/test_agogic_rule.py ...                                            [  1%]
+tests/test_antenna_to_skin.py .................................          [  2%]
+tests/test_archive_daemon_runtime.py .                                   [  2%]
+tests/test_archive_paths.py .....                                        [  2%]
+tests/test_arrangement_engine.py ....................................... [  3%]
+                                                                         [  3%]
+tests/test_art_engine_runtime.py ....                                    [  3%]
+tests/test_articulation.py ......                                        [  4%]
+tests/test_artist_identity.py .......................................... [  5%]
+.........                                                                [  5%]
+tests/test_artistic_identity.py .                                        [  5%]
+tests/test_audio_analysis.py .....................................       [  6%]
+tests/test_audio_novelty.py ....                                         [  6%]
+tests/test_bootstrap.py ..                                               [  6%]
+tests/test_breath_to_filter.py .............................             [  7%]
+tests/test_cadence_engine.py .......                                     [  7%]
+tests/test_call_response.py ..........                                   [  7%]
+tests/test_capstone_engine.py ...                                        [  7%]
+tests/test_capture_alias.py ..                                           [  7%]
+tests/test_cast_planner.py .............                                 [  8%]
+tests/test_character_registry.py ......                                  [  8%]
+tests/test_check_status_runtime.py ..                                    [  8%]
+tests/test_client_local.py ..                                            [  8%]
+tests/test_client_modal.py ..                                            [  8%]
+tests/test_coherence_engine.py ..............                            [  8%]
+tests/test_coherence_integration.py ............                         [  9%]
+tests/test_collaborative_canvas.py ......................                [  9%]
+tests/test_commission_context.py ..                                      [  9%]
+tests/test_composer_quote_verify.py .....                                [  9%]
+tests/test_config.py ..                                                  [  9%]
+tests/test_constitution.py .......................                       [ 10%]
+tests/test_contact_listener_runtime.py ....                              [ 10%]
+tests/test_contact_mic_calibration_runtime.py ....                       [ 10%]
+tests/test_context_pulse_runtime.py .                                    [ 10%]
+tests/test_continuous_learner.py ......................                  [ 11%]
+tests/test_counterpoint_pipeline.py ...........................          [ 12%]
+tests/test_counterpoint_rules.py ....................................... [ 13%]
+......................                                                   [ 13%]
+tests/test_course_critique.py ...............................            [ 14%]
+tests/test_cypherclaw_audio_runtime.py .....                             [ 14%]
+tests/test_cypherclaw_av_stack_service.py ...                            [ 14%]
+tests/test_cypherclaw_boot_runtime.py .......                            [ 14%]
+tests/test_cypherclaw_musicianship_roadmap.py ..                         [ 14%]
+tests/test_cypherclaw_narrative_api_service.py .                         [ 14%]
+tests/test_cypherclaw_runtime.py .....                                   [ 14%]
+tests/test_cypherclaw_sampler_architecture.py .......                    [ 15%]
+tests/test_cypherclaw_sampler_artistic_intent.py .....                   [ 15%]
+tests/test_daemon_concurrency_compat.py ...                              [ 15%]
+tests/test_daemon_fallback.py ...............                            [ 15%]
+tests/test_daemon_scheduler.py ..                                        [ 15%]
+tests/test_daemon_status_ollama.py .......                               [ 15%]
+tests/test_dashboard_generator.py ...................................... [ 16%]
+.......                                                                  [ 17%]
+tests/test_dashboard_generator_runtime.py ...                            [ 17%]
+tests/test_decision_store.py .........                                   [ 17%]
+tests/test_doctor.py ...                                                 [ 17%]
+tests/test_dsp_scene_lab.py ................                             [ 17%]
+tests/test_duration_contrast_rule.py .......                             [ 18%]
+tests/test_ear_engine.py ............                                    [ 18%]
+tests/test_emsd_catalog_depth.py ..                                      [ 18%]
+tests/test_emsd_curriculum.py ...............                            [ 18%]
+tests/test_emsd_performance.py ....                                      [ 18%]
+tests/test_emsd_runtime.py ...                                           [ 18%]
+tests/test_escalations_lingering.py ....                                 [ 19%]
+tests/test_event_store.py .......                                        [ 19%]
+tests/test_executable_curriculum.py ...                                  [ 19%]
+tests/test_face_display_sample_status.py ....                            [ 19%]
+tests/test_federation_discovery.py ........                              [ 19%]
+tests/test_final_rit.py ...                                              [ 19%]
+tests/test_first_boot.py ...................................             [ 20%]
+tests/test_form_grammar.py ..                                            [ 20%]
+tests/test_fractal_form.py ...............                               [ 21%]
+tests/test_functional_harmony.py ...............................         [ 21%]
+tests/test_gallery.py ..........................                         [ 22%]
+tests/test_gallery_x11_runtime.py ...                                    [ 22%]
+tests/test_garden_watcher.py ........................................... [ 23%]
+.                                                                        [ 23%]
+tests/test_gemini_image_runtime.py ...                                   [ 23%]
+tests/test_generation_budget.py ..................                       [ 24%]
+tests/test_generation_cache.py ....                                      [ 24%]
+tests/test_generation_client_protocol.py ....                            [ 24%]
+tests/test_generation_composer_hook.py ..........                        [ 24%]
+tests/test_generation_conditioner.py .......................             [ 25%]
+tests/test_generation_e2e_cypherclaw.py s                                [ 25%]
+tests/test_generation_health.py ............                             [ 25%]
+tests/test_generation_live_modal.py s                                    [ 25%]
+tests/test_generation_live_replicate.py s                                [ 25%]
+tests/test_generation_queue.py .....................                     [ 26%]
+tests/test_generation_replicate_retry.py ............................... [ 26%]
+..................                                                       [ 27%]
+tests/test_generation_request.py .....................                   [ 27%]
+tests/test_generation_storage.py ....                                    [ 28%]
+tests/test_generation_validate.py .......                                [ 28%]
+tests/test_generation_worker.py .....                                    [ 28%]
+tests/test_generative_scores.py ........................................ [ 29%]
+.............................................                            [ 30%]
+tests/test_genre_literacy.py ............                                [ 30%]
+tests/test_glyphweave_cli.py ....                                        [ 30%]
+tests/test_glyphweave_runtime.py ....                                    [ 31%]
+tests/test_governor_integration.py ..............                        [ 31%]
+tests/test_graduation.py ......................                          [ 31%]
+tests/test_groove_engine.py ............................................ [ 33%]
+......................................                                   [ 34%]
+tests/test_harmonic_planner.py .........                                 [ 34%]
+tests/test_healer_runtime.py .....                                       [ 34%]
+tests/test_healthcheck_script_runtime.py ...                             [ 34%]
+tests/test_hook_engine.py .................                              [ 34%]
+tests/test_human_phrase_capture_verify.py .                              [ 34%]
+tests/test_image_api_app.py ........                                     [ 35%]
+tests/test_image_api_jobs_db.py ............                             [ 35%]
+tests/test_image_api_s3_uploader.py ....                                 [ 35%]
+tests/test_image_api_spec_parser.py ...................                  [ 36%]
+tests/test_image_api_worker.py ........                                  [ 36%]
+tests/test_inkplate_display.py ....                                      [ 36%]
+tests/test_inner_life.py ...................................             [ 37%]
+tests/test_instrument_patches.py ........                                [ 37%]
+tests/test_ixml_chunk_writer.py .......                                  [ 37%]
+tests/test_keyboard_chat.py ..............................               [ 38%]
+tests/test_lifeimprover_bridge_runtime.py .....                          [ 38%]
+tests/test_listener_review.py .....                                      [ 38%]
+tests/test_live_buffer.py ...                                            [ 38%]
+tests/test_local_command_runtime.py ....                                 [ 38%]
+tests/test_lung_capacity_rule.py .......                                 [ 39%]
+tests/test_macbook_codex_monitor.py ....                                 [ 39%]
+tests/test_maintenance_mode.py .....                                     [ 39%]
+tests/test_master_bus.py ......                                          [ 39%]
+tests/test_master_smooth_scd.py ...                                      [ 39%]
+tests/test_melodic_mind.py ............................................. [ 40%]
+..........................................................               [ 42%]
+tests/test_metric_accent_rule.py ....                                    [ 42%]
+tests/test_microtiming.py .....................                          [ 42%]
+tests/test_midi_keyboard_listener_runtime.py .....                       [ 42%]
+tests/test_midi_state.py .......................................         [ 43%]
+tests/test_mix_engine.py ..............................                  [ 44%]
+tests/test_mix_verify.py ............................................... [ 45%]
+                                                                         [ 45%]
+tests/test_mood_mirror.py .....................................          [ 46%]
+tests/test_motif_lifecycle.py ............................               [ 47%]
+tests/test_motif_memory.py ...............                               [ 47%]
+tests/test_music_theory.py ............................................. [ 48%]
+........................................                                 [ 50%]
+tests/test_music_tracker.py ..........................................   [ 51%]
+tests/test_music_tracker_runtime.py .................................... [ 52%]
+........                                                                 [ 52%]
+tests/test_musical_integration_runtime.py .                              [ 52%]
+tests/test_musical_marathon_integration.py ..                            [ 52%]
+tests/test_narrative_api_beats.py .........                              [ 52%]
+tests/test_narrative_api_entities.py ..............................      [ 53%]
+tests/test_narrative_api_events.py .....................                 [ 53%]
+tests/test_narrative_api_health.py ..                                    [ 53%]
+tests/test_narrative_api_main.py .......                                 [ 54%]
+tests/test_narrative_api_memory.py ...........                           [ 54%]
+tests/test_narrative_api_settings.py ....                                [ 54%]
+tests/test_narrative_entities_domain_migration.py ...                    [ 54%]
+tests/test_narrative_envelope.py ..............                          [ 54%]
+tests/test_observatory_authority.py .....                                [ 54%]
+tests/test_observatory_runtime.py ..                                     [ 55%]
+tests/test_observatory_verification.py ..                                [ 55%]
+tests/test_observer_vision_runtime.py ..............                     [ 55%]
+tests/test_ollama_daemon_health.py ...                                   [ 55%]
+tests/test_ollama_health.py ......                                       [ 55%]
+tests/test_ollama_invoke.py ...                                          [ 55%]
+tests/test_ollama_routing.py ...................                         [ 56%]
+tests/test_ollama_run_agent.py .......                                   [ 56%]
+tests/test_operator_diagnostics.py ...................                   [ 56%]
+tests/test_operator_diagnostics_sample_status.py ....                    [ 56%]
+tests/test_ops_helpers_runtime.py ....                                   [ 57%]
+tests/test_orchestral_form.py ...............................            [ 57%]
+tests/test_orchestrator.py ...                                           [ 57%]
+tests/test_pareidolia_art_engine.py .......                              [ 58%]
+tests/test_pareidolia_characters.py .................................    [ 58%]
+tests/test_pareidolia_color.py ......................................... [ 60%]
+........................................................................ [ 61%]
+....                                                                     [ 61%]
+tests/test_pedals_to_key.py ............................                 [ 62%]
+tests/test_phrase_arch.py ..........                                     [ 62%]
+tests/test_phrase_capture.py ........................                    [ 63%]
+tests/test_phrase_capture_runtime.py ...                                 [ 63%]
+tests/test_phrase_tracker.py ............                                [ 63%]
+tests/test_piece_brief.py ........                                       [ 64%]
+tests/test_piece_commission.py ....                                      [ 64%]
+tests/test_piece_queue.py ..                                             [ 64%]
+tests/test_porch_eye.py ..................................               [ 65%]
+tests/test_portfolio_report.py .........................                 [ 65%]
+tests/test_practice_curriculum.py ..                                     [ 65%]
+tests/test_preflight.py ......                                           [ 65%]
+tests/test_presence_engine.py ............                               [ 66%]
+tests/test_procedural_arc.py .....                                       [ 66%]
+tests/test_production_course_integration.py ..........                   [ 66%]
+tests/test_production_course_knowledge_base.py ...                       [ 66%]
+tests/test_project_scanner_runtime.py ....                               [ 66%]
+tests/test_prosody_engine.py ........                                    [ 67%]
+tests/test_punctuation_rule.py ............                              [ 67%]
+tests/test_quota_monitor.py .....................                        [ 67%]
+tests/test_reharmonizer.py ...                                           [ 67%]
+tests/test_render_ablation.py ....                                       [ 68%]
+tests/test_render_antipatterns.py ..........................             [ 68%]
+tests/test_render_audio_sidecar.py ...                                   [ 68%]
+tests/test_render_debugger.py ..                                         [ 68%]
+tests/test_render_diff.py ................                               [ 69%]
+tests/test_render_events.py ....................                         [ 69%]
+tests/test_render_export.py ......                                       [ 69%]
+tests/test_render_features.py ...                                        [ 70%]
+tests/test_render_metrics.py ..............                              [ 70%]
+tests/test_render_pass.py ....................                           [ 70%]
+tests/test_render_replay.py ..                                           [ 70%]
+tests/test_render_seed.py .............                                  [ 71%]
+tests/test_render_worm.py ..........                                     [ 71%]
+tests/test_repertoire_memory.py .................                        [ 71%]
+tests/test_repertoire_memory_score_tree.py .                             [ 71%]
+tests/test_research_runtime.py .....                                     [ 72%]
+tests/test_resilience_runtime_scripts.py ..............                  [ 72%]
+tests/test_resource_governor.py ..........................               [ 73%]
+tests/test_restraint.py ...                                              [ 73%]
+tests/test_reviewer_runtime.py ...                                       [ 73%]
+tests/test_role_gate_integration.py .................................... [ 74%]
+....                                                                     [ 74%]
+tests/test_room_listener_runtime.py ..................                   [ 74%]
+tests/test_room_presence_daemon.py ......                                [ 74%]
+tests/test_router.py .....                                               [ 75%]
+tests/test_row_automation.py ...........                                 [ 75%]
+tests/test_runbook_generation_backend.py ......                          [ 75%]
+tests/test_runtime_checkpoint.py ...                                     [ 75%]
+tests/test_runtime_paths.py ..                                           [ 75%]
+tests/test_sample_capture_daemon.py .................................... [ 76%]
+.............                                                            [ 76%]
+tests/test_sample_capture_service_verify.py ....                         [ 76%]
+tests/test_sample_capture_verify.py ....                                 [ 77%]
+tests/test_sample_dsp_activity.py ...........                            [ 77%]
+tests/test_sample_event_renderer.py .....                                [ 77%]
+tests/test_sample_lab.py ....                                            [ 77%]
+tests/test_sample_library.py ......................                      [ 78%]
+tests/test_sample_library_import.py ...                                  [ 78%]
+tests/test_sample_playback_engine.py .......                             [ 78%]
+tests/test_sample_record_audio_analysis.py .............                 [ 78%]
+tests/test_sample_record_context.py ..........                           [ 78%]
+tests/test_sample_record_json.py ..............                          [ 79%]
+tests/test_sample_record_skeleton.py .........                           [ 79%]
+tests/test_sample_selector.py ..................                         [ 80%]
+tests/test_sample_status.py .....                                        [ 80%]
+tests/test_sampler_buffers.py ...............                            [ 80%]
+tests/test_sampler_dispatch.py ....................................      [ 81%]
+tests/test_sampler_effects.py .......................................... [ 82%]
+.......                                                                  [ 82%]
+tests/test_sampler_fx_mode_verify.py ...                                 [ 82%]
+tests/test_sampler_scheduler.py ...........                              [ 83%]
+tests/test_scene_composer.py ......................................      [ 84%]
+tests/test_score_tree.py .                                               [ 84%]
+tests/test_score_tree_composer.py .......................                [ 84%]
+tests/test_score_tree_pipeline.py .                                      [ 84%]
+tests/test_sdp_cost_extractor.py ............                            [ 84%]
+tests/test_sdp_telemetry_cost_model.py ....                              [ 85%]
+tests/test_self_critique.py .........................                    [ 85%]
+tests/test_self_listener_quote_verify.py ......                          [ 85%]
+tests/test_self_listener_tracker_runtime.py ...............              [ 86%]
+tests/test_senseweave_rollout_controls.py .....                          [ 86%]
+tests/test_senseweave_voice.py ..........................                [ 87%]
+tests/test_sensor_fusion.py ...............................              [ 87%]
+tests/test_sensor_intent_rule.py ....                                    [ 87%]
+tests/test_sensory_journal.py ............................               [ 88%]
+tests/test_server_health.py ...                                          [ 88%]
+tests/test_silence_budget_rule.py .................                      [ 89%]
+tests/test_smoke_narrative_script.py ........                            [ 89%]
+tests/test_sound_palette_lab.py ..                                       [ 89%]
+tests/test_startle.py ................................                   [ 90%]
+tests/test_supercollider_recipes.py ...                                  [ 90%]
+tests/test_sw_sampler.py .......................................         [ 91%]
+tests/test_syncopation_features.py .........................             [ 91%]
+tests/test_synthdef_registry.py ...................................      [ 92%]
+tests/test_synthesis_architecture_registry.py .......................... [ 93%]
+.......                                                                  [ 93%]
+tests/test_tamagotchi_runtime.py ......                                  [ 93%]
+tests/test_telegram_runtime.py ......                                    [ 93%]
+tests/test_theramini_duet.py ........................................... [ 95%]
+.........                                                                [ 95%]
+tests/test_theramini_listener_runtime.py ............                    [ 95%]
+tests/test_tracker_cadence.py ............                               [ 95%]
+tests/test_tracker_compiler.py ................                          [ 96%]
+tests/test_tracker_variation.py .....                                    [ 96%]
+tests/test_trust.py ................                                     [ 96%]
+tests/test_usage_journal.py .......................                      [ 97%]
+tests/test_usage_journal_integration.py .                                [ 97%]
+tests/test_voice_aliases.py .......                                      [ 97%]
+tests/test_voice_interpretation_rules.py ............................... [ 98%]
+..                                                                       [ 98%]
+tests/test_voice_manager_v2.py ......................................... [ 99%]
+............                                                             [ 99%]
+tests/test_voice_shaping.py ....                                         [ 99%]
+tests/test_wizard.py ...                                                 [100%]
+
+=============================== warnings summary ===============================
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163: DeprecationWarning: module 'sre_parse' is deprecated
+    import sre_parse
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164: DeprecationWarning: module 'sre_constants' is deprecated
+    import sre_constants
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25
+  /opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    from pkg_resources import resource_stream, resource_exists
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google.cloud')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(parent)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('ruamel')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('zope')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:16: DeprecationWarning: 'aifc' is deprecated and slated for removal in Python 3.13
+    import aifc
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:17: DeprecationWarning: 'audioop' is deprecated and slated for removal in Python 3.13
+    import audioop
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:19: DeprecationWarning: 'sunau' is deprecated and slated for removal in Python 3.13
+    import sunau
+
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+  /Users/anthony/Programming/PromptClaw/tests/test_gallery.py:108: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(result.getdata()), list(canvas.getdata()))
+
+tests/test_pareidolia_characters.py: 189 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:85: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pixels = list(img.getdata())
+
+tests/test_pareidolia_characters.py: 21 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:254: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    rendered[name] = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:310: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:314: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:316: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:339: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_low = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:343: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_high = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:326: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:352: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:331: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:333: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:361: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:376: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:366: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:368: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_add_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:429: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:451: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_with_palette
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:443: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:434: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:436: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:481: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_curious_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:554: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_happy_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:542: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_neutral_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:536: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sad_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:548: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sleeping_eyes_no_highlights
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:560: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:571: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_bush
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:621: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:615: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:609: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:585: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_without_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:591: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:597: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:603: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:642: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:661: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:674: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    basalt_pixels = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:678: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pebble_pixels = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:870: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================ 3920 passed, 3 skipped, 296 warnings in 37.20s ================
+
+codex
+Test suite completed cleanly (3920 passed, 3 skipped). I’ll run one focused diff over the task-relevant files to check for any missed scope items and then write the mandated verification report.
+exec
+/bin/zsh -lc 'git diff --name-status HEAD~3 README.md scripts/smoke_narrative.py tests/test_smoke_narrative_script.py tests/test_narrative_api_entities.py src/cypherclaw/narrative_api/app.py src/cypherclaw/narrative_api/entities.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+exec
+/bin/zsh -lc "sed -n '1,260p' tests/test_narrative_api_entities.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+from copy import deepcopy
+from typing import Any
+
+import pytest
+from fastapi.testclient import TestClient
+
+from cypherclaw.narrative_api.app import create_app
+
+class MockStore:
+    def __init__(self, entities):
+        self._entities = entities
+
+    def list_entities(self, domain_filter=None, type=None, limit=100, offset=0):
+        # A naive store that ignores domain_filter and type, but natively paginates
+        return self._entities[offset : offset + limit]
+
+@pytest.fixture
+def auth_headers():
+    return {"X-Narrative-Auth": "test-token"}
+
+@pytest.fixture
+def mock_store():
+    # 5 entities with varying domains and types
+    return MockStore([
+        {"id": "e1", "domain": "shared", "type": "character", "name": "Alice"},
+        {"id": "e2", "domain": "deniable", "type": "location", "name": "Secret Base"},
+        {"id": "e3", "domain": "private", "type": "character", "name": "Bob"},
+        {"id": "e4", "domain": "shared", "type": "item", "name": "Sword"},
+        {"id": "e5", "domain": "deniable", "type": "character", "name": "Charlie"},
+    ])
+
+@pytest.fixture
+def client(mock_store):
+    app = create_app(event_store=mock_store, auth_token="test-token")
+    return TestClient(app)
+
+def test_entities_domain_deniable(client, auth_headers):
+    # Should return deniable + shared entities
+    resp = client.get("/world/entities?domain=deniable", headers=auth_headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["entities"]) == 4
+    ids = {e["id"] for e in data["entities"]}
+    assert ids == {"e1", "e2", "e4", "e5"}
+
+def test_entities_no_domain(client, auth_headers):
+    # Should default to shared
+    resp = client.get("/world/entities", headers=auth_headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["entities"]) == 2
+    ids = {e["id"] for e in data["entities"]}
+    assert ids == {"e1", "e4"}
+
+def test_entities_type_filter(client, auth_headers):
+    # filter by type=character
+    resp = client.get("/world/entities?type=character", headers=auth_headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["entities"]) == 1
+    ids = {e["id"] for e in data["entities"]}
+    assert ids == {"e1"} # only shared character
+
+def test_entities_pagination(client, auth_headers):
+    # Native store paginates before filtering! 
+    # With limit=2, offset=0, store returns e1, e2. Filter domain=shared -> returns e1 (len=1)
+    # If we fetch with multiplier, it would fetch more and return up to `limit` items.
+    resp1 = client.get("/world/entities?limit=2&offset=0", headers=auth_headers)
+    assert resp1.status_code == 200
+    data1 = resp1.json()["entities"]
+    
+    resp2 = client.get("/world/entities?limit=2&offset=2", headers=auth_headers)
+    assert resp2.status_code == 200
+    data2 = resp2.json()["entities"]
+    
+    # Actually, we want correct pagination for the client.
+    # The client asks for limit=2, offset=0. It should get 2 shared items: e1, e4.
+    # The client asks for limit=2, offset=2. It should get 0 shared items.
+    
+    assert len(data1) == 2
+    assert {e["id"] for e in data1} == {"e1", "e4"}
+    assert len(data2) == 0
+
+def test_entities_unknown_domain(client, auth_headers):
+    resp = client.get("/world/entities?domain=unknown_domain", headers=auth_headers)
+    assert resp.status_code == 200
+    data = resp.json()["entities"]
+    assert len(data) == 0
+
+def test_entities_unauth(client):
+    resp = client.get("/world/entities")
+    assert resp.status_code == 401
+
+
+class MockStoreWithGet:
+    def __init__(self, entities):
+        self._by_id = {e["id"]: e for e in entities}
+
+    def list_entities(self, domain_filter=None, type=None, limit=100, offset=0):
+        return list(self._by_id.values())[offset : offset + limit]
+
+    def get_entity(self, entity_id):
+        return self._by_id.get(entity_id)
+
+
+@pytest.fixture
+def get_client():
+    store = MockStoreWithGet([
+        {
+            "id": "e1",
+            "domain": "shared",
+            "type": "character",
+            "name": "Alice",
+            "properties": {"hp": 10, "tags": ["protagonist"]},
+        },
+        {
+            "id": "e2",
+            "domain": "deniable",
+            "type": "location",
+            "name": "Secret Base",
+            "properties": {"coords": [1, 2, 3]},
+        },
+    ])
+    app = create_app(event_store=store, auth_token="test-token")
+    return TestClient(app)
+
+
+def test_get_entity_known(get_client, auth_headers):
+    resp = get_client.get("/world/entities/e1", headers=auth_headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["id"] == "e1"
+    assert data["type"] == "character"
+    assert data["name"] == "Alice"
+    assert data["domain"] == "shared"
+    assert data["properties"] == {"hp": 10, "tags": ["protagonist"]}
+
+
+def test_get_entity_unknown(get_client, auth_headers):
+    resp = get_client.get("/world/entities/missing", headers=auth_headers)
+    assert resp.status_code == 404
+    assert "missing" in resp.json()["detail"]
+
+
+def test_get_entity_unauth(get_client):
+    resp = get_client.get("/world/entities/e1")
+    assert resp.status_code == 401
+
+
+def test_get_entity_fallback_via_list(auth_headers):
+    """When store has no get_entity method, fall back to scanning list_entities."""
+
+    class ListOnlyStore:
+        def __init__(self, entities):
+            self._entities = entities
+
+        def list_entities(self, domain_filter=None, type=None, limit=100, offset=0):
+            return self._entities[offset : offset + limit]
+
+    store = ListOnlyStore([
+        {"id": "x1", "domain": "shared", "type": "item", "name": "Lantern"},
+        {"id": "x2", "domain": "shared", "type": "item", "name": "Map"},
+    ])
+    app = create_app(event_store=store, auth_token="test-token")
+    client = TestClient(app)
+
+    resp = client.get("/world/entities/x2", headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.json()["name"] == "Map"
+
+    resp = client.get("/world/entities/nope", headers=auth_headers)
+    assert resp.status_code == 404
+
+
+class CreatingStore:
+    """Mock store that supports list/get/create with auto-assigned IDs."""
+
+    def __init__(self):
+        self._by_id: dict[str, dict] = {}
+        self._counter = 0
+        self.create_calls: list[dict] = []
+
+    def list_entities(self, domain_filter=None, type=None, limit=100, offset=0):
+        return list(self._by_id.values())[offset : offset + limit]
+
+    def get_entity(self, entity_id):
+        return self._by_id.get(entity_id)
+
+    def create_entity(self, *, type, name, domain, properties):
+        self.create_calls.append(
+            {
+                "type": type,
+                "name": name,
+                "domain": domain,
+                "properties": dict(properties),
+            }
+        )
+        self._counter += 1
+        entity_id = f"ent-{self._counter:03d}"
+        record = {
+            "id": entity_id,
+            "type": type,
+            "name": name,
+            "domain": domain,
+            "properties": dict(properties),
+        }
+        self._by_id[entity_id] = record
+        return record
+
+
+class ExplodingCreateStore:
+    def list_entities(self, **kwargs):
+        return []
+
+    def get_entity(self, entity_id):
+        return None
+
+    def create_entity(self, **kwargs):
+        raise RuntimeError("world db unavailable")
+
+
+class TestCreateEntityEndpoint:
+    def test_create_squad_member_round_trips_via_get(self):
+        store = CreatingStore()
+        client = TestClient(create_app(event_store=store, auth_token="test-token"))
+        headers = {"X-Narrative-Auth": "test-token"}
+
+        payload = {
+            "type": "character",
+            "name": "Dax",
+            "domain": "deniable",
+            "properties": {
+                "role": "squad-member",
+                "current_state": "healthy",
+                "tags": ["fighter", "wolfpack"],
+            },
+        }
+        resp = client.post("/world/entities", json=payload, headers=headers)
+        assert resp.status_code == 201
+        body = resp.json()
+        assert body["id"]
+        assert body["type"] == "character"
+        assert body["name"] == "Dax"
+        assert body["domain"] == "deniable"
+        assert body["properties"] == {
+            "role": "squad-member",
+            "current_state": "healthy",
+            "tags": ["fighter", "wolfpack"],
+        }
+        assert store.create_calls == [
+            {
+                "type": "character",
+                "name": "Dax",
+                "domain": "deniable",
+                "properties": {
+                    "role": "squad-member",
+                    "current_state": "healthy",
+                    "tags": ["fighter", "wolfpack"],
+                },
+            }
+
+codex
+I checked the existing `tests/test_narrative_api_entities.py`; it already contains deniable/shared defaults, type filtering, and pagination checks, so the hardening checklist appears pre-covered. I’ll now cross-check `scripts/smoke_narrative.py` for exact behavior matching the README wording before finalizing the report.
+exec
+/bin/zsh -lc "sed -n '1,260p' scripts/smoke_narrative.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+#!/usr/bin/env python3
+"""Smoke-test the cypherclaw narrative API endpoints.
+
+Reachable from either the cypherclaw machine (via localhost) or the Deniable
+operator's Mac after a Tailscale connection. Stdlib-only so it can be copied
+out without a virtualenv.
+
+Usage:
+    NARRATIVE_BASE_URL=http://cypherclaw:8765 python3 scripts/smoke_narrative.py
+    python3 scripts/smoke_narrative.py --base-url http://100.x.y.z:8765 --token <secret>
+
+The --token value is sent as ``X-Narrative-Auth`` and as an
+``Authorization: Bearer <token>`` compatibility header.
+
+Exit code: 0 if every endpoint returns 2xx, 1 otherwise.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from typing import Any, NamedTuple
+
+DEFAULT_BASE_URL = "http://cypherclaw:8765"
+BODY_PREVIEW_CHARS = 200
+REQUEST_TIMEOUT_SECONDS = 1.0
+
+
+class SmokeResult(NamedTuple):
+    method: str
+    path: str
+    status_code: int | None
+    body: str = ""
+    error: str | None = None
+
+    @property
+    def ok(self) -> bool:
+        return self.status_code is not None and 200 <= self.status_code < 300
+
+
+def request_endpoint(
+    base_url: str,
+    method: str,
+    path: str,
+    token: str | None,
+    *,
+    payload: dict[str, Any] | None = None,
+    verbose: bool = False,
+) -> SmokeResult:
+    url = base_url.rstrip("/") + path
+    data = None
+    headers = {"Accept": "application/json"}
+    if payload is not None:
+        data = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    request = urllib.request.Request(url, data=data, headers=headers, method=method)
+    if token:
+        request.add_header("X-Narrative-Auth", token)
+        request.add_header("Authorization", f"Bearer {token}")
+
+    try:
+        with urllib.request.urlopen(  # noqa: S310 - operator-supplied URL
+            request, timeout=REQUEST_TIMEOUT_SECONDS
+        ) as response:
+            status_code = response.getcode()
+            body = response.read()
+    except urllib.error.HTTPError as exc:
+        status_code = exc.code
+        body = exc.read() if exc.fp is not None else b""
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        print(f"{method} {path} -> ERROR {exc}")
+        return SmokeResult(method=method, path=path, status_code=None, error=str(exc))
+
+    body_text = body.decode("utf-8", errors="replace")
+    line = f"{method} {path} -> {status_code}"
+    if verbose and body_text:
+        preview = body_text[:BODY_PREVIEW_CHARS]
+        if len(body_text) > BODY_PREVIEW_CHARS:
+            preview += "..."
+        one_line_preview = preview.replace("\n", r"\n")
+        line += f" body={one_line_preview}"
+    print(line)
+    return SmokeResult(method=method, path=path, status_code=status_code, body=body_text)
+
+
+def first_entity_id(body: str) -> str | None:
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError:
+        return None
+
+    if not isinstance(data, dict):
+        return None
+    entities = data.get("entities")
+    if not isinstance(entities, list) or not entities:
+        return None
+    first_entity = entities[0]
+    if not isinstance(first_entity, dict):
+        return None
+    entity_id = first_entity.get("id")
+    return entity_id if isinstance(entity_id, str) and entity_id else None
+
+
+def entity_get_path(entity_id: str) -> str:
+    quoted_id = urllib.parse.quote(entity_id, safe="")
+    return f"/world/entities/{quoted_id}"
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--base-url",
+        default=os.environ.get("NARRATIVE_BASE_URL", DEFAULT_BASE_URL),
+        help="Narrative API base URL (env: NARRATIVE_BASE_URL).",
+    )
+    parser.add_argument(
+        "--token",
+        default=None,
+        help="Optional token sent as X-Narrative-Auth and Authorization.",
+    )
+    parser.add_argument(
+        "--entity-id",
+        default=os.environ.get("NARRATIVE_ENTITY_ID"),
+        help=(
+            "Optional known-safe entity ID for GET /world/entities/{entity_id} "
+            "(env: NARRATIVE_ENTITY_ID). Defaults to the first listed entity."
+        ),
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Also print the first 200 chars of each response body.",
+    )
+    args = parser.parse_args(argv)
+
+    print(f"smoke_narrative: base_url={args.base_url}")
+    ok = True
+
+    def run(
+        method: str,
+        path: str,
+        payload: dict[str, Any] | None = None,
+    ) -> SmokeResult:
+        result = request_endpoint(
+            args.base_url,
+            method,
+            path,
+            args.token,
+            payload=payload,
+            verbose=args.verbose,
+        )
+        nonlocal ok
+        if not result.ok:
+            ok = False
+        return result
+
+    run("GET", "/health")
+    run(
+        "POST",
+        "/memory/search",
+        {"query": "smoke", "k": 1, "domain_filter": "shared"},
+    )
+    run("POST", "/beats/next", {"cycle_number": 0, "domain_filter": "shared"})
+    entities = run("GET", "/world/entities?limit=1")
+    entity_id = args.entity_id or first_entity_id(entities.body)
+    if entity_id:
+        run("GET", entity_get_path(entity_id))
+    else:
+        print("GET /world/entities/{entity_id} -> SKIP no entity id returned")
+    run("GET", "/events?limit=1")
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+exec
+/bin/zsh -lc 'rg -n "Smoke test from Deniable|NARRATIVE_BASE_URL|--verbose|GET /world/entities" README.md' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+196:# Default: NARRATIVE_BASE_URL or http://cypherclaw:8765
+208:### Smoke test from Deniable
+217:- `NARRATIVE_BASE_URL` is exported, e.g.
+218:  `export NARRATIVE_BASE_URL=http://cypherclaw:8765` (or the Tailscale IP
+226:python scripts/smoke_narrative.py --verbose
+229:`--verbose` appends `body=<first-200-chars>` to each line so response payloads
+242:GET /world/entities?limit=1 -> 200
+243:GET /world/entities/<id> -> 200
+247:When `--verbose` is set, each line is suffixed with `body=...` (newlines
+249:`GET /world/entities/{entity_id} -> SKIP no entity id returned` and is not
+
+codex
+I’m drafting the verification report at the mandated path now, including test results, diff checks, and the mandatory hardening checklist findings, then I’ll commit it so the report is preserved in git history.
+exec
+/bin/zsh -lc "cat <<'EOF' > sdp/verification/t-016@20260502t001347zc-verify.md
+# Verification Report — T-016@20260502T001347Zc
+
+**Verify Agent:** codex
+**Date:** 2026-05-02
+**Artifacts Reviewed:** README.md, scripts/smoke_narrative.py, tests/test_narrative_api_entities.py, ESCALATIONS.md, git log/diff output requested in the prompt
+
+## Correctness
+PASS. The README now contains a new "'`Smoke test from Deniable` section with: Tailscale connectivity prerequisite, `NARRATIVE_BASE_URL` note, exact command examples (`python scripts/smoke_narrative.py` and `--verbose`), expected output lines, exit code semantics, and a direct `tailscale status` troubleshooting note.
+
+## Completeness
+PASS. The task scope appears fully covered in the updated section. The section documents all requested details and maps directly to current script behavior (`/health`, `/memory/search`, `/beats/next`, `/world/entities`, `/world/entities/{id}`, `/events`).
+
+## Consistency
+PASS. Documentation wording and examples are consistent with existing scripts and endpoint contracts used in the repo. No behavior contradicted by nearby README guidance.
+
+## Security
+PASS. No credentials are exposed in logs beyond optional token usage patterns already supported by the script; `NARRATIVE_BASE_URL` is documented as config, not a secret. Auth token handling remains standard.
+
+## Quality
+PASS. The section is clear, concise, and operator-friendly. Test suite verification was requested and executed successfully.
+
+## Issues Found
+- [ ] None.
+
+## Verdict: PASS
+
+## Notes for Lead Agent
+- Candidate-hardening checks were re-validated against current code state: `tests/test_narrative_api_entities.py` already covers `domain=deniable`, default-domain behavior, `type` filtering, and pagination expectations (including the native-pagination underdelivery edge case).
+- `ESCALATIONS.md` contains no unresolved items specifically introduced by this task.
+- A prior verification artifact from the lead path was written as `sdp/verification/t-016 @20260502t001347zc-verify.md` (with a space before `@`); this run writes the required exact filename `sdp/verification/t-016@20260502t001347zc-verify.md` as requested.
+EOF' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+codex
+I’ve written the required report file with explicit PASS/FAIL criteria and hardening notes. Next I’ll commit this verification artifact to the repo so it matches your instruction to persist it.
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M sdp/logs/Lead_T-016_20260502T001347Zc_1777698316.log
+ M sdp/runner.log
+?? sdp/logs/Verify_T-016_20260502T001347Zc_1777698400.log
+?? sdp/verification/t-016@20260502t001347zc-verify.md
+
+exec
+/bin/zsh -lc "git add 'sdp/verification/t-016@20260502t001347zc-verify.md' && git commit -m \"verify(T-016@20260502T001347Zc): PASS -- Smoke test from Deniable docs\"" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+[feat/graceful-degradation 5e64eee] verify(T-016@20260502T001347Zc): PASS -- Smoke test from Deniable docs
+ 1 file changed, 30 insertions(+)
+ create mode 100644 sdp/verification/t-016@20260502t001347zc-verify.md
+
+codex
+Completed.
+
+I verified the task and committed the required report at:
+
+- `sdp/verification/t-016@20260502t001347zc-verify.md`
+- Commit: `5e64eee`
+
+Checks performed:
+
+- `git log --oneline -5`
+- `git diff --stat HEAD~3`
+- `git diff HEAD~3`
+- `git show` of `97aa8e7` (README task commit)
+- `ESCALATIONS.md` review
+- Requested test suite command:
+  - `pip install -e '.[dev]' && pytest tests/ -x`
+  - Result: **3920 passed, 3 skipped**
+
+Findings:
+
+- `README.md` includes the new “Smoke test from Deniable” section with all requested items:
+  - Tailscale + `NARRATIVE_BASE_URL` prereqs
+  - exact invocations (including `--verbose`)
+  - expected output shape
+  - exit-code semantics
+  - troubleshooting note pointing to `tailscale status`
+- Mandatory hardening bullets for `/world/entities` behavior are already represented in `tests/test_narrative_api_entities.py` in current tree (domain defaults/filtering/pagination behavior covered).
+- No new blocking issues introduced by this task.
+
+Verdict in report: **PASS**.
+2026-05-02T05:07:58.005627Z ERROR codex_core::session: failed to record rollout items: thread 019de714-ea5c-7d60-b3fe-623640a8e963 not found
+tokens used
+56,073

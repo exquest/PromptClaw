@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (4144 chars)
+---
+
+T-031 complete and committed (`84a7417`).
+
+**Delivered:**
+- `my-claw/tools/senseweave/generation/health.py` — `idyom_kl_divergence_audit()` returning `AuditReport` with frozen `AuditEntry` history
+- Symmetric KL (Laplace-smoothed alpha=1.0) over a fixed test set of melodic n-grams; rolling 8-week history persisted via atomic `os.replace` at `/home/user/cypherclaw-data/state/idyom_kl_audit.json`
+- Three-signal collapse-drift conjunction (KL slope > 0 ∧ generated_ratio ≥ 0.5 ∧ CLAP-variance slope < 0); writes `/tmp/generation_collapse_alert.json` on flag, never mutates LTM/snapshot
+- `my-claw/systemd/cypherclaw-idyom-kl-audit.{service,timer}` (`OnCalendar=weekly`, `Persistent=true`)
+- `tests/test_generation_health.py` — 12 tests covering KL identity/divergence, missing-file errors, 8-cap rolling history, three-signal conjunction, two-of-three negative case, alert payload, file immutability, insufficient-history short-circuit
+- Spec at `specs/t-031@20260427t001208z-spec.md`, CHANGELOG + progress.md updated
+
+**Validation:** `pytest tests/ -x` → 3763 passed; `ruff check src/ tests/` clean; `mypy src/` clean.

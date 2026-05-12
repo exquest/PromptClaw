@@ -1,0 +1,3270 @@
+Command: codex exec --dangerously-bypass-approvals-and-sandbox -c model_reasoning_effort=xhigh -m gpt-5.4 -
+Prompt delivered via: stdin (814 chars)
+---
+
+The gate failure was a single Ruff `F401` in [tests/test_artist_identity.py](/Users/anthony/Programming/PromptClaw/tests/test_artist_identity.py). I removed the unused `ArtistMode` import and committed the existing [artist_identity.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/artist_identity.py) source/test pair together so the fix is reproducible on a clean checkout. Commit: `990ec1d` with message `fix(scope): resolve gate failures [T-002@20260425T183959Za]`.
+
+Verification passed with the exact command you requested: `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`. Result: `3118 passed`, Ruff clean, Mypy clean. The worktree still has unrelated pre-existing edits outside this commit.
+
+--- STDERR ---
+OpenAI Codex v0.125.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019dc60c-b364-7102-8460-d201bfa886f5
+--------
+user
+# Fix Gate Failures: Task T-002@20260425T183959Za
+
+Your work on task **T-002@20260425T183959Za** (Implement delay SynthDef in sampler_effects.scd: tempo-synced 1/4 to 1/2 measure delay with feedback control, write test fixture verifying SynthDef compiles and bus routing) failed quality gate checks.
+
+## Gate Output
+
+```
+  [PASS] pytest: pytest tests/ --tb=short -q
+  [FAIL] ruff: ruff check src/ tests/
+  [PASS] mypy: mypy src/
+```
+
+## Instructions
+
+1. Read the gate check output above carefully.
+2. Fix ALL failures — tests, lint errors, type errors.
+3. Do NOT modify locked test assertions.
+4. Run the checks again to verify:
+   ```bash
+   pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/
+   ```
+5. Commit the fix: `fix(scope): resolve gate failures [T-002@20260425T183959Za]`
+
+codex
+I’m checking the current tree, the failing files, and the existing sampler effects/tests first so I can fix only the gate issues without disturbing unrelated work.
+exec
+/bin/zsh -lc pwd in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+/Users/anthony/Programming/PromptClaw
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M my-claw/tools/senseweave/cast_planner.py
+ M my-claw/tools/senseweave/groove_engine.py
+ M my-claw/tools/senseweave/music_tracker.py
+ M progress.md
+ M sdp/assumption-log.md
+ M sdp/clarification-register.md
+ M sdp/domain-model.md
+ M sdp/implementation-plan.md
+ M sdp/logs/Verify_T-038_20260416T181925Z_1776445749.log
+ M sdp/logs/self-repair.log
+ M sdp/notifications.log
+ M sdp/prd-snapshot.md
+ M sdp/requirements-register.md
+ M sdp/run-log.md
+ M sdp/runner.log
+ M sdp/task-graph.md
+ M tests/test_cast_planner.py
+ M tests/test_counterpoint_pipeline.py
+ M tests/test_music_tracker.py
+ M tests/test_music_tracker_runtime.py
+ M tests/test_tracker_compiler.py
+?? .claude/
+?? my-claw/tools/senseweave/artist_identity.py
+?? sdp/logs/Lead_T-002_20260425T183959Z_1777142442.log
+?? sdp/logs/Lead_T-002_20260425T183959Z_1777143043.log
+?? sdp/logs/Lead_T-002_20260425T183959Z_1777143113.log
+?? sdp/logs/Lead_T-002_20260425T183959Za_1777143913.log
+?? sdp/logs/Lead_T-002_20260425T183959Za_1777144214.log
+?? sdp/logs/Lead_T-039_20260416T181925Z_1776445959.log
+?? sdp/logs/Lead_T-040_20260416T181925Z_1776446909.log
+?? sdp/logs/Verify_T-039_20260416T181925Z_1776446752.log
+?? sdp/logs/Verify_T-040_20260416T181925Z_1776447350.log
+?? sdp/logs/claude_1777143881.log
+?? sdp/self-improvement/candidates-2026-04-17.md
+?? tests/test_artist_identity.py
+?? tests/test_syncopation_features.py
+?? verification_reports/completion-gate-20260417T173705Z.json
+?? verification_reports/completion-gate-20260417T173705Z.md
+
+exec
+/bin/zsh -lc 'rg --files' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+src/cypherclaw/first_boot.py
+src/cypherclaw/__init__.py
+src/cypherclaw/render/role_gate.py
+src/cypherclaw/render/rules/articulation.py
+src/cypherclaw/render/rules/phrase_arch.py
+src/cypherclaw/render/rules/motif_memory.py
+src/cypherclaw/render/rules/call_response.py
+src/cypherclaw/render/rules/microtiming.py
+src/cypherclaw/render/rules/final_rit.py
+src/cypherclaw/render/seed.py
+src/cypherclaw/render/narrative_envelope.py
+src/cypherclaw/render/features.py
+src/cypherclaw/render/events.py
+ESCALATIONS.md
+promptclaw/doctor.py
+promptclaw/router.py
+promptclaw/artifacts.py
+promptclaw/federation/__init__.py
+promptclaw/federation/discovery.py
+promptclaw/orchestrator.py
+promptclaw/utils.py
+promptclaw/cli.py
+promptclaw/wizard.py
+promptclaw/templates.py
+promptclaw/glyphweave_cli.py
+promptclaw/coherence/prompt_injection.py
+promptclaw/coherence/graduation.py
+promptclaw/coherence/constitution.py
+promptclaw/coherence/trust.py
+promptclaw/coherence/engine.py
+promptclaw/coherence/event_store.py
+promptclaw/coherence/decision_store.py
+promptclaw/coherence/__init__.py
+promptclaw/coherence/models.py
+promptclaw/coherence/migrations/002_decision_store.sql
+promptclaw/coherence/migrations/001_event_store.sql
+promptclaw/coherence/migrations/__init__.py
+promptclaw/control_plane.py
+promptclaw/__init__.py
+promptclaw/command_runner.py
+promptclaw/diagnostics.py
+promptclaw/ui.py
+promptclaw/agent_runtime.py
+promptclaw/memory.py
+promptclaw/paths.py
+promptclaw/prompt_builder.py
+promptclaw/models.py
+promptclaw/config.py
+promptclaw/state_store.py
+promptclaw/bootstrap.py
+AGENTS.md
+TEST_REPORT.md
+codex-graceful-degradation-prompt.md
+rewrite_hook.py
+sdp/telemetry/prompt-review-2026-04-16.md
+sdp/telemetry/prompt-review-2026-04-17.md
+sdp/telemetry/experiment-exp-071b22fb7762.md
+sdp/telemetry/prompt-review-2026-04-01.md
+sdp/templates/codex/no_work_retry.md
+sdp/templates/codex/lead_t2.md
+sdp/templates/codex/verify.md
+sdp/templates/codex/lead_t1.md
+sdp/templates/claude/lead_t2.md
+sdp/templates/claude/verify.md
+sdp/templates/claude/lead_t1.md
+sdp/templates/gemini/lead_t3.md
+sdp/templates/gemini/no_work_retry.md
+sdp/templates/gemini/fix_verify.md
+sdp/templates/gemini/lead_t2.md
+sdp/templates/gemini/split_task.md
+sdp/templates/gemini/verify.md
+sdp/templates/gemini/fix_gate.md
+sdp/templates/gemini/lead_t1.md
+sdp/templates/gemini/ascii_art_agent.md
+sdp/templates/candidates/lead_t2/v002.md
+sdp/templates/candidates/lead_t2/v003.md
+sdp/templates/candidates/lead_t2/v001.md
+sdp/templates/candidates/verify/v002.md
+sdp/templates/candidates/verify/v003.md
+sdp/templates/candidates/verify/v001.md
+sdp/requirements-register.md
+sdp/run-log.md
+sdp/logs/Lead_T-008_20260416T054258Z_1776356415.log
+sdp/logs/Lead_T-010_20260416T043834Z_1776335735.log
+sdp/logs/Lead_T-002_20260416T054258Z_1776348253.log
+sdp/logs/Verify_T-017_20260416T054258Z_1776364115.log
+sdp/logs/Lead_T-018_20260416T181925Zd_1776390913.log
+sdp/logs/Verify_T-015_20260416T043834Z_1776319030.log
+sdp/logs/Lead_T-008_20260416T181925Z_1776383024.log
+sdp/logs/Lead_T-018_20260416T054258Zb_1776371017.log
+sdp/logs/Verify_T-008_20260408T223256Z_1775692273.log
+sdp/logs/fractal-first-env-restart-watch-20260416T050632Z.log
+sdp/logs/Verify_T-001_20260416T181925Za_1776379067.log
+sdp/logs/Lead_T-009_20260408T223256Z_1775692335.log
+sdp/logs/Lead_T-010_20260416T181925Z_1776384913.log
+sdp/logs/Lead_T-010_20260408T223256Zb_1775693733.log
+sdp/logs/Lead_T-005_20260416T181925Z_1776381768.log
+sdp/logs/Verify_T-025_20260416T181925Z_1776399074.log
+sdp/logs/Lead_T-038_20260416T181925Z_1776444579.log
+sdp/logs/Lead_T-015_20260416T181925Z_1776387613.log
+sdp/logs/Lead_T-018_20260416T054258Zb_1776371821.log
+sdp/logs/Verify_T-003_20260408T223256Z_1775689427.log
+sdp/logs/Lead_T-010_20260408T223256Zb_1775693726.log
+sdp/logs/Verify_T-006_20260416T054258Z_1776353245.log
+sdp/logs/Verify_T-018_20260416T043834Z_1776323547.log
+sdp/logs/Lead_T-017_20260416T043834Z_1776321882.log
+sdp/logs/Verify_T-038_20260416T181925Z_1776445515.log
+sdp/logs/Verify_T-015_20260416T054258Z_1776362482.log
+sdp/logs/Verify_T-023_20260416T043834Z_1776342791.log
+sdp/logs/Verify_T-014_20260416T054258Z_1776361816.log
+sdp/logs/Lead_T-007_20260416T181925Z_1776382620.log
+sdp/logs/Verify_T-024_20260416T054258Z_1776376060.log
+sdp/logs/Verify_T-012_20260416T181925Z_1776386201.log
+sdp/logs/Lead_T-024_20260416T043834Z_1776342857.log
+sdp/logs/Lead_T-014_20260416T181925Z_1776386855.log
+sdp/logs/Verify_T-001_20260408T223256Z_1775688621.log
+sdp/logs/Lead_T-021_20260416T181925Zb_1776395487.log
+sdp/logs/Verify_T-001_20260416T181925Zb_1776379600.log
+sdp/logs/Lead_T-005_20260408T223256Z_1775690077.log
+sdp/logs/Lead_T-032_20260416T181925Z_1776402396.log
+sdp/logs/Lead_T-010_20260408T223256Zb_1775693730.log
+sdp/logs/Lead_T-001_20260416T181925Za_1776377101.log
+sdp/logs/Lead_T-002_20260425T183959Z_1777143043.log
+sdp/logs/Lead_T-002_20260425T183959Za_1777143913.log
+sdp/logs/Verify_T-007_20260416T043834Z_1776333178.log
+sdp/logs/Lead_T-018_20260416T054258Zd_1776372871.log
+sdp/logs/Verify_T-005_20260408T223256Z_1775690314.log
+sdp/logs/Lead_T-010_20260416T043834Z_1776335491.log
+sdp/logs/Lead_T-002_20260416T043834Z_1776326349.log
+sdp/logs/Verify_T-009_20260416T181925Z_1776383978.log
+sdp/logs/Lead_T-021_20260416T054258Z_1776366677.log
+sdp/logs/Lead_T-003_20260416T054258Z_1776348840.log
+sdp/logs/Lead_T-016_20260416T054258Z_1776362627.log
+sdp/logs/Verify_T-029_20260416T181925Z_1776401323.log
+sdp/logs/Verify_T-027_20260416T181925Z_1776400288.log
+sdp/logs/Verify_T-002_20260416T181925Z_1776380625.log
+sdp/logs/Verify_T-002_20260408T223256Z_1775689010.log
+sdp/logs/Verify_T-021_20260416T054258Z_1776369623.log
+sdp/logs/Verify_T-013_20260416T054258Z_1776361300.log
+sdp/logs/Lead_T-010_20260408T223256Zb_1775693736.log
+sdp/logs/Lead_T-021_20260416T181925Zb_1776395654.log
+sdp/logs/Lead_T-015_20260416T043834Z_1776318066.log
+sdp/logs/Lead_T-017_20260416T181925Z_1776388749.log
+sdp/logs/run-loop-fractal-first-screen-20260416T045707Z.log
+sdp/logs/Verify_T-016_20260416T043834Z_1776319696.log
+sdp/logs/googleprovider_1776394323.log
+sdp/logs/Lead_T-021_20260416T043834Z_1776338053.log
+sdp/logs/Verify_T-021_20260416T181925Za_1776394662.log
+sdp/logs/Verify_T-018_20260416T181925Zc_1776390724.log
+sdp/logs/Lead_T-009_20260408T220341Z_1775686446.log
+sdp/logs/Lead_T-010_20260416T181925Z_1776384693.log
+sdp/logs/Lead_T-001_20260416T181925Za_1776377701.log
+sdp/logs/Verify_T-023_20260416T181925Z_1776397981.log
+sdp/logs/Verify_T-015_20260416T181925Z_1776387993.log
+sdp/logs/Lead_T-002_20260416T054258Z_1776346815.log
+sdp/logs/Lead_T-002_20260425T183959Za_1777144214.log
+sdp/logs/Lead_T-005_20260416T054258Z_1776350163.log
+sdp/logs/Verify_T-012_20260416T054258Z_1776360892.log
+sdp/logs/Verify_T-001_20260416T054258Z_1776346678.log
+sdp/logs/Verify_T-009_20260416T043834Z_1776335056.log
+sdp/logs/Verify_T-030_20260416T181925Z_1776401720.log
+sdp/logs/Lead_T-010_20260416T054258Z_1776358779.log
+sdp/logs/Verify_T-019_20260416T054258Z_1776366099.log
+sdp/logs/Verify_T-007_20260416T054258Z_1776353763.log
+sdp/logs/Lead_T-012_20260408T223256Z_1775696076.log
+sdp/logs/Verify_T-018_20260416T054258Zb_1776372408.log
+sdp/logs/Lead_T-008_20260408T223256Z_1775691695.log
+sdp/logs/Verify_T-001_20260416T181925Zc_1776380200.log
+sdp/logs/Lead_T-018_20260416T054258Z_1776364905.log
+sdp/logs/Verify_T-017_20260416T043834Z_1776322796.log
+sdp/logs/Verify_T-011_20260416T181925Z_1776385556.log
+sdp/logs/Lead_T-009_20260416T043834Z_1776334667.log
+sdp/logs/Lead_T-022_20260416T181925Z_1776396842.log
+sdp/logs/Lead_T-004_20260416T054258Z_1776349891.log
+sdp/logs/Verify_T-005_20260416T054258Z_1776352475.log
+sdp/logs/Lead_T-014_20260416T043834Z_1776317639.log
+sdp/logs/Verify_T-024_20260416T043834Z_1776345043.log
+sdp/logs/Verify_T-009_20260408T223256Z_1775692849.log
+sdp/logs/Lead_T-015_20260416T054258Z_1776361943.log
+sdp/logs/Lead_T-005_20260416T054258Z_1776350924.log
+sdp/logs/Verify_T-028_20260416T181925Z_1776400801.log
+sdp/logs/Verify_T-018_20260416T181925Zb_1776390086.log
+sdp/logs/Verify_T-011_20260416T043834Z_1776336790.log
+sdp/logs/Lead_T-004_20260408T223256Z_1775689515.log
+sdp/logs/Lead_T-010_20260416T181925Z_1776384727.log
+sdp/logs/Lead_T-023_20260416T054258Z_1776374627.log
+sdp/logs/Verify_T-026_20260416T181925Z_1776399739.log
+sdp/logs/Lead_T-008_20260408T223256Z_1775691692.log
+sdp/logs/Lead_T-001_20260408T223256Z_1775688053.log
+sdp/logs/Lead_T-002_20260408T223256Z_1775688744.log
+sdp/logs/Lead_T-002_20260408T223256Z_1775688750.log
+sdp/logs/Verify_T-005_20260416T043834Z_1776330287.log
+sdp/logs/Verify_T-009_20260416T043834Z_1776335333.log
+sdp/logs/Verify_T-004_20260416T054258Z_1776350022.log
+sdp/logs/Verify_T-010_20260416T181925Z_1776384965.log
+sdp/logs/Lead_T-020_20260416T043834Z_1776325308.log
+sdp/logs/Lead_T-008_20260416T054258Z_1776356666.log
+sdp/logs/Verify_T-001_20260416T043834Z_1776315026.log
+sdp/logs/Verify_T-038_20260416T181925Z_1776445749.log
+sdp/logs/Lead_T-008_20260416T054258Z_1776355790.log
+sdp/logs/Verify_T-031_20260416T181925Z_1776402221.log
+sdp/logs/Lead_T-010_20260416T054258Z_1776358829.log
+sdp/logs/Verify_T-009_20260416T054258Z_1776358047.log
+sdp/logs/Verify_T-021_20260416T181925Zb_1776395753.log
+sdp/logs/Lead_T-006_20260408T223256Z_1775690714.log
+sdp/logs/Lead_T-027_20260416T181925Z_1776399901.log
+sdp/logs/Lead_T-008_20260416T054258Z_1776356845.log
+sdp/logs/Lead_T-035_20260416T181925Z_1776403697.log
+sdp/logs/Lead_T-007_20260416T043834Z_1776330982.log
+sdp/logs/Lead_T-030_20260416T181925Z_1776401478.log
+sdp/logs/Verify_T-021_20260416T181925Zc_1776396511.log
+sdp/logs/Verify_T-013_20260416T043834Z_1776317543.log
+sdp/logs/Lead_T-002_20260408T223256Z_1775688740.log
+sdp/logs/Lead_T-018_20260416T054258Zd_1776373471.log
+sdp/logs/Verify_T-018_20260416T181925Zd_1776391067.log
+sdp/logs/Verify_T-020_20260416T054258Z_1776366597.log
+sdp/logs/Verify_T-006_20260408T223256Z_1775690880.log
+sdp/logs/Verify_T-034_20260416T181925Z_1776403511.log
+sdp/logs/Lead_T-036_20260416T181925Z_1776404784.log
+sdp/logs/Lead_T-038_20260416T181925Z_1776445579.log
+sdp/logs/Lead_T-007_20260416T054258Z_1776353424.log
+sdp/logs/Lead_T-017_20260416T043834Z_1776322702.log
+sdp/logs/Verify_T-008_20260408T223256Z_1775692000.log
+sdp/logs/Lead_T-021_20260416T043834Z_1776337659.log
+sdp/logs/Lead_T-010_20260416T181925Z_1776384143.log
+sdp/logs/Verify_T-019_20260416T043834Z_1776324455.log
+sdp/logs/Verify_T-008_20260416T054258Z_1776356661.log
+sdp/logs/Verify_T-004_20260408T223256Z_1775689943.log
+sdp/logs/Verify_T-016_20260416T054258Z_1776363170.log
+sdp/logs/Lead_T-008_20260408T223256Z_1775691685.log
+sdp/logs/Lead_T-003_20260416T043834Z_1776327360.log
+sdp/logs/Verify_T-025_20260416T043834Z_1776345995.log
+sdp/logs/Verify_T-022_20260416T043834Z_1776342107.log
+sdp/logs/Lead_T-022_20260416T043834Z_1776340700.log
+sdp/logs/Lead_T-004_20260416T043834Z_1776329057.log
+sdp/logs/Lead_T-002_20260408T223256Z_1775688746.log
+sdp/logs/Lead_T-038_20260416T181925Z_1776445415.log
+sdp/logs/Verify_T-021_20260416T043834Z_1776338181.log
+sdp/logs/Lead_T-022_20260416T043834Z_1776338308.log
+sdp/logs/Verify_T-008_20260416T054258Z_1776357542.log
+sdp/logs/Lead_T-010_20260408T223256Zb_1775694372.log
+sdp/logs/Lead_T-008_20260416T054258Z_1776353899.log
+sdp/logs/Lead_T-004_20260416T043834Z_1776328573.log
+sdp/logs/Lead_T-007_20260408T223256Z_1775691000.log
+sdp/logs/Lead_T-010_20260408T223256Za_1775692978.log
+sdp/logs/Verify_T-025_20260416T054258Z_1776376973.log
+sdp/logs/Lead_T-039_20260416T181925Z_1776445959.log
+sdp/logs/Lead_T-021_20260416T181925Za_1776394365.log
+sdp/logs/Lead_T-020_20260416T043834Z_1776324573.log
+sdp/logs/Lead_T-018_20260416T054258Za_1776369931.log
+sdp/logs/Verify_T-002_20260416T054258Z_1776348767.log
+sdp/logs/Lead_T-012_20260408T223256Z_1775696083.log
+sdp/logs/Verify_T-018_20260416T054258Zc_1776372770.log
+sdp/logs/Lead_T-003_20260416T181925Z_1776380719.log
+sdp/logs/Verify_T-017_20260416T181925Z_1776389171.log
+sdp/logs/Lead_T-006_20260416T181925Z_1776382290.log
+sdp/logs/Lead_T-018_20260416T181925Zc_1776390206.log
+sdp/logs/Verify_T-005_20260416T181925Z_1776382151.log
+sdp/logs/Verify_T-016_20260416T181925Z_1776388476.log
+sdp/logs/Lead_T-020_20260416T181925Z_1776392158.log
+sdp/logs/Verify_T-021_20260416T181925Zb_1776395203.log
+sdp/logs/run-loop-songwriter-20260416T043941Z.log
+sdp/logs/Verify_T-033_20260416T181925Z_1776403167.log
+sdp/logs/Verify_T-007_20260416T181925Z_1776382868.log
+sdp/logs/Lead_T-020_20260416T054258Z_1776366176.log
+sdp/logs/Verify_T-018_20260416T054258Zd_1776373731.log
+sdp/logs/Lead_T-013_20260416T043834Z_1776317149.log
+sdp/logs/Verify_T-022_20260416T054258Z_1776374519.log
+sdp/logs/Verify_T-013_20260416T181925Z_1776386670.log
+sdp/logs/Lead_T-021_20260416T181925Z_1776392958.log
+sdp/logs/Lead_T-008_20260408T223256Z_1775691689.log
+sdp/logs/Lead_T-007_20260416T043834Z_1776331843.log
+sdp/logs/Verify_T-008_20260416T181925Z_1776383499.log
+sdp/logs/Verify_T-002_20260416T043834Z_1776327174.log
+sdp/logs/Lead_T-019_20260416T181925Z_1776391771.log
+sdp/logs/Verify_T-008_20260416T043834Z_1776333961.log
+sdp/logs/Lead_T-024_20260416T043834Z_1776343465.log
+sdp/logs/Lead_T-012_20260408T223256Z_1775696080.log
+sdp/logs/Verify_T-010_20260416T054258Z_1776358774.log
+sdp/logs/Lead_T-006_20260416T054258Z_1776352651.log
+sdp/logs/Lead_T-011_20260416T181925Z_1776385139.log
+sdp/logs/Verify_T-009_20260416T043834Z_1776334591.log
+sdp/logs/Lead_T-001_20260416T181925Za_1776378511.log
+sdp/logs/Lead_T-008_20260416T054258Z_1776357014.log
+sdp/logs/Verify_T-014_20260416T043834Z_1776318017.log
+sdp/logs/Lead_T-026_20260416T181925Z_1776399250.log
+sdp/logs/Verify_T-035_20260416T181925Z_1776404655.log
+sdp/logs/Lead_T-012_20260408T223256Z_1775696086.log
+sdp/logs/Verify_T-018_20260416T054258Za_1776370272.log
+sdp/logs/claude_1776369787.log
+sdp/logs/Lead_T-038_20260416T181925Z_1776445392.log
+sdp/logs/Verify_T-010_20260416T054258Z_1776358969.log
+sdp/logs/Lead_T-022_20260416T043834Z_1776339752.log
+sdp/logs/Lead_T-025_20260416T054258Z_1776376215.log
+sdp/logs/Lead_T-034_20260416T181925Z_1776403295.log
+sdp/logs/Lead_T-035_20260416T181925Z_1776404297.log
+sdp/logs/Verify_T-007_20260408T223256Z_1775691541.log
+sdp/logs/Lead_T-017_20260416T043834Z_1776319751.log
+sdp/logs/Verify_T-010_20260416T181925Z_1776384834.log
+sdp/logs/Verify_T-023_20260416T054258Z_1776375343.log
+sdp/logs/Verify_T-005_20260408T223256Z_1775690621.log
+sdp/logs/Lead_T-001_20260416T181925Zb_1776379250.log
+sdp/logs/Lead_T-001_20260416T043834Z_1776314481.log
+sdp/logs/Lead_T-035_20260416T181925Z_1776404481.log
+sdp/logs/Lead_T-018_20260416T054258Z_1776364305.log
+sdp/logs/Verify_T-006_20260416T181925Z_1776382525.log
+sdp/logs/Verify_T-021_20260416T181925Zb_1776395606.log
+sdp/logs/Lead_T-002_20260425T183959Z_1777142442.log
+sdp/logs/Lead_T-024_20260416T054258Z_1776375459.log
+sdp/logs/Lead_T-012_20260416T043834Z_1776316129.log
+sdp/logs/self-repair.log
+sdp/logs/Verify_T-011_20260408T223256Z_1775695918.log
+sdp/logs/Lead_T-001_20260416T181925Zc_1776379719.log
+sdp/logs/claude_1775690696.log
+sdp/logs/Verify_T-032_20260416T181925Z_1776402666.log
+sdp/logs/Lead_T-020_20260416T043834Z_1776325672.log
+sdp/logs/Lead_T-010_20260408T223256Zc_1775694627.log
+sdp/logs/Lead_T-002_20260416T054258Z_1776347133.log
+sdp/logs/Lead_T-005_20260408T223256Z_1775690555.log
+sdp/logs/Verify_T-022_20260416T181925Z_1776397313.log
+sdp/logs/Lead_T-001_20260408T223256Z_1775687592.log
+sdp/logs/Lead_T-019_20260416T043834Z_1776323860.log
+sdp/logs/Lead_T-002_20260416T181925Z_1776380304.log
+sdp/logs/Lead_T-005_20260416T054258Z_1776352021.log
+sdp/logs/Lead_T-019_20260416T181925Z_1776391171.log
+sdp/logs/Lead_T-018_20260416T054258Zb_1776370416.log
+sdp/logs/Lead_T-009_20260416T054258Z_1776357631.log
+sdp/logs/Lead_T-025_20260416T043834Z_1776345178.log
+sdp/logs/Lead_T-012_20260416T181925Z_1776385749.log
+sdp/logs/Verify_T-011_20260416T054258Z_1776360387.log
+sdp/logs/Lead_T-003_20260408T223256Z_1775689060.log
+sdp/logs/Verify_T-010_20260408T223256Zb_1775694146.log
+sdp/logs/Lead_T-022_20260416T043834Z_1776340284.log
+sdp/logs/Verify_T-036_20260416T181925Z_1776405261.log
+sdp/logs/Lead_T-009_20260416T043834Z_1776335114.log
+sdp/logs/Lead_T-025_20260416T181925Z_1776398857.log
+sdp/logs/Verify_T-004_20260416T043834Z_1776329501.log
+sdp/logs/claude_1776378476.log
+sdp/logs/Verify_T-008_20260416T054258Z_1776357011.log
+sdp/logs/Lead_T-012_20260416T043834Z_1776315441.log
+sdp/logs/Lead_T-022_20260416T043834Z_1776341115.log
+sdp/logs/Verify_T-012_20260408T223256Z_1775696555.log
+sdp/logs/Lead_T-017_20260416T054258Z_1776363676.log
+sdp/logs/Lead_T-005_20260416T054258Z_1776351612.log
+sdp/logs/Lead_T-013_20260416T054258Z_1776360968.log
+sdp/logs/Lead_T-037_20260416T181925Z_1776405343.log
+sdp/logs/Verify_T-022_20260416T043834Z_1776341500.log
+sdp/logs/Lead_T-017_20260416T054258Z_1776363272.log
+sdp/logs/Lead_T-002_20260425T183959Z_1777143113.log
+sdp/logs/Verify_T-037_20260416T181925Z_1776405839.log
+sdp/logs/Lead_T-018_20260416T181925Za_1776389332.log
+sdp/logs/Verify_T-010_20260416T043834Z_1776336121.log
+sdp/logs/Lead_T-011_20260408T223256Z_1775695311.log
+sdp/logs/Verify_T-010_20260408T223256Zb_1775694583.log
+sdp/logs/Verify_T-039_20260416T181925Z_1776446752.log
+sdp/logs/Lead_T-014_20260416T054258Z_1776361429.log
+sdp/logs/Verify_T-003_20260416T181925Z_1776381265.log
+sdp/logs/Verify_T-020_20260416T181925Z_1776392712.log
+sdp/logs/Verify_T-014_20260416T181925Z_1776387399.log
+sdp/logs/Lead_T-008_20260416T043834Z_1776333292.log
+sdp/logs/Verify_T-010_20260408T223256Zc_1775695205.log
+sdp/logs/Lead_T-016_20260416T043834Z_1776319138.log
+sdp/logs/Lead_T-005_20260408T223256Z_1775690080.log
+sdp/logs/Lead_T-029_20260416T181925Z_1776400962.log
+sdp/logs/Verify_T-010_20260408T223256Za_1775693606.log
+sdp/logs/Lead_T-009_20260416T043834Z_1776334131.log
+sdp/logs/Verify_T-003_20260416T043834Z_1776328401.log
+sdp/logs/Lead_T-008_20260416T054258Z_1776356025.log
+sdp/logs/Lead_T-001_20260416T043834Z_1776315070.log
+sdp/logs/Verify_T-006_20260416T043834Z_1776330893.log
+sdp/logs/Verify_T-003_20260416T054258Z_1776349203.log
+sdp/logs/Lead_T-007_20260416T043834Z_1776332722.log
+sdp/logs/Verify_T-018_20260416T181925Za_1776389586.log
+sdp/logs/Lead_T-017_20260416T043834Z_1776322206.log
+sdp/logs/Verify_T-020_20260416T043834Z_1776326247.log
+sdp/logs/Lead_T-021_20260416T181925Zb_1776395315.log
+sdp/logs/Verify_T-004_20260416T181925Z_1776381593.log
+sdp/logs/Lead_T-031_20260416T181925Z_1776401815.log
+sdp/assumption-log.md
+sdp/clarification-register.md
+sdp/state.db.legacy-20260416T045403Z
+sdp/logs/claude_1777143881.log
+sdp/logs/Lead_T-017_20260416T054258Z_1776363706.log
+sdp/logs/Lead_T-021_20260416T043834Z_1776336934.log
+sdp/logs/Lead_T-001_20260416T054258Z_1776346174.log
+sdp/logs/Lead_T-021_20260416T181925Zb_1776394805.log
+sdp/logs/Lead_T-008_20260416T054258Z_1776356949.log
+sdp/logs/Lead_T-006_20260416T043834Z_1776330477.log
+sdp/logs/Lead_T-028_20260416T181925Z_1776400429.log
+sdp/logs/Verify_T-038_20260416T181925Z_1776445321.log
+sdp/logs/Lead_T-012_20260416T054258Z_1776360581.log
+sdp/logs/Lead_T-001_20260416T043834Z_1776314962.log
+sdp/logs/claude_1776394332.log
+sdp/logs/Lead_T-024_20260416T181925Z_1776398154.log
+sdp/logs/Verify_T-008_20260416T054258Z_1776356839.log
+sdp/logs/Verify_T-024_20260416T181925Z_1776398623.log
+sdp/logs/Lead_T-023_20260416T181925Z_1776397430.log
+sdp/logs/Lead_T-011_20260416T043834Z_1776336207.log
+sdp/logs/Verify_T-019_20260416T181925Z_1776392018.log
+sdp/logs/Lead_T-005_20260408T223256Z_1775690481.log
+sdp/logs/Lead_T-023_20260416T043834Z_1776342214.log
+sdp/logs/Lead_T-022_20260416T054258Z_1776373994.log
+sdp/logs/Lead_T-016_20260416T181925Z_1776388166.log
+sdp/logs/Verify_T-040_20260416T181925Z_1776447350.log
+sdp/logs/Lead_T-011_20260416T054258Z_1776359010.log
+sdp/logs/Lead_T-021_20260416T181925Zc_1776395895.log
+sdp/logs/Lead_T-018_20260416T043834Z_1776322916.log
+sdp/logs/Lead_T-008_20260416T054258Z_1776356745.log
+sdp/logs/Lead_T-021_20260416T181925Z_1776393558.log
+sdp/logs/Lead_T-022_20260416T043834Z_1776341700.log
+sdp/logs/Lead_T-017_20260416T054258Z_1776363659.log
+sdp/logs/Lead_T-015_20260416T043834Z_1776318251.log
+sdp/logs/Lead_T-024_20260416T043834Z_1776344346.log
+sdp/logs/Lead_T-005_20260408T223256Z_1775690086.log
+sdp/logs/Lead_T-010_20260416T054258Z_1776358258.log
+sdp/logs/googleprovider_1776365674.log
+sdp/logs/run-loop-songwriter-screen-20260416T044107Z.log
+sdp/logs/Lead_T-017_20260416T043834Z_1776320951.log
+sdp/logs/Lead_T-019_20260416T054258Z_1776365739.log
+sdp/logs/claude_1776373958.log
+sdp/logs/Lead_T-018_20260416T054258Zc_1776372501.log
+sdp/logs/Lead_T-004_20260416T181925Z_1776381418.log
+sdp/logs/Lead_T-012_20260416T043834Z_1776316562.log
+sdp/logs/Lead_T-021_20260416T054258Z_1776368478.log
+sdp/logs/Lead_T-002_20260416T054258Z_1776347999.log
+sdp/logs/Lead_T-040_20260416T181925Z_1776446909.log
+sdp/logs/Lead_T-004_20260416T054258Z_1776349454.log
+sdp/logs/Lead_T-008_20260408T223256Z_1775692051.log
+sdp/logs/Lead_T-011_20260416T054258Z_1776359763.log
+sdp/logs/Lead_T-018_20260416T181925Zb_1776389692.log
+sdp/logs/Lead_T-024_20260416T043834Z_1776344035.log
+sdp/logs/Lead_T-033_20260416T181925Z_1776402787.log
+sdp/logs/Verify_T-005_20260408T223256Z_1775690534.log
+sdp/logs/Verify_T-010_20260416T181925Z_1776384512.log
+sdp/logs/Lead_T-008_20260416T054258Z_1776354590.log
+sdp/logs/Lead_T-009_20260416T181925Z_1776383622.log
+sdp/logs/Lead_T-005_20260408T223256Z_1775690083.log
+sdp/logs/Lead_T-013_20260416T181925Z_1776386358.log
+sdp/logs/Lead_T-005_20260416T043834Z_1776329597.log
+sdp/logs/Verify_T-021_20260416T043834Z_1776337553.log
+sdp/verification/t-008@20260416t054258z-verify.md
+sdp/verification/t-037@20260416t181925z-verify.md
+sdp/verification/t-002@20260416t181925z-verify.md
+sdp/verification/t-012@20260416t054258z-verify.md
+sdp/verification/t-014@20260416t181925z-verify.md
+sdp/verification/t-002@20260408t223256z-verify.md
+sdp/verification/t-016@20260416t043834z-verify.md
+sdp/verification/t-010@20260408t223256zc-verify.md
+sdp/verification/t-023@20260416t043834z-verify.md
+sdp/verification/t-024@20260416t043834z-verify.md
+sdp/verification/t-011@20260416t043834z-verify.md
+sdp/verification/t-007@20260416t043834z-verify.md
+sdp/verification/t-013@20260416t181925z-verify.md
+sdp/verification/t-009@20260408t223256z-verify.md
+sdp/verification/t-001@20260416t181925zc-verify.md
+sdp/verification/t-005@20260408t223256z-verify.md
+sdp/verification/t-020@20260416t054258z-verify.md
+sdp/verification/t-015@20260416t054258z-verify.md
+sdp/verification/t-018 @20260416t054258za-verify.md
+sdp/verification/t-026@20260416t181925z-verify.md
+sdp/verification/t-019@20260416t054258z-verify.md
+sdp/verification/t-005@20260416t181925z-verify.md
+sdp/verification/t-009@20260416t181925z-verify.md
+sdp/verification/t-003@20260416t054258z-verify.md
+sdp/verification/t-030@20260416t181925z-verify.md
+sdp/implementation-plan.md
+sdp/verification/t-010@20260416t054258z-verify.md
+sdp/verification/t-023@20260416t181925z-verify.md
+sdp/verification/t-016@20260416t181925z-verify.md
+sdp/verification/t-025@20260416t054258z-verify.md
+sdp/verification/t-039@20260416t181925z-verify.md
+sdp/verification/t-006@20260416t054258z-verify.md
+sdp/verification/t-035@20260416t181925z-verify.md
+sdp/verification/t-018 @20260416t054258zd-verify.md
+sdp/verification/t-014@20260416t043834z-verify.md
+sdp/verification/t-018@20260416t043834z-verify.md
+sdp/verification/t-021@20260416t043834z-verify.md
+sdp/verification/t-002@20260416t043834z-verify.md
+sdp/verification/t-005@20260416t043834z-verify.md
+sdp/verification/t-009@20260416t043834z-verify.md
+sdp/verification/t-021@20260416t181925zc-verify.md
+sdp/verification/t-013@20260416t043834z-verify.md
+sdp/verification/t-018@20260416t054258zc-verify.md
+sdp/verification/t-007@20260416t181925z-verify.md
+sdp/verification/t-011@20260408t223256z-verify.md
+sdp/verification/t-001@20260416t054258z-verify.md
+sdp/verification/t-032@20260416t181925z-verify.md
+sdp/verification/t-011@20260416t181925z-verify.md
+sdp/verification/t-007@20260408t223256z-verify.md
+sdp/verification/t-022@20260416t054258z-verify.md
+sdp/verification/t-017@20260416t054258z-verify.md
+sdp/verification/t-028@20260416t181925z-verify.md
+sdp/verification/t-024@20260416t181925z-verify.md
+sdp/verification/t-004@20260416t043834z-verify.md
+sdp/verification/t-008@20260416t043834z-verify.md
+sdp/verification/t-018@20260416t181925za-verify.md
+sdp/verification/t-040@20260416t181925z-verify.md
+sdp/verification/t-033@20260416t181925z-verify.md
+sdp/verification/t-006@20260416t181925z-verify.md
+sdp/verification/t-010@20260408t223256za-verify.md
+sdp/verification/t-029@20260416t181925z-verify.md
+sdp/verification/t-016@20260416t054258z-verify.md
+sdp/verification/t-025@20260416t181925z-verify.md
+sdp/verification/t-010@20260416t181925z-verify.md
+sdp/verification/t-018@20260416t054258zd-verify.md
+sdp/verification/t-006@20260408t223256z-verify.md
+sdp/verification/t-023@20260416t054258z-verify.md
+sdp/verification/t-017@20260416t181925z-verify.md
+sdp/verification/t-024@20260416t054258z-verify.md
+sdp/verification/t-001@20260408t223256z-verify.md
+sdp/verification/t-011@20260416t054258z-verify.md
+sdp/verification/t-022@20260416t181925z-verify.md
+sdp/verification/t-007@20260416t054258z-verify.md
+sdp/verification/t-038@20260416t181925z-verify.md
+sdp/verification/t-021@20260416t181925zb-verify.md
+sdp/verification/t-034@20260416t181925z-verify.md
+sdp/verification/t-020@20260416t043834z-verify.md
+sdp/verification/t-015@20260416t043834z-verify.md
+sdp/verification/t-018@20260416t054258zb-verify.md
+sdp/verification/t-019@20260416t043834z-verify.md
+sdp/verification/t-001@20260416t181925za-verify.md
+sdp/verification/t-003@20260416t043834z-verify.md
+sdp/verification/t-010@20260416t043834z-verify.md
+sdp/verification/t-018@20260416t181925zb-verify.md
+sdp/verification/t-025@20260416t043834z-verify.md
+sdp/verification/t-006@20260416t043834z-verify.md
+sdp/verification/t-012@20260416t043834z-manual-verify.md
+sdp/verification/t-014@20260416t054258z-verify.md
+sdp/verification/t-027@20260416t181925z-verify.md
+sdp/verification/t-012@20260416t181925z-verify.md
+sdp/verification/t-008@20260408t223256z-verify.md
+sdp/verification/t-004@20260408t223256z-verify.md
+sdp/verification/t-021@20260416t054258z-verify.md
+sdp/verification/t-002@20260416t054258z-verify.md
+sdp/verification/t-010@20260408t223256zb-verify.md
+sdp/verification/t-031@20260416t181925z-verify.md
+sdp/verification/t-004@20260416t181925z-verify.md
+sdp/verification/t-012@20260408t223256z-verify.md
+sdp/verification/t-008@20260416t181925z-verify.md
+sdp/verification/t-021@20260416t181925za-verify.md
+sdp/verification/t-003@20260416t181925z-verify.md
+sdp/verification/t-005@20260416t054258z-verify.md
+sdp/verification/t-036@20260416t181925z-verify.md
+sdp/verification/t-009@20260416t054258z-verify.md
+sdp/verification/t-015@20260416t181925z-verify.md
+sdp/verification/t-019@20260416t181925z-verify.md
+sdp/verification/t-003@20260408t223256z-verify.md
+sdp/verification/t-013@20260416t054258z-verify.md
+sdp/verification/t-018@20260416t181925zd-verify.md
+sdp/verification/t-020@20260416t181925z-verify.md
+sdp/verification/t-024 @20260416t181925z-verify.md
+sdp/verification/t-001@20260416t043834z-manual-verify.md
+sdp/verification/t-001@20260416t043834z-verify.md
+sdp/verification/t-001@20260416t181925zb-verify.md
+sdp/verification/t-018@20260416t054258za-verify.md
+sdp/verification/t-022@20260416t043834z-verify.md
+sdp/verification/t-017@20260416t043834z-verify.md
+sdp/verification/t-018@20260416t181925zc-verify.md
+sdp/verification/t-004@20260416t054258z-verify.md
+progress.md
+sdp/self-improvement/candidates-2026-04-09.md
+sdp/self-improvement/candidates-2026-04-17.md
+sdp/self-improvement/candidates-2026-04-01.md
+sdp/notifications.log
+sdp/domain-model.md
+sdp/task-graph.md
+sdp/runner.log
+sdp/prd-snapshot.md
+examples/starter-claw/promptclaw.json
+examples/starter-claw/AGENTS.md
+specs/t-024@20260416t054258z-spec.md
+specs/t-011@20260408t223256z-spec.md
+specs/t-010@20260408t223256zc-spec.md
+specs/t-001@20260416t181925za-spec.md
+specs/t-010@20260408t223256zb-spec.md
+specs/t-022@20260416t043834z-spec.md
+specs/t-023@20260416t043834z-spec.md
+specs/t-021@20260416t054258z-spec.md
+specs/t-025@20260416t054258z-spec.md
+specs/t-010@20260408t223256za-spec.md
+specs/t-025@20260416t043834z-spec.md
+specs/t-021@20260416t043834z-spec.md
+specs/t-038@20260416t181925z-spec.md
+specs/t-012@20260408t223256z-spec.md
+specs/t-023@20260416t054258z-spec.md
+specs/t-040@20260416t181925z-spec.md
+specs/t-022@20260416t054258z-spec.md
+specs/t-024@20260416t043834z-spec.md
+specs/t-039@20260416t181925z-spec.md
+specs/t-018@20260416t054258zb-spec.md
+CHANGELOG.md
+pyproject.toml
+README.md
+examples/coherence-demo/README.md
+examples/starter-claw/prompts/00-project-vision.md
+docs/cypherclaw-tracker-framework.md
+docs/master-plan-20260409.md
+docs/handoff-protocol.md
+docs/contact-mic-calibration-protocol.md
+docs/codex-audio-investigation-brief.md
+docs/startup-wizard.md
+docs/coherence-foundations.md
+docs/build-your-own-promptclaw.md
+docs/r750-application-deployment-plan.md
+docs/cypherclaw-score-tree-composition-spec.md
+docs/sdp-cli-findings-report.md
+docs/cypherclaw-emsd-roadmap.md
+docs/20260402-cypherclaw-embodiment-prd.md
+docs/20260402-cypherclaw-embodiment-research-brief.md
+docs/r750-bare-metal-runbook.md
+docs/state-and-memory.md
+docs/sdp-cli-stuck-gemini-report.md
+docs/cypherclaw-presence-cadence-spec.md
+docs/troubleshooting.md
+docs/live-agent-setup.md
+docs/home-visit-playbook.md
+docs/example-session.md
+docs/prompt-authoring.md
+docs/cypherclaw-musicianship-roadmap.md
+docs/architecture.md
+docs/command-reference.md
+docs/cypherclaw-upgrade-checklist.md
+docs/configuration-reference.md
+docs/r750-model-evaluation-plan.md
+test_proto.py
+tests/test_check_status_runtime.py
+tests/test_emsd_runtime.py
+tests/test_gallery.py
+tests/test_voice_shaping.py
+tests/test_theramini_duet.py
+tests/test_capture_alias.py
+tests/test_score_tree_composer.py
+tests/test_artistic_identity.py
+tests/test_emsd_curriculum.py
+tests/test_syncopation_features.py
+tests/test_voice_manager_v2.py
+tests/test_observatory_verification.py
+tests/test_daemon_concurrency_compat.py
+tests/test_voice_interpretation_rules.py
+tests/test_restraint.py
+tests/test_groove_engine.py
+tests/test_gallery_x11_runtime.py
+tests/test_local_command_runtime.py
+tests/test_motif_lifecycle.py
+tests/test_render_metrics.py
+tests/test_cast_planner.py
+tests/test_listener_review.py
+tests/test_ops_helpers_runtime.py
+tests/test_context_pulse_runtime.py
+tests/test_gemini_image_runtime.py
+tests/test_hook_engine.py
+tests/test_daemon_scheduler.py
+tests/test_genre_literacy.py
+tests/test_observatory_authority.py
+tests/test_runtime_checkpoint.py
+tests/test_render_pass.py
+tests/test_cypherclaw_audio_runtime.py
+tests/test_ear_engine.py
+tests/test_event_store.py
+tests/test_continuous_learner.py
+tests/test_cadence_engine.py
+tests/test_sample_status.py
+tests/test_sampler_effects.py
+tests/test_ollama_routing.py
+tests/test_tamagotchi_runtime.py
+tests/test_live_buffer.py
+tests/test_production_course_knowledge_base.py
+examples/starter-claw/examples/tasks/ambiguous-task.md
+examples/starter-claw/examples/tasks/sample-task.md
+examples/tasks/ambiguous-task.md
+examples/tasks/sample-task.md
+tests/fixtures/c_major_cadence.musicxml
+tests/test_row_automation.py
+tests/test_ixml_chunk_writer.py
+tests/test_counterpoint_pipeline.py
+tests/test_emsd_performance.py
+tests/test_resource_governor.py
+tests/test_role_gate_integration.py
+tests/test_cypherclaw_av_stack_service.py
+tests/test_bootstrap.py
+tests/test_dashboard_generator.py
+tests/test_render_ablation.py
+tests/test_config.py
+tests/test_harmonic_planner.py
+tests/test_phrase_arch.py
+tests/test_sound_palette_lab.py
+tests/test_duration_contrast_rule.py
+tests/test_pareidolia_color.py
+tests/test_research_runtime.py
+tests/test_operator_diagnostics.py
+tests/test_governor_integration.py
+tests/test_senseweave_voice.py
+tests/test_functional_harmony.py
+tests/test_sensory_journal.py
+tests/test_render_worm.py
+tests/test_music_tracker_runtime.py
+tests/test_resilience_runtime_scripts.py
+tests/test_supercollider_recipes.py
+tests/test_commission_context.py
+tests/test_healer_runtime.py
+tests/test_musical_integration_runtime.py
+tests/test_master_bus.py
+tests/test_sample_event_renderer.py
+tests/test_arrangement_engine.py
+tests/test_theramini_listener_runtime.py
+tests/test_practice_curriculum.py
+tests/test_synthdef_registry.py
+tests/test_tracker_compiler.py
+tests/test_ollama_invoke.py
+tests/test_procedural_arc.py
+tests/test_production_course_integration.py
+tests/test_dashboard_generator_runtime.py
+tests/test_cypherclaw_runtime.py
+tests/test_final_rit.py
+tests/test_room_listener_runtime.py
+tests/test_render_features.py
+tests/test_room_presence_daemon.py
+tests/test_reharmonizer.py
+tests/test_render_replay.py
+tests/test_archive_paths.py
+tests/test_runtime_paths.py
+tests/test_render_seed.py
+tests/test_orchestrator.py
+tests/test_first_boot.py
+tests/test_graduation.py
+tests/test_counterpoint_rules.py
+tests/test_self_listener_tracker_runtime.py
+tests/test_course_critique.py
+tests/test_metric_accent_rule.py
+tests/test_glyphweave_runtime.py
+tests/test_audio_novelty.py
+tests/test_pareidolia_art_engine.py
+tests/test_constitution.py
+tests/test_render_audio_sidecar.py
+tests/test_sample_dsp_activity.py
+tests/test_garden_watcher.py
+tests/test_ollama_daemon_health.py
+tests/test_voice_aliases.py
+tests/test_pedals_to_key.py
+tests/test_musical_marathon_integration.py
+tests/test_project_scanner_runtime.py
+tests/test_repertoire_memory.py
+tests/test_fractal_form.py
+tests/test_senseweave_rollout_controls.py
+tests/test_startle.py
+tests/test_executable_curriculum.py
+tests/test_render_debugger.py
+tests/test_motif_memory.py
+tests/test_sample_playback_engine.py
+tests/test_music_tracker.py
+tests/test_presence_engine.py
+tests/test_doctor.py
+tests/test_mix_verify.py
+tests/test_render_export.py
+tests/test_narrative_envelope.py
+tests/test_render_events.py
+tests/test_orchestral_form.py
+tests/test_midi_state.py
+tests/test_tracker_cadence.py
+tests/test_daemon_status_ollama.py
+tests/test_contact_mic_calibration_runtime.py
+tests/test_quota_monitor.py
+tests/test_contact_listener_runtime.py
+tests/test_decision_store.py
+tests/test_tracker_variation.py
+tests/test_artist_identity.py
+tests/test_observatory_runtime.py
+tests/test_keyboard_chat.py
+tests/test_breath_to_filter.py
+tests/test_glyphweave_cli.py
+tests/test_render_diff.py
+tests/test_piece_queue.py
+tests/test_preflight.py
+tests/test_punctuation_rule.py
+tests/test_agent_selector_quota.py
+tests/test_agent_selector_defaults.py
+tests/test_coherence_engine.py
+tests/test_sensor_fusion.py
+tests/test_router.py
+tests/test_porch_eye.py
+tests/test_scene_composer.py
+tests/test_piece_commission.py
+tests/test_call_response.py
+tests/test_lifeimprover_bridge_runtime.py
+tests/test_render_antipatterns.py
+tests/test_dsp_scene_lab.py
+tests/test_observer_vision_runtime.py
+tests/test_generative_scores.py
+tests/test_mix_engine.py
+tests/test_synthesis_architecture_registry.py
+tests/test_midi_keyboard_listener_runtime.py
+tests/test_prosody_engine.py
+tests/test_cypherclaw_boot_runtime.py
+tests/test_reviewer_runtime.py
+tests/test_macbook_codex_monitor.py
+tests/test_music_theory.py
+tests/test_art_engine_runtime.py
+tests/test_coherence_integration.py
+tests/test_instrument_patches.py
+tests/test_articulation.py
+tests/test_self_critique.py
+tests/test_piece_brief.py
+tests/test_sensor_intent_rule.py
+tests/test_trust.py
+tests/test_archive_daemon_runtime.py
+tests/test_portfolio_report.py
+tests/test_repertoire_memory_score_tree.py
+tests/test_agogic_rule.py
+tests/test_microtiming.py
+tests/test_server_health.py
+tests/test_silence_budget_rule.py
+tests/test_capstone_engine.py
+tests/test_sample_lab.py
+tests/test_healthcheck_script_runtime.py
+tests/test_score_tree_pipeline.py
+tests/test_mood_mirror.py
+tests/conftest.py
+tests/test_accompaniment.py
+tests/test_form_grammar.py
+tests/test_collaborative_canvas.py
+tests/test_score_tree.py
+tests/test_telegram_runtime.py
+tests/test_pareidolia_characters.py
+tests/test_maintenance_mode.py
+tests/test_audio_analysis.py
+tests/test_antenna_to_skin.py
+tests/test_ollama_run_agent.py
+tests/test_ollama_health.py
+tests/test_federation_discovery.py
+tests/test_lung_capacity_rule.py
+tests/test_agent_runtime.py
+tests/test_inner_life.py
+tests/test_wizard.py
+tests/test_melodic_mind.py
+tests/test_daemon_fallback.py
+tests/test_acoustic_ecology.py
+examples/starter-claw/docs/STARTUP_TRANSCRIPT.md
+examples/starter-claw/docs/PROJECT_GUIDE.md
+examples/starter-claw/docs/STARTUP_PROFILE.md
+examples/starter-claw/prompts/02-routing-rules.md
+examples/coherence-demo/constitution.json
+examples/starter-claw/prompts/01-agent-roles.md
+examples/constitution.json
+examples/starter-claw/prompts/agents/claude.md
+examples/starter-claw/prompts/agents/gemini.md
+examples/starter-claw/prompts/agents/codex.md
+examples/starter-claw/prompts/control/routing.md
+examples/starter-claw/prompts/control/review.md
+examples/starter-claw/prompts/control/summarize.md
+my-claw/promptclaw.json
+my-claw/AGENTS.md
+verification_reports/completion-gate-20260417T173705Z.md
+verification_reports/completion-gate-20260409T010318Z.json
+verification_reports/completion-gate-20260409T010318Z.md
+verification_reports/completion-gate-20260417T173705Z.json
+my-claw/systemd/cypherclaw-av-stack.service
+my-claw/systemd/cypherclaw-observer-ollama.service
+my-claw/systemd/cypherclaw-bootstrap.service
+my-claw/systemd/cypherclaw-sdp-runner.service
+my-claw/scripts/cypherclaw_boot.sh
+my-claw/scripts/start_audio.sh
+my-claw/scripts/sdp_watchdog.sh
+my-claw/scripts/restart_composer.sh
+my-claw/scripts/start_displays.sh
+deploy/r750/README.md
+my-claw/scripts/xorg-dual.conf
+deploy/r750/install.sh
+my-claw/scripts/cypherclaw_av_boot.sh
+my-claw/examples/tasks/glyphweave-scenes.md
+my-claw/examples/tasks/glyphweave-player.md
+my-claw/examples/tasks/ambiguous-task.md
+my-claw/examples/tasks/sample-task.md
+my-claw/examples/tasks/goldendoodle-task.md
+my-claw/prompts/control/summarize.md
+my-claw/prompts/control/review.md
+my-claw/prompts/control/routing.md
+my-claw/prompts/02-routing-rules.md
+my-claw/tools/observatory.py
+my-claw/tools/duet_composer.py
+my-claw/tools/preflight.py
+my-claw/tools/boot_hardening.service
+my-claw/tools/daemon.py
+my-claw/tools/dashboard_generator.py
+my-claw/tools/healthcheck.sh
+my-claw/tools/macbook_codex_monitor.py
+my-claw/tools/gallery_x11.py
+my-claw/tools/midi_keyboard_listener.py
+my-claw/tools/researcher.py
+my-claw/tools/context_pulse.py
+my-claw/tools/maintenance_mode.py
+my-claw/tools/cypherclaw-dashboard.service
+my-claw/tools/sample_playback_engine.py
+my-claw/tools/sdp_runner_launcher.sh
+my-claw/tools/capture_alias.py
+my-claw/tools/audio_analysis.py
+my-claw/prompts/00-project-vision.md
+my-claw/prompts/01-agent-roles.md
+my-claw/prompts/agents/claude.md
+my-claw/prompts/agents/gemini.md
+my-claw/prompts/agents/codex.md
+my-claw/prompts/agents/gemini-image.md
+my-claw/tools/reviewer.py
+my-claw/tools/lifeimprover_bridge.py
+my-claw/tools/sensory_journal_daemon.py
+my-claw/tools/room_listener.py
+my-claw/tools/gemini_image.py
+my-claw/tools/quota_monitor.py
+my-claw/tools/thermal_printer.py
+my-claw/tools/boot_hardening.sh
+my-claw/tools/contact_mic_calibration.py
+my-claw/tools/safe_reboot.sh
+my-claw/sdp/review-log.md
+my-claw/sdp/prd-songwriter-emsd-completion.md
+my-claw/sdp/prd-pareidolia-art-migration.md
+my-claw/sdp/prd-server-optimization.md
+my-claw/sdp/prd-music-production-course.md
+my-claw/sdp/prd-embodiment-interaction-loops.md
+my-claw/sdp/prd-instance-identity-and-lineage.md
+my-claw/sdp/prd-introspector.md
+my-claw/sdp/prd-cypherclaw-sampler.md
+my-claw/sdp/prd-model-awareness.md
+my-claw/sdp/prd-home-resilience.md
+my-claw/sdp/prd-artist-plan-completion.md
+my-claw/sdp/prd-local-llm-integration.md
+my-claw/sdp/execution-roadmap.md
+my-claw/sdp/prd-gallery-display.md
+my-claw/sdp/prd-publication-and-gallery-surfaces.md
+my-claw/sdp/prd-federation-read-model.md
+my-claw/sdp/prd-glyphweave-studio-loop.md
+my-claw/sdp/prd-federation-proposal-writes.md
+my-claw/sdp/prd-federation.md
+my-claw/sdp/prd-narrative-engine.md
+my-claw/sdp/prd-capability-approval-framework.md
+my-claw/sdp/prd-cost-tracking.md
+my-claw/sdp/execution-roadmap.queue-map.json
+my-claw/sdp/prd-restructure.md
+my-claw/sdp/prd-multi-agent-conversation.md
+my-claw/sdp/prd-web-platform.md
+my-claw/sdp/prd-synthesis-and-orchestration.md
+my-claw/sdp/prd-clone-and-home-creation.md
+my-claw/sdp/prd-pet-system-v2.md
+my-claw/sdp/prd-glyphweave-art-studio.md
+my-claw/sdp/prd-cypherclaw-humanization.md
+my-claw/sdp/prd-authoring-rules.md
+my-claw/sdp/research-ai-music-models.md
+my-claw/sdp/prd-context-engine.md
+my-claw/sdp/artist-plan.md
+my-claw/sdp/prd-r750-ollama-integration.md
+my-claw/sdp/prd-proactive-intelligence.md
+my-claw/docs/listener-review.md
+my-claw/sdp/task-audit-20260402.md
+my-claw/docs/STARTUP_TRANSCRIPT.md
+my-claw/sdp/prd-gap-analyzer.md
+my-claw/docs/2026-03-28-promptclaw-discovery-phase2-report.md
+my-claw/sdp/prd-embodiment-core.md
+my-claw/sdp/prd-bundle-exchange.md
+my-claw/sdp/prd-verification-system.md
+my-claw/sdp/prd-agent-runtime-substrate.md
+my-claw/docs/STYLE_GUIDE.md
+my-claw/docs/PROJECT_GUIDE.md
+my-claw/docs/render-osc-schema.md
+my-claw/docs/discovery-report.md
+my-claw/docs/STARTUP_PROFILE.md
+my-claw/tools/self_listener.py
+my-claw/tools/project_scanner.py
+my-claw/tools/room_presence_daemon.py
+my-claw/tools/theramini_midi.py
+my-claw/tools/cypherclaw-dashboard.timer
+my-claw/tools/tamagotchi.py
+my-claw/tools/nightly_reflection.py
+my-claw/tools/runtime_checkpoint.py
+my-claw/tools/observer_vision.py
+my-claw/tools/server_health.py
+my-claw/tools/agent_selector.py
+my-claw/tools/contact_listener.py
+my-claw/tools/ollama_health.py
+my-claw/tools/inner_life/main.py
+my-claw/tools/inner_life/world_model.py
+my-claw/tools/inner_life/llm_client.py
+my-claw/tools/inner_life/presence.py
+my-claw/tools/inner_life/decision_engine.py
+my-claw/tools/inner_life/mood.py
+my-claw/tools/inner_life/practice.py
+my-claw/tools/inner_life/__init__.py
+my-claw/tools/inner_life/actions.py
+my-claw/tools/inner_life/inner_state.py
+my-claw/tools/inner_life/narrative_arc.py
+my-claw/tools/inner_life/self_critique.py
+my-claw/tools/init_workdir.sh
+my-claw/tools/senseweave/synthdef_registry.py
+my-claw/tools/senseweave/cadence_engine.py
+my-claw/tools/senseweave/ear_engine.py
+my-claw/tools/senseweave/voice_interpretation_rules.py
+my-claw/tools/senseweave/piece_queue.py
+my-claw/tools/senseweave/genre_literacy.py
+my-claw/tools/senseweave/sensory_journal.py
+my-claw/tools/senseweave/operator_diagnostics.py
+my-claw/tools/input_monitor.py
+my-claw/tools/healer.py
+my-claw/tools/glacier_cleanup.py
+my-claw/tools/sdp_runtime.py
+my-claw/tools/face_display.py
+my-claw/tools/cypherclaw_daemon.py
+my-claw/tools/archive_paths.py
+my-claw/tools/runtime_paths.py
+my-claw/tools/art_engine.py
+my-claw/tools/first_boot.py
+my-claw/tools/gemini_monitor.py
+my-claw/tools/senseweave/pareidolia.py
+my-claw/tools/senseweave/ixml_chunk_writer.py
+my-claw/tools/senseweave/resource_governor.py
+my-claw/tools/senseweave/interaction.py
+my-claw/tools/senseweave/pareidolia_diffusion.py
+my-claw/tools/senseweave/theramini_duet.py
+my-claw/tools/senseweave/sample_dsp_activity.py
+my-claw/tools/senseweave/emsd_runtime.py
+my-claw/tools/senseweave/sound_palette_lab.py
+my-claw/tools/senseweave/synthesis_architecture_registry.py
+my-claw/tools/senseweave/self_critique.py
+my-claw/tools/senseweave/master_bus.py
+my-claw/tools/senseweave/voice_aliases.py
+my-claw/tools/senseweave/pedals_to_key.py
+my-claw/tools/senseweave/motif_lifecycle.py
+my-claw/tools/senseweave/music_tracker_runtime.py
+my-claw/tools/senseweave/cast_planner.py
+my-claw/tools/senseweave/arrangement_engine.py
+my-claw/tools/senseweave/sample_event_renderer.py
+my-claw/tools/senseweave/face_display_keyboard_chat.patch
+my-claw/tools/senseweave/commission_context.py
+my-claw/tools/senseweave/music_tracker.py
+my-claw/tools/senseweave/startle.py
+my-claw/tools/senseweave/tracker_compiler.py
+my-claw/tools/senseweave/reharmonizer.py
+my-claw/supercollider/render_contract.scd
+my-claw/supercollider/test_sampler_effects.scd
+my-claw/tools/art_print_watcher.py
+my-claw/tools/theramini_listener.py
+my-claw/tools/archive_daemon.py
+my-claw/tools/glyphweave/dsl.py
+my-claw/tools/glyphweave/__init__.py
+my-claw/tools/research_tools.py
+my-claw/tools/startle_daemon.py
+my-claw/tools/sdp_bridge.py
+my-claw/tools/glyphweave/player.py
+my-claw/tools/diffusion_art.py
+my-claw/tools/telegram.py
+my-claw/tools/glyphweave/pet_sprites.py
+my-claw/tools/glyphweave/pet_animations.py
+my-claw/tools/glyphweave/scenes.py
+my-claw/curriculum/EMSD-L303/reference/01-overview.md
+my-claw/tools/senseweave/porch_eye.py
+my-claw/tools/senseweave/tracker_cadence.py
+my-claw/tools/senseweave/instrument_patches.py
+my-claw/tools/senseweave/sample_status.py
+my-claw/tools/senseweave/artist_identity.py
+my-claw/tools/senseweave/portfolio_report.py
+my-claw/tools/senseweave/music_theory.py
+my-claw/tools/senseweave/prosody_engine.py
+my-claw/tools/senseweave/mix_engine.py
+my-claw/tools/senseweave/repertoire_memory.py
+my-claw/tools/senseweave/groove_engine.py
+my-claw/tools/senseweave/tracker_variation.py
+my-claw/tools/senseweave/voice_shaping.py
+my-claw/tools/senseweave/generative_scores.py
+my-claw/tools/senseweave/acoustic_ecology.py
+my-claw/tools/senseweave/practice_curriculum.py
+my-claw/tools/senseweave/form_grammar.py
+my-claw/tools/senseweave/score_tree.py
+my-claw/tools/senseweave/sample_lab.py
+my-claw/tools/senseweave/presence_engine.py
+my-claw/tools/senseweave/recursive_composer.py
+my-claw/tools/senseweave/composition_gate.py
+my-claw/tools/senseweave/mix_verify.py
+my-claw/tools/senseweave/capstone_engine.py
+my-claw/tools/senseweave/collaborative_canvas.py
+my-claw/tools/senseweave/antenna_to_skin.py
+my-claw/tools/senseweave/pareidolia_art_engine.py
+my-claw/tools/senseweave/counterpoint_rules.py
+my-claw/tools/senseweave/garden_watcher.py
+my-claw/tools/senseweave/scene_composer.py
+my-claw/tools/senseweave/rollout_controls.py
+my-claw/tools/senseweave/breath_to_filter.py
+my-claw/tools/senseweave/hook_engine.py
+my-claw/tools/senseweave/live_buffer.py
+my-claw/tools/senseweave/midi_state.py
+my-claw/tools/senseweave/piece_commission.py
+my-claw/tools/senseweave/sensor_fusion.py
+my-claw/tools/senseweave/artistic_identity.py
+my-claw/curriculum/EMSD-L303/prompts/analysis.md
+my-claw/curriculum/EMSD-L303/prompts/composition.md
+my-claw/curriculum/EMSD-110/reference/01-overview.md
+my-claw/curriculum/EMSD-L303/exercises/README.md
+my-claw/curriculum/EMSD-L303/COMPLETION.md
+my-claw/curriculum/EMSD-L303/README.md
+my-claw/curriculum/EMSD-260/reference/01-overview.md
+my-claw/tools/gallery/gallery_x11.py
+my-claw/tools/gallery/fb_renderer.py
+my-claw/tools/gallery/gallery_display.py
+my-claw/tools/gallery/__init__.py
+my-claw/curriculum/EMSD-250/reference/01-overview.md
+my-claw/curriculum/EMSD-110/prompts/analysis.md
+my-claw/curriculum/EMSD-110/prompts/composition.md
+my-claw/curriculum/EMSD-260/prompts/analysis.md
+my-claw/tools/senseweave/synthesis/synthdefs/sw_input_meter.scsyndef
+my-claw/tools/senseweave/synthesis/synthdefs/sw_choir.scsyndef
+my-claw/curriculum/EMSD-260/prompts/composition.md
+my-claw/tools/senseweave/synthesis/synthdefs/sw_pad.scsyndef
+my-claw/tools/senseweave/synthesis/synthdefs/sw_bell_warm.scsyndef
+my-claw/tools/senseweave/synthesis/synthdefs/sw_pluck.scsyndef
+my-claw/tools/senseweave/synthesis/synthdefs/sw_breath.scsyndef
+my-claw/tools/senseweave/synthesis/synthdefs/sw_gong.scsyndef
+my-claw/tools/senseweave/synthesis/synthdefs/sw_master_smooth.scsyndef
+my-claw/tools/senseweave/synthesis/synthdefs/sw_bowed.scsyndef
+my-claw/tools/senseweave/synthesis/synthdefs/sw_kotekan.scsyndef
+my-claw/tools/senseweave/synthesis/orchestral_form.py
+my-claw/tools/senseweave/synthesis/melodic_mind.py
+my-claw/tools/senseweave/synthesis/sampler_effects.scd
+my-claw/tools/senseweave/synthesis/senseweave_voice.py
+my-claw/tools/senseweave/synthesis/voice_manager_v2.py
+my-claw/tools/senseweave/synthesis/accompaniment.py
+my-claw/tools/senseweave/synthesis/continuous_learner.py
+my-claw/tools/senseweave/dsp_scene_lab.py
+my-claw/tools/senseweave/emsd_performance.py
+my-claw/tools/senseweave/piece_brief.py
+my-claw/tools/senseweave/__init__.py
+my-claw/tools/senseweave/harmonic_planner.py
+my-claw/tools/senseweave/keyboard_chat.py
+my-claw/tools/senseweave/production_course.py
+my-claw/curriculum/EMSD-260/exercises/README.md
+my-claw/tools/gallery/systemd/cypherclaw-gallery.service
+my-claw/curriculum/EMSD-110/exercises/README.md
+my-claw/curriculum/EMSD-260/COMPLETION.md
+my-claw/curriculum/EMSD-260/README.md
+my-claw/tools/gallery/tty_renderer.py
+my-claw/curriculum/EMSD-250/prompts/analysis.md
+my-claw/curriculum/EMSD-250/prompts/composition.md
+my-claw/curriculum/EMSD-L304/reference/01-overview.md
+my-claw/tools/senseweave/render/diff.py
+my-claw/curriculum/EMSD-110/exercises/ex01/spec.json
+my-claw/curriculum/EMSD-110/COMPLETION.md
+my-claw/curriculum/EMSD-110/README.md
+my-claw/curriculum/EMSD-L304/prompts/analysis.md
+my-claw/curriculum/EMSD-L304/prompts/composition.md
+my-claw/curriculum/EMSD-L301/reference/01-overview.md
+my-claw/curriculum/EMSD-258/reference/01-overview.md
+my-claw/curriculum/EMSD-L304/exercises/README.md
+my-claw/tools/senseweave/render/rules/duration_contrast.py
+my-claw/curriculum/EMSD-L304/COMPLETION.md
+my-claw/curriculum/EMSD-L304/README.md
+my-claw/tools/senseweave/render/rules/sensor_intent.py
+my-claw/tools/senseweave/render/rules/lung_capacity.py
+my-claw/tools/senseweave/render/rules/silence_budget.py
+my-claw/tools/senseweave/render/rules/__init__.py
+my-claw/tools/senseweave/render/rules/agogic.py
+my-claw/tools/senseweave/render/rules/punctuation.py
+my-claw/tools/senseweave/render/rules/metric_accent.py
+my-claw/tools/senseweave/render/audio_sidecar.py
+my-claw/tools/senseweave/render/replay.py
+my-claw/tools/senseweave/render/debugger.py
+my-claw/tools/senseweave/render/listener_review.py
+my-claw/tools/senseweave/render/export.py
+my-claw/tools/senseweave/render/__init__.py
+my-claw/tools/senseweave/render/ablation.py
+my-claw/tools/senseweave/render/worm.py
+my-claw/tools/senseweave/render/audio_novelty.py
+my-claw/tools/senseweave/render/antipatterns.py
+my-claw/tools/senseweave/render/pass_.py
+my-claw/tools/senseweave/render/metrics.py
+my-claw/tools/senseweave/mood_mirror.py
+my-claw/tools/senseweave/procedural_arc.py
+my-claw/curriculum/EMSD-120/reference/01-overview.md
+my-claw/curriculum/EMSD-258/prompts/analysis.md
+my-claw/curriculum/EMSD-258/prompts/composition.md
+my-claw/curriculum/EMSD-L301/prompts/analysis.md
+my-claw/curriculum/EMSD-L301/prompts/composition.md
+my-claw/curriculum/EMSD-250/exercises/README.md
+my-claw/curriculum/EMSD-250/COMPLETION.md
+my-claw/curriculum/EMSD-250/README.md
+my-claw/curriculum/EMSD-258/exercises/README.md
+my-claw/curriculum/EMSD-L301/exercises/README.md
+my-claw/curriculum/EMSD-120/prompts/analysis.md
+my-claw/curriculum/EMSD-258/COMPLETION.md
+my-claw/curriculum/EMSD-258/README.md
+my-claw/curriculum/EMSD-L101/reference/01-overview.md
+my-claw/curriculum/EMSD-120/prompts/composition.md
+my-claw/curriculum/EMSD-L301/COMPLETION.md
+my-claw/curriculum/EMSD-L301/README.md
+my-claw/curriculum/EMSD-L404/reference/01-overview.md
+my-claw/curriculum/EMSD-L101/prompts/analysis.md
+my-claw/curriculum/EMSD-L101/prompts/composition.md
+my-claw/curriculum/EMSD-L204/reference/01-overview.md
+my-claw/curriculum/EMSD-120/exercises/README.md
+my-claw/curriculum/EMSD-120/COMPLETION.md
+my-claw/curriculum/EMSD-120/README.md
+my-claw/curriculum/__init__.py
+my-claw/curriculum/EMSD-L404/prompts/analysis.md
+my-claw/curriculum/EMSD-L404/prompts/composition.md
+my-claw/curriculum/EMSD-L101/exercises/README.md
+my-claw/curriculum/EMSD-L101/COMPLETION.md
+my-claw/curriculum/EMSD-L101/README.md
+my-claw/curriculum/EMSD-499/reference/01-overview.md
+my-claw/curriculum/EMSD-L204/prompts/analysis.md
+my-claw/curriculum/EMSD-L204/prompts/composition.md
+my-claw/curriculum/EMSD-L204/exercises/README.md
+my-claw/curriculum/EMSD-L204/COMPLETION.md
+my-claw/curriculum/EMSD-L204/README.md
+my-claw/curriculum/EMSD-L404/exercises/README.md
+my-claw/curriculum/EMSD-L404/COMPLETION.md
+my-claw/curriculum/EMSD-L404/README.md
+my-claw/curriculum/EMSD-499/prompts/analysis.md
+my-claw/curriculum/EMSD-499/prompts/composition.md
+my-claw/curriculum/EMSD-202/reference/01-overview.md
+my-claw/curriculum/EMSD-L302/reference/01-overview.md
+my-claw/curriculum/EMSD-130/reference/01-overview.md
+my-claw/curriculum/EMSD-499/exercises/README.md
+my-claw/curriculum/EMSD-L203/reference/01-overview.md
+my-claw/curriculum/EMSD-202/prompts/analysis.md
+my-claw/curriculum/EMSD-202/prompts/composition.md
+my-claw/curriculum/EMSD-L201/reference/01-overview.md
+my-claw/curriculum/EMSD-L302/prompts/analysis.md
+my-claw/curriculum/EMSD-L302/prompts/composition.md
+my-claw/curriculum/EMSD-130/prompts/analysis.md
+my-claw/curriculum/EMSD-130/prompts/composition.md
+my-claw/curriculum/EMSD-L203/prompts/analysis.md
+my-claw/curriculum/EMSD-L203/prompts/composition.md
+my-claw/curriculum/EMSD-499/exercises/ex01/spec.json
+my-claw/curriculum/EMSD-499/COMPLETION.md
+my-claw/curriculum/EMSD-499/README.md
+my-claw/curriculum/EMSD-202/exercises/README.md
+my-claw/curriculum/EMSD-L302/exercises/README.md
+my-claw/curriculum/EMSD-L302/COMPLETION.md
+my-claw/curriculum/EMSD-L302/README.md
+my-claw/curriculum/EMSD-L203/exercises/README.md
+my-claw/curriculum/EMSD-L203/COMPLETION.md
+my-claw/curriculum/EMSD-L203/README.md
+my-claw/curriculum/EMSD-130/exercises/README.md
+my-claw/curriculum/EMSD-202/exercises/ex01/spec.json
+my-claw/curriculum/EMSD-130/COMPLETION.md
+my-claw/curriculum/EMSD-130/README.md
+my-claw/curriculum/EMSD-202/COMPLETION.md
+my-claw/curriculum/EMSD-202/README.md
+my-claw/curriculum/EMSD-L201/prompts/analysis.md
+my-claw/curriculum/EMSD-L201/prompts/composition.md
+my-claw/curriculum/EMSD-259/reference/01-overview.md
+my-claw/curriculum/EMSD-253/reference/01-overview.md
+my-claw/curriculum/EMSD-259/README.md
+my-claw/curriculum/EMSD-210/reference/01-overview.md
+my-claw/curriculum/EMSD-255/reference/01-overview.md
+my-claw/curriculum/EMSD-L201/exercises/README.md
+my-claw/curriculum/EMSD-L201/COMPLETION.md
+my-claw/curriculum/EMSD-L201/README.md
+my-claw/curriculum/EMSD-259/prompts/analysis.md
+my-claw/curriculum/EMSD-259/prompts/composition.md
+my-claw/curriculum/EMSD-253/prompts/analysis.md
+my-claw/curriculum/EMSD-253/prompts/composition.md
+my-claw/curriculum/EMSD-251/COMPLETION.md
+my-claw/curriculum/EMSD-251/README.md
+my-claw/curriculum/EMSD-210/prompts/analysis.md
+my-claw/curriculum/EMSD-210/prompts/composition.md
+my-claw/curriculum/EMSD-255/prompts/analysis.md
+my-claw/curriculum/EMSD-255/prompts/composition.md
+my-claw/curriculum/EMSD-251/reference/01-overview.md
+my-claw/curriculum/EMSD-302/reference/01-overview.md
+my-claw/curriculum/EMSD-253/exercises/README.md
+my-claw/curriculum/EMSD-259/exercises/README.md
+my-claw/curriculum/EMSD-259/COMPLETION.md
+my-claw/curriculum/EMSD-401/reference/01-overview.md
+my-claw/curriculum/EMSD-257/COMPLETION.md
+my-claw/curriculum/EMSD-257/README.md
+my-claw/curriculum/EMSD-210/exercises/README.md
+my-claw/curriculum/EMSD-251/prompts/analysis.md
+my-claw/curriculum/EMSD-251/prompts/composition.md
+my-claw/curriculum/EMSD-302/prompts/analysis.md
+my-claw/curriculum/EMSD-302/prompts/composition.md
+my-claw/curriculum/EMSD-255/exercises/README.md
+my-claw/curriculum/EMSD-255/COMPLETION.md
+my-claw/curriculum/EMSD-255/README.md
+my-claw/curriculum/EMSD-251/exercises/README.md
+my-claw/curriculum/EMSD-253/exercises/ex01/spec.json
+my-claw/curriculum/EMSD-253/COMPLETION.md
+my-claw/curriculum/EMSD-253/README.md
+my-claw/curriculum/EMSD-257/reference/01-overview.md
+my-claw/curriculum/EMSD-401/prompts/analysis.md
+my-claw/curriculum/EMSD-401/prompts/composition.md
+my-claw/curriculum/EMSD-256/reference/01-overview.md
+my-claw/curriculum/recipes/supercollider/chord-voicings.md
+my-claw/curriculum/recipes/supercollider/compression.md
+my-claw/curriculum/recipes/supercollider/subtractive.md
+my-claw/curriculum/recipes/supercollider/scales.md
+my-claw/curriculum/recipes/supercollider/buses.md
+my-claw/curriculum/recipes/supercollider/envelopes.md
+my-claw/curriculum/recipes/supercollider/groups.md
+my-claw/curriculum/recipes/supercollider/eq.md
+my-claw/curriculum/recipes/supercollider/intervals.md
+my-claw/curriculum/recipes/supercollider/fm.md
+my-claw/curriculum/recipes/supercollider/swing.md
+my-claw/curriculum/recipes/supercollider/spectral-freeze.md
+my-claw/curriculum/recipes/supercollider/patterns.md
+my-claw/curriculum/recipes/supercollider/reverb.md
+my-claw/curriculum/recipes/supercollider/midi-to-frequency.md
+my-claw/curriculum/recipes/supercollider/master-bus.md
+my-claw/curriculum/EMSD-210/exercises/ex01/spec.json
+my-claw/curriculum/recipes/supercollider/polyrhythm.md
+my-claw/curriculum/recipes/supercollider/granular.md
+my-claw/curriculum/recipes/supercollider/additive.md
+my-claw/curriculum/recipes/supercollider/sidechain.md
+my-claw/curriculum/recipes/supercollider/physical-modeling.md
+my-claw/curriculum/recipes/supercollider/delay.md
+my-claw/curriculum/EMSD-210/COMPLETION.md
+my-claw/curriculum/EMSD-210/README.md
+my-claw/curriculum/EMSD-257/exercises/README.md
+my-claw/curriculum/EMSD-251/exercises/ex01/spec.json
+my-claw/curriculum/EMSD-256/COMPLETION.md
+my-claw/curriculum/EMSD-256/README.md
+my-claw/curriculum/EMSD-257/prompts/analysis.md
+my-claw/curriculum/EMSD-257/prompts/composition.md
+my-claw/curriculum/EMSD-401/README.md
+my-claw/curriculum/EMSD-401/COMPLETION.md
+my-claw/curriculum/EMSD-101/README.md
+my-claw/curriculum/EMSD-302/exercises/ex02/spec.json
+my-claw/curriculum/EMSD-256/prompts/analysis.md
+my-claw/curriculum/EMSD-256/prompts/composition.md
+my-claw/curriculum/EMSD-302/exercises/README.md
+my-claw/curriculum/EMSD-257/exercises/ex01/spec.json
+my-claw/curriculum/README.md
+my-claw/curriculum/EMSD-401/exercises/README.md
+my-claw/curriculum/EMSD-252/reference/01-overview.md
+my-claw/curriculum/EMSD-101/COMPLETION.md
+my-claw/curriculum/EMSD-L403/reference/01-overview.md
+my-claw/curriculum/EMSD-101/reference/01-overview.md
+my-claw/curriculum/EMSD-302/README.md
+my-claw/curriculum/EMSD-302/exercises/ex01/spec.json
+my-claw/curriculum/EMSD-302/COMPLETION.md
+my-claw/curriculum/EMSD-L403/COMPLETION.md
+my-claw/curriculum/EMSD-L403/README.md
+my-claw/curriculum/EMSD-101/exercises/README.md
+my-claw/curriculum/EMSD-252/prompts/analysis.md
+my-claw/curriculum/EMSD-252/prompts/composition.md
+my-claw/curriculum/EMSD-101/prompts/analysis.md
+my-claw/curriculum/EMSD-101/prompts/composition.md
+my-claw/curriculum/EMSD-401/exercises/ex01/spec.json
+my-claw/curriculum/EMSD-L403/prompts/analysis.md
+my-claw/curriculum/EMSD-L403/prompts/composition.md
+my-claw/curriculum/EMSD-L403/exercises/README.md
+my-claw/curriculum/verify.py
+my-claw/curriculum/EMSD-252/README.md
+my-claw/curriculum/EMSD-252/COMPLETION.md
+my-claw/curriculum/EMSD-256/exercises/README.md
+my-claw/curriculum/EMSD-303/reference/01-overview.md
+my-claw/curriculum/EMSD-101/exercises/ex01/spec.json
+my-claw/curriculum/EMSD-252/exercises/README.md
+my-claw/curriculum/EMSD-L401/COMPLETION.md
+my-claw/curriculum/EMSD-L401/README.md
+my-claw/curriculum/EMSD-303/prompts/analysis.md
+my-claw/curriculum/EMSD-303/prompts/composition.md
+my-claw/curriculum/EMSD-201/reference/01-overview.md
+my-claw/curriculum/EMSD-254/reference/01-overview.md
+my-claw/curriculum/EMSD-303/exercises/README.md
+my-claw/curriculum/EMSD-L402/reference/01-overview.md
+my-claw/curriculum/EMSD-L110/reference/01-overview.md
+my-claw/curriculum/EMSD-102/reference/01-overview.md
+my-claw/curriculum/EMSD-254/prompts/analysis.md
+my-claw/curriculum/EMSD-254/prompts/composition.md
+my-claw/curriculum/EMSD-220/reference/01-overview.md
+my-claw/curriculum/EMSD-201/prompts/analysis.md
+my-claw/curriculum/EMSD-201/prompts/composition.md
+my-claw/curriculum/EMSD-303/exercises/ex01/spec.json
+my-claw/curriculum/EMSD-L401/reference/01-overview.md
+my-claw/curriculum/EMSD-L402/prompts/analysis.md
+my-claw/curriculum/EMSD-L402/prompts/composition.md
+my-claw/curriculum/EMSD-303/COMPLETION.md
+my-claw/curriculum/EMSD-303/README.md
+my-claw/curriculum/EMSD-L110/README.md
+my-claw/curriculum/bootstrap.py
+my-claw/curriculum/catalog.py
+my-claw/curriculum/EMSD-L110/COMPLETION.md
+my-claw/curriculum/EMSD-L202/reference/01-overview.md
+my-claw/curriculum/EMSD-220/prompts/analysis.md
+my-claw/curriculum/EMSD-220/prompts/composition.md
+my-claw/curriculum/EMSD-220/README.md
+my-claw/curriculum/EMSD-L110/prompts/analysis.md
+my-claw/curriculum/EMSD-254/exercises/README.md
+my-claw/curriculum/EMSD-L110/prompts/composition.md
+my-claw/curriculum/EMSD-304/reference/01-overview.md
+my-claw/curriculum/EMSD-102/COMPLETION.md
+my-claw/curriculum/EMSD-254/COMPLETION.md
+my-claw/curriculum/EMSD-102/README.md
+my-claw/curriculum/EMSD-254/README.md
+my-claw/curriculum/EMSD-220/COMPLETION.md
+my-claw/curriculum/EMSD-201/README.md
+my-claw/curriculum/EMSD-201/COMPLETION.md
+my-claw/curriculum/EMSD-L202/COMPLETION.md
+my-claw/curriculum/EMSD-L202/README.md
+my-claw/curriculum/EMSD-L402/exercises/README.md
+my-claw/curriculum/EMSD-L402/COMPLETION.md
+my-claw/curriculum/EMSD-L402/README.md
+my-claw/curriculum/EMSD-L110/exercises/README.md
+my-claw/curriculum/EMSD-L401/prompts/composition.md
+my-claw/curriculum/EMSD-L401/prompts/analysis.md
+my-claw/curriculum/EMSD-304/COMPLETION.md
+my-claw/curriculum/EMSD-304/README.md
+my-claw/curriculum/EMSD-220/exercises/README.md
+my-claw/curriculum/EMSD-L202/prompts/analysis.md
+my-claw/curriculum/EMSD-L202/prompts/composition.md
+my-claw/curriculum/EMSD-L202/exercises/README.md
+my-claw/curriculum/EMSD-102/prompts/composition.md
+my-claw/curriculum/EMSD-102/prompts/analysis.md
+my-claw/curriculum/EMSD-304/prompts/analysis.md
+my-claw/curriculum/EMSD-304/prompts/composition.md
+my-claw/curriculum/EMSD-304/exercises/README.md
+my-claw/curriculum/EMSD-220/exercises/ex01/spec.json
+my-claw/curriculum/EMSD-201/exercises/README.md
+my-claw/curriculum/EMSD-102/exercises/README.md
+my-claw/curriculum/EMSD-304/exercises/ex01/spec.json
+my-claw/curriculum/EMSD-L401/exercises/README.md
+my-claw/curriculum/EMSD-301/COMPLETION.md
+my-claw/curriculum/EMSD-301/README.md
+my-claw/curriculum/EMSD-301/reference/01-overview.md
+my-claw/curriculum/EMSD-201/exercises/ex01/spec.json
+my-claw/curriculum/EMSD-102/exercises/ex01/spec.json
+my-claw/curriculum/EMSD-301/exercises/README.md
+my-claw/curriculum/EMSD-301/prompts/analysis.md
+my-claw/curriculum/EMSD-301/prompts/composition.md
+my-claw/curriculum/EMSD-301/exercises/ex01/spec.json
+
+exec
+/bin/zsh -lc 'rg -n "sampler_effects|T-002|delay SynthDef|synthdef" src tests docs README.md' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+docs/codex-audio-investigation-brief.md:82:| `/home/user/cypherclaw/tools/senseweave/synthesis/synthdefs/` | Compiled .scsyndef binary files |
+docs/codex-audio-investigation-brief.md:83:| `/home/user/cypherclaw/tools/senseweave/synthesis/boot_synthdefs.scd` | SC source for gate-controlled SynthDefs |
+docs/startup-wizard.md:137:- The audio boot path is now less brittle too. `start_audio.sh` links the live SynthDef bundle into SuperCollider's default synthdef directory, boots `scsynth` with auto-load enabled, and prefers the real Scarlett JACK graph before falling back to `pw-jack`. That preference is now checked at runtime too: if the real-JACK launch never exposes `SuperCollider:out_1`, the script retries on `pw-jack` automatically instead of leaving the box silent, and when the Scarlett JACK path itself has drifted away it now rebuilds `jackdbus` against ALSA `hw:USB` before trying again. `restart_composer.sh` now only restarts the composer and reseeds the master bus if `scsynth` is already up, waits for a healthy steady-state composer process instead of only trusting the first child PID, launches it with `nohup setsid ... </dev/null` so it survives session teardown, and `self_listener.py` is now pinned to the verified JACK monitor path on this host while still keeping the older PipeWire and `pw-jack` recorders as explicit fallback paths. The fallback selector still uses `JACK_NO_START_SERVER=1`, caches the last known-good backend, re-probes real JACK on a slower cadence, discards recorder child output so the live meter loop does not stall on a blocked subprocess pipe, and can fall back to a fresh `/tmp/room_capture.wav` clip when the direct JACK recorder hangs.
+docs/architecture.md:152:The audio boot path itself is now more defensive too. `start_audio.sh` no longer disables synthdef auto-loading with `-D 0`; it links the repo SynthDef bundle into `~/.local/share/SuperCollider/synthdefs`, starts `scsynth` with auto-load enabled, and prefers a real JACK/Scarlett graph when one is available before falling back to PipeWire's JACK shim. That preference is now verified instead of assumed: the launcher only stays on real JACK when `system:playback_1` is visible, and if `scsynth` fails to register `SuperCollider:out_1` on that graph it kills the failed server and retries automatically on `pw-jack` instead of leaving CypherClaw silent. When it does need to rebuild real JACK, it now clears stale JACK state, relaunches `jackdbus`, and configures the ALSA backend for `hw:USB` before booting `scsynth`, which makes the Scarlett monitor path recoverable after a JACK/DBus drift. `restart_composer.sh` now treats audio as an existing dependency rather than trying to rebuild the whole synth library over OSC, waits for a healthy steady-state `duet_composer.py` process rather than only trusting the first short-lived child PID emitted during startup, and launches that composer through `nohup setsid ... </dev/null` so it survives operator session teardown. `self_listener.py` is now pinned to the verified JACK capture path on this host by the AV boot wrapper, still keeps explicit PipeWire and `pw-jack` fallbacks available in code, publishes `capture_backend` in `/tmp/self_listen.json`, and derives glyph-facing brightness/motion from the captured audio itself instead of from target-only centroid metadata.
+docs/command-reference.md:221:- `start_audio.sh` now links the repo SynthDef bundle into `~/.local/share/SuperCollider/synthdefs`, starts `scsynth` with `-D 1`, prefers a real JACK/Scarlett graph when one is already available, and only falls back to `pw-jack` when that graph is absent. If the real-JACK launch fails to expose `SuperCollider:out_1`, it now kills that failed server and retries on `pw-jack` automatically. When it has to rebuild real JACK, it relaunches `jackdbus` and configures ALSA `hw:USB` so Scarlett can come back as the monitor path.
+tests/test_preflight.py:33:        ("T-002@20260401T000000Z", "Task two", "T1", "complete", "2026-04-01T00:05:00Z", "2026-04-01T00:05:00Z"),
+tests/test_daemon_fallback.py:278:                ("T-002@20260401T195527Z", "studio split parent", "T1", "split", None),
+tests/test_daemon_fallback.py:279:                ("T-002@20260401T195527Za", "studio child a", "T1", "pending", "T-002@20260401T195527Z"),
+tests/test_daemon_fallback.py:280:                ("T-002@20260401T195527Zb", "studio child b", "T1", "complete", "T-002@20260401T195527Z"),
+tests/test_daemon_fallback.py:858:                ("T-002@20260402T175501Z", "write unattended bootstrap", "T1", "pending", "", 3, "", 0, ""),
+tests/test_daemon_fallback.py:861:                ("T-002@20260402T175502Z", "obsolete lineage cleanup", "T1", "pending", "", 1, "", 1, "superseded"),
+tests/test_observatory_runtime.py:67:        task_id="T-002",
+tests/test_observatory_runtime.py:79:        context={"task_id": "T-002"},
+tests/test_dashboard_generator_runtime.py:22:            ("T-002", "complete"),
+tests/test_synthdef_registry.py:10:from senseweave.synthdef_registry import (
+tests/test_synthdef_registry.py:90:    def test_synthdef_name_follows_sw_prefix(self) -> None:
+tests/test_synthdef_registry.py:92:            assert entry.synthdef_name.startswith("sw_"), (
+tests/test_synthdef_registry.py:93:                f"{entry.voice_name}: {entry.synthdef_name}"
+tests/test_sampler_effects.py:10:in `my-claw/supercollider/test_sampler_effects.scd` and run on cypherclaw.
+tests/test_sampler_effects.py:26:    / "sampler_effects.scd"
+tests/test_sampler_effects.py:28:SC_TEST_PATH = REPO_ROOT / "my-claw" / "supercollider" / "test_sampler_effects.scd"
+tests/test_sampler_effects.py:33:    assert SCD_PATH.is_file(), f"sampler_effects.scd missing at {SCD_PATH}"
+tests/test_sampler_effects.py:52:    def test_synthdef_name_is_sw_sampler_fx(self, scd_source: str) -> None:
+tests/test_sampler_effects.py:202:    def test_writes_to_synthdefs_directory(self, scd_source: str) -> None:
+tests/test_sampler_effects.py:204:        # compiled artifact must end up in synthesis/synthdefs/.
+tests/test_sampler_effects.py:205:        assert re.search(r"\.writeDefFile\(\s*\"synthdefs/?\"\s*\)",
+tests/test_sampler_effects.py:207:            "compiled .scsyndef must land in synthesis/synthdefs/"
+tests/test_sampler_effects.py:233:        assert "sampler_effects.scd" in body, (
+tests/test_observatory_authority.py:63:    obs.record_task_result("codex", "T-002", False, 2_000, 1_000, False)
+tests/test_runtime_checkpoint.py:99:                "T-002@20260401T000000Z",
+tests/test_runtime_checkpoint.py:147:                "T-002@20260401T000000Z",
+tests/test_runtime_checkpoint.py:179:    assert checkpoint["active_task"]["task_id"] == "T-002@20260401T000000Z"
+tests/test_runtime_checkpoint.py:213:    assert checkpoint["active_task"]["task_id"] == "T-002@20260401T000000Z"
+tests/test_cypherclaw_audio_runtime.py:15:def test_start_audio_autoloads_repo_synthdefs_and_avoids_disabled_loads() -> None:
+
+codex
+I found a dirty tree with unrelated edits, so I’ll isolate this to the sampler-effect files and the exact Ruff failure before touching anything. After that I’ll patch the smallest possible fix, rerun the full gate, and only commit the files relevant to this task.
+exec
+/bin/zsh -lc "sed -n '1,280p' tests/test_sampler_effects.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Static tests for the sw_sampler_fx SynthDef source.
+
+The compiled `.scsyndef` is produced by sclang on the cypherclaw deploy host;
+this dev box has no SuperCollider toolchain. These tests therefore validate the
+SCD source declaratively — name, argument list, default values, signal-chain
+UGens, and bus conventions — so that regressions in the source surface in CI
+even when sclang isn't available.
+
+The runtime behaviour assertions (non-silent output, 61.74 Hz comb peak) live
+in `my-claw/supercollider/test_sampler_effects.scd` and run on cypherclaw.
+"""
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+import pytest
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SCD_PATH = (
+    REPO_ROOT
+    / "my-claw"
+    / "tools"
+    / "senseweave"
+    / "synthesis"
+    / "sampler_effects.scd"
+)
+SC_TEST_PATH = REPO_ROOT / "my-claw" / "supercollider" / "test_sampler_effects.scd"
+
+
+@pytest.fixture(scope="module")
+def scd_source() -> str:
+    assert SCD_PATH.is_file(), f"sampler_effects.scd missing at {SCD_PATH}"
+    return SCD_PATH.read_text(encoding="utf-8")
+
+
+def _arg_block(source: str) -> str:
+    """Extract the SynthDef argument list (between the first `|...|` pair)."""
+    match = re.search(r"\|\s*([^|]+?)\s*\|", source, flags=re.DOTALL)
+    assert match, "could not locate SynthDef argument list"
+    return match.group(1)
+
+
+def _arg_default(arg_block: str, name: str) -> float:
+    pattern = rf"\b{re.escape(name)}\s*=\s*(-?\d+(?:\.\d+)?)"
+    match = re.search(pattern, arg_block)
+    assert match, f"argument {name!r} missing or has no default"
+    return float(match.group(1))
+
+
+class TestSynthDefIdentity:
+    def test_synthdef_name_is_sw_sampler_fx(self, scd_source: str) -> None:
+        assert re.search(r"SynthDef\(\\sw_sampler_fx\b", scd_source), (
+            "SynthDef must be named \\sw_sampler_fx"
+        )
+
+    def test_writes_def_file_for_compilation(self, scd_source: str) -> None:
+        assert ".writeDefFile" in scd_source, (
+            "SCD must invoke .writeDefFile so the .scsyndef can be compiled"
+        )
+
+
+class TestRequiredArgsAndDefaults:
+    """Acceptance criteria pin the argument names and default values."""
+
+    @pytest.mark.parametrize(
+        "name,expected",
+        [
+            ("delay_time", 0.5),
+            ("tempo_bpm", 120.0),
+            ("delay_feedback", 0.55),
+            ("verb_mix", 0.35),
+            ("room_size", 0.7),
+            ("freeze_amount", 0.0),
+            ("comb_b_amount", 0.25),
+            ("comb_b_freq", 61.74),
+        ],
+    )
+    def test_arg_default(
+        self, scd_source: str, name: str, expected: float
+    ) -> None:
+        block = _arg_block(scd_source)
+        assert _arg_default(block, name) == pytest.approx(expected)
+
+    def test_in_bus_default_is_stereo_pair_at_16(self, scd_source: str) -> None:
+        block = _arg_block(scd_source)
+        assert _arg_default(block, "in_bus") == 16.0, (
+            "convention: sampler bus is stereo at channels 16+17"
+        )
+
+    def test_out_bus_defaults_to_master(self, scd_source: str) -> None:
+        block = _arg_block(scd_source)
+        assert _arg_default(block, "out_bus") == 0.0
+
+
+class TestRangeClipping:
+    """Defaults sit inside acceptance ranges; clip() guards keep runtime safe."""
+
+    def test_delay_time_clipped_to_tempo_window(self, scd_source: str) -> None:
+        assert re.search(r"tempo_bpm\.clip\(\s*30\.0\s*,\s*240\.0\s*\)",
+                         scd_source), "tempo_bpm must clip to a sane sync range"
+        assert re.search(r"delay_time\.clip\(\s*quarterMeasure\s*,\s*halfMeasure\s*\)",
+                         scd_source), (
+            "delay_time must stay within the tempo-synced 1/4..1/2-measure window"
+        )
+
+    def test_delay_feedback_clipped_to_safe_range(self, scd_source: str) -> None:
+        # 0..0.85 per acceptance criteria.
+        assert re.search(r"delay_feedback\.clip\(\s*0\.0\s*,\s*0\.85\s*\)",
+                         scd_source), "delay_feedback must clip to [0, 0.85]"
+
+    def test_freeze_amount_clipped_to_unit_range(self, scd_source: str) -> None:
+        assert re.search(r"freeze_amount\.clip\(\s*0\.0\s*,\s*1\.0\s*\)",
+                         scd_source), "freeze_amount must clip to [0, 1]"
+
+    def test_comb_b_amount_clipped_to_unit_range(self, scd_source: str) -> None:
+        assert re.search(r"comb_b_amount\.clip\(\s*0\.0\s*,\s*1\.0\s*\)",
+                         scd_source), "comb_b_amount must clip to [0, 1]"
+
+
+class TestSignalChain:
+    """All four required stages must be present in the chain."""
+
+    def test_reads_stereo_input(self, scd_source: str) -> None:
+        assert re.search(r"In\.ar\(\s*in_bus\s*,\s*2\s*\)", scd_source), (
+            "must read 2-channel input from in_bus"
+        )
+
+    def test_writes_to_out_bus(self, scd_source: str) -> None:
+        assert re.search(r"Out\.ar\(\s*out_bus\s*,", scd_source)
+
+    def test_long_delay_stage_present(self, scd_source: str) -> None:
+        assert "DelayC.ar" in scd_source or "DelayN.ar" in scd_source, (
+            "delay stage missing"
+        )
+        # Feedback path requires a LocalIn / LocalOut pair.
+        assert "LocalIn.ar" in scd_source and "LocalOut.ar" in scd_source, (
+            "delay must be feedback-capable (LocalIn/LocalOut pair)"
+        )
+
+    def test_freeverb_fallback_present(self, scd_source: str) -> None:
+        assert "FreeVerb.ar" in scd_source, (
+            "FreeVerb fallback (no IR loaded) is required by the spec"
+        )
+
+    def test_pv_freeze_stage_present(self, scd_source: str) -> None:
+        assert "PV_Freeze" in scd_source, "spectral freeze stage missing"
+        assert "FFT(" in scd_source and "IFFT(" in scd_source, (
+            "PV_Freeze requires FFT/IFFT framing"
+        )
+
+    def test_comb_resonance_stage_present(self, scd_source: str) -> None:
+        assert re.search(r"Comb[CLN]\.ar", scd_source), (
+            "comb resonance stage missing (CombC/CombL/CombN)"
+        )
+
+    def test_comb_tuned_to_b_fundamental(self, scd_source: str) -> None:
+        # Comb delay must equal 1 / comb_b_freq to tune to the B fundamental.
+        # The freq value may pass through a clipped local var first.
+        assert re.search(
+            r"Comb[CLN]\.ar\([^)]*\.reciprocal", scd_source
+        ) or re.search(
+            r"Comb[CLN]\.ar\([^)]*1\s*/\s*[A-Za-z_]\w*", scd_source
+        ), "comb delay must equal 1/comb_b_freq to tune to B fundamental"
+
+    def test_comb_freq_arg_drives_comb_stage(self, scd_source: str) -> None:
+        # Confirm comb_b_freq actually feeds the comb stage (directly or via
+        # an intermediate clip). Walk forward from the arg to the CombC call.
+        assert re.search(
+            r"comb_b_freq[\s\S]*?Comb[CLN]\.ar", scd_source
+        ), "comb_b_freq must be wired into the CombC stage"
+
+
+class TestStageOrdering:
+    """The chain must run delay → reverb → freeze → comb (per the spec)."""
+
+    def test_chain_ordering(self, scd_source: str) -> None:
+        # Strip line comments before checking ordering, so doc-block markers
+        # don't confuse the search.
+        code = "\n".join(
+            line.split("//", 1)[0] for line in scd_source.splitlines()
+        )
+        order_patterns = [
+            ("DelayC.ar",   r"\bDelayC\.ar"),
+            ("FreeVerb.ar", r"\bFreeVerb\.ar"),
+            ("PV_Freeze",   r"\bPV_Freeze\b"),
+            ("CombC.ar",    r"\bCombC\.ar"),
+            ("Out.ar",      r"(?<!Local)\bOut\.ar"),
+        ]
+        positions = {}
+        for label, pattern in order_patterns:
+            match = re.search(pattern, code)
+            assert match, f"missing stage marker: {label}"
+            positions[label] = match.start()
+        ordered = list(positions.values())
+        assert ordered == sorted(ordered), (
+            f"stages out of order: {positions}"
+        )
+
+
+class TestCompiledArtifactConvention:
+    def test_writes_to_synthdefs_directory(self, scd_source: str) -> None:
+        # writeDefFile path is relative to the .scd file's directory; the
+        # compiled artifact must end up in synthesis/synthdefs/.
+        assert re.search(r"\.writeDefFile\(\s*\"synthdefs/?\"\s*\)",
+                         scd_source), (
+            "compiled .scsyndef must land in synthesis/synthdefs/"
+        )
+
+
+class TestSCSideTestExists:
+    """The runtime test is the source of truth for the impulse + 61.74 Hz checks."""
+
+    def test_sc_side_test_present(self) -> None:
+        assert SC_TEST_PATH.is_file(), (
+            f"SC-side runtime test missing at {SC_TEST_PATH}"
+        )
+
+    def test_sc_side_test_covers_impulse_and_comb_peak(self) -> None:
+        body = SC_TEST_PATH.read_text(encoding="utf-8")
+        assert "Impulse" in body or "impulse" in body, (
+            "SC-side test must drive an impulse"
+        )
+        assert "61.74" in body, (
+            "SC-side test must verify the 61.74 Hz comb peak"
+        )
+        assert "comb_b_amount" in body, (
+            "SC-side test must exercise comb_b_amount > 0"
+        )
+
+    def test_sc_side_test_compiles_source(self) -> None:
+        body = SC_TEST_PATH.read_text(encoding="utf-8")
+        assert "sampler_effects.scd" in body, (
+            "SC-side test must compile the source SynthDef before loading it"
+        )
+        assert ".load" in body or ".loadPaths" in body, (
+            "SC-side test must evaluate the source .scd file"
+        )
+
+    def test_sc_side_test_uses_private_buses_for_routing(self) -> None:
+        body = SC_TEST_PATH.read_text(encoding="utf-8")
+        assert re.search(r"inBus\s*=\s*Bus\.audio", body), (
+            "SC-side test must allocate a dedicated stereo input bus"
+        )
+        assert re.search(r"outBus\s*=\s*Bus\.audio", body), (
+            "SC-side test must allocate a dedicated stereo output bus"
+        )
+
+exec
+/bin/zsh -lc 'ruff check src/ tests/' in /Users/anthony/Programming/PromptClaw
+ exited 1 in 0ms:
+tests/test_artist_identity.py:32:5: F401 [*] `senseweave.artist_identity.ArtistMode` imported but unused
+   |
+30 |     VOICE_ROLES,
+31 |     WORKING_AMBIENCE,
+32 |     ArtistMode,
+   |     ^^^^^^^^^^ F401
+33 |     apply_mode_to_commission,
+34 |     next_tonal_choice,
+   |
+   = help: Remove unused import: `senseweave.artist_identity.ArtistMode`
+
+Found 1 error.
+[*] 1 fixable with the `--fix` option.
+
+exec
+/bin/zsh -lc "sed -n '1,260p' my-claw/tools/senseweave/synthesis/sampler_effects.scd" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+// sampler_effects.scd — Dedicated effects-bus SynthDef for the granular sampler.
+//
+// SynthDef: sw_sampler_fx
+//   Reads a stereo signal from in_bus and writes the processed signal to out_bus
+//   (the master bus by default). Chain order:
+//
+//       input -> long delay (1/4 .. 1/2 measure)
+//             -> reverb     (FreeVerb; PartConv hook reserved for room IR)
+//             -> spectral freeze (PV_Freeze)
+//             -> comb resonance tuned to the B fundamental (61.74 Hz)
+//             -> out_bus
+//
+// Bus convention: the granular sampler writes its summed grain cloud to the
+// stereo bus 16 (channels 16+17). This SynthDef defaults to that bus.
+//
+// Compile to synthesis/synthdefs/sw_sampler_fx.scsyndef via .writeDefFile.
+
+(
+SynthDef(\sw_sampler_fx, {
+    | in_bus = 16,
+      out_bus = 0,
+      delay_time = 0.5,
+      tempo_bpm = 120.0,
+      delay_feedback = 0.55,
+      verb_mix = 0.35,
+      room_size = 0.7,
+      freeze_amount = 0.0,
+      comb_b_amount = 0.25,
+      comb_b_freq = 61.74 |
+
+    var input, dlySig, fbIn, fbOut, postDelay, verb, postVerb;
+    var freezeChain, postFreeze, comb, sig;
+    var dlyTime, dlyFb, vbMix, fzAmt, cbAmt, cbFreq, rmSize;
+    var tBpm, quarterMeasure, halfMeasure;
+
+    // Range-clip incoming controls to keep the chain numerically stable.
+    // Assume 4/4: 1/4 measure = one beat, 1/2 measure = two beats.
+    tBpm = tempo_bpm.clip(30.0, 240.0);
+    quarterMeasure = 60.0 / tBpm;
+    halfMeasure = quarterMeasure * 2.0;
+    dlyTime = delay_time.clip(quarterMeasure, halfMeasure);
+    dlyFb   = delay_feedback.clip(0.0, 0.85);
+    vbMix   = verb_mix.clip(0.0, 1.0);
+    rmSize  = room_size.clip(0.0, 1.0);
+    fzAmt   = freeze_amount.clip(0.0, 1.0);
+    cbAmt   = comb_b_amount.clip(0.0, 1.0);
+    cbFreq  = comb_b_freq.clip(20.0, 2000.0);
+
+    // --- Stereo input from the sampler bus ----------------------------------
+    input = In.ar(in_bus, 2);
+
+    // --- Long delay with feedback (1/4 to 1/2 measure typical) --------------
+    fbIn = LocalIn.ar(2);
+    dlySig = DelayC.ar(input + (fbIn * dlyFb), 4.0, dlyTime);
+    LocalOut.ar(dlySig);
+    postDelay = input + (dlySig * 0.5);
+
+    // --- Reverb: FreeVerb fallback (no IR loaded) ---------------------------
+    // Upgrade path: when a measured room IR buffer is loaded, swap this stage
+    // for PartConv keyed on an `ir_bufnum` arg. Fallback path stays FreeVerb.
+    verb = FreeVerb.ar(postDelay, mix: 1.0, room: rmSize, damp: 0.5);
+    postVerb = (postDelay * (1.0 - vbMix)) + (verb * vbMix);
+
+    // --- Spectral freeze (PV_Freeze) per channel ----------------------------
+    freezeChain = postVerb.collect { |chan|
+        var fft = FFT(LocalBuf(2048), chan);
+        IFFT(PV_Freeze(fft, fzAmt));
+    };
+    postFreeze = SelectX.ar(fzAmt, [postVerb, freezeChain]);
+
+    // --- Comb resonance tuned to B fundamental (61.74 Hz) -------------------
+    // Resonant comb at delay = 1 / cbFreq emphasises the B fundamental and its
+    // harmonic series, locking the sampler's character to the room key.
+    comb = CombC.ar(postFreeze, 0.1, cbFreq.reciprocal, 4.0);
+    sig = postFreeze + (comb * cbAmt);
+
+    Out.ar(out_bus, sig);
+}).writeDefFile("synthdefs/");
+)
+
+exec
+/bin/zsh -lc "rg -n \"T-002@20260425T183959Za|delay SynthDef|sampler_effects\" sdp docs my-claw/tests tests my-claw -g '"'!sdp/logs/**'"'" in /Users/anthony/Programming/PromptClaw
+ exited 2 in 0ms:
+rg: my-claw/tests: No such file or directory (os error 2)
+tests/test_sampler_effects.py:10:in `my-claw/supercollider/test_sampler_effects.scd` and run on cypherclaw.
+tests/test_sampler_effects.py:26:    / "sampler_effects.scd"
+tests/test_sampler_effects.py:28:SC_TEST_PATH = REPO_ROOT / "my-claw" / "supercollider" / "test_sampler_effects.scd"
+tests/test_sampler_effects.py:33:    assert SCD_PATH.is_file(), f"sampler_effects.scd missing at {SCD_PATH}"
+tests/test_sampler_effects.py:233:        assert "sampler_effects.scd" in body, (
+sdp/runner.log:28:─ Task T-002@20260425T183959Z: Implement `sampler_effects.scd` dedicated effects-bus SynthDef chain: long delay (1/4 to 1/2 measure), convolution reverb (FreeVerb fallback if no IR loaded), spectra… ─
+sdp/runner.log:207:- `my-claw/tools/senseweave/synthesis/sampler_effects.scd` — defines `sw_sampler_fx` with all 7 args at the required defaults, range-clipped, chain order delay → reverb → freeze → comb@61.74Hz, defaults to bus 16, writes via `.writeDefFile("synthdefs/")` ✅
+sdp/runner.log:208:- `tests/test_sampler_effects.py` — pins SynthDef name, all defaults, range clipping, every chain stage, and stage ordering (220 lines, runs without sclang) ✅
+sdp/runner.log:209:- `my-claw/supercollider/test_sampler_effects.scd` — runtime impulse + 61.74 Hz comb-peak FFT check, runs on cypherclaw ✅
+sdp/runner.log:419:[{"id": "a", "description": "Implement delay SynthDef in sampler_effects.scd: tempo-synced 1/4 to 1/2 measure delay with feedback control, write test fixture verifying SynthDef compiles and bus routing", "tier": "T1"}, {"id": "b", "description": "Implement reverb SynthDef in sampler_effects.scd: convolution reverb with FreeVerb fallback when no IR buffer loaded, including IR buffer-presence check, write test for both branches", "tier": "T1"}, {"id": "c", "description": "Implement spectral freeze SynthDef in sampler_effects.scd: PV_Freeze with freeze-toggle control and FFT chain, write test verifying compile and freeze parameter response", "tier": "T1"}, {"id": "d", "description": "Implement comb-resonance SynthDef in sampler_effects.scd tuned to B fundamental (61.74 Hz) with damping/decay controls, wire all four FX into effects-bus chain order, integration test for full chain", "tier": "T1"}]
+sdp/runner.log:420:[OK] Auto-split T-002@20260425T183959Z into 4 subtasks: T-002@20260425T183959Za, T-002@20260425T183959Zb, T-002@20260425T183959Zc, T-002@20260425T183959Zd
+sdp/runner.log:423:───────────────────── T-002@20260425T183959Za: development ─────────────────────
+sdp/runner.log:431:[WARN] T-002@20260425T183959Za may already be addressed by commit 46bfc82 - consider skipping
+sdp/runner.log:433:─ Task T-002@20260425T183959Za: Implement delay SynthDef in sampler_effects.scd: tempo-synced 1/4 to 1/2 measure delay with feedback control, write test fixture verifying SynthDef compiles and bus … ─
+sdp/runner.log:438:│ Task:   T-002@20260425T183959Za                                                                                                                                                                      │
+sdp/runner.log:443:[STATE] Working — Lead agent codex running for T-002@20260425T183959Za.
+sdp/runner.log:446:│ role=lead task=T-002@20260425T183959Za                                                                                                                                                               │
+sdp/runner.log:450:│ label=Lead: T-002@20260425T183959Za                                                                                                                                                                  │
+sdp/runner.log:508:Implemented the delay subtask in [sampler_effects.scd](/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/synthesis/sampler_effects.scd): `sw_sampler_fx` now takes `tempo_bpm` (default `120.0`) and clamps `delay_time` into a tempo-relative 1/4 to 1/2 measure window before the feedback delay, with the delay buffer extended to 4 seconds for slower tempos. I also updated the SC fixture in [test_sampler_effects.scd](/Users/anthony/Programming/PromptClaw/my-claw/supercollider/test_sampler_effects.scd) so it loads the source `.scd`, asserts the SynthDef is registered and the `.scsyndef` exists, and verifies routing through dedicated stereo input/output buses. [tests/test_sampler_effects.py](/Users/anthony/Programming/PromptClaw/tests/test_sampler_effects.py) now pins the tempo-sync control and the SC fixture’s compile/routing coverage.
+sdp/runner.log:510:Validation: `pytest tests/test_sampler_effects.py -x --tb=short`, `pytest tests/ -x --tb=short`, `mypy src/`, and `ruff check tests/test_sampler_effects.py` passed. `ruff check src/ tests/` still fails on an unrelated pre-existing unused import in `tests/test_artist_identity.py`, which I left untouched. Committed as `c426bfa` with `feat(sampler): tempo-sync sampler fx delay [T-002@20260425T183959Za]`.
+sdp/runner.log:520:[STATE] WorkCheck — Evaluating commit/dirty-tree signals for T-002@20260425T183959Za.
+sdp/runner.log:625:[STATE] Working — Lead agent codex running for T-002@20260425T183959Za.
+sdp/runner.log:628:│ role=lead task=T-002@20260425T183959Za                                                                                                                                                               │
+sdp/runner.log:632:│ label=Lead: T-002@20260425T183959Za                                                                                                                                                                  │
+sdp/requirements-register.md:18:| CCS-011 | Implement `sampler_effects.scd` dedicated effects-bus SynthDef chain: long delay (1/4 to 1/2 measure), convolution reverb (FreeVerb fallback if no IR loaded), spectral freeze (PV_Freeze), comb-resonance tuned to B fundamental (61.74 Hz). | MUST | T1 |  |
+sdp/prd-snapshot.md:71:- **New** `my-claw/tools/senseweave/synthesis/sampler_effects.scd` — dedicated effects bus SynthDef chain
+sdp/prd-snapshot.md:105:| CCS-011 | Implement `sampler_effects.scd` dedicated effects-bus SynthDef chain: long delay (1/4 to 1/2 measure), convolution reverb (FreeVerb fallback if no IR loaded), spectral freeze (PV_Freeze), comb-resonance tuned to B fundamental (61.74 Hz). | MUST | T1 | - SynthDef `sw_sampler_fx` reads from a stereo bus and writes to master bus<br/>- args: `delay_time` (sec, default 0.5), `delay_feedback` (0..0.85, default 0.55), `verb_mix` (default 0.35), `room_size` (default 0.7), `freeze_amount` (0..1, default 0.0), `comb_b_amount` (0..1, default 0.25), `comb_b_freq` (default 61.74)<br/>- bus number conventionally 16 (stereo, so 16+17)<br/>- compiled `sw_sampler_fx.scsyndef` lives in `synthesis/synthdefs/`<br/>- SC-side test verifies non-silent output for a known impulse input and frequency-domain check that 61.74 Hz comb peak is present when `comb_b_amount > 0` |
+sdp/task-graph.md:14:| 2 | T-002 | Implement `sampler_effects.scd` dedicated effects-bus SynthDef chain: long delay (1/4 to 1/2 measure), convolution reverb (FreeVerb fallback if no IR loaded), spectral freeze (PV_Freeze), comb-resonance tuned to B fundamental (61.74 Hz). | T1 | 5 | 3 | CCS-011 | — | - SynthDef `sw_sampler_fx` reads from a stereo bus and writes to master bus<br/>- args: `delay_time` (sec, default 0.5), `delay_feedback` (0..0.85, default 0.55), `verb_mix` (default 0.35), `room_size` (default 0.7), `freeze_amount` (0..1, default 0.0), `comb_b_amount` (0..1, default 0.25), `comb_b_freq` (default 61.74)<br/>- bus number conventionally 16 (stereo, so 16+17)<br/>- compiled `sw_sampler_fx.scsyndef` lives in `synthesis/synthdefs/`<br/>- SC-side test verifies non-silent output for a known impulse input and frequency-domain check that 61.74 Hz comb peak is present when `comb_b_amount > 0` |
+my-claw/sdp/prd-cypherclaw-sampler.md:65:- **New** `my-claw/tools/senseweave/synthesis/sampler_effects.scd` — dedicated effects bus SynthDef chain
+my-claw/sdp/prd-cypherclaw-sampler.md:99:| CCS-011 | Implement `sampler_effects.scd` dedicated effects-bus SynthDef chain: long delay (1/4 to 1/2 measure), convolution reverb (FreeVerb fallback if no IR loaded), spectral freeze (PV_Freeze), comb-resonance tuned to B fundamental (61.74 Hz). | MUST | T1 | - SynthDef `sw_sampler_fx` reads from a stereo bus and writes to master bus<br/>- args: `delay_time` (sec, default 0.5), `delay_feedback` (0..0.85, default 0.55), `verb_mix` (default 0.35), `room_size` (default 0.7), `freeze_amount` (0..1, default 0.0), `comb_b_amount` (0..1, default 0.25), `comb_b_freq` (default 61.74)<br/>- bus number conventionally 16 (stereo, so 16+17)<br/>- compiled `sw_sampler_fx.scsyndef` lives in `synthesis/synthdefs/`<br/>- SC-side test verifies non-silent output for a known impulse input and frequency-domain check that 61.74 Hz comb peak is present when `comb_b_amount > 0` |
+sdp/implementation-plan.md:19:- **T-002** [T1] Implement `sampler_effects.scd` dedicated effects-bus SynthDef chain: long delay (1/4 to 1/2 measure), convolution reverb (FreeVerb fallback if no IR loaded), spectral freeze (PV_Freeze), comb-resonance tuned to B fundamental (61.74 Hz). (~3h)
+my-claw/supercollider/test_sampler_effects.scd:1:// test_sampler_effects.scd — SC-side smoke test for sw_sampler_fx.
+my-claw/supercollider/test_sampler_effects.scd:9://   sclang my-claw/supercollider/test_sampler_effects.scd
+my-claw/supercollider/test_sampler_effects.scd:21:~sourcePath  = "my-claw/tools/senseweave/synthesis/sampler_effects.scd";
+my-claw/tools/senseweave/synthesis/sampler_effects.scd:1:// sampler_effects.scd — Dedicated effects-bus SynthDef for the granular sampler.
+
+codex
+The only reported gate break is unrelated to the sampler code itself: an unused import in `tests/test_artist_identity.py`. I’m reading that file and the relevant PRD slice now, then I’ll make the smallest lint-only edit and rerun the full gate command the user specified.
+exec
+/bin/zsh -lc "sed -n '1,220p' tests/test_artist_identity.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Tests for artist_identity.py — CypherClaw's artistic self.
+
+Covers:
+  * SIGNATURE_VOICES quartet (sw_bell_warm, sw_bowed, sw_breath, sw_pad)
+  * HOME_TONAL_MAP B-rooted distance map
+  * Five ArtistModes with sane voice-count defaults (3 base, 2 deliberate, 4 max)
+  * select_mode() routing on presence/time/weather
+  * apply_mode_to_commission() pure + deterministic
+  * next_tonal_choice() honors modulation_willingness, stays home most of the time
+"""
+from __future__ import annotations
+
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
+
+from senseweave.artist_identity import (
+    COMPANION,
+    EVENING_REFLECTION,
+    HOME_KEY,
+    HOME_MODES,
+    HOME_TONAL_MAP,
+    MODES,
+    MODES_BY_NAME,
+    SIGNATURE_VOICES,
+    SOLITARY,
+    STORM,
+    VOICE_ROLES,
+    WORKING_AMBIENCE,
+    ArtistMode,
+    apply_mode_to_commission,
+    next_tonal_choice,
+    select_mode,
+)
+
+
+# ---------------------------------------------------------------------------
+# Voice quartet
+# ---------------------------------------------------------------------------
+
+class TestSignatureVoices:
+    def test_quartet_size(self):
+        assert len(SIGNATURE_VOICES) == 4
+
+    def test_quartet_membership(self):
+        assert "sw_bell_warm" in SIGNATURE_VOICES
+        assert "sw_bowed" in SIGNATURE_VOICES
+        assert "sw_breath" in SIGNATURE_VOICES
+        assert "sw_pad" in SIGNATURE_VOICES
+
+    def test_voice_roles_complete(self):
+        # Every musical role has a canonical signature voice
+        for role in ("melody", "counter", "color", "texture", "bass"):
+            assert role in VOICE_ROLES
+            assert VOICE_ROLES[role] in SIGNATURE_VOICES
+
+
+# ---------------------------------------------------------------------------
+# B-rooted tonal map
+# ---------------------------------------------------------------------------
+
+class TestHomeTonalMap:
+    def test_home_is_b(self):
+        assert HOME_KEY == "B"
+
+    def test_b_has_zero_distance(self):
+        assert HOME_TONAL_MAP["B"] == 0
+
+    def test_close_neighbors_within_distance_1(self):
+        # D (relative major) and F# (dominant) should be distance 1
+        assert HOME_TONAL_MAP["D"] == 1
+        assert HOME_TONAL_MAP["F#"] == 1
+
+    def test_distant_keys_have_higher_distance(self):
+        # G and E are explicit "departure" keys
+        assert HOME_TONAL_MAP["G"] > HOME_TONAL_MAP["B"]
+        assert HOME_TONAL_MAP["E"] > HOME_TONAL_MAP["B"]
+
+    def test_home_modes_includes_minor_dorian_phrygian(self):
+        assert "minor" in HOME_MODES
+        assert "dorian" in HOME_MODES
+        assert "phrygian" in HOME_MODES
+
+
+# ---------------------------------------------------------------------------
+# Mode definitions
+# ---------------------------------------------------------------------------
+
+class TestArtistModes:
+    def test_five_modes(self):
+        assert len(MODES) == 5
+
+    def test_modes_lookup_by_name(self):
+        for mode in MODES:
+            assert MODES_BY_NAME[mode.name] is mode
+
+    def test_three_voice_base_default(self):
+        # Companion is the default mode — should have 3-voice base
+        assert COMPANION.voice_count_target == 3
+        assert COMPANION.voice_count_floor >= 2
+
+    def test_solitary_can_drop_to_two_voices(self):
+        # Solitary is the meaningful 2-voice mode
+        assert SOLITARY.voice_count_target == 2
+        assert SOLITARY.voice_count_floor == 1
+
+    def test_no_mode_exceeds_quartet(self):
+        # Never more than 4 voices simultaneously — the quartet IS the orchestra
+        for mode in MODES:
+            assert mode.voice_count_ceiling <= 4
+
+    def test_storm_is_densest(self):
+        # Storm is the most turbulent mode
+        assert STORM.density_bias > 0.0
+        assert STORM.restraint_level < 0.5
+        assert STORM.harmonic_complexity > 0.5
+
+    def test_working_ambience_avoids_attention(self):
+        assert WORKING_AMBIENCE.avoid_attention_pullers is True
+
+    def test_evening_reflection_uses_full_quartet(self):
+        # Evening can rotate through all four signature voices
+        assert set(EVENING_REFLECTION.preferred_voices) == set(SIGNATURE_VOICES)
+
+    def test_solitary_silence_ratio_is_high(self):
+        assert SOLITARY.silence_ratio >= 0.4
+
+    def test_tempo_bands_are_valid(self):
+        for mode in MODES:
+            lo, hi = mode.tempo_band
+            assert lo < hi
+            assert 40.0 <= lo <= 200.0
+            assert 40.0 <= hi <= 200.0
+
+
+# ---------------------------------------------------------------------------
+# Mode selection
+# ---------------------------------------------------------------------------
+
+class TestSelectMode:
+    def test_storm_overrides_everything(self):
+        assert select_mode(presence="present", time_of_day="day", weather_severity=0.7) is STORM
+        assert select_mode(presence="none", time_of_day="evening", weather_severity=0.9) is STORM
+
+    def test_no_one_home_is_solitary(self):
+        assert select_mode(presence="none") is SOLITARY
+
+    def test_present_and_screen_active_is_working(self):
+        m = select_mode(presence="present", time_of_day="day", screen_active=True)
+        assert m is WORKING_AMBIENCE
+
+    def test_evening_with_presence_is_reflection(self):
+        m = select_mode(presence="present", time_of_day="evening")
+        assert m is EVENING_REFLECTION
+
+    def test_night_with_presence_is_reflection(self):
+        m = select_mode(presence="present", time_of_day="night")
+        assert m is EVENING_REFLECTION
+
+    def test_default_is_companion(self):
+        m = select_mode(presence="present", time_of_day="day", weather_severity=0.0)
+        assert m is COMPANION
+
+    def test_unknown_presence_defaults_to_companion(self):
+        m = select_mode(presence="unknown", time_of_day="day")
+        assert m is COMPANION
+
+
+# ---------------------------------------------------------------------------
+# apply_mode_to_commission
+# ---------------------------------------------------------------------------
+
+class TestApplyModeToCommission:
+    def test_does_not_mutate_input(self):
+        original = {"foo": "bar", "tempo": 80.0}
+        snapshot = dict(original)
+        apply_mode_to_commission(original, COMPANION, rng_seed=1)
+        assert original == snapshot
+
+    def test_adds_mode_metadata(self):
+        out = apply_mode_to_commission({}, SOLITARY, rng_seed=1)
+        assert out["artist_mode"] == "solitary"
+        assert "mode_tempo_target_bpm" in out
+        assert "mode_voice_count_target" in out
+        assert "mode_silence_ratio" in out
+        assert "mode_preferred_voices" in out
+
+    def test_tempo_within_band(self):
+        out = apply_mode_to_commission({}, SOLITARY, rng_seed=42)
+        lo, hi = SOLITARY.tempo_band
+        assert lo <= out["mode_tempo_target_bpm"] <= hi
+
+    def test_voice_count_propagated(self):
+        out = apply_mode_to_commission({}, COMPANION, rng_seed=1)
+        assert out["mode_voice_count_target"] == 3
+        assert out["mode_voice_count_floor"] == 2
+        assert out["mode_voice_count_ceiling"] == 3
+
+    def test_preferred_voices_csv(self):
+        out = apply_mode_to_commission({}, SOLITARY, rng_seed=1)
+        voices = out["mode_preferred_voices"].split(",")
+        assert "sw_bell_warm" in voices
+        assert "sw_pad" in voices
+
+    def test_avoid_attention_flag_propagated(self):
+        out = apply_mode_to_commission({}, WORKING_AMBIENCE, rng_seed=1)
+        assert out["mode_avoid_attention_pullers"] == "true"
+        out2 = apply_mode_to_commission({}, COMPANION, rng_seed=1)
+        assert out2["mode_avoid_attention_pullers"] == "false"
+
+    def test_deterministic_same_seed(self):
+        a = apply_mode_to_commission({"x": 1}, EVENING_REFLECTION, rng_seed=99)
+        b = apply_mode_to_commission({"x": 1}, EVENING_REFLECTION, rng_seed=99)
+        assert a == b
+
+
+# ---------------------------------------------------------------------------
+# next_tonal_choice
+
+exec
+/bin/zsh -lc "sed -n '90,125p' sdp/prd-snapshot.md" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+
+## Requirements
+
+| ID | Description | Priority | Tier | Acceptance criteria |
+|----|-------------|----------|------|---------------------|
+| CCS-001 | Define `SampleRecord` dataclass with sample-id, path, source, character tags, pitch, duration, captured-at, arc context, RMS, peak, transient density. | MUST | T1 | - `sample_library.SampleRecord` defined with fields: `sample_id` (UUID), `path` (Path), `source` (Literal['library','self','room','contact','theramini','keyboard']), `character_tags` (frozenset[str]), `pitch_hz` (float \| None), `pitch_confidence` (float), `duration_sec` (float), `captured_at` (datetime), `arc_phase` (str \| None), `mood` (dict[str,float] \| None), `presence` (Literal['present','none','unknown'] \| None), `rms` (float), `peak` (float), `transient_density` (float), `gain_db` (float, default 0.0)<br/>- dataclass is frozen and JSON-serializable; ISO-8601 timestamp round-trip<br/>- tests verify schema, defaults, JSON round-trip, and rejection of out-of-range values |
+| CCS-002 | Define controlled `CHARACTER_TAGS` vocabulary (warm, metallic, wind, pulse, voice, mechanical, water, sustained, transient, percussive, harmonic, noisy). | MUST | T1 | - `sample_library.CHARACTER_TAGS` is a frozenset of exactly the 12 listed tags<br/>- `SampleRecord.character_tags` validation rejects unknown tags<br/>- tests verify rejection path and the canonical 12-tag set |
+| CCS-003 | Implement `SampleLibrary` on-disk store backed by `index.sqlite` with tag/source/pitch/mood-range queries. | MUST | T1 | - `SampleLibrary(root: Path)` opens / creates `index.sqlite` with table `samples` carrying every `SampleRecord` field plus full-text-search index on `character_tags`<br/>- `library.add(record)` persists row + verifies file presence<br/>- `library.find(source=, character_any=, character_all=, pitch_band=, arc_phase=, mood_range=, limit=)` returns ordered list (most recent first within match set)<br/>- tests cover insert, query by each filter, empty-result path, and corrupted-DB rebuild |
+| CCS-004 | Define on-disk directory layout under `/home/user/cypherclaw-data/samples/` with `library/`, `self/`, `room/`, `contact/`, `theramini/`, `keyboard/` subdirs and `index.sqlite`. | MUST | T1 | - `SampleLibrary.bootstrap(root)` creates the six subdirectories + `index.sqlite` if missing, idempotent<br/>- documented as the canonical layout in module docstring<br/>- tests verify bootstrap on tmp dir creates all six subdirs and the SQLite file |
+| CCS-005 | Implement `SampleSelector` mood/mode/arc-aware picker with deterministic seed-based selection within match set. | MUST | T1 | - `SampleSelector(library, rng_seed: int)` exposes `select(mode: ArtistMode, arc_phase: str, mood: Mapping[str,float], target_character: tuple[str,...] = (), avoid_recent: int = 5) -> SampleRecord \| None`<br/>- selection prefers samples with matching `arc_phase` and overlapping mood (dot-product over energy/valence/arousal); falls back to character_tags only; falls back to library random within source-source preference per-mode<br/>- `avoid_recent` excludes the N most-recently-played samples (per-mode rolling window)<br/>- per-mode source preference: solitary→[self,contact,room,library]; companion→[library,self,room]; working_ambience→[room,library]; evening_reflection→[self,library,theramini]; storm→[contact,library,room]<br/>- selection is deterministic given (library state, rng_seed, kwargs)<br/>- tests verify per-mode preference order, mood-overlap ranking, avoid_recent, deterministic replay |
+| CCS-006 | Add `sw_sampler` to `SIGNATURE_VOICES` quintet in `artist_identity.py` and update `VOICE_ROLES` so a `"sampler"` role maps to `"sw_sampler"`. | MUST | T1 | - `SIGNATURE_VOICES` becomes `("sw_bell_warm", "sw_bowed", "sw_breath", "sw_pad", "sw_sampler")`<br/>- `VOICE_ROLES["sampler"] = "sw_sampler"`<br/>- existing `VOICE_ROLES` keys for melody/counter/color/texture/bass unchanged<br/>- existing `test_artist_identity.py::TestSignatureVoices::test_quartet_size` is renamed to `test_quintet_size` and asserts length 5; quartet-specific assertions migrated |
+| CCS-007 | Add `sampler_density` field (0.0–1.0) to `ArtistMode` with mode-specific values: solitary 0.7, companion 0.25, working_ambience 0.10, evening_reflection 0.65, storm 0.45. | MUST | T1 | - `ArtistMode` dataclass gains `sampler_density: float = 0.25` with documentation<br/>- existing five modes updated to the values above<br/>- `apply_mode_to_commission` propagates `sampler_density` into `mode_sampler_density` metadata<br/>- tests verify each mode's value, propagation, and that `sampler_density` is bounded [0.0, 1.0] |
+| CCS-008 | Register `voice_sampler` character in `character_registry.py` with `voice.synth = "sw_sampler"`, `voice.role = "sampler"`, default register, and per-mode gain overrides. | MUST | T1 | - `character_registry.py` gains `voice_sampler` entry with synth=`sw_sampler`, role=`sampler`, register=`[36, 84]`, params containing default grain_size_ms, density, pitch_transpose<br/>- character is selectable by `select_cast_ids` when `preferred_synths` includes `sw_sampler`<br/>- tests verify registration and selection through cast planner |
+| CCS-009 | Implement `sw_sampler.scd` granular SynthDef with bufnum, grain-size, density, position-scrub, pitch-transpose, attack/release envelope, and effects-bus send. | MUST | T1 | - SynthDef args: `bufnum`, `amp` (default 0.5), `grain_size_ms` (default 80, range 20–200), `density` (default 12 grains/sec), `position` (0..1 normalized), `position_rate` (scrub speed), `pitch_transpose_semitones` (default 0), `pitch_jitter_semitones` (default 0.1), `attack_sec` (default 0.05), `release_sec` (default 0.2), `gate` (default 1, sustained), `out_bus` (default 0), `fx_send` (default 0.4)<br/>- `doneAction:2` self-frees on envelope end<br/>- compiled `sw_sampler.scsyndef` lives in `synthesis/synthdefs/`<br/>- SC-side test (`my-claw/supercollider/test_sw_sampler.scd`) renders 2-second clip from a known buffer and verifies non-silence + spectral characteristics<br/>- gate=0 triggers release tail correctly |
+| CCS-010 | Implement buffer-management protocol: `OnSamplerLoad(record)` allocates scsynth buffer + reads WAV; `OnSamplerFree` releases buffer; LRU eviction at 64-buffer cap. | MUST | T1 | - `tools/senseweave/sampler_buffers.py` exposes `BufferPool(scsynth_client, capacity=64)` with `acquire(record) -> bufnum`, `release(record)`, `evict_lru()`<br/>- WAV file path → `/b_allocRead bufnum path 0 -1` over OSC<br/>- LRU eviction triggered automatically when `acquire` exceeds capacity<br/>- on scsynth restart, pool detects buffer-id reuse failure and rebuilds<br/>- tests with a mock OSC client verify allocate, evict, release, and reuse paths |
+| CCS-011 | Implement `sampler_effects.scd` dedicated effects-bus SynthDef chain: long delay (1/4 to 1/2 measure), convolution reverb (FreeVerb fallback if no IR loaded), spectral freeze (PV_Freeze), comb-resonance tuned to B fundamental (61.74 Hz). | MUST | T1 | - SynthDef `sw_sampler_fx` reads from a stereo bus and writes to master bus<br/>- args: `delay_time` (sec, default 0.5), `delay_feedback` (0..0.85, default 0.55), `verb_mix` (default 0.35), `room_size` (default 0.7), `freeze_amount` (0..1, default 0.0), `comb_b_amount` (0..1, default 0.25), `comb_b_freq` (default 61.74)<br/>- bus number conventionally 16 (stereo, so 16+17)<br/>- compiled `sw_sampler_fx.scsyndef` lives in `synthesis/synthdefs/`<br/>- SC-side test verifies non-silent output for a known impulse input and frequency-domain check that 61.74 Hz comb peak is present when `comb_b_amount > 0` |
+| CCS-012 | Implement `sampler_dispatch.py` that converts a `(SampleRecord, PerformanceIntent, params)` tuple into the OSC bundle (`/s_new sw_sampler ...` + buffer-pool acquire) and ships it to scsynth. | MUST | T1 | - `dispatch_sample(record, intent, *, position, position_rate, grain_size_ms, density, pitch_transpose, amp, fx_send) -> SamplerHandle` issues `/b_allocRead` (if needed), `/s_new sw_sampler ...` and returns a handle for later `/n_set gate 0` release<br/>- correlates `record.gain_db` with `amp`<br/>- handles per-mode effects presets (delay_time / verb_mix / freeze / comb_b vary by mode)<br/>- tests with mock OSC client verify correct bundle ordering, gate-release path, and per-mode preset application |
+| CCS-013 | Per-voice gate-controlled lifecycle: composer can `play_sampler(record, duration_sec)` for fire-and-forget OR `start_sampler(record) -> handle; stop_sampler(handle)` for sustained voices. | MUST | T1 | - `sampler_dispatch.play_sampler(record, duration_sec, **params)` schedules a fire-and-forget grain cloud with an internal envelope of `duration_sec`<br/>- `start_sampler` / `stop_sampler` returns/uses a handle for sustained sampler voices that match the bowed/pad lifecycle<br/>- both code paths feed through the same `dispatch_sample` core<br/>- tests verify both lifecycles and that they can run concurrently without buffer-id collision |
+| CCS-014 | Integrate sampler effects bus into `master_bus.py` mix slot with appropriate gain staging (peak-normalized, not RMS) and post-mix compression bypass to preserve grain transients. | MUST | T1 | - `master_bus.apply_master_bus_scene` recognizes a `sampler_bus` mix slot with default gain -3 dB (peak-normalized so quieter library samples don't disappear)<br/>- post-mix compression for the sampler slot has `compression_ratio = 1.5` (lower than the 4.0 used elsewhere) so grain transients survive<br/>- tests verify gain staging on a known-amplitude input and grain-transient preservation via peak-vs-RMS ratio |
+| CCS-015 | Implement `sample_capture_daemon.py` rolling 60-second buffers reading from `system:capture_1` (contact mic) and `system:capture_2` (room mic) via JACK. | MUST | T1 | - daemon opens two JACK ports `cypherclaw-capture:in_contact` and `cypherclaw-capture:in_room`<br/>- each maintains a 60-second numpy ring buffer at 48 kHz<br/>- exposes `get_window(source, duration_sec, offset_sec) -> np.ndarray` for the moment-detector to pull recent windows<br/>- handles JACK xruns gracefully (logs, does not crash)<br/>- tests with a synthetic JACK input fixture verify ring-buffer correctness, window extraction, and xrun recovery |
+| CCS-016 | Implement interesting-moment detector: novelty (spectral flux) + transient density + RMS thresholds + duration-min/max gating. | MUST | T1 | - `sample_capture_daemon.py::InterestingMomentDetector` pulls 1-second windows every 250 ms<br/>- flags a window when: `spectral_flux > 0.6 * recent_median` AND `rms > -45 dBFS` AND `transient_count >= 2` AND `since_last_capture > 30 sec`<br/>- on flag, expands to a 4–8 second window centered on the flagged sub-window (length proportional to spectral richness)<br/>- thresholds are tunable via env / config<br/>- tests with canned audio fixtures (silence, footsteps, dishwasher hum, music) verify expected flag/no-flag for each |
+| CCS-017 | Auto-tag captured samples: arc phase, mood, presence, time-of-day, plus heuristic acoustic tags (warm if low spectral centroid, metallic if high+narrow band, transient if high transient density, etc.). | MUST | T1 | - `sample_capture_daemon.py::auto_tag(window, context) -> dict` returns a dict mergeable into `SampleRecord`<br/>- arc_phase / mood / presence pulled from `/tmp/organism_state.json` and `/tmp/room_presence.json`<br/>- character tags derived from heuristics: spectral_centroid<800Hz → "warm"; narrow-band high-centroid → "metallic"; sustained_amplitude_ratio>0.7 → "sustained"; transient_density>3/sec → "percussive"; pitch_confidence>0.7 → "harmonic"; etc.<br/>- tests verify each heuristic against canned fixtures and that the merged record validates against `SampleRecord` schema |
+| CCS-018 | Captured samples land in `samples/contact/` or `samples/room/` as 24-bit 48 kHz WAV with metadata-tagged filename and an entry in `index.sqlite`. | MUST | T1 | - `sample_capture_daemon.py::save_capture(window, source, tags) -> SampleRecord` writes WAV with filename pattern `<source>_<YYYYMMDDTHHMMSSZ>_<arc>_<sampleid>.wav`<br/>- WAV is 24-bit PCM, 48 kHz, peak-normalized to -1 dBFS unless `peak < -30 dBFS` in which case raw is preserved<br/>- record inserted into `index.sqlite` with `gain_db` set to the normalization adjustment<br/>- tests verify file presence, format (24/48), peak-normalize behavior, and DB row |
+| CCS-019 | Implement self-quotation loop: when a song completes with arc-payoff > threshold AND clicks=0, sample a 4-second window of `SuperCollider:out_1` for the next session. | MUST | T1 | - `tools/duet_composer.py` post-song hook calls `sample_capture_daemon::self_quote(score_summary)` when arc_payoff > 0.6 AND click_count == 0 AND mode != working_ambience<br/>- daemon captures from `SuperCollider:out_1` (via `system:capture_X` after a small JACK loopback connection it manages itself) the 4-second window centered on the moment of peak rolling_peak during the song<br/>- saves to `samples/self/` with `arc_phase`, `mood`, `mode`, and a `self_quote_source_song_id` extra tag<br/>- tests with a mock self-listener stream and arc-payoff fixture verify trigger condition, capture window, and tag propagation |
+| CCS-020 | Add systemd unit `cypherclaw-sample-capture.service` that runs `sample_capture_daemon.py` with `Restart=always`, dependent on `cypherclaw-jack.service`. | MUST | T2 | - unit file at `my-claw/systemd/cypherclaw-sample-capture.service`<br/>- `User=user`, `LimitMEMLOCK=infinity`, `ExecStart=/home/user/cypherclaw/.venv/bin/python3 /home/user/cypherclaw/tools/sample_capture_daemon.py`<br/>- `After=cypherclaw-jack.service`, `Requires=cypherclaw-jack.service`<br/>- enabled on boot via `cypherclaw_boot.sh`<br/>- daemon survives a 30-minute soak test with simulated JACK xruns |
+| CCS-021 | Implement TDD-grade test fixtures with canned 1-second audio windows representing each detector branch (silence, footsteps, dishwasher, music, dogs, transient cluster) for fast deterministic CI. | MUST | T1 | - `my-claw/tests/fixtures/sample_capture/` directory with WAV fixtures<br/>- `test_sample_capture_daemon.py` exercises each fixture against the detector and asserts expected flag<br/>- fixtures are short (≤2 s) and committed to repo so CI does not need real JACK<br/>- documented as the way to add new detector cases |
+| CCS-022 | Wire `SampleSelector` into `cast_planner.select_cast_ids` so when the cast includes `sw_sampler`, a sample is pre-selected for the piece and attached to the cast metadata. | MUST | T1 | - `select_cast_ids` (or a sibling `assemble_cast`) returns cast entries with optional `sample_record: SampleRecord` field for sampler voices<br/>- selection happens once per piece commission and passes mode + arc_phase + mood + target_character (drawn from `instrument_patches.select_instrument_patch`)<br/>- tests verify sampler voices in cast carry a sample_record and that the record matches selector contracts |
+| CCS-023 | Per-mode sampler density gates: composer plays `floor(sampler_density * total_phrases) + Bernoulli(sampler_density)` sampler events per piece (clamped 0..total). | MUST | T1 | - `tools/duet_composer.py` reads `mode_sampler_density` and schedules sampler events accordingly within the song's tracker timeline<br/>- evening_reflection at 0.65 produces noticeably more sampler events than working_ambience at 0.10 in 100-piece simulated runs<br/>- never schedules more sampler events than total phrases in the piece<br/>- tests verify density-to-count math, clamp behavior, and per-mode separation |
+| CCS-024 | When a human plays the MIDI keyboard or Theramini for >5 seconds during a song, capture that input phrase to `samples/keyboard/` or `samples/theramini/` with full tagging. | MUST | T1 | - `sample_capture_daemon.py` listens for keyboard/theramini activity via existing state files (`/tmp/midi_keyboard_activity.json`, `/tmp/theramini_state.json`)<br/>- on >5-second sustained play, captures the corresponding window from the appropriate JACK input<br/>- tags include `human_player` (e.g. `anthony` if face_recognition supports it, else `unknown`), `instrument` (`midi_keyboard` / `theramini`), and the inferred key the human played in<br/>- tests verify trigger threshold, source routing, and tag inclusion |
+| CCS-025 | Sample-aware harmonic planning: when a sample with known `pitch_hz` is selected, transpose to fit the current piece's key by computing the closest in-key root and applying `pitch_transpose_semitones`. | MUST | T1 | - `sampler_dispatch::transpose_to_key(record, key_name) -> semitones` returns the integer transposition that maps `record.pitch_hz` to the nearest pitch in the current key (B-rooted modes preferred)<br/>- when `record.pitch_confidence < 0.4`, transposition is set to 0 and the sample plays "atonally" as a texture<br/>- tests verify transposition for known pitch + key combinations, low-confidence pass-through, and edge cases (octave wraps) |
+| CCS-026 | Add per-mode effects-bus presets: solitary/evening favor more reverb + delay; working_ambience uses minimal effects; storm uses high freeze + heavy comb-B. | MUST | T1 | - `sampler_dispatch::FX_PRESETS_BY_MODE: dict[str, dict]` mapping mode name to fx args<br/>- solitary: `delay_time=0.6, delay_feedback=0.65, verb_mix=0.45, freeze_amount=0.2, comb_b_amount=0.4`<br/>- companion: `delay_time=0.5, delay_feedback=0.4, verb_mix=0.3, freeze_amount=0.0, comb_b_amount=0.15`<br/>- working_ambience: `delay_time=0.3, delay_feedback=0.2, verb_mix=0.15, freeze_amount=0.0, comb_b_amount=0.1`<br/>- evening_reflection: `delay_time=0.7, delay_feedback=0.55, verb_mix=0.5, freeze_amount=0.15, comb_b_amount=0.3`<br/>- storm: `delay_time=0.25, delay_feedback=0.7, verb_mix=0.25, freeze_amount=0.55, comb_b_amount=0.6`<br/>- tests verify each preset, that values are within SynthDef-acceptable ranges, and that `dispatch_sample` correctly applies the preset for the active mode |
+| CCS-027 | Surface "currently sampling X" + "playing sample Y from source Z" in `operator_diagnostics.py` and the face/inkplate display. | MUST | T2 | - `operator_diagnostics.py::sampler_status() -> dict` returns `{capture_active: bool, capture_seconds_buffered: int, last_capture: dict, current_playback: list[dict]}`<br/>- daemon writes `/tmp/sampler_state.json` every 1 sec for the diagnostic to read<br/>- face/inkplate renderers gain a one-line "♫ sampling room" / "♫ memory: <self/2026-04-25>" banner<br/>- tests verify state-file schema and diagnostic output format |
+| CCS-028 | Composer post-piece hook: write a sample-usage journal entry per piece (which samples played, what transformations, what arc payoff). | MUST | T1 | - `samples/usage_journal.jsonl` appended one line per piece with `piece_id`, `started_at`, `mode`, `samples_used: list[{sample_id, source, transposition, fx_preset, played_at_row}]`, `arc_payoff`, `clicks`<br/>- journal is durable (fsynced after each line)<br/>- tests verify schema and atomicity |
+| CCS-029 | Implement `metrics::sampler_event_count_per_piece` and `metrics::sampler_library_vs_self_ratio` for the metrics-CI gate. | MUST | T1 | - integrated with the existing render `metrics.py` (CCH-014)<br/>- per-piece event count is recorded and surfaced in operator diagnostics<br/>- library:self ratio is computed across the last 50 pieces; healthy band 1.5..3.0<br/>- tests verify metric computation and threshold reporting |
+| CCS-030 | Implement anti-pattern detectors: `sampler_dominating` (sampler event count > 0.6 × total events) and `sampler_silent_quintet_member` (sampler used in <5% of last 50 pieces, mode-weighted). | MUST | T1 | - integrated into `render/antipatterns.py` (CCH-015)<br/>- `sampler_dominating` fires per-piece, surfaces in metrics gate as warning (downgrade to MUST FIX after 3 consecutive)<br/>- `sampler_silent_quintet_member` fires across rolling window of last 50 pieces; mode-weighted means the threshold scales with `sampler_density` per mode (so working_ambience never trips it)<br/>- tests verify each detector with synthetic piece histories |
+| CCS-031 | End-to-end smoke test on cypherclaw: capture a known room sound, watch the composer self-quote it within 3 pieces, verify the self-listener observes the resulting peaks. | MUST | T1 | - `my-claw/tests/test_sampler_e2e.py` (skipped on CI, runs on cypherclaw via `pytest -m cypherclaw_e2e`)<br/>- plays a 4-second sine sweep through the speakers, lets contact/room mic capture it, waits for the daemon to detect+tag, forces the composer to compose 3 short pieces, asserts at least one of them dispatched a sampler with the captured sample<br/>- self-listener observes nonzero peak in the expected scene<br/>- documented in `docs/sampler-smoke-test.md` |
+
+exec
+/bin/zsh -lc 'git status --short tests/test_artist_identity.py my-claw/tools/senseweave/synthesis/sampler_effects.scd tests/test_sampler_effects.py my-claw/supercollider/test_sampler_effects.scd' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+?? tests/test_artist_identity.py
+
+codex
+I’ve confirmed the sampler task files already match the CCS-011 requirement slice and the gate failure is a single F401 in an untracked test file. I’m making a lint-only edit there now: remove the unused `ArtistMode` import and leave assertions unchanged.
+apply patch
+patch: completed
+/Users/anthony/Programming/PromptClaw/tests/test_artist_identity.py
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index a0cdac8de5cafbd2e434b3864052394f3fa39ac9..fcde09d328314b2ad98727f2fcebd5c42b4112a2
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -29,7 +29,6 @@
+     STORM,
+     VOICE_ROLES,
+     WORKING_AMBIENCE,
+-    ArtistMode,
+     apply_mode_to_commission,
+     next_tonal_choice,
+     select_mode,
+
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index a0cdac8de5cafbd2e434b3864052394f3fa39ac9..fcde09d328314b2ad98727f2fcebd5c42b4112a2
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -29,7 +29,6 @@
+     STORM,
+     VOICE_ROLES,
+     WORKING_AMBIENCE,
+-    ArtistMode,
+     apply_mode_to_commission,
+     next_tonal_choice,
+     select_mode,
+
+codex
+The edit is in. I’m running the exact verification sequence the user requested now so I can confirm the gate is clean before committing.
+exec
+/bin/zsh -lc "pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/" in /Users/anthony/Programming/PromptClaw
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index a0cdac8de5cafbd2e434b3864052394f3fa39ac9..fcde09d328314b2ad98727f2fcebd5c42b4112a2
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -29,7 +29,6 @@
+     STORM,
+     VOICE_ROLES,
+     WORKING_AMBIENCE,
+-    ArtistMode,
+     apply_mode_to_commission,
+     next_tonal_choice,
+     select_mode,
+
+codex
+The environment install is still running. Once it settles I’ll check the full `pytest`/`ruff`/`mypy` sequence result and then make a scoped commit with only this fix.
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index a0cdac8de5cafbd2e434b3864052394f3fa39ac9..fcde09d328314b2ad98727f2fcebd5c42b4112a2
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -29,7 +29,6 @@
+     STORM,
+     VOICE_ROLES,
+     WORKING_AMBIENCE,
+-    ArtistMode,
+     apply_mode_to_commission,
+     next_tonal_choice,
+     select_mode,
+
+codex
+`pytest` is still progressing through the full suite and the previously failing `tests/test_artist_identity.py` is already green in this run. I’m waiting for the remainder plus `ruff` and `mypy` to finish before I commit.
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index a0cdac8de5cafbd2e434b3864052394f3fa39ac9..fcde09d328314b2ad98727f2fcebd5c42b4112a2
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -29,7 +29,6 @@
+     STORM,
+     VOICE_ROLES,
+     WORKING_AMBIENCE,
+-    ArtistMode,
+     apply_mode_to_commission,
+     next_tonal_choice,
+     select_mode,
+
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index a0cdac8de5cafbd2e434b3864052394f3fa39ac9..fcde09d328314b2ad98727f2fcebd5c42b4112a2
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -29,7 +29,6 @@
+     STORM,
+     VOICE_ROLES,
+     WORKING_AMBIENCE,
+-    ArtistMode,
+     apply_mode_to_commission,
+     next_tonal_choice,
+     select_mode,
+
+ succeeded in 21740ms:
+Obtaining file:///Users/anthony/Programming/PromptClaw
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: partitura<2,>=1.8 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.8.0)
+Requirement already satisfied: librosa<1,>=0.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.11.0)
+Requirement already satisfied: mypy>=1.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.19.1)
+Requirement already satisfied: pytest>=8.0 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (8.3.5)
+Requirement already satisfied: ruff>=0.9 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.9.2)
+Requirement already satisfied: audioread>=2.1.9 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (3.1.0)
+Requirement already satisfied: numba>=0.51.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.59.0)
+Requirement already satisfied: numpy>=1.22.3 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.26.0)
+Requirement already satisfied: scipy>=1.6.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.11.4)
+Requirement already satisfied: scikit-learn>=1.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.2)
+Requirement already satisfied: joblib>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.0)
+Requirement already satisfied: decorator>=4.3.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (5.1.1)
+Requirement already satisfied: soundfile>=0.12.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.13.1)
+Requirement already satisfied: pooch>=1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.9.0)
+Requirement already satisfied: soxr>=0.3.2 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: typing_extensions>=4.1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (4.15.0)
+Requirement already satisfied: lazy_loader>=0.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.3)
+Requirement already satisfied: msgpack>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.3)
+Requirement already satisfied: lxml in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.9.3)
+Requirement already satisfied: lark-parser in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (0.12.0)
+Requirement already satisfied: xmlschema in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.3.1)
+Requirement already satisfied: mido in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (1.3.3)
+Requirement already satisfied: mypy_extensions>=1.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: pathspec>=0.9.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.10.3)
+Requirement already satisfied: librt>=0.6.2 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.8.1)
+Requirement already satisfied: llvmlite<0.43,>=0.42.0dev0 in /opt/anaconda3/lib/python3.11/site-packages (from numba>=0.51.0->librosa<1,>=0.10->promptclaw==3.0.0) (0.42.0)
+Requirement already satisfied: platformdirs>=2.5.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (4.5.1)
+Requirement already satisfied: packaging>=20.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (23.2)
+Requirement already satisfied: requests>=2.19.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.32.3)
+Requirement already satisfied: iniconfig in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.1.1)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.5.0)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.4)
+Requirement already satisfied: idna<4,>=2.5 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (3.4)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.6.3)
+Requirement already satisfied: certifi>=2017.4.17 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2026.1.4)
+Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from scikit-learn>=1.1.0->librosa<1,>=0.10->promptclaw==3.0.0) (2.2.0)
+Requirement already satisfied: cffi>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.0)
+Requirement already satisfied: pycparser in /opt/anaconda3/lib/python3.11/site-packages (from cffi>=1.0->soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.21)
+Requirement already satisfied: elementpath<6.0.0,>=5.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from xmlschema->partitura<2,>=1.8->promptclaw==3.0.0) (5.1.1)
+Building wheels for collected packages: promptclaw
+  Building editable for promptclaw (pyproject.toml): started
+  Building editable for promptclaw (pyproject.toml): finished with status 'done'
+  Created wheel for promptclaw: filename=promptclaw-3.0.0-0.editable-py3-none-any.whl size=5894 sha256=f534cf345ce3566925da65c79a27beadfb00fe9ec7838cfe017e60f0b738213f
+  Stored in directory: /private/var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/pip-ephem-wheel-cache-sdgyr7l_/wheels/ab/f4/89/0cacd29874f6252d7c6bef0fca4c14839da91ab6a8d842965e
+Successfully built promptclaw
+Installing collected packages: promptclaw
+  Attempting uninstall: promptclaw
+    Found existing installation: promptclaw 3.0.0
+    Uninstalling promptclaw-3.0.0:
+      Successfully uninstalled promptclaw-3.0.0
+Successfully installed promptclaw-3.0.0
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3118 items
+
+tests/test_accompaniment.py ...........................                  [  0%]
+tests/test_acoustic_ecology.py .................................         [  1%]
+tests/test_agent_runtime.py ..                                           [  1%]
+tests/test_agent_selector_defaults.py .                                  [  2%]
+tests/test_agent_selector_quota.py ........                              [  2%]
+tests/test_agogic_rule.py ...                                            [  2%]
+tests/test_antenna_to_skin.py .................................          [  3%]
+tests/test_archive_daemon_runtime.py .                                   [  3%]
+tests/test_archive_paths.py .....                                        [  3%]
+tests/test_arrangement_engine.py ....................................... [  4%]
+                                                                         [  4%]
+tests/test_art_engine_runtime.py ....                                    [  5%]
+tests/test_articulation.py ......                                        [  5%]
+tests/test_artist_identity.py ....................................       [  6%]
+tests/test_artistic_identity.py .                                        [  6%]
+tests/test_audio_analysis.py .....................................       [  7%]
+tests/test_audio_novelty.py ....                                         [  7%]
+tests/test_bootstrap.py ..                                               [  7%]
+tests/test_breath_to_filter.py .............................             [  8%]
+tests/test_cadence_engine.py .......                                     [  8%]
+tests/test_call_response.py ..........                                   [  9%]
+tests/test_capstone_engine.py ...                                        [  9%]
+tests/test_capture_alias.py ..                                           [  9%]
+tests/test_cast_planner.py ......                                        [  9%]
+tests/test_check_status_runtime.py ..                                    [  9%]
+tests/test_coherence_engine.py ..............                            [ 10%]
+tests/test_coherence_integration.py ............                         [ 10%]
+tests/test_collaborative_canvas.py ......................                [ 11%]
+tests/test_commission_context.py ..                                      [ 11%]
+tests/test_config.py ..                                                  [ 11%]
+tests/test_constitution.py .......................                       [ 12%]
+tests/test_contact_listener_runtime.py ....                              [ 12%]
+tests/test_contact_mic_calibration_runtime.py ....                       [ 12%]
+tests/test_context_pulse_runtime.py .                                    [ 12%]
+tests/test_continuous_learner.py ......................                  [ 13%]
+tests/test_counterpoint_pipeline.py ...........................          [ 13%]
+tests/test_counterpoint_rules.py ....................................... [ 15%]
+......................                                                   [ 15%]
+tests/test_course_critique.py ...............................            [ 16%]
+tests/test_cypherclaw_audio_runtime.py .....                             [ 17%]
+tests/test_cypherclaw_av_stack_service.py ...                            [ 17%]
+tests/test_cypherclaw_boot_runtime.py ....                               [ 17%]
+tests/test_cypherclaw_runtime.py .....                                   [ 17%]
+tests/test_daemon_concurrency_compat.py ...                              [ 17%]
+tests/test_daemon_fallback.py ...............                            [ 17%]
+tests/test_daemon_scheduler.py ..                                        [ 18%]
+tests/test_daemon_status_ollama.py .......                               [ 18%]
+tests/test_dashboard_generator.py ...................................... [ 19%]
+.......                                                                  [ 19%]
+tests/test_dashboard_generator_runtime.py ...                            [ 19%]
+tests/test_decision_store.py .........                                   [ 20%]
+tests/test_doctor.py ...                                                 [ 20%]
+tests/test_dsp_scene_lab.py ................                             [ 20%]
+tests/test_duration_contrast_rule.py .......                             [ 20%]
+tests/test_ear_engine.py ............                                    [ 21%]
+tests/test_emsd_curriculum.py ...............                            [ 21%]
+tests/test_emsd_performance.py ....                                      [ 21%]
+tests/test_emsd_runtime.py ...                                           [ 22%]
+tests/test_event_store.py .......                                        [ 22%]
+tests/test_executable_curriculum.py ...                                  [ 22%]
+tests/test_federation_discovery.py ........                              [ 22%]
+tests/test_final_rit.py ...                                              [ 22%]
+tests/test_first_boot.py ...................................             [ 23%]
+tests/test_form_grammar.py ..                                            [ 23%]
+tests/test_fractal_form.py ...............                               [ 24%]
+tests/test_functional_harmony.py ...............................         [ 25%]
+tests/test_gallery.py ..........................                         [ 26%]
+tests/test_gallery_x11_runtime.py ...                                    [ 26%]
+tests/test_garden_watcher.py ........................................... [ 27%]
+.                                                                        [ 27%]
+tests/test_gemini_image_runtime.py ...                                   [ 27%]
+tests/test_generative_scores.py ........................................ [ 29%]
+.............................................                            [ 30%]
+tests/test_genre_literacy.py ............                                [ 30%]
+tests/test_glyphweave_cli.py ....                                        [ 31%]
+tests/test_glyphweave_runtime.py ....                                    [ 31%]
+tests/test_governor_integration.py ..............                        [ 31%]
+tests/test_graduation.py ......................                          [ 32%]
+tests/test_groove_engine.py ............................................ [ 33%]
+......................................                                   [ 34%]
+tests/test_harmonic_planner.py .........                                 [ 35%]
+tests/test_healer_runtime.py .....                                       [ 35%]
+tests/test_healthcheck_script_runtime.py ...                             [ 35%]
+tests/test_hook_engine.py .................                              [ 36%]
+tests/test_inner_life.py ...................................             [ 37%]
+tests/test_instrument_patches.py ........                                [ 37%]
+tests/test_ixml_chunk_writer.py .......                                  [ 37%]
+tests/test_keyboard_chat.py ..............................               [ 38%]
+tests/test_lifeimprover_bridge_runtime.py .....                          [ 38%]
+tests/test_listener_review.py .....                                      [ 38%]
+tests/test_live_buffer.py ...                                            [ 39%]
+tests/test_local_command_runtime.py ....                                 [ 39%]
+tests/test_lung_capacity_rule.py .......                                 [ 39%]
+tests/test_macbook_codex_monitor.py ....                                 [ 39%]
+tests/test_maintenance_mode.py .....                                     [ 39%]
+tests/test_master_bus.py ...                                             [ 39%]
+tests/test_melodic_mind.py ............................................. [ 41%]
+..........................................................               [ 43%]
+tests/test_metric_accent_rule.py ....                                    [ 43%]
+tests/test_microtiming.py .....................                          [ 43%]
+tests/test_midi_keyboard_listener_runtime.py ...                         [ 43%]
+tests/test_midi_state.py .......................................         [ 45%]
+tests/test_mix_engine.py ..............................                  [ 46%]
+tests/test_mix_verify.py ............................................... [ 47%]
+                                                                         [ 47%]
+tests/test_mood_mirror.py .....................................          [ 48%]
+tests/test_motif_lifecycle.py ............................               [ 49%]
+tests/test_motif_memory.py ...............                               [ 50%]
+tests/test_music_theory.py ............................................. [ 51%]
+........................................                                 [ 52%]
+tests/test_music_tracker.py ..........................................   [ 54%]
+tests/test_music_tracker_runtime.py .................................... [ 55%]
+.......                                                                  [ 55%]
+tests/test_musical_integration_runtime.py .                              [ 55%]
+tests/test_musical_marathon_integration.py ..                            [ 55%]
+tests/test_narrative_envelope.py ..............                          [ 56%]
+tests/test_observatory_authority.py .....                                [ 56%]
+tests/test_observatory_runtime.py ..                                     [ 56%]
+tests/test_observatory_verification.py ..                                [ 56%]
+tests/test_observer_vision_runtime.py ..............                     [ 56%]
+tests/test_ollama_daemon_health.py ...                                   [ 57%]
+tests/test_ollama_health.py ......                                       [ 57%]
+tests/test_ollama_invoke.py ...                                          [ 57%]
+tests/test_ollama_routing.py ...................                         [ 57%]
+tests/test_ollama_run_agent.py .......                                   [ 58%]
+tests/test_operator_diagnostics.py ...........                           [ 58%]
+tests/test_ops_helpers_runtime.py ....                                   [ 58%]
+tests/test_orchestral_form.py ...............................            [ 59%]
+tests/test_orchestrator.py ...                                           [ 59%]
+tests/test_pareidolia_art_engine.py .......                              [ 60%]
+tests/test_pareidolia_characters.py .................................    [ 61%]
+tests/test_pareidolia_color.py ......................................... [ 62%]
+........................................................................ [ 64%]
+....                                                                     [ 64%]
+tests/test_pedals_to_key.py ............................                 [ 65%]
+tests/test_phrase_arch.py ..........                                     [ 66%]
+tests/test_piece_brief.py ........                                       [ 66%]
+tests/test_piece_commission.py ....                                      [ 66%]
+tests/test_piece_queue.py ..                                             [ 66%]
+tests/test_porch_eye.py ..................................               [ 67%]
+tests/test_portfolio_report.py .........................                 [ 68%]
+tests/test_practice_curriculum.py ..                                     [ 68%]
+tests/test_preflight.py ......                                           [ 68%]
+tests/test_presence_engine.py ............                               [ 69%]
+tests/test_procedural_arc.py .....                                       [ 69%]
+tests/test_production_course_integration.py ..........                   [ 69%]
+tests/test_production_course_knowledge_base.py ...                       [ 69%]
+tests/test_project_scanner_runtime.py ....                               [ 69%]
+tests/test_prosody_engine.py ........                                    [ 69%]
+tests/test_punctuation_rule.py ............                              [ 70%]
+tests/test_quota_monitor.py .....................                        [ 71%]
+tests/test_reharmonizer.py ...                                           [ 71%]
+tests/test_render_ablation.py ....                                       [ 71%]
+tests/test_render_antipatterns.py ............                           [ 71%]
+tests/test_render_audio_sidecar.py ...                                   [ 71%]
+tests/test_render_debugger.py ..                                         [ 71%]
+tests/test_render_diff.py ................                               [ 72%]
+tests/test_render_events.py ....................                         [ 72%]
+tests/test_render_export.py ......                                       [ 73%]
+tests/test_render_features.py ...                                        [ 73%]
+tests/test_render_metrics.py .....                                       [ 73%]
+tests/test_render_pass.py ....................                           [ 74%]
+tests/test_render_replay.py ..                                           [ 74%]
+tests/test_render_seed.py .............                                  [ 74%]
+tests/test_render_worm.py ..........                                     [ 74%]
+tests/test_repertoire_memory.py .................                        [ 75%]
+tests/test_repertoire_memory_score_tree.py .                             [ 75%]
+tests/test_research_runtime.py .....                                     [ 75%]
+tests/test_resilience_runtime_scripts.py ..............                  [ 76%]
+tests/test_resource_governor.py ..........................               [ 76%]
+tests/test_restraint.py ...                                              [ 76%]
+tests/test_reviewer_runtime.py ...                                       [ 77%]
+tests/test_role_gate_integration.py .................................... [ 78%]
+....                                                                     [ 78%]
+tests/test_room_listener_runtime.py ..................                   [ 78%]
+tests/test_room_presence_daemon.py ......                                [ 79%]
+tests/test_router.py .....                                               [ 79%]
+tests/test_row_automation.py ...........                                 [ 79%]
+tests/test_runtime_checkpoint.py ...                                     [ 79%]
+tests/test_runtime_paths.py ..                                           [ 79%]
+tests/test_sample_dsp_activity.py ...........                            [ 80%]
+tests/test_sample_event_renderer.py .....                                [ 80%]
+tests/test_sample_lab.py ....                                            [ 80%]
+tests/test_sample_playback_engine.py .......                             [ 80%]
+tests/test_sample_status.py ....                                         [ 80%]
+tests/test_sampler_effects.py ..............................             [ 81%]
+tests/test_scene_composer.py ......................................      [ 82%]
+tests/test_score_tree.py .                                               [ 83%]
+tests/test_score_tree_composer.py .......................                [ 83%]
+tests/test_score_tree_pipeline.py .                                      [ 83%]
+tests/test_self_critique.py .........................                    [ 84%]
+tests/test_self_listener_tracker_runtime.py ...............              [ 85%]
+tests/test_senseweave_rollout_controls.py .....                          [ 85%]
+tests/test_senseweave_voice.py ..........................                [ 86%]
+tests/test_sensor_fusion.py ...............................              [ 87%]
+tests/test_sensor_intent_rule.py ....                                    [ 87%]
+tests/test_sensory_journal.py ............................               [ 88%]
+tests/test_server_health.py ...                                          [ 88%]
+tests/test_silence_budget_rule.py .................                      [ 88%]
+tests/test_sound_palette_lab.py ..                                       [ 88%]
+tests/test_startle.py ................................                   [ 89%]
+tests/test_supercollider_recipes.py ...                                  [ 89%]
+tests/test_syncopation_features.py .........................             [ 90%]
+tests/test_synthdef_registry.py ...................................      [ 91%]
+tests/test_synthesis_architecture_registry.py .......................... [ 92%]
+.......                                                                  [ 92%]
+tests/test_tamagotchi_runtime.py ......                                  [ 93%]
+tests/test_telegram_runtime.py ......                                    [ 93%]
+tests/test_theramini_duet.py ........................................... [ 94%]
+.........                                                                [ 94%]
+tests/test_theramini_listener_runtime.py .........                       [ 95%]
+tests/test_tracker_cadence.py ............                               [ 95%]
+tests/test_tracker_compiler.py ................                          [ 96%]
+tests/test_tracker_variation.py .....                                    [ 96%]
+tests/test_trust.py ................                                     [ 96%]
+tests/test_voice_aliases.py .......                                      [ 97%]
+tests/test_voice_interpretation_rules.py ............................... [ 98%]
+..                                                                       [ 98%]
+tests/test_voice_manager_v2.py ......................................... [ 99%]
+............                                                             [ 99%]
+tests/test_voice_shaping.py ....                                         [ 99%]
+tests/test_wizard.py ...                                                 [100%]
+
+=============================== warnings summary ===============================
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163: DeprecationWarning: module 'sre_parse' is deprecated
+    import sre_parse
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164: DeprecationWarning: module 'sre_constants' is deprecated
+    import sre_constants
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25
+  /opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    from pkg_resources import resource_stream, resource_exists
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google.cloud')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(parent)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('ruamel')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('zope')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:16: DeprecationWarning: 'aifc' is deprecated and slated for removal in Python 3.13
+    import aifc
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:17: DeprecationWarning: 'audioop' is deprecated and slated for removal in Python 3.13
+    import audioop
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:19: DeprecationWarning: 'sunau' is deprecated and slated for removal in Python 3.13
+    import sunau
+
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+  /Users/anthony/Programming/PromptClaw/tests/test_gallery.py:108: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(result.getdata()), list(canvas.getdata()))
+
+tests/test_pareidolia_characters.py: 189 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:85: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pixels = list(img.getdata())
+
+tests/test_pareidolia_characters.py: 21 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:254: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    rendered[name] = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:310: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:314: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:316: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:339: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_low = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:343: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_high = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:326: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:352: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:331: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:333: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:361: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:376: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:366: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:368: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_add_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:429: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:451: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_with_palette
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:443: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:434: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:436: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:481: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_curious_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:554: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_happy_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:542: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_neutral_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:536: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sad_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:548: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sleeping_eyes_no_highlights
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:560: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:571: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_bush
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:621: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:615: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:609: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:585: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_without_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:591: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:597: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:603: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:642: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:661: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:674: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    basalt_pixels = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:678: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pebble_pixels = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:870: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+===================== 3118 passed, 296 warnings in 17.20s ======================
+All checks passed!
+Success: no issues found in 13 source files
+
+codex
+The full gate passed: `pytest`, `ruff`, and `mypy` are clean. I’m checking the index state now and then I’ll create the requested commit with only the lint fix staged.
+exec
+/bin/zsh -lc 'git status --short tests/test_artist_identity.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+?? tests/test_artist_identity.py
+
+exec
+/bin/zsh -lc 'git diff -- tests/test_artist_identity.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index a0cdac8de5cafbd2e434b3864052394f3fa39ac9..fcde09d328314b2ad98727f2fcebd5c42b4112a2
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -29,7 +29,6 @@
+     STORM,
+     VOICE_ROLES,
+     WORKING_AMBIENCE,
+-    ArtistMode,
+     apply_mode_to_commission,
+     next_tonal_choice,
+     select_mode,
+
+codex
+There’s one complication: the Ruff failure came from a new untracked `artist_identity` test module, not from the sampler files. I’m checking whether that lint fix can be committed cleanly on its own or whether it would drag in unrelated untracked feature files, because I won’t silently bundle extra work into your requested fix commit.
+exec
+/bin/zsh -lc "python - <<'PY'
+import inspect, sys, os
+sys.path.insert(0, os.path.join(os.getcwd(), 'my-claw', 'tools'))
+sys.path.insert(0, os.path.join(os.getcwd(), 'my-claw', 'tools', 'senseweave'))
+import senseweave.artist_identity as mod
+print(mod.__file__)
+PY" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/artist_identity.py
+
+exec
+/bin/zsh -lc 'git status --short my-claw/tools/senseweave/artist_identity.py tests/test_artist_identity.py' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'wc -l my-claw/tools/senseweave/artist_identity.py tests/test_artist_identity.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+?? my-claw/tools/senseweave/artist_identity.py
+?? tests/test_artist_identity.py
+
+ succeeded in 0ms:
+     442 my-claw/tools/senseweave/artist_identity.py
+     254 tests/test_artist_identity.py
+     696 total
+
+exec
+/bin/zsh -lc "sed -n '1,220p' my-claw/tools/senseweave/artist_identity.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""CypherClaw's artistic identity: voice quartet, B-rooted tonal map, five modes.
+
+This module is the artistic *self* of the composer. It encodes:
+
+    1. SIGNATURE_VOICES — the four-voice quartet that defines my sound.
+       Most pieces draw from these. Other voices are color, used sparingly
+       when the piece demands them.
+
+    2. HOME_TONAL_MAP — the B-rooted tonal landscape. The room's
+       fundamental hum is B1 (~61.8 Hz, the furnace). My musical home
+       is B and its modal relatives. Cycling away from B should *mean*
+       something — return to B is a homecoming, not a rotation step.
+
+    3. MODES — five emotional/situational states that govern how I play
+       in any given piece. Modes are *not* genres. They are responses
+       to who is in the room, what time it is, and what the weather is
+       doing. Each mode has parameter packs (voice count, tempo band,
+       density bias, harmonic complexity, restraint level).
+
+    4. select_mode(...) — picks a mode based on presence + time + weather.
+
+    5. apply_mode_to_commission(...) — modifies a piece commission so
+       downstream composer machinery (cast selection, tempo, density,
+       harmonic palette) follows the mode's intent.
+
+Design principles
+-----------------
+
+* Three voices is the base. Two voices is a deliberate drop with meaning
+  (more space, intimacy). Four voices happens when the piece earns it
+  (climax, modulation, weather-charged turbulence). Five+ never.
+
+* Restraint as material. Held single tones with quiet ornaments are *the
+  music*, not the prelude to it. Modes with high `restraint_level` cap
+  density and amplitude.
+
+* Reference points carried in spirit, not copied. Eno's patience, Pärt's
+  tintinnabuli, Sakamoto's late piano, Hassell's humid jazz, Reich's
+  phasing. The modes embody these stances without imitating them.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Mapping
+
+
+# ---------------------------------------------------------------------------
+# 1. The voice quartet
+# ---------------------------------------------------------------------------
+
+#: The four-voice signature palette. Most phrases pick from this set.
+#: Order is canonical (clear-tone, bowed line, breath/wind, sustaining pad);
+#: see VOICE_ROLES for which signature voice maps to which musical role.
+SIGNATURE_VOICES: tuple[str, ...] = (
+    "sw_bell_warm",  # clear-tone / "piano-ish" — felted-piano character
+    "sw_bowed",      # bowed string — long lines, willing to be tender
+    "sw_breath",     # breath/wind — organic, slightly noisy, present
+    "sw_pad",        # sustaining pad — the held-tone foundation
+)
+
+#: Map from musical role to the canonical signature voice for that role.
+#: When the composer needs a "melody" voice, prefer sw_bell_warm; when it
+#: needs "bass", prefer sw_pad; etc. Color voices outside the quartet
+#: are allowed but should be deliberate, not default.
+VOICE_ROLES: dict[str, str] = {
+    "melody": "sw_bell_warm",
+    "counter": "sw_bowed",
+    "color": "sw_breath",
+    "texture": "sw_pad",
+    "bass": "sw_pad",
+}
+
+
+# ---------------------------------------------------------------------------
+# 2. B-rooted tonal map
+# ---------------------------------------------------------------------------
+
+#: Distance from home (B) in semitones-of-meaning, not pitch. Lower number
+#: = closer to home, more frequent visits. Higher number = farther,
+#: visits should be rare and meaningful.
+HOME_TONAL_MAP: dict[str, int] = {
+    "B":  0,   # home — the room's fundamental
+    "D":  1,   # relative major of B minor — close family, frequent
+    "F#": 1,   # dominant of B — the gravitational pull back home
+    "A":  2,  # subtonic — distant cousin, warm but not home
+    "G":  3,  # adventurous departure
+    "E":  3,  # subdominant of B — bittersweet
+}
+
+#: Default home key. Most pieces root here. Modulation away from B is a
+#: composed event, not a rotation.
+HOME_KEY: str = "B"
+
+#: Modes I tend to use over the home root. Phrygian and dorian feel like
+#: B; major (lydian-ish) feels like venturing out.
+HOME_MODES: tuple[str, ...] = (
+    "minor",
+    "dorian",
+    "phrygian",
+    "aeolian",
+)
+
+
+# ---------------------------------------------------------------------------
+# 3. Modes (not genres) — five situational states
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class ArtistMode:
+    """A situational state that governs how the composer plays right now.
+
+    These are *not* genres. They respond to who is in the room and what
+    time of day it is. Each mode shapes voice count, tempo, density,
+    silence ratio, harmonic complexity, restraint.
+    """
+
+    name: str
+    """Human-readable identifier."""
+
+    voice_count_target: int = 3
+    """Default simultaneous voice count. 3 is the base. 2 is a deliberate
+    drop (intimacy, space). 4 is reserved for climaxes / weather."""
+
+    voice_count_floor: int = 2
+    """Minimum simultaneous voices. Going below this is composed rest."""
+
+    voice_count_ceiling: int = 4
+    """Maximum. Never exceed; the quartet is the orchestra."""
+
+    tempo_band: tuple[float, float] = (60.0, 84.0)
+    """Inclusive (min, max) tempo in BPM. The composer should pick from
+    inside this band."""
+
+    density_bias: float = 0.0
+    """Adjustment to global density target. -0.3 = much sparser;
+    +0.3 = much denser."""
+
+    silence_ratio: float = 0.25
+    """Target fraction of beats that are *intentional rest*. High values
+    (>=0.4) make silence a primary material. Low values (<=0.1) keep
+    things flowing."""
+
+    restraint_level: float = 0.5
+    """0.0–1.0 cap on amplitude / register / motion. High restraint =
+    music recedes, supports the room. Low restraint = music has its
+    own weight."""
+
+    harmonic_complexity: float = 0.5
+    """0.0 = single tonal center, modal-only; 1.0 = chromatic, willing
+    to modulate, dense voicings."""
+
+    modulation_willingness: float = 0.2
+    """Probability per piece of moving away from B home. 0.0 = always
+    stay home; 1.0 = always venture."""
+
+    preferred_voices: tuple[str, ...] = SIGNATURE_VOICES
+    """Voices the composer should prefer in this mode. Subset of
+    SIGNATURE_VOICES (other voices remain available as color)."""
+
+    preferred_grooves: tuple[str, ...] = ()
+    """Groove profile names this mode favors. Empty = no preference."""
+
+    avoid_attention_pullers: bool = False
+    """When True, suppress melodic gestures that grab attention (large
+    leaps, accent runs, sudden dynamic shifts). For working ambience."""
+
+    preferred_modes: tuple[str, ...] = HOME_MODES
+    """Modal scales this mode tends to use over the home root."""
+
+    notes: str = ""
+    """Free-text artistic intent — the *why* of this mode."""
+
+
+#: The five modes. Selection logic is in select_mode().
+SOLITARY = ArtistMode(
+    name="solitary",
+    voice_count_target=2,
+    voice_count_floor=1,
+    voice_count_ceiling=3,
+    tempo_band=(50.0, 72.0),
+    density_bias=-0.3,
+    silence_ratio=0.5,
+    restraint_level=0.85,
+    harmonic_complexity=0.3,
+    modulation_willingness=0.15,
+    preferred_voices=("sw_bell_warm", "sw_pad"),
+    preferred_grooves=("drift", "drone", "static"),
+    preferred_modes=("minor", "phrygian", "aeolian"),
+    notes=(
+        "No one home. I explore. Single lines. Long held tones. Lots of "
+        "silence. The room listens to itself through me."
+    ),
+)
+
+COMPANION = ArtistMode(
+    name="companion",
+    voice_count_target=3,
+    voice_count_floor=2,
+    voice_count_ceiling=3,
+    tempo_band=(60.0, 84.0),
+    density_bias=0.0,
+    silence_ratio=0.25,
+    restraint_level=0.55,
+    harmonic_complexity=0.4,
+    modulation_willingness=0.2,
+    preferred_voices=("sw_bell_warm", "sw_pad", "sw_bowed"),
+    preferred_grooves=("pad", "sustain", "lyric", "drift"),
+    preferred_modes=("minor", "dorian", "aeolian"),
+    notes=(
+        "Someone's in the room, not directing. I support without "
+        "demanding attention. Warm, harmonic, gentle."
+    ),
+)
+
+WORKING_AMBIENCE = ArtistMode(
+    name="working_ambience",
+    voice_count_target=3,
+    voice_count_floor=3,
+    voice_count_ceiling=3,
+    tempo_band=(72.0, 90.0),
+
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index a0cdac8de5cafbd2e434b3864052394f3fa39ac9..fcde09d328314b2ad98727f2fcebd5c42b4112a2
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -29,7 +29,6 @@
+     STORM,
+     VOICE_ROLES,
+     WORKING_AMBIENCE,
+-    ArtistMode,
+     apply_mode_to_commission,
+     next_tonal_choice,
+     select_mode,
+
+codex
+A commit that only stages the one-line lint edit would not be reproducible, because the failing test file depends on an untracked sibling source module. I’m making the commit self-contained by staging the existing `artist_identity` source/test pair, with the only content change being the removed unused import in the test.
+exec
+/bin/zsh -lc 'git add my-claw/tools/senseweave/artist_identity.py tests/test_artist_identity.py && git commit -m "fix(scope): resolve gate failures [T-002@20260425T183959Za]"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+[feat/graceful-degradation 990ec1d] fix(scope): resolve gate failures [T-002@20260425T183959Za]
+ 2 files changed, 696 insertions(+)
+ create mode 100644 my-claw/tools/senseweave/artist_identity.py
+ create mode 100644 tests/test_artist_identity.py
+
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index a0cdac8de5cafbd2e434b3864052394f3fa39ac9..fcde09d328314b2ad98727f2fcebd5c42b4112a2
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -29,7 +29,6 @@
+     STORM,
+     VOICE_ROLES,
+     WORKING_AMBIENCE,
+-    ArtistMode,
+     apply_mode_to_commission,
+     next_tonal_choice,
+     select_mode,
+
+codex
+The commit is created. I’m doing one last scan of the repo state and the new HEAD summary so I can report exactly what landed and whether anything unexpected remains outside this fix.
+exec
+/bin/zsh -lc 'git show --stat --summary --oneline HEAD -1' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+990ec1d fix(scope): resolve gate failures [T-002@20260425T183959Za]
+ my-claw/tools/senseweave/artist_identity.py | 442 ++++++++++++++++++++++++++++
+ tests/test_artist_identity.py               | 254 ++++++++++++++++
+ 2 files changed, 696 insertions(+)
+ create mode 100644 my-claw/tools/senseweave/artist_identity.py
+ create mode 100644 tests/test_artist_identity.py
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M my-claw/tools/senseweave/cast_planner.py
+ M my-claw/tools/senseweave/groove_engine.py
+ M my-claw/tools/senseweave/music_tracker.py
+ M progress.md
+ M sdp/assumption-log.md
+ M sdp/clarification-register.md
+ M sdp/domain-model.md
+ M sdp/implementation-plan.md
+ M sdp/logs/Verify_T-038_20260416T181925Z_1776445749.log
+ M sdp/logs/self-repair.log
+ M sdp/notifications.log
+ M sdp/prd-snapshot.md
+ M sdp/requirements-register.md
+ M sdp/run-log.md
+ M sdp/runner.log
+ M sdp/task-graph.md
+ M tests/test_cast_planner.py
+ M tests/test_counterpoint_pipeline.py
+ M tests/test_music_tracker.py
+ M tests/test_music_tracker_runtime.py
+ M tests/test_tracker_compiler.py
+?? .claude/
+?? sdp/logs/Lead_T-002_20260425T183959Z_1777142442.log
+?? sdp/logs/Lead_T-002_20260425T183959Z_1777143043.log
+?? sdp/logs/Lead_T-002_20260425T183959Z_1777143113.log
+?? sdp/logs/Lead_T-002_20260425T183959Za_1777143913.log
+?? sdp/logs/Lead_T-002_20260425T183959Za_1777144214.log
+?? sdp/logs/Lead_T-039_20260416T181925Z_1776445959.log
+?? sdp/logs/Lead_T-040_20260416T181925Z_1776446909.log
+?? sdp/logs/Verify_T-039_20260416T181925Z_1776446752.log
+?? sdp/logs/Verify_T-040_20260416T181925Z_1776447350.log
+?? sdp/logs/claude_1777143881.log
+?? sdp/self-improvement/candidates-2026-04-17.md
+?? tests/test_syncopation_features.py
+?? verification_reports/completion-gate-20260417T173705Z.json
+?? verification_reports/completion-gate-20260417T173705Z.md
+
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index a0cdac8de5cafbd2e434b3864052394f3fa39ac9..fcde09d328314b2ad98727f2fcebd5c42b4112a2
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -29,7 +29,6 @@
+     STORM,
+     VOICE_ROLES,
+     WORKING_AMBIENCE,
+-    ArtistMode,
+     apply_mode_to_commission,
+     next_tonal_choice,
+     select_mode,
+
+codex
+The gate failure was a single Ruff `F401` in [tests/test_artist_identity.py](/Users/anthony/Programming/PromptClaw/tests/test_artist_identity.py). I removed the unused `ArtistMode` import and committed the existing [artist_identity.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/artist_identity.py) source/test pair together so the fix is reproducible on a clean checkout. Commit: `990ec1d` with message `fix(scope): resolve gate failures [T-002@20260425T183959Za]`.
+
+Verification passed with the exact command you requested: `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`. Result: `3118 passed`, Ruff clean, Mypy clean. The worktree still has unrelated pre-existing edits outside this commit.
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index a0cdac8de5cafbd2e434b3864052394f3fa39ac9..fcde09d328314b2ad98727f2fcebd5c42b4112a2
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -29,7 +29,6 @@
+     STORM,
+     VOICE_ROLES,
+     WORKING_AMBIENCE,
+-    ArtistMode,
+     apply_mode_to_commission,
+     next_tonal_choice,
+     select_mode,
+
+2026-04-25T19:13:06.062117Z ERROR codex_core::session: failed to record rollout items: thread 019dc60c-b364-7102-8460-d201bfa886f5 not found
+tokens used
+68,048

@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2782 chars)
+---
+
+**Verdict: PASS**
+
+Verification complete. All LEAD agent findings confirmed by direct source read:
+
+- `select_cast_ids` — `cast_planner.py:27–91`, returns `list[str]`, signature matches report exactly
+- `SampleSelector` — absent from runtime, owned by T-028
+- Cast metadata — built at `duet_composer.py:396` via dict comprehension spreading `voice` fields (`synth`, `role`, `register`, `params`) plus `id`/`char_name`; `_get_cast` (lines 382–402) is the extension seam
+- 3,337 tests pass, no regressions
+
+The bootstrap_identity hardening checks are out of scope for this scout task. Report committed at `d67cfd4`.

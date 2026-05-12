@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1604 chars)
+---
+
+T-010 done in commit `6b84fb7`.
+
+**Changes:**
+- `queue.py`: Added `last_error TEXT` column with migration; split `mark_failed` into transient (default — retry while `attempts < max_attempts`) vs `terminal=True` (immediate fail). Worker loops now mark validation rejection terminal with `error="validation_rejected"` and pass exception messages through for transient failures.
+- `test_generation_queue.py`: Schema test updated; added 4 regression tests covering terminal-vs-transient distinction, last_error tracking across attempts, validation rejection bypassing retry under `max_attempts=3`, and `GenerationError` retrying exactly 3 times.
+
+**Validation:** 3673 passed / 2 skipped, ruff clean, mypy clean.

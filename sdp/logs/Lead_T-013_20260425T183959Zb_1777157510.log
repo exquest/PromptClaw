@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3582 chars)
+---
+
+Task T-013@20260425T183959Zb complete. Committed in `05f0791`.
+
+**Deliverables:**
+- `docs/cypherclaw-sampler-architecture.md` — architectural reference covering scope, components (with file paths), end-to-end signal flow (JACK → ring buffer → InterestingMomentDetector → tag → `index.sqlite` → dispatch → `sw_sampler_fx` → master bus), antipatterns (`sampler_dominating`, `sampler_silent_quintet_member`), integration points (identity, cast planner, mix engine, composer, operator diagnostics), and partial-rollout status with PRD/roadmap cross-links.
+- `tests/test_cypherclaw_sampler_architecture.py` — 6 doc regression tests pinning sections, file paths, antipattern names, and pending-piece callouts. Verified Red → Green.
+- `specs/t-013@20260425t183959zb-spec.md` with 7 acceptance criteria + VERIFY commands.
+- `CHANGELOG.md`, `progress.md`, `ESCALATIONS.md` updated. Hardening checks (`bootstrap_identity`/`FirstBootAnnouncer`) logged as out-of-scope for a docs-only task; `sample_capture_daemon.main()` already invokes `bootstrap_identity()` and startup paths are covered by `tests/test_first_boot.py` + `tests/test_governor_integration.py`.
+
+**Validation:** `pytest tests/ -x` → 3289 passed. `ruff check src/ tests/` → all checks passed. `mypy src/` → no issues.

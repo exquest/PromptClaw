@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2807 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+All 3478 tests pass. Summary of findings:
+
+- **AC1** (schema round-trip with legacy aliases): PASS — `JournalEntry`/`SamplePlay` serialize and deserialize CCS-028 fields while preserving backward-compatibility.
+- **AC2** (runtime metadata exposure): PASS — `ScheduledTrackerEvent` carries `metadata`/`scene_metadata`, `record_scheduled_sample_event` correctly extracts sample gesture info and filters non-sample events.
+- **AC3** (end-to-end integration): PASS — full compose→gate→compile→schedule→journal pipeline produces a populated JSONL entry with `samples_used`, `transformations`, and `arc_payoff`.
+- **AC4** (hardening anchors): PASS — `TestStartupIdentityWiring` and `test_resource_governor.py` remain green.
+
+**One minor issue:** The spec's AC2 VERIFY path is missing the class prefix (`::TestBuildSceneEvents::`) — running it verbatim collects zero tests. The test itself exists and passes. Noted for the lead agent to fix in the spec.

@@ -1,0 +1,19 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1567 chars)
+---
+
+Done. Here's what was committed in `b53539a`:
+
+**`my-claw/tools/senseweave/piece_brief.py`** — 3 changes:
+1. **6 new defaulted fields on `PieceBrief`**: `opening_beat`, `turn_beat`, `payoff_beat`, `residue_beat`, `motif_development`, `sound_palette` — all `str = ""` so existing callers are unaffected
+2. **Phase-based beat templates** (`_PHASE_BEAT_TEMPLATES`, `_MOTIF_DEVELOPMENT`, `_PALETTE_BASE`) and a `_derive_narrative_fields()` helper that maps arc phase + mood/energy/curiosity into concrete beat descriptions and palette hints
+3. **`build_piece_brief` gains `narrative: Mapping | None`** — when present with a valid `arc_phase`, it populates the 6 new fields and nudges `hook_pressure` (±0.08 from creative_energy) and `through_composed_pressure` (+0.06 from high curiosity)
+
+**`my-claw/tools/duet_composer.py`** — production wiring:
+- `_read_narrative_state()` reads `/tmp/inner_life_state.json` and passes it to `build_piece_brief`
+
+**`tests/test_piece_brief.py`** — 8 tests covering:
+- Stable degradation: `None`, `{}`, and partial narrative all leave beat fields empty
+- Specificity: full narrative populates all 4 beats with lead-image text, unique per arc phase
+- Pressure nudges: creative_energy and curiosity shift hook/through pressures
+- Palette modifiers: mood extremes add tonal descriptors ("bright", "dark", etc.)

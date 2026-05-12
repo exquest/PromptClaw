@@ -1,0 +1,17 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2762 chars)
+---
+
+**Verdict: PASS**
+
+All 5 acceptance criteria satisfied:
+
+| AC | Test/Check | Result |
+|---|---|---|
+| 1 | `test_check_daily_caps_flags_breaches_and_exact_cap_passes` | PASS |
+| 2 | `test_render_cap_summary_links_cost_model_and_lists_breaches` + min-days test | PASS |
+| 3 | `test_cli_writes_cap_summary_and_returns_failure_on_breach` | PASS |
+| 4 | Inline python assertion on committed artifact | PASS |
+| 5 | `grep` for `steady-state-cap-summary.md` in CHANGELOG + progress | PASS |
+
+Full test suite: **12/12 passed**. The cap summary correctly reports **FAIL** with 7/7 days breaching the $5.00 baseline (daily costs range $24–$305, driven by high claude-opus-4 output token volume). The `bootstrap_identity` hardening items are confirmed satisfied in the existing daemon entrypoints — verified by grep and `TestStartupIdentityWiring` in `test_governor_integration.py`. Report committed to `sdp/verification/t-032@20260427t001208zc-verify.md`.

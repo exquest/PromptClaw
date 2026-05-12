@@ -1,0 +1,19 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3446 chars)
+---
+
+frac-0051 complete. `promptclaw/memory.py` now reaches fractal depth 2 (4237 tests pass).
+
+Summary of the work:
+- **Spec** (`specs/frac-0051-spec.md`) — 11 acceptance criteria with VERIFY commands
+- **Tests** (`tests/test_promptclaw_memory_depth.py`) — 9 tests covering canonical block layout, `n/a` agent fallbacks, append/parse round-trip, empty inputs, JSON-safe summary aggregation, store helpers (including missing-file path), and fractal depth ≥ 2
+- **Implementation** (`promptclaw/memory.py`) — Added frozen `MemoryEntry`, `format_run_block`, `parse_memory_log`, `summarize_memory_log`, plus `MemoryStore.entries`/`latest_entry`/`summary` methods. `append_run_summary` now delegates to `format_run_block` so the on-disk markdown shape stays byte-identical.
+- **Doc** — CHANGELOG entry added.
+
+Verifications:
+- `classify_depth('promptclaw/memory.py')` → depth=2, 6 real_logic / 4 trivial, 131 lines
+- Full suite: 4237 passed, 3 skipped
+- Hardening anchors green: `tests/test_smoke_narrative_script.py`, `tests/test_cli_identity_hardening.py`, `tests/test_first_boot.py::TestStartupIdentityPersistence`, `tests/test_governor_integration.py::TestStartupIdentityWiring`
+- Ruff clean on new files; existing `promptclaw/utils.py` mypy error is pre-existing and untouched
+
+Committed as 4 sub-task commits under `[frac-0051]`.

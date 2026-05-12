@@ -1,0 +1,22 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high -p -
+Prompt delivered via: stdin (1956 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+All three acceptance criteria are satisfied:
+
+| Criterion | Status |
+|---|---|
+| `PROVIDERS["ollama"] == "local"` | PASS |
+| 9 category fitness seeds present | PASS |
+| `netops` seeded highest at 0.80 | PASS |
+
+**Suite:** 1383 passed (excluding pre-existing `test_first_boot.py` collection error).
+
+**Notes flagged for Lead:**
+1. `ollama` is missing `narrative_prose` from `DEFAULT_FITNESS` — fallback is 0.5, inconsistent with cloud agents. Minor addition recommended.
+2. `ollama` is not in `DEFAULT_AGENTS`, so it only enters rotation when passed explicitly via `available_agents`.
+3. `select_pair()` lost `available_agents`/`disabled_agents` params — caller breakage risk if anything passes those (out of T-001 scope).
+
+Report committed at `sdp/verification/t-001@20260408t223256z-verify.md`.

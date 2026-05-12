@@ -1,0 +1,78 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1379 chars)
+---
+
+Report for **T-016@20260425T183959Za** — locating `select_cast_ids` and `SampleSelector`, plus current cast-metadata shape.
+
+## `cast_planner.select_cast_ids`
+
+**File:** `my-claw/tools/senseweave/cast_planner.py:27-91`
+
+**Signature** (lines 27-35):
+```python
+def select_cast_ids(
+    all_chars: Mapping[str, Mapping[str, object]],
+    cast_history: Sequence[str],
+    *,
+    mood_energy: float = 0.5,
+    max_chars: int = 6,
+    preferred_synths: Sequence[str] = (),
+    voice_count_target: int | None = None,
+) -> list[str]:
+```
+
+**Return shape:** flat `list[str]` of character IDs (e.g. `["mel", "rhythm", "harm", "color"]`). No metadata — just IDs. Helper `_ranked_character_ids` (lines 10-24) requires `voice.synth` to be set.
+
+**Constants** (lines 6-7): `CORE_ROLES = ("melody", "rhythm", "harmony")`, `SUPPORT_ROLES = ("foundation", "color", "texture", "counter_melody", "accent", "punctuation")`.
+
+**Tests:** `tests/test_cast_planner.py` (5 tests, all assert on `list[str]`).
+
+## `SampleSelector`
+
+**Does not exist yet.** Confirmed by:
+- `grep "class SampleSelector"` → no matches in any `.py` file.
+- No `sample_library.py` or `sample_selector.py` in `my-claw/tools/senseweave/` (existing sampler modules are `sample_dsp_activity.py`, `sample_event_renderer.py`, `sample_lab.py`, `sample_status.py`, `sampler_buffers.py`, `sampler_dispatch.py`, `sampler_scheduler.py` — none expose a selector class).
+- `sdp/implementation-plan.md:66` — **T-028** is the task to *implement* `SampleSelector`. Per `sdp/implementation-plan.md:47`, T-016 itself depends on T-011 only, but the wiring assumes a forthcoming `SampleSelector` API.
+- `docs/cypherclaw-sampler-architecture.md:194` describes it as "mode/arc/mood-aware deterministic picker" returning a `SampleRecord` from a `SampleLibrary`.
+
+**Implication:** T-016 cannot literally wire an existing `SampleSelector` — it must either (a) wait on T-028, or (b) define the integration seam (a Protocol or callable hook on `select_cast_ids`) that T-028 plugs into, plus stub-friendly tests. **Recommend escalating** to clarify ordering vs. T-028.
+
+## Current cast-metadata construction
+
+**File:** `my-claw/tools/duet_composer.py:382-402` — sole caller of `select_cast_ids`.
+
+Lines 390-396:
+```python
+cast_ids = select_cast_ids(
+    all_chars,
+    _cast_history,
+    mood_energy=mood_energy,
+    max_chars=max_chars,
+)
+cast = [{"id": cid, **all_chars[cid]["voice"], "char_name": cid} for cid in cast_ids]
+```
+
+The cast-dict shape (per element) is built **at the call site, not inside `select_cast_ids`**:
+- `id`: character id
+- `char_name`: same id (duplicated)
+- spread of `all_chars[cid]["voice"]`, which carries: `synth`, `role`, `register` (`[lo_midi, hi_midi]`), `params` (dict: `attack`, `release`, `verb`, `dly`, plus synth-specific knobs) — fields exercised by `_play_character` at `duet_composer.py:404-429`.
+
+History bookkeeping at lines 399-400: `_cast_history` is updated to a flat list of ids, capped at 60.
+
+## Where to extend for T-016
+
+To attach a pre-selected sample per piece when the cast contains `sw_sampler`, two seams are plausible:
+
+1. **Caller-side (smaller change):** in `duet_composer._get_cast`, after the list-comp at line 396, run a `SampleSelector` over cast members whose `synth == "sw_sampler"` and merge a `sample` (`SampleRecord`-ish dict) field into that cast entry. `select_cast_ids` keeps its `list[str]` contract.
+
+2. **Planner-side (richer contract change):** add an optional `sample_selector: SampleSelector | None = None` kwarg to `select_cast_ids` and change the return type to `list[CastEntry]` (TypedDict with `id`, `voice`, optional `sample: SampleRecord`). This breaks the current `list[str]` contract and ripples into `duet_composer.py:399` (`_cast_history` extraction) and `tests/test_cast_planner.py` (5 assertions on string lists).
+
+Option **(1)** is the smaller change and matches the "smallest change that satisfies the task" rule. Option (2) better matches the PRD framing ("attached to the cast metadata" — `sdp/implementation-plan.md:47`).
+
+Either way, the metadata shape to extend is the **per-element dict built at `duet_composer.py:396`** — adding a `sample` key (and probably `voice` nested under `voice` rather than spread, for clarity) is the natural extension.
+
+## Open question for ESCALATIONS.md
+
+`SampleSelector` is owned by T-028 and does not yet exist. T-016 depends only on T-011 in the plan, which is inconsistent. Before any code change, recommend either reordering T-016 after T-028 or scoping T-016 to "define the seam + Protocol stub" so T-028 can land the picker against a stable interface.
+
+No code changes were made for this scout-only task; nothing to commit.

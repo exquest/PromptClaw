@@ -183,6 +183,83 @@ Add coherence settings to `promptclaw.json`:
 }
 ```
 
+## Operator scripts
+
+### `scripts/smoke_narrative.py`
+
+Stdlib-only CLI that probes the cypherclaw narrative API health endpoint so the
+Deniable operator can validate the service from their Mac (over Tailscale) or
+from the host itself. It performs `GET /health`, prints status code + a short
+body preview, and exits non-zero on any non-2xx or connection failure.
+
+```bash
+# Default: NARRATIVE_BASE_URL or http://cypherclaw:8765
+python3 scripts/smoke_narrative.py
+
+# Explicit base URL + shared-secret token (sent as X-Narrative-Auth)
+python3 scripts/smoke_narrative.py \
+  --base-url http://100.x.y.z:8765 \
+  --token "$NARRATIVE_AUTH_TOKEN"
+```
+
+The token, when supplied, is sent in the `X-Narrative-Auth` header that
+`cypherclaw.narrative_api` enforces when `NARRATIVE_AUTH_TOKEN` is set.
+
+### Smoke test from Deniable
+
+Run the smoke probe from the Deniable operator's Mac to confirm the cypherclaw
+narrative API is reachable and healthy over Tailscale.
+
+**Prerequisites**
+
+- Tailscale is running on the Mac and connected to the `cypherclaw` node
+  (verify with `tailscale status`).
+- `NARRATIVE_BASE_URL` is exported, e.g.
+  `export NARRATIVE_BASE_URL=http://cypherclaw:8765` (or the Tailscale IP
+  `http://100.x.y.z:8765`). If unset, the script falls back to
+  `http://cypherclaw:8765`.
+
+**Invocation**
+
+```bash
+python scripts/smoke_narrative.py
+python scripts/smoke_narrative.py --verbose
+```
+
+`--verbose` appends `body=<first-200-chars>` to each line so response payloads
+can be eyeballed.
+
+**Expected output shape**
+
+One line per probed endpoint, in the form `METHOD PATH -> STATUS`, preceded by
+a `smoke_narrative: base_url=...` header:
+
+```text
+smoke_narrative: base_url=http://cypherclaw:8765
+GET /health -> 200
+POST /memory/search -> 200
+POST /beats/next -> 200
+GET /world/entities?limit=1 -> 200
+GET /world/entities/<id> -> 200
+GET /events?limit=1 -> 200
+```
+
+When `--verbose` is set, each line is suffixed with `body=...` (newlines
+escaped). If the entity list is empty, the per-entity GET prints
+`GET /world/entities/{entity_id} -> SKIP no entity id returned` and is not
+counted as a failure.
+
+**Exit-code semantics**
+
+- `0` — every probed endpoint returned a 2xx status.
+- `1` — any endpoint returned non-2xx, timed out, or failed to connect. Failed
+  requests print `METHOD PATH -> ERROR <detail>` before the script exits.
+
+**Troubleshooting**
+
+If the script reports connection errors, first check `tailscale status` to
+confirm the Mac has an active connection to the `cypherclaw` node.
+
 ## Docs
 
 - `docs/coherence-foundations.md` — research basis (60+ papers)

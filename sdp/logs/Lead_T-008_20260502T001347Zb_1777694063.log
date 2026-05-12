@@ -1,0 +1,10 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1349 chars)
+---
+
+Done. Committed as `535cd2c`.
+
+- Added `src/cypherclaw/narrative_api/settings.py` with `NarrativeSettings(BaseSettings)` exposing `bind_host` (default `127.0.0.1`), `bind_port` (default `8765`), and `auth_token` (default `None`), sourced from `NARRATIVE_`-prefixed env vars or `.env`.
+- Wired `main.py` to a module-level `settings: NarrativeSettings` instance and used `settings.auth_token` instead of reading `os.environ` directly.
+- Added `tests/test_narrative_api_settings.py` (defaults, env override, .env loading, main-module wiring).
+- Validation: 84 narrative_api tests pass, ruff clean, mypy clean on changed files. (Pre-existing collection errors in unrelated test modules due to missing optional deps like `PIL`/`pygame` were not touched.)

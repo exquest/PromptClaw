@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3183 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+All acceptance criteria are met. 3789 tests pass, ruff and mypy clean. Three minor notes for the lead:
+
+1. **Throttle bypass**: The old code passed `last_enqueued_at` to `_should_queue_now` to enforce a 30-minute cooldown; the new code drops it per spec, making `_generation_last_enqueued_at` dead state. Low risk if `_should_queue_now`'s budget/arc-payoff gate is sufficient, but could over-fire.
+2. **Dual globals**: `_conditioner` and `_generation_conditioner` are aliased to the same object — unnecessary complexity.
+3. **`_generation_clap_centroid` untested**: The helper's three-key lookup + `ear_metrics` nested path + 512-element fallback is non-trivial branching with no dedicated tests.
+
+Report written to `sdp/verification/t-013@20260427t001208z-verify.md` and committed.

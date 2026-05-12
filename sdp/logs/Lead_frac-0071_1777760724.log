@@ -1,0 +1,29 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3944 chars)
+---
+
+Task `frac-0071` is already complete on this branch — this is at least the **third duplicate Lead dispatch** for it. Nothing to redo.
+
+## Status
+
+- **`7011cda`** — spec + depth gate (`specs/frac-0071-spec.md`, `tests/test_test_federation_discovery_depth.py`)
+- **`b30a29c`** — depth-2 end-to-end coverage in `tests/test_federation_discovery.py`
+- **`d96d82f`** — CHANGELOG + progress.md docs
+- **`cbceae7`** — residual SDP log/state sync
+
+The prior Lead run validated **4483 passed, 3 skipped**, lint/types clean. Production `promptclaw/federation/discovery.py` already had the one-path implementation — this was a test-deepening task only.
+
+## Why the loop is firing
+
+The Verify agent (Gemini) at `Verify_frac-0071_1777760718.log` failed with:
+> `[API Error: You have exhausted your capacity on this model. Your quota will reset after 1h43m38s.]`
+
+So `sdp/verification/frac-0071-verify.md` was never written, and the orchestrator keeps re-dispatching Lead instead of recognizing the task as ready. **This is a verifier-quota problem, not a Lead problem.**
+
+## Recommendation
+
+Two options to break the loop without re-running completed work:
+1. **Wait ~1h43m** for the Gemini quota to reset and let Verify run normally.
+2. **Re-route Verify to Claude** (or another available provider) for frac-0071 so the report can be produced now.
+
+Not committing the three new SDP log artifacts (`Lead_..._1777760612.log` modification, `Lead_..._1777760724.log`, `Verify_..._1777760718.log`) — they'll get swept by the next routine `chore(sdp): sync state` pass alongside whatever else accumulates, same as `cbceae7` did.

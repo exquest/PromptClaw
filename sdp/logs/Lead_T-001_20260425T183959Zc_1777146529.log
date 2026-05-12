@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1327 chars)
+---
+
+Committed `87e6351`.
+
+**Summary**
+
+- `my-claw/tools/senseweave/sampler_buffers.py`: added `capacity` (default 64) and an `OrderedDict[int, BufferRecord]` LRU index. `on_sampler_load` now evicts the LRU record (calling `/b_free` and clearing its `buffer_id`) when the live set is at capacity, then inserts the new record as MRU. `on_sampler_free` removes the record from the index. New `touch(record)` promotes a record to MRU on access; no-op when the record isn't tracked.
+- `tests/test_sampler_buffers.py`: added 5 tests covering eviction trigger, `touch` promoting to MRU, `touch` no-op on untracked records, free-then-load not evicting, and below-capacity loads sending no `/b_free`.
+- All 13 sampler-buffer tests pass; ruff clean.

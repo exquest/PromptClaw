@@ -1,0 +1,24 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3767 chars)
+---
+
+frac-0121 is complete. Summary:
+
+**Changed:**
+- `specs/frac-0121-spec.md`: new spec with 6 acceptance criteria.
+- `tests/test_test_wizard_depth.py`: depth gate requiring `WizardEndToEndTests`, the named e2e method, fractal depth ≥ 2, and a machine-readable `depth: 2` marker.
+- `tests/test_wizard.py`: added `depth: 2` module docstring marker and `WizardEndToEndTests.test_startup_wizard_lifecycle_round_trips_json_diagnostic` driving init → run_startup_wizard → file scaffolding → config application → captured-output checks → focused-helper agreement → JSON round-trip.
+- `CHANGELOG.md`, `progress.md`, `ESCALATIONS.md`, `sdp/run-log.md`: task notes.
+
+**Validation:**
+- Red phase confirmed: depth gate failed before implementation (`WizardEndToEndTests` missing, marker missing).
+- `pytest tests/test_wizard.py tests/test_test_wizard_depth.py -q`: 6 passed.
+- Startup identity hardening anchors: 11 passed.
+- Full gate `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`: **4685 passed, 3 skipped**, ruff clean, mypy clean.
+- No new dependencies or migrations introduced.
+
+**Commits:**
+- `801f629 feat(spec): document wizard test deepening [frac-0121]`
+- `b46f2fa feat(tests): add wizard depth gate [frac-0121]`
+- `e0b6416 feat(tests): deepen wizard coverage [frac-0121]`
+- `5b3a7c8 feat(docs): record wizard test validation [frac-0121]`

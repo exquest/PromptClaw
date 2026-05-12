@@ -1,0 +1,1179 @@
+Command: codex exec --dangerously-bypass-approvals-and-sandbox -c model_reasoning_effort=xhigh -m gpt-5.5 -
+Prompt delivered via: stdin (1257 chars)
+---
+
+Validation passed with no regressions found, so I did not make or commit any code changes.
+
+Ran:
+- `pytest tests/test_generation_request.py -q` -> 21 passed
+- `pip install -e '.[dev]'` -> passed
+- `pytest tests/ -x --tb=short` -> 3710 passed, 3 skipped
+- `ruff check src/ tests/` -> passed
+- `mypy src/` -> passed
+
+The only remaining worktree changes are the pre-existing `progress.md` / `sdp/` log files, which I left untouched.
+
+--- STDERR ---
+OpenAI Codex v0.125.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019dcd64-3841-7f51-a3b2-2a00d99cef58
+--------
+user
+<!--
+  sdp-cli agent-specific template for codex
+  Edit this file to tune how codex handles lead_t1.md.
+  The shipped default lives at src/sdp/prompts/templates/lead_t1.md.
+  Delete this file to revert to the default.
+-->
+# Task T-023@20260427T001208Zc: Run the new hash tests plus the existing GenerationRequest test module; fix any regressions and confirm all pass.
+
+
+**Tier:** T1
+
+## Instructions
+
+Handle this directly. Skip broad discovery and do not write a spec.
+
+1. Read only the file(s) you expect to change and the closest relevant tests.
+2. Make the smallest change that satisfies the task.
+3. Add or update a regression test when behavior changes.
+4. Run focused validation, then broader checks if needed.
+5. Commit as soon as the change works: `<type>(scope): summary [T-023@20260427T001208Zc]`
+
+## Rules
+
+- Stay in scope; no unrelated cleanup.
+- Follow existing patterns and type hints.
+- Record blocking assumptions in `ESCALATIONS.md`.
+- Do not finish with uncommitted changes you introduced for this task.
+- Do not clean, revert, commit, or otherwise normalize unrelated pre-existing
+  workspace changes.
+
+## Validation
+
+Run before committing:
+```bash
+pip install -e '.[dev]'
+pytest tests/ -x --tb=short
+ruff check src/ tests/
+mypy src/
+```
+
+codex
+I’ll keep this narrow: first I’m checking the worktree state and locating the hash and `GenerationRequest` tests so I can run the requested focused validation before touching code.
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/logs/Lead_T-023_20260427T001208Zb_1777267031.log
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M sdp/runner.log
+?? sdp/logs/Lead_T-023_20260427T001208Zc_1777267389.log
+?? sdp/logs/Verify_T-023_20260427T001208Zb_1777267254.log
+
+exec
+/bin/zsh -lc 'rg --files tests src | rg "(generation|hash|request|GenerationRequest)"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_generation_conditioner.py
+tests/test_generation_storage.py
+tests/test_generation_e2e_cypherclaw.py
+tests/test_generation_live_modal.py
+tests/test_generation_live_replicate.py
+tests/test_generation_request.py
+tests/test_generation_replicate_retry.py
+tests/test_generation_queue.py
+tests/test_generation_composer_hook.py
+
+exec
+/bin/zsh -lc 'rg -n "GenerationRequest|hash|stable|digest|fingerprint" tests src' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_macbook_codex_monitor.py:17:    state = {"last_seen_ts": 0.0, "seen_fingerprints": []}
+tests/test_macbook_codex_monitor.py:24:    assert len(next_state["seen_fingerprints"]) == 1
+tests/test_macbook_codex_monitor.py:35:    state = {"last_seen_ts": 0.0, "seen_fingerprints": []}
+tests/test_macbook_codex_monitor.py:44:def test_duplicate_event_fingerprint_is_not_resent() -> None:
+tests/test_macbook_codex_monitor.py:50:        "seen_fingerprints": ["user_message:@codex please verify this patch"],
+tests/test_macbook_codex_monitor.py:57:    assert next_state["seen_fingerprints"] == ["user_message:@codex please verify this patch"]
+tests/test_macbook_codex_monitor.py:65:    state = {"last_seen_ts": 0.0, "seen_fingerprints": []}
+tests/test_piece_brief.py:62:def test_stable_degradation_without_narrative() -> None:
+tests/test_piece_brief.py:93:def test_stable_degradation_with_empty_narrative() -> None:
+tests/test_generation_storage.py:38:        hash=lambda: REQUEST_HASH,
+tests/test_generation_storage.py:46:def test_save_writes_date_partitioned_request_hash_path_and_registers_record(
+tests/test_generation_conditioner.py:3:import hashlib
+tests/test_generation_conditioner.py:85:    hasher = hashlib.sha256()
+tests/test_generation_conditioner.py:88:        hasher.update(len(encoded).to_bytes(4, "big"))
+tests/test_generation_conditioner.py:89:        hasher.update(encoded)
+tests/test_generation_conditioner.py:92:    hasher.update(len(mood_blob).to_bytes(4, "big"))
+tests/test_generation_conditioner.py:93:    hasher.update(mood_blob)
+tests/test_generation_conditioner.py:94:    hasher.update(np.ascontiguousarray(normalized_centroid, dtype=np.float32).tobytes())
+tests/test_generation_conditioner.py:95:    return int.from_bytes(hasher.digest(), "big") % (2**32)
+tests/test_generation_conditioner.py:155:    assert hash(first) == hash(second)
+src/cypherclaw/render/rules/motif_memory.py:4:import hashlib
+src/cypherclaw/render/rules/motif_memory.py:40:    motif_hash: str
+src/cypherclaw/render/rules/motif_memory.py:63:    def __contains__(self, motif_hash: object) -> bool:
+src/cypherclaw/render/rules/motif_memory.py:64:        return motif_hash in self._entries
+src/cypherclaw/render/rules/motif_memory.py:73:    def hashes(self) -> tuple[str, ...]:
+src/cypherclaw/render/rules/motif_memory.py:78:        motif_hash: str,
+src/cypherclaw/render/rules/motif_memory.py:83:        entry = self._entries.get(motif_hash)
+src/cypherclaw/render/rules/motif_memory.py:85:            entry = MotifMemoryEntry(motif_hash=motif_hash, timestamp=timestamp)
+src/cypherclaw/render/rules/motif_memory.py:86:            self._entries[motif_hash] = entry
+src/cypherclaw/render/rules/motif_memory.py:90:            self._entries.move_to_end(motif_hash)
+src/cypherclaw/render/rules/motif_memory.py:98:        motif_hash: str,
+src/cypherclaw/render/rules/motif_memory.py:102:        entry = self._entries.get(motif_hash)
+src/cypherclaw/render/rules/motif_memory.py:107:        self._entries.move_to_end(motif_hash)
+src/cypherclaw/render/rules/motif_memory.py:118:        motif_hash: str,
+src/cypherclaw/render/rules/motif_memory.py:124:        entry = self._entries[motif_hash]
+src/cypherclaw/render/rules/motif_memory.py:134:        motif_hash: str,
+src/cypherclaw/render/rules/motif_memory.py:139:            motif_hash,
+src/cypherclaw/render/rules/motif_memory.py:142:        return self._entries[motif_hash].decay_weight == 1.0
+src/cypherclaw/render/rules/motif_memory.py:153:    """R9 Motif Memory: LRU cache of motif hashes with variation menu and return-home decay."""
+src/cypherclaw/render/rules/motif_memory.py:177:    def _hash_motif(self, events: list[Event]) -> str:
+src/cypherclaw/render/rules/motif_memory.py:179:        return self._hash_items(events)
+src/cypherclaw/render/rules/motif_memory.py:181:    def _hash_items(self, items: Sequence[object]) -> str:
+src/cypherclaw/render/rules/motif_memory.py:190:        return hashlib.sha256(",".join(parts).encode("utf-8")).hexdigest()
+src/cypherclaw/render/rules/motif_memory.py:204:    def rank_variations(self, motif_hash: str) -> list[RankedVariation]:
+src/cypherclaw/render/rules/motif_memory.py:206:        entry = self.memory.entries.get(motif_hash)
+src/cypherclaw/render/rules/motif_memory.py:218:    def select_variation(self, motif_hash: str) -> str:
+src/cypherclaw/render/rules/motif_memory.py:220:        ranking = self.rank_variations(motif_hash)
+src/cypherclaw/render/rules/motif_memory.py:349:        motif_hash = self._hash_items(items)
+src/cypherclaw/render/rules/motif_memory.py:350:        entry = self.memory.lookup(motif_hash)
+src/cypherclaw/render/rules/motif_memory.py:353:            self.memory.insert(motif_hash)
+src/cypherclaw/render/rules/motif_memory.py:357:            motif_hash,
+src/cypherclaw/render/rules/motif_memory.py:363:                motif_hash,
+src/cypherclaw/render/rules/motif_memory.py:372:            motif_hash=motif_hash,
+src/cypherclaw/render/rules/motif_memory.py:414:        motif_hash: str,
+src/cypherclaw/render/rules/motif_memory.py:422:                    "motif_memory_hash": motif_hash,
+tests/test_score_tree_composer.py:3:import hashlib
+tests/test_score_tree_composer.py:62:def _score_tree_hash(tree: ScoreTree) -> str:
+tests/test_score_tree_composer.py:63:    return hashlib.sha256(tree.to_json().encode("utf-8")).hexdigest()
+tests/test_score_tree_composer.py:81:    assert _score_tree_hash(first) == _score_tree_hash(second)
+src/cypherclaw/render/rules/microtiming.py:3:import hashlib
+src/cypherclaw/render/rules/microtiming.py:19:    h = hashlib.sha256(struct.pack(">QQ", step_index & 0xFFFFFFFFFFFFFFFF, seed & 0xFFFFFFFFFFFFFFFF)).digest()
+tests/test_render_features.py:16:def test_partitura_cadence_fixture_features_are_stable() -> None:
+src/cypherclaw/render/seed.py:3:import hashlib
+src/cypherclaw/render/seed.py:8:    h = hashlib.sha256(struct.pack(">q", root_seed))
+src/cypherclaw/render/seed.py:11:    return int.from_bytes(h.digest()[:4], "big")
+tests/test_generation_composer_hook.py:78:    assert len(first["request_hash"]) == 64
+tests/test_generation_e2e_cypherclaw.py:84:            audio_path = self.scratch_dir / f"{request['request_hash']}.wav"
+tests/test_generation_e2e_cypherclaw.py:306:    request_hash = _wait_for_processed_generation(
+tests/test_generation_e2e_cypherclaw.py:316:        sample_id=str(request_hash),
+tests/test_generation_e2e_cypherclaw.py:333:        piece_id = f"generation-e2e-{request_hash}-{index}"
+tests/test_generation_e2e_cypherclaw.py:354:        sample.sample_id == request_hash and sample.source == "generated"
+tests/test_render_replay.py:4:import hashlib
+tests/test_render_replay.py:93:def _event_sequence_hash(events: Sequence[Any]) -> str:
+tests/test_render_replay.py:99:    return hashlib.sha256(encoded).hexdigest()
+tests/test_render_replay.py:102:def test_replay_reproduces_identical_event_sequence_hash() -> None:
+tests/test_render_replay.py:110:    assert _event_sequence_hash(rerendered.score) == _event_sequence_hash(original.score)
+tests/test_render_replay.py:147:    assert _event_sequence_hash(replayed.score) == _event_sequence_hash(original.score)
+tests/test_motif_memory.py:34:    assert entry.motif_hash == "motif-a"
+tests/test_motif_memory.py:38:    assert memory.hashes() == ("motif-a",)
+tests/test_motif_memory.py:51:    assert memory.hashes() == ("motif-b", "motif-a")
+tests/test_motif_memory.py:64:    assert memory.hashes() == ("motif-a", "motif-c")
+tests/test_motif_memory.py:75:    assert evicted.motif_hash == "motif-a"
+tests/test_motif_memory.py:76:    assert memory.hashes() == ("motif-b",)
+tests/test_motif_memory.py:106:def test_motif_memory_hashes_by_pitch_class_and_rhythm() -> None:
+tests/test_motif_memory.py:111:    h1 = rule._hash_motif(m1)
+tests/test_motif_memory.py:112:    h2 = rule._hash_motif(m2)
+tests/test_motif_memory.py:117:    h3 = rule._hash_motif(m3)
+tests/test_motif_memory.py:147:    assert rule.memory.hashes() == (
+tests/test_motif_memory.py:148:        rule._hash_motif(m3),
+tests/test_motif_memory.py:149:        rule._hash_motif(m1),
+tests/test_motif_memory.py:169:    motif_hash = rule._hash_motif(motif)
+tests/test_motif_memory.py:170:    rule.memory.insert(motif_hash)
+tests/test_motif_memory.py:172:    ranking = rule.rank_variations(motif_hash)
+tests/test_motif_memory.py:183:    motif_hash = rule._hash_motif(motif)
+tests/test_motif_memory.py:184:    rule.memory.insert(motif_hash)
+tests/test_motif_memory.py:186:    low_hit_max = max(rv.weight for rv in rule.rank_variations(motif_hash))
+tests/test_motif_memory.py:189:        rule.memory.lookup(motif_hash)
+tests/test_motif_memory.py:191:    high_hit_max = max(rv.weight for rv in rule.rank_variations(motif_hash))
+tests/test_motif_memory.py:199:    motif_hash = rule._hash_motif(motif)
+tests/test_motif_memory.py:200:    rule.memory.insert(motif_hash)
+tests/test_motif_memory.py:202:    chosen = rule.select_variation(motif_hash)
+tests/test_motif_memory.py:204:    ranking = rule.rank_variations(motif_hash)
+tests/test_motif_memory.py:213:    ranking = rule.rank_variations("nonexistent-hash")
+tests/test_motif_memory.py:223:    motif_hash = rule._hash_motif(motif)
+tests/test_motif_memory.py:224:    rule.memory.insert(motif_hash)
+tests/test_motif_memory.py:227:        assert rule.select_variation(motif_hash) in VARIATION_STRATEGIES
+tests/test_motif_memory.py:233:    motif_hash = rule._hash_motif(motif)
+tests/test_motif_memory.py:234:    rule.memory.insert(motif_hash)
+tests/test_motif_memory.py:236:    chosen = rule.select_variation(motif_hash)
+tests/test_production_course_knowledge_base.py:33:        assert chapter.stable_id == f"production-course.chapter.{chapter_id}"
+tests/test_production_course_knowledge_base.py:38:            assert concept.stable_id.startswith(
+tests/test_production_course_knowledge_base.py:54:        assert profile.stable_id == (
+tests/test_generation_queue.py:659:    job_id = queue.enqueue({"prompt": "bells", "hash": "abc"}, "req-1")
+tests/test_generation_request.py:15:    GenerationRequest,
+tests/test_generation_request.py:44:    req = GenerationRequest(**_kwargs())
+tests/test_generation_request.py:59:    req = GenerationRequest(**_kwargs())
+tests/test_generation_request.py:66:        GenerationRequest(**_kwargs(clap_centroid=np.zeros(256, dtype=np.float32)))
+tests/test_generation_request.py:71:        GenerationRequest(**_kwargs(clap_centroid=np.zeros(CLAP_CENTROID_DIM, dtype=np.float64)))
+tests/test_generation_request.py:76:        GenerationRequest(**_kwargs(clap_centroid=[0.0] * CLAP_CENTROID_DIM))
+tests/test_generation_request.py:81:        GenerationRequest(**_kwargs(duration_sec=4.9))
+tests/test_generation_request.py:86:        GenerationRequest(**_kwargs(duration_sec=60.1))
+tests/test_generation_request.py:90:    GenerationRequest(**_kwargs(duration_sec=5.0))
+tests/test_generation_request.py:91:    GenerationRequest(**_kwargs(duration_sec=60.0))
+tests/test_generation_request.py:96:        GenerationRequest(**_kwargs(backend="bogus"))
+tests/test_generation_request.py:101:        GenerationRequest(**_kwargs(model="bogus"))
+tests/test_generation_request.py:105:    req = GenerationRequest(**_kwargs(backend="modal", model="stable-audio-open"))
+tests/test_generation_request.py:107:    assert req.model == "stable-audio-open"
+tests/test_generation_request.py:110:def test_seed_is_included_in_hash() -> None:
+tests/test_generation_request.py:111:    a = GenerationRequest(**_kwargs(seed=1))
+tests/test_generation_request.py:112:    b = GenerationRequest(**_kwargs(seed=2))
+tests/test_generation_request.py:113:    assert hash(a) != hash(b)
+tests/test_generation_request.py:116:def test_equal_requests_share_hash_ignoring_centroid_identity() -> None:
+tests/test_generation_request.py:117:    a = GenerationRequest(**_kwargs())
+tests/test_generation_request.py:118:    b = GenerationRequest(**_kwargs())
+tests/test_generation_request.py:119:    assert hash(a) == hash(b)
+tests/test_generation_request.py:122:def test_content_hash_identical_fields_match() -> None:
+tests/test_generation_request.py:123:    a = GenerationRequest(**_kwargs())
+tests/test_generation_request.py:124:    b = GenerationRequest(**_kwargs())
+tests/test_generation_request.py:125:    assert a.hash() == b.hash()
+tests/test_generation_request.py:128:def test_content_hash_excludes_backend() -> None:
+tests/test_generation_request.py:129:    replicate = GenerationRequest(**_kwargs(backend="replicate"))
+tests/test_generation_request.py:130:    modal = GenerationRequest(**_kwargs(backend="modal"))
+tests/test_generation_request.py:131:    assert replicate.hash() == modal.hash()
+tests/test_generation_request.py:141:        pytest.param({"model": "stable-audio-open"}, id="model"),
+tests/test_generation_request.py:145:def test_content_hash_includes_generation_fields(overrides: dict[str, Any]) -> None:
+tests/test_generation_request.py:146:    baseline = GenerationRequest(**_kwargs())
+tests/test_generation_request.py:147:    changed = GenerationRequest(**_kwargs(**overrides))
+tests/test_generation_request.py:148:    assert baseline.hash() != changed.hash()
+tests/test_runtime_checkpoint.py:56:    lead_prompt_template_hash TEXT NOT NULL DEFAULT '',
+tests/test_runtime_checkpoint.py:58:    verify_prompt_template_hash TEXT NOT NULL DEFAULT '',
+tests/fixtures/audio/README.md:21:NumPy's `default_rng` stream is stable.
+
+codex
+The only existing worktree changes are SDP/progress/log artifacts, so I’ll leave those alone. The focused test module is `tests/test_generation_request.py`; I’m reading that and the `GenerationRequest` source next.
+exec
+/bin/zsh -lc "sed -n '1,240p' tests/test_generation_request.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+from __future__ import annotations
+
+import dataclasses
+import os
+import sys
+from typing import Any
+
+import numpy as np
+import pytest
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+
+from senseweave.generation.request import (  # noqa: E402
+    CLAP_CENTROID_DIM,
+    GenerationRequest,
+)
+
+
+def _centroid() -> np.ndarray:
+    return np.zeros(CLAP_CENTROID_DIM, dtype=np.float32)
+
+
+def _alternate_centroid() -> np.ndarray:
+    centroid = _centroid()
+    centroid[0] = np.float32(1.0)
+    return centroid
+
+
+def _kwargs(**overrides: Any) -> dict[str, Any]:
+    base: dict[str, Any] = dict(
+        prompt="evening reflection texture",
+        clap_centroid=_centroid(),
+        duration_sec=10.0,
+        seed=42,
+        bpm_target=96.0,
+        mode_name="evening_reflection",
+        arc_phase="Emergence",
+    )
+    base.update(overrides)
+    return base
+
+
+def test_constructs_with_defaults_and_field_types() -> None:
+    req = GenerationRequest(**_kwargs())
+    assert req.backend == "replicate"
+    assert req.model == "musicgen-medium"
+    assert isinstance(req.prompt, str)
+    assert isinstance(req.clap_centroid, np.ndarray)
+    assert req.clap_centroid.shape == (CLAP_CENTROID_DIM,)
+    assert req.clap_centroid.dtype == np.float32
+    assert isinstance(req.duration_sec, float)
+    assert isinstance(req.seed, int)
+    assert isinstance(req.bpm_target, float)
+    assert isinstance(req.mode_name, str)
+    assert isinstance(req.arc_phase, str)
+
+
+def test_is_frozen() -> None:
+    req = GenerationRequest(**_kwargs())
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        req.prompt = "other"  # type: ignore[misc]
+
+
+def test_clap_centroid_shape_is_validated() -> None:
+    with pytest.raises(ValueError):
+        GenerationRequest(**_kwargs(clap_centroid=np.zeros(256, dtype=np.float32)))
+
+
+def test_clap_centroid_dtype_is_validated() -> None:
+    with pytest.raises(TypeError):
+        GenerationRequest(**_kwargs(clap_centroid=np.zeros(CLAP_CENTROID_DIM, dtype=np.float64)))
+
+
+def test_clap_centroid_must_be_ndarray() -> None:
+    with pytest.raises(TypeError):
+        GenerationRequest(**_kwargs(clap_centroid=[0.0] * CLAP_CENTROID_DIM))
+
+
+def test_duration_below_range_rejected() -> None:
+    with pytest.raises(ValueError):
+        GenerationRequest(**_kwargs(duration_sec=4.9))
+
+
+def test_duration_above_range_rejected() -> None:
+    with pytest.raises(ValueError):
+        GenerationRequest(**_kwargs(duration_sec=60.1))
+
+
+def test_duration_boundaries_accepted() -> None:
+    GenerationRequest(**_kwargs(duration_sec=5.0))
+    GenerationRequest(**_kwargs(duration_sec=60.0))
+
+
+def test_invalid_backend_rejected() -> None:
+    with pytest.raises(ValueError):
+        GenerationRequest(**_kwargs(backend="bogus"))
+
+
+def test_invalid_model_rejected() -> None:
+    with pytest.raises(ValueError):
+        GenerationRequest(**_kwargs(model="bogus"))
+
+
+def test_valid_alternative_backend_and_model_accepted() -> None:
+    req = GenerationRequest(**_kwargs(backend="modal", model="stable-audio-open"))
+    assert req.backend == "modal"
+    assert req.model == "stable-audio-open"
+
+
+def test_seed_is_included_in_hash() -> None:
+    a = GenerationRequest(**_kwargs(seed=1))
+    b = GenerationRequest(**_kwargs(seed=2))
+    assert hash(a) != hash(b)
+
+
+def test_equal_requests_share_hash_ignoring_centroid_identity() -> None:
+    a = GenerationRequest(**_kwargs())
+    b = GenerationRequest(**_kwargs())
+    assert hash(a) == hash(b)
+
+
+def test_content_hash_identical_fields_match() -> None:
+    a = GenerationRequest(**_kwargs())
+    b = GenerationRequest(**_kwargs())
+    assert a.hash() == b.hash()
+
+
+def test_content_hash_excludes_backend() -> None:
+    replicate = GenerationRequest(**_kwargs(backend="replicate"))
+    modal = GenerationRequest(**_kwargs(backend="modal"))
+    assert replicate.hash() == modal.hash()
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        pytest.param({"prompt": "morning reflection texture"}, id="prompt"),
+        pytest.param({"clap_centroid": _alternate_centroid()}, id="clap_centroid"),
+        pytest.param({"duration_sec": 12.0}, id="duration_sec"),
+        pytest.param({"seed": 43}, id="seed"),
+        pytest.param({"model": "stable-audio-open"}, id="model"),
+        pytest.param({"bpm_target": 104.0}, id="bpm_target"),
+    ],
+)
+def test_content_hash_includes_generation_fields(overrides: dict[str, Any]) -> None:
+    baseline = GenerationRequest(**_kwargs())
+    changed = GenerationRequest(**_kwargs(**overrides))
+    assert baseline.hash() != changed.hash()
+
+exec
+/bin/zsh -lc 'rg -n "class GenerationRequest|GenerationRequest" src' in /Users/anthony/Programming/PromptClaw
+ exited 1 in 0ms:
+codex
+`GenerationRequest` lives under the legacy `my-claw/tools` path rather than `src/`, matching the test import. I’m reading that file and then I’ll run the focused tests to see the actual regression.
+exec
+/bin/zsh -lc "sed -n '1,260p' my-claw/tools/senseweave/generation/request.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Frozen ``GenerationRequest`` dataclass shared by composer, queue, and clients."""
+
+from __future__ import annotations
+
+import hashlib
+import struct
+from dataclasses import dataclass, field
+from typing import Literal, get_args
+
+import numpy as np
+
+
+CLAP_CENTROID_DIM = 512
+MIN_DURATION_SEC = 5.0
+MAX_DURATION_SEC = 60.0
+
+Backend = Literal["replicate", "modal", "local"]
+Model = Literal["musicgen-medium", "stable-audio-open"]
+
+_VALID_BACKENDS: frozenset[str] = frozenset(get_args(Backend))
+_VALID_MODELS: frozenset[str] = frozenset(get_args(Model))
+
+
+@dataclass(frozen=True)
+class GenerationRequest:
+    """Immutable description of a single audio-generation job."""
+
+    prompt: str
+    clap_centroid: np.ndarray = field(hash=False, compare=False)
+    duration_sec: float
+    seed: int
+    bpm_target: float
+    mode_name: str
+    arc_phase: str
+    backend: Backend = "replicate"
+    model: Model = "musicgen-medium"
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.clap_centroid, np.ndarray):
+            raise TypeError(
+                f"clap_centroid must be a numpy ndarray, got {type(self.clap_centroid).__name__}"
+            )
+        if self.clap_centroid.shape != (CLAP_CENTROID_DIM,):
+            raise ValueError(
+                f"clap_centroid must have shape ({CLAP_CENTROID_DIM},), "
+                f"got {self.clap_centroid.shape}"
+            )
+        if self.clap_centroid.dtype != np.float32:
+            raise TypeError(
+                f"clap_centroid must have dtype float32, got {self.clap_centroid.dtype}"
+            )
+        if not MIN_DURATION_SEC <= float(self.duration_sec) <= MAX_DURATION_SEC:
+            raise ValueError(
+                f"duration_sec must be in [{MIN_DURATION_SEC}, {MAX_DURATION_SEC}], "
+                f"got {self.duration_sec}"
+            )
+        if self.backend not in _VALID_BACKENDS:
+            raise ValueError(
+                f"backend must be one of {sorted(_VALID_BACKENDS)}, got {self.backend!r}"
+            )
+        if self.model not in _VALID_MODELS:
+            raise ValueError(
+                f"model must be one of {sorted(_VALID_MODELS)}, got {self.model!r}"
+            )
+
+    def hash(self) -> str:
+        """Return the backend-independent content hash for generation caching."""
+        digest = hashlib.sha256()
+
+        def update_field(label: bytes, payload: bytes) -> None:
+            digest.update(label)
+            digest.update(struct.pack(">Q", len(payload)))
+            digest.update(payload)
+
+        digest.update(b"GenerationRequest:v1")
+        update_field(b"prompt", self.prompt.encode("utf-8"))
+        update_field(
+            b"clap_centroid",
+            self.clap_centroid.astype("<f4", copy=False).tobytes(order="C"),
+        )
+        update_field(b"duration_sec", struct.pack(">d", float(self.duration_sec)))
+        update_field(b"seed", struct.pack(">q", int(self.seed)))
+        update_field(b"model", self.model.encode("utf-8"))
+        update_field(b"bpm_target", struct.pack(">d", float(self.bpm_target)))
+        return digest.hexdigest()
+
+
+__all__ = (
+    "Backend",
+    "CLAP_CENTROID_DIM",
+    "GenerationRequest",
+    "MAX_DURATION_SEC",
+    "MIN_DURATION_SEC",
+    "Model",
+)
+
+exec
+/bin/zsh -lc 'pytest tests/test_generation_request.py -q' in /Users/anthony/Programming/PromptClaw
+ succeeded in 1022ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+.....................                                                    [100%]
+21 passed in 0.21s
+
+codex
+The focused `GenerationRequest` module already passes, including the hash cases present there. I haven’t changed any files; I’m running the requested validation sequence now to catch anything outside the focused module.
+exec
+/bin/zsh -lc "pip install -e '.[dev]'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 4090ms:
+Obtaining file:///Users/anthony/Programming/PromptClaw
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: partitura<2,>=1.8 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.8.0)
+Requirement already satisfied: librosa<1,>=0.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.11.0)
+Requirement already satisfied: mypy>=1.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.19.1)
+Requirement already satisfied: pytest>=8.0 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (8.3.5)
+Requirement already satisfied: ruff>=0.9 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.9.2)
+Requirement already satisfied: audioread>=2.1.9 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (3.1.0)
+Requirement already satisfied: numba>=0.51.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.59.0)
+Requirement already satisfied: numpy>=1.22.3 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.26.0)
+Requirement already satisfied: scipy>=1.6.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.11.4)
+Requirement already satisfied: scikit-learn>=1.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.2)
+Requirement already satisfied: joblib>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.0)
+Requirement already satisfied: decorator>=4.3.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (5.1.1)
+Requirement already satisfied: soundfile>=0.12.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.13.1)
+Requirement already satisfied: pooch>=1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.9.0)
+Requirement already satisfied: soxr>=0.3.2 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: typing_extensions>=4.1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (4.15.0)
+Requirement already satisfied: lazy_loader>=0.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.3)
+Requirement already satisfied: msgpack>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.3)
+Requirement already satisfied: lxml in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.9.3)
+Requirement already satisfied: lark-parser in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (0.12.0)
+Requirement already satisfied: xmlschema in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.3.1)
+Requirement already satisfied: mido in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (1.3.3)
+Requirement already satisfied: mypy_extensions>=1.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: pathspec>=0.9.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.10.3)
+Requirement already satisfied: librt>=0.6.2 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.8.1)
+Requirement already satisfied: llvmlite<0.43,>=0.42.0dev0 in /opt/anaconda3/lib/python3.11/site-packages (from numba>=0.51.0->librosa<1,>=0.10->promptclaw==3.0.0) (0.42.0)
+Requirement already satisfied: platformdirs>=2.5.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (4.5.1)
+Requirement already satisfied: packaging>=20.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (23.2)
+Requirement already satisfied: requests>=2.19.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.32.3)
+Requirement already satisfied: iniconfig in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.1.1)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.5.0)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.4)
+Requirement already satisfied: idna<4,>=2.5 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (3.4)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.6.3)
+Requirement already satisfied: certifi>=2017.4.17 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2026.1.4)
+Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from scikit-learn>=1.1.0->librosa<1,>=0.10->promptclaw==3.0.0) (2.2.0)
+Requirement already satisfied: cffi>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.0)
+Requirement already satisfied: pycparser in /opt/anaconda3/lib/python3.11/site-packages (from cffi>=1.0->soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.21)
+Requirement already satisfied: elementpath<6.0.0,>=5.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from xmlschema->partitura<2,>=1.8->promptclaw==3.0.0) (5.1.1)
+Building wheels for collected packages: promptclaw
+  Building editable for promptclaw (pyproject.toml): started
+  Building editable for promptclaw (pyproject.toml): finished with status 'done'
+  Created wheel for promptclaw: filename=promptclaw-3.0.0-0.editable-py3-none-any.whl size=5894 sha256=6cefc420944def805566f4ccbad50a95cf2184271e1d1cca72769f12ed9d58f4
+  Stored in directory: /private/var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/pip-ephem-wheel-cache-dudijbca/wheels/ab/f4/89/0cacd29874f6252d7c6bef0fca4c14839da91ab6a8d842965e
+Successfully built promptclaw
+Installing collected packages: promptclaw
+  Attempting uninstall: promptclaw
+    Found existing installation: promptclaw 3.0.0
+    Uninstalling promptclaw-3.0.0:
+      Successfully uninstalled promptclaw-3.0.0
+Successfully installed promptclaw-3.0.0
+
+codex
+Editable install completed cleanly. Next I’m running the full requested test suite with `-x` so any first regression is concrete and limited.
+exec
+/bin/zsh -lc 'pytest tests/ -x --tb=short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 34764ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3713 items
+
+tests/test_accompaniment.py ...........................                  [  0%]
+tests/test_acoustic_ecology.py .................................         [  1%]
+tests/test_agent_runtime.py ..                                           [  1%]
+tests/test_agent_selector_defaults.py .                                  [  1%]
+tests/test_agent_selector_quota.py ........                              [  1%]
+tests/test_agogic_rule.py ...                                            [  1%]
+tests/test_antenna_to_skin.py .................................          [  2%]
+tests/test_archive_daemon_runtime.py .                                   [  2%]
+tests/test_archive_paths.py .....                                        [  3%]
+tests/test_arrangement_engine.py ....................................... [  4%]
+                                                                         [  4%]
+tests/test_art_engine_runtime.py ....                                    [  4%]
+tests/test_articulation.py ......                                        [  4%]
+tests/test_artist_identity.py .......................................... [  5%]
+.........                                                                [  5%]
+tests/test_artistic_identity.py .                                        [  5%]
+tests/test_audio_analysis.py .....................................       [  6%]
+tests/test_audio_novelty.py ....                                         [  6%]
+tests/test_bootstrap.py ..                                               [  6%]
+tests/test_breath_to_filter.py .............................             [  7%]
+tests/test_cadence_engine.py .......                                     [  7%]
+tests/test_call_response.py ..........                                   [  8%]
+tests/test_capstone_engine.py ...                                        [  8%]
+tests/test_capture_alias.py ..                                           [  8%]
+tests/test_cast_planner.py .............                                 [  8%]
+tests/test_character_registry.py ......                                  [  8%]
+tests/test_check_status_runtime.py ..                                    [  8%]
+tests/test_client_local.py ..                                            [  8%]
+tests/test_client_modal.py ..                                            [  8%]
+tests/test_coherence_engine.py ..............                            [  9%]
+tests/test_coherence_integration.py ............                         [  9%]
+tests/test_collaborative_canvas.py ......................                [ 10%]
+tests/test_commission_context.py ..                                      [ 10%]
+tests/test_composer_quote_verify.py .....                                [ 10%]
+tests/test_config.py ..                                                  [ 10%]
+tests/test_constitution.py .......................                       [ 11%]
+tests/test_contact_listener_runtime.py ....                              [ 11%]
+tests/test_contact_mic_calibration_runtime.py ....                       [ 11%]
+tests/test_context_pulse_runtime.py .                                    [ 11%]
+tests/test_continuous_learner.py ......................                  [ 11%]
+tests/test_counterpoint_pipeline.py ...........................          [ 12%]
+tests/test_counterpoint_rules.py ....................................... [ 13%]
+......................                                                   [ 14%]
+tests/test_course_critique.py ...............................            [ 15%]
+tests/test_cypherclaw_audio_runtime.py .....                             [ 15%]
+tests/test_cypherclaw_av_stack_service.py ...                            [ 15%]
+tests/test_cypherclaw_boot_runtime.py ......                             [ 15%]
+tests/test_cypherclaw_musicianship_roadmap.py ..                         [ 15%]
+tests/test_cypherclaw_runtime.py .....                                   [ 15%]
+tests/test_cypherclaw_sampler_architecture.py .......                    [ 15%]
+tests/test_cypherclaw_sampler_artistic_intent.py .....                   [ 16%]
+tests/test_daemon_concurrency_compat.py ...                              [ 16%]
+tests/test_daemon_fallback.py ...............                            [ 16%]
+tests/test_daemon_scheduler.py ..                                        [ 16%]
+tests/test_daemon_status_ollama.py .......                               [ 16%]
+tests/test_dashboard_generator.py ...................................... [ 17%]
+.......                                                                  [ 17%]
+tests/test_dashboard_generator_runtime.py ...                            [ 18%]
+tests/test_decision_store.py .........                                   [ 18%]
+tests/test_doctor.py ...                                                 [ 18%]
+tests/test_dsp_scene_lab.py ................                             [ 18%]
+tests/test_duration_contrast_rule.py .......                             [ 19%]
+tests/test_ear_engine.py ............                                    [ 19%]
+tests/test_emsd_curriculum.py ...............                            [ 19%]
+tests/test_emsd_performance.py ....                                      [ 19%]
+tests/test_emsd_runtime.py ...                                           [ 19%]
+tests/test_event_store.py .......                                        [ 20%]
+tests/test_executable_curriculum.py ...                                  [ 20%]
+tests/test_face_display_sample_status.py ....                            [ 20%]
+tests/test_federation_discovery.py ........                              [ 20%]
+tests/test_final_rit.py ...                                              [ 20%]
+tests/test_first_boot.py ...................................             [ 21%]
+tests/test_form_grammar.py ..                                            [ 21%]
+tests/test_fractal_form.py ...............                               [ 22%]
+tests/test_functional_harmony.py ...............................         [ 22%]
+tests/test_gallery.py ..........................                         [ 23%]
+tests/test_gallery_x11_runtime.py ...                                    [ 23%]
+tests/test_garden_watcher.py ........................................... [ 24%]
+.                                                                        [ 24%]
+tests/test_gemini_image_runtime.py ...                                   [ 24%]
+tests/test_generation_composer_hook.py ....                              [ 24%]
+tests/test_generation_conditioner.py ...........                         [ 25%]
+tests/test_generation_e2e_cypherclaw.py s                                [ 25%]
+tests/test_generation_live_modal.py s                                    [ 25%]
+tests/test_generation_live_replicate.py s                                [ 25%]
+tests/test_generation_queue.py .....................                     [ 25%]
+tests/test_generation_replicate_retry.py ............................... [ 26%]
+..................                                                       [ 27%]
+tests/test_generation_request.py .....................                   [ 27%]
+tests/test_generation_storage.py ....                                    [ 27%]
+tests/test_generative_scores.py ........................................ [ 29%]
+.............................................                            [ 30%]
+tests/test_genre_literacy.py ............                                [ 30%]
+tests/test_glyphweave_cli.py ....                                        [ 30%]
+tests/test_glyphweave_runtime.py ....                                    [ 30%]
+tests/test_governor_integration.py ..............                        [ 31%]
+tests/test_graduation.py ......................                          [ 31%]
+tests/test_groove_engine.py ............................................ [ 32%]
+......................................                                   [ 33%]
+tests/test_harmonic_planner.py .........                                 [ 34%]
+tests/test_healer_runtime.py .....                                       [ 34%]
+tests/test_healthcheck_script_runtime.py ...                             [ 34%]
+tests/test_hook_engine.py .................                              [ 34%]
+tests/test_human_phrase_capture_verify.py .                              [ 34%]
+tests/test_image_api_app.py ........                                     [ 35%]
+tests/test_image_api_jobs_db.py ............                             [ 35%]
+tests/test_image_api_s3_uploader.py ....                                 [ 35%]
+tests/test_image_api_spec_parser.py ...................                  [ 36%]
+tests/test_image_api_worker.py ........                                  [ 36%]
+tests/test_inkplate_display.py ....                                      [ 36%]
+tests/test_inner_life.py ...................................             [ 37%]
+tests/test_instrument_patches.py ........                                [ 37%]
+tests/test_ixml_chunk_writer.py .......                                  [ 37%]
+tests/test_keyboard_chat.py ..............................               [ 38%]
+tests/test_lifeimprover_bridge_runtime.py .....                          [ 38%]
+tests/test_listener_review.py .....                                      [ 38%]
+tests/test_live_buffer.py ...                                            [ 38%]
+tests/test_local_command_runtime.py ....                                 [ 38%]
+tests/test_lung_capacity_rule.py .......                                 [ 39%]
+tests/test_macbook_codex_monitor.py ....                                 [ 39%]
+tests/test_maintenance_mode.py .....                                     [ 39%]
+tests/test_master_bus.py ......                                          [ 39%]
+tests/test_master_smooth_scd.py ...                                      [ 39%]
+tests/test_melodic_mind.py ............................................. [ 40%]
+..........................................................               [ 42%]
+tests/test_metric_accent_rule.py ....                                    [ 42%]
+tests/test_microtiming.py .....................                          [ 43%]
+tests/test_midi_keyboard_listener_runtime.py .....                       [ 43%]
+tests/test_midi_state.py .......................................         [ 44%]
+tests/test_mix_engine.py ..............................                  [ 45%]
+tests/test_mix_verify.py ............................................... [ 46%]
+                                                                         [ 46%]
+tests/test_mood_mirror.py .....................................          [ 47%]
+tests/test_motif_lifecycle.py ............................               [ 48%]
+tests/test_motif_memory.py ...............                               [ 48%]
+tests/test_music_theory.py ............................................. [ 49%]
+........................................                                 [ 50%]
+tests/test_music_tracker.py ..........................................   [ 51%]
+tests/test_music_tracker_runtime.py .................................... [ 52%]
+........                                                                 [ 53%]
+tests/test_musical_integration_runtime.py .                              [ 53%]
+tests/test_musical_marathon_integration.py ..                            [ 53%]
+tests/test_narrative_envelope.py ..............                          [ 53%]
+tests/test_observatory_authority.py .....                                [ 53%]
+tests/test_observatory_runtime.py ..                                     [ 53%]
+tests/test_observatory_verification.py ..                                [ 53%]
+tests/test_observer_vision_runtime.py ..............                     [ 54%]
+tests/test_ollama_daemon_health.py ...                                   [ 54%]
+tests/test_ollama_health.py ......                                       [ 54%]
+tests/test_ollama_invoke.py ...                                          [ 54%]
+tests/test_ollama_routing.py ...................                         [ 55%]
+tests/test_ollama_run_agent.py .......                                   [ 55%]
+tests/test_operator_diagnostics.py ...............                       [ 55%]
+tests/test_operator_diagnostics_sample_status.py ....                    [ 55%]
+tests/test_ops_helpers_runtime.py ....                                   [ 55%]
+tests/test_orchestral_form.py ...............................            [ 56%]
+tests/test_orchestrator.py ...                                           [ 56%]
+tests/test_pareidolia_art_engine.py .......                              [ 56%]
+tests/test_pareidolia_characters.py .................................    [ 57%]
+tests/test_pareidolia_color.py ......................................... [ 58%]
+........................................................................ [ 60%]
+....                                                                     [ 60%]
+tests/test_pedals_to_key.py ............................                 [ 61%]
+tests/test_phrase_arch.py ..........                                     [ 61%]
+tests/test_phrase_capture.py ........................                    [ 62%]
+tests/test_phrase_capture_runtime.py ...                                 [ 62%]
+tests/test_phrase_tracker.py ............                                [ 63%]
+tests/test_piece_brief.py ........                                       [ 63%]
+tests/test_piece_commission.py ....                                      [ 63%]
+tests/test_piece_queue.py ..                                             [ 63%]
+tests/test_porch_eye.py ..................................               [ 64%]
+tests/test_portfolio_report.py .........................                 [ 65%]
+tests/test_practice_curriculum.py ..                                     [ 65%]
+tests/test_preflight.py ......                                           [ 65%]
+tests/test_presence_engine.py ............                               [ 65%]
+tests/test_procedural_arc.py .....                                       [ 65%]
+tests/test_production_course_integration.py ..........                   [ 65%]
+tests/test_production_course_knowledge_base.py ...                       [ 66%]
+tests/test_project_scanner_runtime.py ....                               [ 66%]
+tests/test_prosody_engine.py ........                                    [ 66%]
+tests/test_punctuation_rule.py ............                              [ 66%]
+tests/test_quota_monitor.py .....................                        [ 67%]
+tests/test_reharmonizer.py ...                                           [ 67%]
+tests/test_render_ablation.py ....                                       [ 67%]
+tests/test_render_antipatterns.py ......................                 [ 68%]
+tests/test_render_audio_sidecar.py ...                                   [ 68%]
+tests/test_render_debugger.py ..                                         [ 68%]
+tests/test_render_diff.py ................                               [ 68%]
+tests/test_render_events.py ....................                         [ 69%]
+tests/test_render_export.py ......                                       [ 69%]
+tests/test_render_features.py ...                                        [ 69%]
+tests/test_render_metrics.py ..............                              [ 69%]
+tests/test_render_pass.py ....................                           [ 70%]
+tests/test_render_replay.py ..                                           [ 70%]
+tests/test_render_seed.py .............                                  [ 70%]
+tests/test_render_worm.py ..........                                     [ 70%]
+tests/test_repertoire_memory.py .................                        [ 71%]
+tests/test_repertoire_memory_score_tree.py .                             [ 71%]
+tests/test_research_runtime.py .....                                     [ 71%]
+tests/test_resilience_runtime_scripts.py ..............                  [ 71%]
+tests/test_resource_governor.py ..........................               [ 72%]
+tests/test_restraint.py ...                                              [ 72%]
+tests/test_reviewer_runtime.py ...                                       [ 72%]
+tests/test_role_gate_integration.py .................................... [ 73%]
+....                                                                     [ 73%]
+tests/test_room_listener_runtime.py ..................                   [ 74%]
+tests/test_room_presence_daemon.py ......                                [ 74%]
+tests/test_router.py .....                                               [ 74%]
+tests/test_row_automation.py ...........                                 [ 74%]
+tests/test_runtime_checkpoint.py ...                                     [ 75%]
+tests/test_runtime_paths.py ..                                           [ 75%]
+tests/test_sample_capture_daemon.py .................................... [ 76%]
+.............                                                            [ 76%]
+tests/test_sample_capture_service_verify.py ....                         [ 76%]
+tests/test_sample_capture_verify.py ....                                 [ 76%]
+tests/test_sample_dsp_activity.py ...........                            [ 76%]
+tests/test_sample_event_renderer.py .....                                [ 77%]
+tests/test_sample_lab.py ....                                            [ 77%]
+tests/test_sample_library.py ......................                      [ 77%]
+tests/test_sample_library_import.py ...                                  [ 77%]
+tests/test_sample_playback_engine.py .......                             [ 78%]
+tests/test_sample_record_audio_analysis.py .............                 [ 78%]
+tests/test_sample_record_context.py ..........                           [ 78%]
+tests/test_sample_record_json.py ..............                          [ 79%]
+tests/test_sample_record_skeleton.py .........                           [ 79%]
+tests/test_sample_selector.py ..................                         [ 79%]
+tests/test_sample_status.py .....                                        [ 79%]
+tests/test_sampler_buffers.py ...............                            [ 80%]
+tests/test_sampler_dispatch.py ....................................      [ 81%]
+tests/test_sampler_effects.py .......................................... [ 82%]
+.......                                                                  [ 82%]
+tests/test_sampler_fx_mode_verify.py ...                                 [ 82%]
+tests/test_sampler_scheduler.py ...........                              [ 82%]
+tests/test_scene_composer.py ......................................      [ 84%]
+tests/test_score_tree.py .                                               [ 84%]
+tests/test_score_tree_composer.py .......................                [ 84%]
+tests/test_score_tree_pipeline.py .                                      [ 84%]
+tests/test_self_critique.py .........................                    [ 85%]
+tests/test_self_listener_quote_verify.py ......                          [ 85%]
+tests/test_self_listener_tracker_runtime.py ...............              [ 85%]
+tests/test_senseweave_rollout_controls.py .....                          [ 86%]
+tests/test_senseweave_voice.py ..........................                [ 86%]
+tests/test_sensor_fusion.py ...............................              [ 87%]
+tests/test_sensor_intent_rule.py ....                                    [ 87%]
+tests/test_sensory_journal.py ............................               [ 88%]
+tests/test_server_health.py ...                                          [ 88%]
+tests/test_silence_budget_rule.py .................                      [ 88%]
+tests/test_sound_palette_lab.py ..                                       [ 89%]
+tests/test_startle.py ................................                   [ 89%]
+tests/test_supercollider_recipes.py ...                                  [ 89%]
+tests/test_sw_sampler.py .......................................         [ 91%]
+tests/test_syncopation_features.py .........................             [ 91%]
+tests/test_synthdef_registry.py ...................................      [ 92%]
+tests/test_synthesis_architecture_registry.py .......................... [ 93%]
+.......                                                                  [ 93%]
+tests/test_tamagotchi_runtime.py ......                                  [ 93%]
+tests/test_telegram_runtime.py ......                                    [ 93%]
+tests/test_theramini_duet.py ........................................... [ 95%]
+.........                                                                [ 95%]
+tests/test_theramini_listener_runtime.py ............                    [ 95%]
+tests/test_tracker_cadence.py ............                               [ 95%]
+tests/test_tracker_compiler.py ................                          [ 96%]
+tests/test_tracker_variation.py .....                                    [ 96%]
+tests/test_trust.py ................                                     [ 96%]
+tests/test_usage_journal.py ..............                               [ 97%]
+tests/test_usage_journal_integration.py .                                [ 97%]
+tests/test_voice_aliases.py .......                                      [ 97%]
+tests/test_voice_interpretation_rules.py ............................... [ 98%]
+..                                                                       [ 98%]
+tests/test_voice_manager_v2.py ......................................... [ 99%]
+............                                                             [ 99%]
+tests/test_voice_shaping.py ....                                         [ 99%]
+tests/test_wizard.py ...                                                 [100%]
+
+=============================== warnings summary ===============================
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163: DeprecationWarning: module 'sre_parse' is deprecated
+    import sre_parse
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164: DeprecationWarning: module 'sre_constants' is deprecated
+    import sre_constants
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25
+  /opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    from pkg_resources import resource_stream, resource_exists
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google.cloud')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(parent)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('ruamel')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('zope')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:16: DeprecationWarning: 'aifc' is deprecated and slated for removal in Python 3.13
+    import aifc
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:17: DeprecationWarning: 'audioop' is deprecated and slated for removal in Python 3.13
+    import audioop
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:19: DeprecationWarning: 'sunau' is deprecated and slated for removal in Python 3.13
+    import sunau
+
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+  /Users/anthony/Programming/PromptClaw/tests/test_gallery.py:108: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(result.getdata()), list(canvas.getdata()))
+
+tests/test_pareidolia_characters.py: 189 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:85: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pixels = list(img.getdata())
+
+tests/test_pareidolia_characters.py: 21 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:254: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    rendered[name] = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:310: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:314: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:316: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:339: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_low = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:343: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_high = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:326: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:352: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:331: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:333: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:361: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:376: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:366: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:368: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_add_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:429: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:451: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_with_palette
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:443: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:434: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:436: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:481: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_curious_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:554: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_happy_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:542: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_neutral_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:536: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sad_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:548: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sleeping_eyes_no_highlights
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:560: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:571: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_bush
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:621: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:615: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:609: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:585: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_without_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:591: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:597: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:603: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:642: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:661: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:674: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    basalt_pixels = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:678: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pebble_pixels = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:870: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================ 3710 passed, 3 skipped, 296 warnings in 32.69s ================
+
+codex
+The full suite is still running and has already passed through `tests/test_generation_request.py` with no failure. I’ll let it finish before running lint and type checks.
+codex
+`pytest tests/ -x --tb=short` passed: 3710 passed, 3 skipped. I’m running `ruff` and `mypy` in parallel now since they’re independent checks.
+exec
+/bin/zsh -lc 'ruff check src/ tests/' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+All checks passed!
+
+exec
+/bin/zsh -lc 'mypy src/' in /Users/anthony/Programming/PromptClaw
+ succeeded in 496ms:
+Success: no issues found in 23 source files
+
+codex
+Lint and type checks passed. I’m doing a final worktree check to confirm I didn’t introduce any source changes that need committing.
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/logs/Lead_T-023_20260427T001208Zb_1777267031.log
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M sdp/runner.log
+?? sdp/logs/Lead_T-023_20260427T001208Zc_1777267389.log
+?? sdp/logs/Verify_T-023_20260427T001208Zb_1777267254.log
+
+codex
+Validation passed with no regressions found, so I did not make or commit any code changes.
+
+Ran:
+- `pytest tests/test_generation_request.py -q` -> 21 passed
+- `pip install -e '.[dev]'` -> passed
+- `pytest tests/ -x --tb=short` -> 3710 passed, 3 skipped
+- `ruff check src/ tests/` -> passed
+- `mypy src/` -> passed
+
+The only remaining worktree changes are the pre-existing `progress.md` / `sdp/` log files, which I left untouched.
+2026-04-27T05:24:49.312424Z ERROR codex_core::session: failed to record rollout items: thread 019dcd64-3841-7f51-a3b2-2a00d99cef58 not found
+tokens used
+51,668

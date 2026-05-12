@@ -1,0 +1,10 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1820 chars)
+---
+
+Committed as `ec2b411`.
+
+**Summary**
+- `my-claw/tools/senseweave/generation/conditioner.py:73`: `build_request` now takes `recent_generated_centroid` and returns `GenerationRequest | None`; when cosine distance < 0.3, prompt is prepended with a `_DEPARTURE_FRAGMENTS` adjective chosen by `seed % len(...)`. If the prompt is already perturbed, returns `None`.
+- `tests/test_generation_conditioner.py`: added 4 tests — far centroid leaves prompt unperturbed, near centroid perturbs deterministically, exactly-at-threshold does not perturb, already-perturbed returns `None`.
+- Validation: `pytest tests/ -x` → 3818 passed / 3 skipped; `ruff` and `mypy` clean.

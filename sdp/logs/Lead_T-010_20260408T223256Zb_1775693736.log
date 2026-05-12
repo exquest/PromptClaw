@@ -1,0 +1,26 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1977 chars)
+---
+
+All 1464 tests pass. Task T-010@20260408T223256Zb is complete.
+
+## Summary
+
+**Changes made (3 files + 2 new files):**
+
+1. **`my-claw/tools/glyphweave/scenes.py`** — Added optional `ollama` parameter to `CypherClawArt.status_display()` that renders per-socket health, models, and latency in the status card.
+
+2. **`my-claw/tools/cypherclaw_daemon.py`** — Two integration points:
+   - `/status` command now calls `ollama_health()` and passes the result to `status_display()`
+   - `format_half_hour_heartbeat()` now calls `ollama_health()`, appends an Ollama summary line to the text, and includes an `"ollama"` key in the payload dict
+   - Both paths catch exceptions and degrade to `{healthy: False, instances: []}` if `ollama_health()` raises
+
+3. **`tests/test_daemon_scheduler.py`** — Updated existing heartbeat test to mock `ollama_health` and expect the new `"ollama"` payload key
+
+4. **`specs/t-010@20260408t223256zb-spec.md`** — Task specification
+
+5. **`tests/test_daemon_status_ollama.py`** — 7 new integration tests covering:
+   - `/status` includes Ollama health (healthy + both-down cases)
+   - Heartbeat payload contains `ollama` key
+   - Heartbeat text includes Ollama summary line
+   - Graceful degradation when `ollama_health()` raises (both `/status` and heartbeat)

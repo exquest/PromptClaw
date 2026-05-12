@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1755 chars)
+---
+
+T-014 is already complete (commit `b854f62`). The `_should_queue_now` heuristic in `my-claw/tools/senseweave/generation/composer_hook.py:54` implements all required gates:
+
+- Cold start (no prior enqueue) → True
+- Rate gate: ≥30 min since `last_enqueued_at` (via kwarg or `learning["last_generation_enqueued_at"]`)
+- `sampler_dominating` antipattern → False
+- Daily budget ≤ $0.50 → False
+- `working_ambience` + `arc_payoff < 0.4` → False
+
+All 10 tests in `tests/test_generation_composer_hook.py` pass; each acceptance branch is covered. No new code changes needed for this task; only SDP runtime artifacts (logs, run-log, progress.md) are dirty in the workspace, which the task rules say not to normalize.

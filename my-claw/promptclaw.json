@@ -1,0 +1,79 @@
+{
+  "project": {
+    "name": "CypherClaw",
+    "description": "This is a tool to help me knit all of my other tools and coding projects together. It should interface with LifeImprover and the LDP process and help Anthony..."
+  },
+  "artifacts": {
+    "root": ".promptclaw"
+  },
+  "control_plane": {
+    "mode": "heuristic",
+    "agent": "claude",
+    "allow_fallback": true
+  },
+  "routing": {
+    "verification_enabled": true,
+    "max_retries": 1,
+    "ask_user_on_ambiguity": true,
+    "default_task_type": "general"
+  },
+  "agents": {
+    "codex": {
+      "name": "codex",
+      "enabled": true,
+      "kind": "command",
+      "shell_command": "cat {prompt_file} | codex exec",
+      "command": [],
+      "env": {},
+      "capabilities": [
+        "coding",
+        "implementation",
+        "refactoring",
+        "testing"
+      ],
+      "instruction_file": "prompts/agents/codex.md"
+    },
+    "claude": {
+      "name": "claude",
+      "enabled": true,
+      "kind": "command",
+      "shell_command": "cat {prompt_file} | claude --print",
+      "command": [],
+      "env": {},
+      "capabilities": [
+        "architecture",
+        "specification",
+        "verification"
+      ],
+      "instruction_file": "prompts/agents/claude.md"
+    },
+    "gemini": {
+      "name": "gemini",
+      "enabled": true,
+      "kind": "command",
+      "shell_command": "cat {prompt_file} | gemini -p ' '",
+      "command": [],
+      "env": {},
+      "capabilities": [
+        "docs",
+        "research",
+        "synthesis",
+        "writing"
+      ],
+      "instruction_file": "prompts/agents/gemini.md"
+    },
+    "gemini-image": {
+      "name": "gemini-image",
+      "enabled": true,
+      "kind": "command",
+      "command": ["../.venv/bin/python3", "tools/gemini_image.py", "{prompt_file}"],
+      "shell_command": "",
+      "env": {},
+      "capabilities": [
+        "image",
+        "image-generation"
+      ],
+      "instruction_file": "prompts/agents/gemini-image.md"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3778 chars)
+---
+
+frac-0114 complete. Summary:
+
+- **Spec**: `specs/frac-0114-spec.md` defines depth-2 e2e diagnostic for `sampler_scheduler` (density → count → indices → JSON round-trip).
+- **Red phase confirmed**: depth gate failed before the e2e class existed.
+- **Test gate**: `tests/test_test_sampler_scheduler_depth.py` enforces `SamplerSchedulerEndToEndTests` + named method + depth ≥ 2.
+- **E2E class**: `SamplerSchedulerEndToEndTests` in `tests/test_sampler_scheduler.py` drives `density_for_mode("evening_reflection")=0.65`, deterministic seed-42 `count_sampler_events` (floor=10 + Bernoulli=1 → 11), `plan_sampler_phrase_indices` (sorted/unique/in-range), and JSON-safe diagnostic round-trip.
+- **No production changes** — module already implemented the one-path scheduler.
+- **Validation**: `4665 passed, 3 skipped`, Ruff clean, mypy clean. Startup identity anchors: 11 passed.
+- **Commits**: spec → tests → docs, all tagged `[frac-0114]`.

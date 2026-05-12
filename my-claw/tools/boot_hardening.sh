@@ -62,17 +62,14 @@ for svc in redis-server postgresql ollama; do
     fi
 done
 
-# 10. Restore state.db from backup if tmpfs copy is missing
-TMPFS_STATE="/run/cypherclaw-tmp/workdir/cypherclaw-work/.promptclaw/state.db"
-BACKUP_STATE="/home/user/cypherclaw/.promptclaw/state.db.backup"
-if [ ! -f "$TMPFS_STATE" ] && [ -f "$BACKUP_STATE" ]; then
-    cp "$BACKUP_STATE" "$TMPFS_STATE"
-    log "Restored state.db from backup"
-fi
-
-# 11. Start sdp-cli pipeline with safety limits (after 30s delay for services to settle)
-(sleep 30 && cd /run/cypherclaw-tmp/workdir/cypherclaw-work && \
- ionice -c3 nice -n19 /home/user/.local/bin/sdp-cli run >> /tmp/sdp-pipeline.log 2>&1 &) &
-log "Scheduled sdp-cli pipeline start (30s delay)"
+# 10. Verify the managed bootstrap/runner path is present.
+for svc in cypherclaw-bootstrap.service cypherclaw-sdp-runner.service; do
+    if systemctl list-unit-files --type=service | grep -q "^${svc}"; then
+        log "$svc: installed"
+    else
+        log "$svc: NOT installed"
+    fi
+done
+log "Runtime authority and queue start are owned by cypherclaw-bootstrap.service and cypherclaw-sdp-runner.service"
 
 log "=== Boot hardening complete ==="

@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1328 chars)
+---
+
+Done. Committed as `25a0b20`.
+
+**What changed:**
+- `sampler_effects.scd` (`my-claw/tools/senseweave/synthesis/sampler_effects.scd:30`): added `ir_bufnum = -1` and `ir_fft_size = 2048` args; replaced the FreeVerb-only stage with a dual-branch reverb gated on `BufFrames.kr(ir_bufnum) > 0`. `Select.kr` guards the bufnum fed to `PartConv.ar` so the unallocated default never reaches the UGen, and `SelectX.ar` hard-switches between FreeVerb (index 0, fallback) and PartConv (index 1, IR loaded).
+- `tests/test_sampler_effects.py`: added `test_partconv_convolution_branch_present` and a `TestReverbBranchSelection` class with four tests covering the sentinel default, the `BufFrames` presence check, the guarded PartConv bufnum, and the full selector→branch wiring.
+
+**Validation:** `pytest tests/test_sampler_effects.py` → 35 passed; full suite → 3088 passed; `ruff check` clean on the touched test file.

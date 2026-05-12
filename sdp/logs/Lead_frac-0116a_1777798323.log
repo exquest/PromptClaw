@@ -1,0 +1,49 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (832 chars)
+---
+
+I've reviewed the situation carefully. **This pytest "failure" is the intended deliverable of frac-0116a, not a defect to fix.**
+
+## Analysis
+
+frac-0116a is a **RED-only** task. The spec at `specs/frac-0116a-spec.md` is explicit:
+
+> The marker itself is intentionally not added in this task so the red phase remains observable for the follow-up implementation task.
+
+**Acceptance criterion #4** requires:
+> The marker test fails before the marker is added to `tests/test_sw_sampler.py`.
+
+The current pytest output:
+```
+FAILED tests/test_test_sw_sampler_depth.py::test_test_sw_sampler_declares_machine_readable_depth_two_marker
+1 failed, 4669 passed, 3 skipped
+```
+
+…is exactly that required failure. All other tests pass; ruff and mypy are green.
+
+## History (this exact mistake was already made and caught)
+
+- `2f907fe` — added the gate test (correct)
+- `4cce20e` — added `Coverage depth: 2.` to make pytest pass (**scope violation**)
+- `04eb3b1` — Verify caught it: FAIL — scope violation
+- `f998d2b` — reverted the marker, returning to the correct RED state
+
+The current working tree is already in the correct, verify-blessed state.
+
+## Why I'm not "fixing" this
+
+The only ways to make pytest pass are:
+1. **Add the depth marker to `tests/test_sw_sampler.py`** — exact scope violation that Verify just rejected; would invalidate the follow-up GREEN task's RED gate.
+2. **Modify the gate test's assertion** — the prompt explicitly forbids this ("Do NOT modify locked test assertions").
+3. **xfail/skip the gate test** — defeats the gate's purpose and contradicts criterion #4.
+
+All three break the deliverable. The "Fix Gate Failures" runner appears to be applying a generic template that doesn't recognize RED-phase tasks where the failing assertion *is* the artifact.
+
+## Recommendation
+
+frac-0116a is complete. The follow-up GREEN task (adding the `depth: 2` marker to `tests/test_sw_sampler.py`'s docstring) is the legitimate vehicle for closing the RED gate — that work belongs to a new task ID, not to frac-0116a.
+
+If the SDP gate runner needs to classify this run as PASS, it needs RED-phase awareness (e.g., a per-task "expected failing test" allowlist) rather than blind `pytest -x`. Want me to:
+
+- (a) draft that follow-up GREEN task and execute it (adds the marker, gate goes green legitimately), or
+- (b) leave the tree alone and surface this to the SDP runner config as a RED-task classification gap?

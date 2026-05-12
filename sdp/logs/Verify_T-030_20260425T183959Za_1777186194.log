@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2755 chars)
+---
+
+**Verdict: PASS**
+
+T-030 is clean. Summary of findings:
+
+- `sampler_density: float = 0.0` added correctly to `ArtistMode` with `__post_init__` range guard raising `ValueError` outside [0.0, 1.0]
+- `EVENING_REFLECTION` correctly gets `sampler_density=0.45` (only mode using the full quintet); all others default to 0.0
+- `apply_mode_to_commission` serializes the field as `mode_sampler_density`
+- 9 new tests cover field presence, default, boundary acceptance, rejection of out-of-range values, and serialization
+- 3586 total tests pass, zero regressions
+- Hardening check for `bootstrap_identity`: all three daemon startup paths already call it before `FirstBootAnnouncer` — no action needed for this task scope

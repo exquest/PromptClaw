@@ -1,0 +1,19 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (4099 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+All acceptance criteria met:
+- One-pole IIR (α=0.1) + Schmitt-trigger hysteresis (on=0.6/off=0.4) implemented correctly
+- Output is `aggregate_intentions` only — no synth params exposed
+- Correlation bound test passes (max Pearson |r| ≤ 0.85 across 72-frame recorded stream)
+- Full test suite: 2763 passed, 0 failed
+
+**Minor issues** (not blocking):
+1. `SensorIntentRule` not re-exported from top-level `render/__init__.py` — consistent with T-010's `PunctuationRule` omission; needs cleanup pass
+2. No live `RenderPass` instantiation wires R12 yet — a follow-on pipeline composition task is needed
+
+**Pre-existing blocking carry-forwards** (not introduced by T-011): budget enforcement unapplied in `resource_governor`, `bootstrap_identity` not called in daemon startup.
+
+Verification report committed at `sdp/verification/t-011@20260416t181925z-verify.md`.

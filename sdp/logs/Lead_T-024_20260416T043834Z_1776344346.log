@@ -1,0 +1,35 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (4001 chars)
+---
+
+T-024 is complete. Here's the summary:
+
+## T-024@20260416T043834Z: Artistic Identity and Portfolio Reporting
+
+**Commit:** `47ccf30` on `feat/graceful-degradation`
+
+### What was built
+
+**New module:** `my-claw/tools/senseweave/portfolio_report.py` (170 lines, pure functions, stdlib-only)
+
+- `derive_portfolio_report(songs, promoted_songs, growth)` → `PortfolioReport` frozen dataclass with:
+  - Core `ArtisticIdentity` (reuses existing derivation)
+  - Repertoire metrics: total songs, promoted count, top form classes, top composition modes, unique motif count
+  - Practice coverage: visited blocks mapped to EMSD course codes
+  - Growth metrics: keys/families explored (from growth state or fallback to songs)
+  - Ear quality averages: hook clarity, cadence strength, development score
+
+- `derive_surface_snapshot(current_song, identity, practice_block, section_function)` → `SurfaceSnapshot` frozen dataclass for face/operator display with song title, section caption, practice block, artistic-intent line
+
+### Graceful degradation
+- Empty repertoire → sensible defaults, no hallucinated data
+- Missing fields → safe `.get()` with defaults throughout
+- Corrupt score tree summaries → zero motif count
+- No growth state → falls back to extracting from songs
+- Division-by-zero protection on empty metrics
+
+### Validation
+- **25 new tests** in `tests/test_portfolio_report.py` (3 test classes)
+- **2232 total tests pass**, ruff clean, mypy clean
+- Spec at `specs/t-024@20260416t043834z-spec.md`
+- Hardening escalation logged (bootstrap_identity items are out of scope — federation subsystem, not musical identity)

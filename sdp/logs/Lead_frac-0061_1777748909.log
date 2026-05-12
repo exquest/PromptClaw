@@ -1,0 +1,18 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3461 chars)
+---
+
+frac-0061 complete. All ADP phases done:
+
+- **Spec**: `specs/frac-0061-spec.md` with 7 acceptance criteria (commit `d834cd7`)
+- **Red gate**: `tests/test_breath_to_filter_depth.py` (commit `8191336`)
+- **Implementation**: `TestBreathToFilterEndToEnd` class — 17 looped/table-driven methods exercising the full pipeline (sine BPMs, flat/empty signals, phase sweep, mix saturation, JSON-safe diagnostics, determinism) (commit `f36a339`)
+- **Docs**: CHANGELOG + progress entries (commit `ad75928`)
+
+Verification:
+- `tests/test_breath_to_filter.py`: 47 tests pass, depth = 2 (`substantial`, 26 real vs 24 trivial)
+- Full suite: 4392 passed, 3 skipped
+- `ruff check`: clean; `mypy src/`: clean
+- Startup identity hardening anchors (9 tests): green
+- Production API one-liner output: `6.0 0.0 {'cutoff_hz': 1100.0, 'resonance': 0.5, 'mix': 0.4} {'scale_factor': 1.0, 'brightness_offset': 0}` — within all documented ranges
+- `my-claw/tools/senseweave/breath_to_filter.py` unchanged

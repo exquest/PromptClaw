@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2881 chars)
+---
+
+**Verdict: PASS**
+
+All three acceptance criteria verified:
+1. `test_assemble_cast_plans_piece_with_sampler_metadata` — piece-aware cast assembly returns `sampler_sample` in metadata and `sample_record` on the sampler cast entry.
+2. `test_sampler_summary_derives_duration_from_capture_shape` — capture-shaped records correctly derive `duration_sec` from `frame_count / sample_rate`.
+3. Both `test_cast_planner.py` + `test_sampler_dispatch.py` pass together (37 tests).
+
+Full suite: **3344 passed**. Startup identity regression anchors (49 tests) also clean. One minor advisory noted — `entry.update(voice)` ordering in `_assemble_cast_entry` could theoretically overwrite `id`/`char_name` if a voice dict ever carried those keys, but it's not a current risk and not a spec requirement.

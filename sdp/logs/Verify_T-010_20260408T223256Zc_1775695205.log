@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high -p -
+Prompt delivered via: stdin (1845 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+All 5 acceptance criteria pass (11 tests, 0.21s). Report committed at `sdp/verification/t-010@20260408t223256zc-verify.md`.
+
+**Two minor gaps** (no blocking issues):
+1. `no models loaded` path — implemented in `local_status_display:233` but no test covers a healthy socket with empty models list
+2. Both-sockets-down with populated instances — the AC3 test uses empty `instances:[]` rather than two unhealthy-but-present sockets
+
+The implementation itself handles both cases correctly. The `/local` command, `status_snapshot()` shared helper, `CypherClawArt.local_status_display`, and Telegram send-suppression are all sound.

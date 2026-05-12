@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1397 chars)
+---
+
+Done. Added to `motif_memory.py`:
+
+- **`VARIATION_STRATEGIES`** tuple with the 5 strategies (transpose, invert, augment, diminish, ornament)
+- **`RankedVariation`** frozen dataclass holding strategy + weight
+- **`rank_variations(motif_hash)`** — returns all strategies sorted descending by weight, where `weight = (1 + age) * (1 + log(1 + hit_count))`
+- **`select_variation(motif_hash)`** — weighted random pick from the ranking, updates recency tracking
+
+6 new tests cover: sorted output, hit count scaling, recency demotion, equal weights for unknown motifs, strategy membership, and recency tracking updates. All 2875 tests pass, ruff and mypy clean.

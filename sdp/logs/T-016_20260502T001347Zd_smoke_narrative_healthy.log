@@ -1,0 +1,12 @@
+task=T-016@20260502T001347Zd
+scenario=healthy-local-dev-server
+base_url=http://127.0.0.1:8876
+command=NARRATIVE_BASE_URL=http://127.0.0.1:8876 python3 scripts/smoke_narrative.py --verbose
+smoke_narrative: base_url=http://127.0.0.1:8876
+GET /health -> 200 body={"status":"ok","narrative_engine_importable":true,"world_db_reachable":true,"ollama_reachable":true,"version":"0.1.0","uptime_seconds":10.291839999845251}
+POST /memory/search -> 200 body={"results":[{"id":"memory-smoke","text":"smoke memory for smoke","similarity":0.91,"domain":"shared","metadata":{}}]}
+POST /beats/next -> 200 body={"id":"beat-smoke","cycle_number":0,"arc_position":0.1,"domain_filter":"shared","force_arc_event":null}
+GET /world/entities?limit=1 -> 200 body={"entities":[{"id":"entity-smoke","type":"character","name":"Smoke Entity","domain":"shared","properties":{"source":"smoke"}}]}
+GET /world/entities/entity-smoke -> 200 body={"id":"entity-smoke","type":"character","name":"Smoke Entity","domain":"shared","properties":{"source":"smoke"}}
+GET /events?limit=1 -> 200 body={"events":[{"id":"event-smoke","type":"smoke.checked","domain":"shared","payload":{"ok":true},"created_at":"2026-05-02T00:00:00Z"}],"next_event_id":"event-smoke"}
+exit_code=0

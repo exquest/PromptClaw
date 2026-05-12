@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2730 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+3150 tests pass. The LRU implementation is correct — `OrderedDict` with `move_to_end`, eviction before allocation, proper `_lru` cleanup on free. All five new unit tests cover the required scenarios (ordering, eviction trigger, touch promotion, no-op touch, free-then-reload).
+
+Two minor non-blocking notes for the Lead:
+1. **Double-load bufnum leak** — calling `on_sampler_load` on an already-live record orphans the old bufnum without sending `/b_free`. No test pins the contract.
+2. **capacity=0** — triggers `KeyError` in `_evict_lru` on the very first load. A guard in `__init__` would prevent a confusing failure.
+
+Report committed as `sdp/verification/t-001@20260425t183959zc-verify.md`.

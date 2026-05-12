@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3944 chars)
+---
+
+Task `frac-0071` is already complete on `feat/graceful-degradation`. The prior lead run (Lead_frac-0071_1777760136.log) finished it cleanly and all three commits are in place:
+
+- `7011cda` — spec + depth gate test (`specs/frac-0071-spec.md`, `tests/test_test_federation_discovery_depth.py`)
+- `b30a29c` — depth-2 end-to-end coverage (`tests/test_federation_discovery.py` +276)
+- `d96d82f` — CHANGELOG + ESCALATIONS
+
+Validation in that run: red phase confirmed, target tests 12/12 pass, startup identity anchors 7/7, full gate `pytest tests/ -x && ruff check && mypy` → **4483 passed, 3 skipped**, lint/types clean.
+
+Production `promptclaw/federation/discovery.py` already had the simplest one-path implementation, so this was test-deepening only — no production gap. The dirty working tree (`my-claw/scripts/cypherclaw_boot.sh`, `progress.md`, sdp logs, `my-claw/systemd/dropins/`) was correctly left out of scope.
+
+This invocation looks like a duplicate dispatch (the `Lead_frac-0071_1777760577.log` file is empty past the header). Nothing to redo — task is ready for verify.

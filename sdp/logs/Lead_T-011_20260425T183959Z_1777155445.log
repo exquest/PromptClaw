@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1793 chars)
+---
+
+T-011 complete and committed (5f68da2).
+
+**Summary:**
+- `detect_sampler_dominating` at antipatterns.py — per-piece detector firing when sampler events > 60% of total; severity="warning" by default, escalates to "fail" once `sampler_dominating_streak >= 3`.
+- `detect_sampler_silent_quintet_member` at antipatterns.py — operates on the last 50 entries of `piece_history`, threshold = 5% × (mean_density / 0.7), so working_ambience (density 0.10) never trips.
+- Added `severity` field to `AntiPatternResult` (default `"fail"`); `evaluate_render_gate` now treats `severity == "warning"` as non-blocking so warnings surface in the report without rejecting the render.
+- 11 new tests cover both detectors (warning vs MUST FIX, mode-weighted threshold, rolling-window cropping, inert paths). Full suite: 3277 passed.

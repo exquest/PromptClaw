@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1810 chars)
+---
+
+Committed. Summary:
+
+**T-019 complete.** Added `transpose_to_key(record, key_name) -> int` in `my-claw/tools/senseweave/sampler_dispatch.py` that:
+- Parses `key_name` through `harmonic_planner` (handles `B`, `Bm`, `B:dorian`, etc. — B-rooted modes are the artist's home palette)
+- Maps `record.pitch_hz` to nearest in-key pitch class, returning the smallest signed semitone offset (handles octave wraps via mod-12)
+- Returns 0 when `pitch_confidence < 0.4` (atonal texture) or `pitch_hz <= 0`
+
+8 new tests in `tests/test_sampler_dispatch.py` cover known pitch+key combinations, low-confidence pass-through, threshold boundary, octave wraps, zero pitch, and high-octave handling. Full suite (3337 tests) passes; ruff clean. Mypy errors observed are pre-existing on the file.

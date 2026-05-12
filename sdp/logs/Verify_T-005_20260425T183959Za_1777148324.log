@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2815 chars)
+---
+
+**Verdict: PASS**
+
+The implementation is correct and complete:
+- `sampler_amp` derives from `scene_master_amp` (peak-based, not density), clamped to `[0.05, 1.0]`, rounded to 3 decimal places
+- Propagated into both the `context=None` and live-context return paths, plus both OSC arg builders (`n_set` and `s_new`)
+- Default of `1.0` is correct peak-normalized ceiling
+- New test validates density-invariance and ceiling/floor clamping
+- 3169/3169 tests pass, zero regressions
+
+Report committed as `sdp/verification/t-005@20260425t183959za-verify.md`.

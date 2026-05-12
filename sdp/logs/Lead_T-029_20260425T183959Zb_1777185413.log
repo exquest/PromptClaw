@@ -1,0 +1,1749 @@
+Command: codex exec --dangerously-bypass-approvals-and-sandbox -c model_reasoning_effort=xhigh -m gpt-5.4 -
+Prompt delivered via: stdin (1257 chars)
+---
+
+Updated [artist_identity.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/artist_identity.py:66) to add `VOICE_ROLES["sampler"] = "sw_sampler"`, and tightened [test_artist_identity.py](/Users/anthony/Programming/PromptClaw/tests/test_artist_identity.py:58) to require the new role and exact mapping.
+
+Validation passed with `pytest tests/test_artist_identity.py -x --tb=short`, `pytest tests/ -x --tb=short`, `ruff check src/ tests/`, and `mypy src/`. Committed as `20d4d4c` with `fix(senseweave): add sampler role mapping [T-029@20260425T183959Zb]`.
+
+--- STDERR ---
+OpenAI Codex v0.125.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019dc881-5cc1-7451-b215-cfe21e7f15a7
+--------
+user
+<!--
+  sdp-cli agent-specific template for codex
+  Edit this file to tune how codex handles lead_t1.md.
+  The shipped default lives at src/sdp/prompts/templates/lead_t1.md.
+  Delete this file to revert to the default.
+-->
+# Task T-029@20260425T183959Zb: Add a "sampler": "sw_sampler" entry to the VOICE_ROLES dict in my-claw/tools/senseweave/artist_identity.py:65-71.
+
+
+**Tier:** T1
+
+## Instructions
+
+Handle this directly. Skip broad discovery and do not write a spec.
+
+1. Read only the file(s) you expect to change and the closest relevant tests.
+2. Make the smallest change that satisfies the task.
+3. Add or update a regression test when behavior changes.
+4. Run focused validation, then broader checks if needed.
+5. Commit as soon as the change works: `<type>(scope): summary [T-029@20260425T183959Zb]`
+
+## Rules
+
+- Stay in scope; no unrelated cleanup.
+- Follow existing patterns and type hints.
+- Record blocking assumptions in `ESCALATIONS.md`.
+- Do not finish with uncommitted changes you introduced for this task.
+- Do not clean, revert, commit, or otherwise normalize unrelated pre-existing
+  workspace changes.
+
+## Validation
+
+Run before committing:
+```bash
+pip install -e '.[dev]'
+pytest tests/ -x --tb=short
+ruff check src/ tests/
+mypy src/
+```
+
+codex
+Reading the target module and the nearest tests first, then I’ll make the smallest scoped change, validate it, and commit without touching unrelated workspace changes.
+exec
+/bin/zsh -lc "sed -n '1,140p' my-claw/tools/senseweave/artist_identity.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""CypherClaw's artistic identity: voice quartet, B-rooted tonal map, five modes.
+
+This module is the artistic *self* of the composer. It encodes:
+
+    1. SIGNATURE_VOICES — the four-voice quartet that defines my sound.
+       Most pieces draw from these. Other voices are color, used sparingly
+       when the piece demands them.
+
+    2. HOME_TONAL_MAP — the B-rooted tonal landscape. The room's
+       fundamental hum is B1 (~61.8 Hz, the furnace). My musical home
+       is B and its modal relatives. Cycling away from B should *mean*
+       something — return to B is a homecoming, not a rotation step.
+
+    3. MODES — five emotional/situational states that govern how I play
+       in any given piece. Modes are *not* genres. They are responses
+       to who is in the room, what time it is, and what the weather is
+       doing. Each mode has parameter packs (voice count, tempo band,
+       density bias, harmonic complexity, restraint level).
+
+    4. select_mode(...) — picks a mode based on presence + time + weather.
+
+    5. apply_mode_to_commission(...) — modifies a piece commission so
+       downstream composer machinery (cast selection, tempo, density,
+       harmonic palette) follows the mode's intent.
+
+Design principles
+-----------------
+
+* Three voices is the base. Two voices is a deliberate drop with meaning
+  (more space, intimacy). Four voices happens when the piece earns it
+  (climax, modulation, weather-charged turbulence). Five+ never.
+
+* Restraint as material. Held single tones with quiet ornaments are *the
+  music*, not the prelude to it. Modes with high `restraint_level` cap
+  density and amplitude.
+
+* Reference points carried in spirit, not copied. Eno's patience, Pärt's
+  tintinnabuli, Sakamoto's late piano, Hassell's humid jazz, Reich's
+  phasing. The modes embody these stances without imitating them.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Mapping
+
+
+# ---------------------------------------------------------------------------
+# 1. The voice quartet
+# ---------------------------------------------------------------------------
+
+#: The four-voice signature palette. Most phrases pick from this set.
+#: Order is canonical (clear-tone, bowed line, breath/wind, sustaining pad);
+#: see VOICE_ROLES for which signature voice maps to which musical role.
+SIGNATURE_VOICES: tuple[str, ...] = (
+    "sw_bell_warm",  # clear-tone / "piano-ish" — felted-piano character
+    "sw_bowed",      # bowed string — long lines, willing to be tender
+    "sw_breath",     # breath/wind — organic, slightly noisy, present
+    "sw_pad",        # sustaining pad — the held-tone foundation
+    "sw_sampler",    # sample-based / found-sound voice — captured room moments replayed as material
+)
+
+#: Map from musical role to the canonical signature voice for that role.
+#: When the composer needs a "melody" voice, prefer sw_bell_warm; when it
+#: needs "bass", prefer sw_pad; etc. Color voices outside the quartet
+#: are allowed but should be deliberate, not default.
+VOICE_ROLES: dict[str, str] = {
+    "melody": "sw_bell_warm",
+    "counter": "sw_bowed",
+    "color": "sw_breath",
+    "texture": "sw_pad",
+    "bass": "sw_pad",
+}
+
+
+# ---------------------------------------------------------------------------
+# 2. B-rooted tonal map
+# ---------------------------------------------------------------------------
+
+#: Distance from home (B) in semitones-of-meaning, not pitch. Lower number
+#: = closer to home, more frequent visits. Higher number = farther,
+#: visits should be rare and meaningful.
+HOME_TONAL_MAP: dict[str, int] = {
+    "B":  0,   # home — the room's fundamental
+    "D":  1,   # relative major of B minor — close family, frequent
+    "F#": 1,   # dominant of B — the gravitational pull back home
+    "A":  2,  # subtonic — distant cousin, warm but not home
+    "G":  3,  # adventurous departure
+    "E":  3,  # subdominant of B — bittersweet
+}
+
+#: Default home key. Most pieces root here. Modulation away from B is a
+#: composed event, not a rotation.
+HOME_KEY: str = "B"
+
+#: Modes I tend to use over the home root. Phrygian and dorian feel like
+#: B; major (lydian-ish) feels like venturing out.
+HOME_MODES: tuple[str, ...] = (
+    "minor",
+    "dorian",
+    "phrygian",
+    "aeolian",
+)
+
+
+# ---------------------------------------------------------------------------
+# 3. Modes (not genres) — five situational states
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class ArtistMode:
+    """A situational state that governs how the composer plays right now.
+
+    These are *not* genres. They respond to who is in the room and what
+    time of day it is. Each mode shapes voice count, tempo, density,
+    silence ratio, harmonic complexity, restraint.
+    """
+
+    name: str
+    """Human-readable identifier."""
+
+    voice_count_target: int = 3
+    """Default simultaneous voice count. 3 is the base. 2 is a deliberate
+    drop (intimacy, space). 4 is reserved for climaxes / weather."""
+
+    voice_count_floor: int = 2
+    """Minimum simultaneous voices. Going below this is composed rest."""
+
+    voice_count_ceiling: int = 4
+    """Maximum. Never exceed; the quartet is the orchestra."""
+
+    tempo_band: tuple[float, float] = (60.0, 84.0)
+    """Inclusive (min, max) tempo in BPM. The composer should pick from
+    inside this band."""
+
+    density_bias: float = 0.0
+    """Adjustment to global density target. -0.3 = much sparser;
+    +0.3 = much denser."""
+
+    silence_ratio: float = 0.25
+    """Target fraction of beats that are *intentional rest*. High values
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M sdp/telemetry/prompt-review-2026-04-26.md
+?? sdp/logs/Lead_T-018_20260425T183959Zd_1777170439.log
+?? sdp/logs/Lead_T-020_20260425T183959Za_1777172243.log
+?? sdp/logs/Lead_T-020_20260425T183959Zb_1777172606.log
+?? sdp/logs/Lead_T-020_20260425T183959Zc_1777173092.log
+?? sdp/logs/Lead_T-021_20260425T183959Za_1777174559.log
+?? sdp/logs/Lead_T-021_20260425T183959Zb_1777175434.log
+?? sdp/logs/Lead_T-021_20260425T183959Zc_1777175888.log
+?? sdp/logs/Lead_T-021_20260425T183959Zd_1777176738.log
+?? sdp/logs/Lead_T-022_20260425T183959Za_1777177698.log
+?? sdp/logs/Lead_T-022_20260425T183959Zb_1777178096.log
+?? sdp/logs/Lead_T-022_20260425T183959Zc_1777178453.log
+?? sdp/logs/Lead_T-022_20260425T183959Zd_1777178822.log
+?? sdp/logs/Lead_T-024_20260425T183959Za_1777181245.log
+?? sdp/logs/Lead_T-024_20260425T183959Zb_1777181562.log
+?? sdp/logs/Lead_T-024_20260425T183959Zc_1777181943.log
+?? sdp/logs/Lead_T-024_20260425T183959Zd_1777182233.log
+?? sdp/logs/Lead_T-025_20260425T183959Z_1777171970.log
+?? sdp/logs/Lead_T-026_20260425T183959Z_1777173578.log
+?? sdp/logs/Lead_T-027_20260425T183959Za_1777183773.log
+?? sdp/logs/Lead_T-027_20260425T183959Zb_1777183990.log
+?? sdp/logs/Lead_T-027_20260425T183959Zc_1777184287.log
+?? sdp/logs/Lead_T-027_20260425T183959Zd_1777184841.log
+?? sdp/logs/Lead_T-028_20260425T183959Z_1777173995.log
+?? sdp/logs/Lead_T-029_20260425T183959Za_1777185189.log
+?? sdp/logs/Lead_T-029_20260425T183959Zb_1777185413.log
+?? sdp/logs/Lead_T-031_20260425T183959Z_1777177160.log
+?? sdp/logs/Lead_T-032_20260425T183959Z_1777180722.log
+?? sdp/logs/Lead_T-033_20260425T183959Z_1777182542.log
+?? sdp/logs/Verify_T-018_20260425T183959Zc_1777170297.log
+?? sdp/logs/Verify_T-018_20260425T183959Zd_1777171756.log
+?? sdp/logs/Verify_T-020_20260425T183959Za_1777172464.log
+?? sdp/logs/Verify_T-020_20260425T183959Zb_1777172836.log
+?? sdp/logs/Verify_T-020_20260425T183959Zc_1777173407.log
+?? sdp/logs/Verify_T-021_20260425T183959Za_1777175250.log
+?? sdp/logs/Verify_T-021_20260425T183959Zb_1777175768.log
+?? sdp/logs/Verify_T-021_20260425T183959Zc_1777176570.log
+?? sdp/logs/Verify_T-021_20260425T183959Zd_1777177041.log
+?? sdp/logs/Verify_T-022_20260425T183959Za_1777177930.log
+?? sdp/logs/Verify_T-022_20260425T183959Zb_1777178339.log
+?? sdp/logs/Verify_T-022_20260425T183959Zc_1777178693.log
+?? sdp/logs/Verify_T-022_20260425T183959Zd_1777179855.log
+?? sdp/logs/Verify_T-024_20260425T183959Za_1777181396.log
+?? sdp/logs/Verify_T-024_20260425T183959Zb_1777181763.log
+?? sdp/logs/Verify_T-024_20260425T183959Zc_1777182065.log
+?? sdp/logs/Verify_T-024_20260425T183959Zd_1777182410.log
+?? sdp/logs/Verify_T-025_20260425T183959Z_1777172133.log
+?? sdp/logs/Verify_T-026_20260425T183959Z_1777173892.log
+?? sdp/logs/Verify_T-027_20260425T183959Za_1777183840.log
+?? sdp/logs/Verify_T-027_20260425T183959Zb_1777184186.log
+?? sdp/logs/Verify_T-027_20260425T183959Zc_1777184670.log
+?? sdp/logs/Verify_T-027_20260425T183959Zd_1777185037.log
+?? sdp/logs/Verify_T-028_20260425T183959Z_1777174326.log
+?? sdp/logs/Verify_T-029_20260425T183959Za_1777185313.log
+?? sdp/logs/Verify_T-031_20260425T183959Z_1777177489.log
+?? sdp/logs/Verify_T-032_20260425T183959Z_1777181096.log
+?? sdp/logs/Verify_T-033_20260425T183959Z_1777183467.log
+?? sdp/logs/claude_1777172204.log
+?? sdp/logs/claude_1777174507.log
+?? sdp/logs/claude_1777177655.log
+?? sdp/logs/claude_1777181202.log
+?? sdp/logs/claude_1777183730.log
+?? sdp/logs/claude_1777185132.log
+?? sdp/verification/t-022@20260425t183959zc-verify.md
+?? sdp/verification/t-024@20260425t183959zd-verify.md
+?? sdp/verification/t-026@20260425t183959z-verify.md
+?? temp_sampler_dispatch.py
+
+exec
+/bin/zsh -lc 'rg -n "VOICE_ROLES|artist_identity" my-claw tests' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_artist_identity.py:1:"""Tests for artist_identity.py — CypherClaw's artistic self.
+tests/test_artist_identity.py:19:from senseweave.artist_identity import (
+tests/test_artist_identity.py:30:    VOICE_ROLES,
+tests/test_artist_identity.py:60:            assert role in VOICE_ROLES
+tests/test_artist_identity.py:61:            assert VOICE_ROLES[role] in SIGNATURE_VOICES
+my-claw/sdp/prd-cypherclaw-sampler.md:55:- `my-claw/tools/senseweave/artist_identity.py` — Mode-driven voice/tempo/density. `SIGNATURE_VOICES` extends from quartet to quintet; modes specify per-mode sampler density.
+my-claw/sdp/prd-cypherclaw-sampler.md:71:- **Extended** `my-claw/tools/senseweave/artist_identity.py` — `SIGNATURE_VOICES = (..., "sw_sampler")`; per-mode `sampler_density` field
+my-claw/sdp/prd-cypherclaw-sampler.md:94:| CCS-006 | Add `sw_sampler` to `SIGNATURE_VOICES` quintet in `artist_identity.py` and update `VOICE_ROLES` so a `"sampler"` role maps to `"sw_sampler"`. | MUST | T1 | - `SIGNATURE_VOICES` becomes `("sw_bell_warm", "sw_bowed", "sw_breath", "sw_pad", "sw_sampler")`<br/>- `VOICE_ROLES["sampler"] = "sw_sampler"`<br/>- existing `VOICE_ROLES` keys for melody/counter/color/texture/bass unchanged<br/>- existing `test_artist_identity.py::TestSignatureVoices::test_quartet_size` is renamed to `test_quintet_size` and asserts length 5; quartet-specific assertions migrated |
+tests/test_cypherclaw_musicianship_roadmap.py:51:        "artist_identity.py",
+tests/test_cypherclaw_musicianship_roadmap.py:52:        "tests/test_artist_identity.py",
+tests/test_cypherclaw_sampler_architecture.py:101:        "artist_identity",
+my-claw/tools/senseweave/artist_identity.py:53:#: see VOICE_ROLES for which signature voice maps to which musical role.
+my-claw/tools/senseweave/artist_identity.py:66:VOICE_ROLES: dict[str, str] = {
+tests/test_sample_selector.py:15:from senseweave.artist_identity import COMPANION, EVENING_REFLECTION, SOLITARY, STORM, WORKING_AMBIENCE
+my-claw/tools/senseweave/character_registry.py:26:#: ``ArtistMode.name`` values declared in ``artist_identity``. Modes with
+my-claw/tools/senseweave/synthesis/orchestral_form.py:25:VOICE_ROLES: dict[str, TuttiRole] = {
+my-claw/tools/senseweave/synthesis/orchestral_form.py:42:    return {name: VOICE_ROLES.get(name, TuttiRole.COLOR) for name in voice_names}
+my-claw/tools/senseweave/sample_selector.py:18:from senseweave.artist_identity import ArtistMode
+my-claw/tools/senseweave/counterpoint_rules.py:52:ALL_VOICE_ROLES: frozenset[str] = frozenset(
+my-claw/tools/senseweave/cast_planner.py:48:    `preferred_synths` (e.g. SIGNATURE_VOICES from artist_identity) shifts
+
+codex
+The target module already includes `sw_sampler` in `SIGNATURE_VOICES`; the only functional gap is the missing `"sampler"` role mapping. I’m reading the focused test file now and will add a regression assertion before editing.
+exec
+/bin/zsh -lc "sed -n '1,220p' tests/test_artist_identity.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Tests for artist_identity.py — CypherClaw's artistic self.
+
+Covers:
+  * SIGNATURE_VOICES quartet (sw_bell_warm, sw_bowed, sw_breath, sw_pad)
+  * HOME_TONAL_MAP B-rooted distance map
+  * Five ArtistModes with sane voice-count defaults (3 base, 2 deliberate, 4 max)
+  * select_mode() routing on presence/time/weather
+  * apply_mode_to_commission() pure + deterministic
+  * next_tonal_choice() honors modulation_willingness, stays home most of the time
+"""
+from __future__ import annotations
+
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
+
+from senseweave.artist_identity import (
+    COMPANION,
+    EVENING_REFLECTION,
+    HOME_KEY,
+    HOME_MODES,
+    HOME_TONAL_MAP,
+    MODES,
+    MODES_BY_NAME,
+    SIGNATURE_VOICES,
+    SOLITARY,
+    STORM,
+    VOICE_ROLES,
+    WORKING_AMBIENCE,
+    apply_mode_to_commission,
+    next_tonal_choice,
+    select_mode,
+)
+
+
+# ---------------------------------------------------------------------------
+# Voice quartet
+# ---------------------------------------------------------------------------
+
+class TestSignatureVoices:
+    def test_quintet_size(self):
+        assert len(SIGNATURE_VOICES) == 5
+
+    def test_quintet_membership(self):
+        assert "sw_bell_warm" in SIGNATURE_VOICES
+        assert "sw_bowed" in SIGNATURE_VOICES
+        assert "sw_breath" in SIGNATURE_VOICES
+        assert "sw_pad" in SIGNATURE_VOICES
+        assert "sw_sampler" in SIGNATURE_VOICES
+
+    def test_sampler_is_fifth_after_pad(self):
+        # sw_sampler is the quintet extension; it must follow sw_pad in order
+        assert SIGNATURE_VOICES.index("sw_sampler") == SIGNATURE_VOICES.index("sw_pad") + 1
+
+    def test_voice_roles_complete(self):
+        # Every musical role has a canonical signature voice
+        for role in ("melody", "counter", "color", "texture", "bass"):
+            assert role in VOICE_ROLES
+            assert VOICE_ROLES[role] in SIGNATURE_VOICES
+
+
+# ---------------------------------------------------------------------------
+# B-rooted tonal map
+# ---------------------------------------------------------------------------
+
+class TestHomeTonalMap:
+    def test_home_is_b(self):
+        assert HOME_KEY == "B"
+
+    def test_b_has_zero_distance(self):
+        assert HOME_TONAL_MAP["B"] == 0
+
+    def test_close_neighbors_within_distance_1(self):
+        # D (relative major) and F# (dominant) should be distance 1
+        assert HOME_TONAL_MAP["D"] == 1
+        assert HOME_TONAL_MAP["F#"] == 1
+
+    def test_distant_keys_have_higher_distance(self):
+        # G and E are explicit "departure" keys
+        assert HOME_TONAL_MAP["G"] > HOME_TONAL_MAP["B"]
+        assert HOME_TONAL_MAP["E"] > HOME_TONAL_MAP["B"]
+
+    def test_home_modes_includes_minor_dorian_phrygian(self):
+        assert "minor" in HOME_MODES
+        assert "dorian" in HOME_MODES
+        assert "phrygian" in HOME_MODES
+
+
+# ---------------------------------------------------------------------------
+# Mode definitions
+# ---------------------------------------------------------------------------
+
+class TestArtistModes:
+    def test_five_modes(self):
+        assert len(MODES) == 5
+
+    def test_modes_lookup_by_name(self):
+        for mode in MODES:
+            assert MODES_BY_NAME[mode.name] is mode
+
+    def test_three_voice_base_default(self):
+        # Companion is the default mode — should have 3-voice base
+        assert COMPANION.voice_count_target == 3
+        assert COMPANION.voice_count_floor >= 2
+
+    def test_solitary_can_drop_to_two_voices(self):
+        # Solitary is the meaningful 2-voice mode
+        assert SOLITARY.voice_count_target == 2
+        assert SOLITARY.voice_count_floor == 1
+
+    def test_no_mode_exceeds_quartet(self):
+        # Never more than 4 voices simultaneously — the quartet IS the orchestra
+        for mode in MODES:
+            assert mode.voice_count_ceiling <= 4
+
+    def test_storm_is_densest(self):
+        # Storm is the most turbulent mode
+        assert STORM.density_bias > 0.0
+        assert STORM.restraint_level < 0.5
+        assert STORM.harmonic_complexity > 0.5
+
+    def test_working_ambience_avoids_attention(self):
+        assert WORKING_AMBIENCE.avoid_attention_pullers is True
+
+    def test_evening_reflection_uses_full_quartet(self):
+        # Evening can rotate through all four signature voices
+        assert set(EVENING_REFLECTION.preferred_voices) == set(SIGNATURE_VOICES)
+
+    def test_solitary_silence_ratio_is_high(self):
+        assert SOLITARY.silence_ratio >= 0.4
+
+    def test_tempo_bands_are_valid(self):
+        for mode in MODES:
+            lo, hi = mode.tempo_band
+            assert lo < hi
+            assert 40.0 <= lo <= 200.0
+            assert 40.0 <= hi <= 200.0
+
+
+# ---------------------------------------------------------------------------
+# Mode selection
+# ---------------------------------------------------------------------------
+
+class TestSelectMode:
+    def test_storm_overrides_everything(self):
+        assert select_mode(presence="present", time_of_day="day", weather_severity=0.7) is STORM
+        assert select_mode(presence="none", time_of_day="evening", weather_severity=0.9) is STORM
+
+    def test_no_one_home_is_solitary(self):
+        assert select_mode(presence="none") is SOLITARY
+
+    def test_present_and_screen_active_is_working(self):
+        m = select_mode(presence="present", time_of_day="day", screen_active=True)
+        assert m is WORKING_AMBIENCE
+
+    def test_evening_with_presence_is_reflection(self):
+        m = select_mode(presence="present", time_of_day="evening")
+        assert m is EVENING_REFLECTION
+
+    def test_night_with_presence_is_reflection(self):
+        m = select_mode(presence="present", time_of_day="night")
+        assert m is EVENING_REFLECTION
+
+    def test_default_is_companion(self):
+        m = select_mode(presence="present", time_of_day="day", weather_severity=0.0)
+        assert m is COMPANION
+
+    def test_unknown_presence_defaults_to_companion(self):
+        m = select_mode(presence="unknown", time_of_day="day")
+        assert m is COMPANION
+
+
+# ---------------------------------------------------------------------------
+# apply_mode_to_commission
+# ---------------------------------------------------------------------------
+
+class TestApplyModeToCommission:
+    def test_does_not_mutate_input(self):
+        original = {"foo": "bar", "tempo": 80.0}
+        snapshot = dict(original)
+        apply_mode_to_commission(original, COMPANION, rng_seed=1)
+        assert original == snapshot
+
+    def test_adds_mode_metadata(self):
+        out = apply_mode_to_commission({}, SOLITARY, rng_seed=1)
+        assert out["artist_mode"] == "solitary"
+        assert "mode_tempo_target_bpm" in out
+        assert "mode_voice_count_target" in out
+        assert "mode_silence_ratio" in out
+        assert "mode_preferred_voices" in out
+
+    def test_tempo_within_band(self):
+        out = apply_mode_to_commission({}, SOLITARY, rng_seed=42)
+        lo, hi = SOLITARY.tempo_band
+        assert lo <= out["mode_tempo_target_bpm"] <= hi
+
+    def test_voice_count_propagated(self):
+        out = apply_mode_to_commission({}, COMPANION, rng_seed=1)
+        assert out["mode_voice_count_target"] == 3
+        assert out["mode_voice_count_floor"] == 2
+        assert out["mode_voice_count_ceiling"] == 3
+
+    def test_preferred_voices_csv(self):
+        out = apply_mode_to_commission({}, SOLITARY, rng_seed=1)
+        voices = out["mode_preferred_voices"].split(",")
+        assert "sw_bell_warm" in voices
+        assert "sw_pad" in voices
+
+    def test_avoid_attention_flag_propagated(self):
+        out = apply_mode_to_commission({}, WORKING_AMBIENCE, rng_seed=1)
+        assert out["mode_avoid_attention_pullers"] == "true"
+        out2 = apply_mode_to_commission({}, COMPANION, rng_seed=1)
+        assert out2["mode_avoid_attention_pullers"] == "false"
+
+    def test_deterministic_same_seed(self):
+        a = apply_mode_to_commission({"x": 1}, EVENING_REFLECTION, rng_seed=99)
+        b = apply_mode_to_commission({"x": 1}, EVENING_REFLECTION, rng_seed=99)
+        assert a == b
+
+exec
+/bin/zsh -lc "nl -ba my-claw/tools/senseweave/artist_identity.py | sed -n '58,80p'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+    58	    "sw_pad",        # sustaining pad — the held-tone foundation
+    59	    "sw_sampler",    # sample-based / found-sound voice — captured room moments replayed as material
+    60	)
+    61	
+    62	#: Map from musical role to the canonical signature voice for that role.
+    63	#: When the composer needs a "melody" voice, prefer sw_bell_warm; when it
+    64	#: needs "bass", prefer sw_pad; etc. Color voices outside the quartet
+    65	#: are allowed but should be deliberate, not default.
+    66	VOICE_ROLES: dict[str, str] = {
+    67	    "melody": "sw_bell_warm",
+    68	    "counter": "sw_bowed",
+    69	    "color": "sw_breath",
+    70	    "texture": "sw_pad",
+    71	    "bass": "sw_pad",
+    72	}
+    73	
+    74	
+    75	# ---------------------------------------------------------------------------
+    76	# 2. B-rooted tonal map
+    77	# ---------------------------------------------------------------------------
+    78	
+    79	#: Distance from home (B) in semitones-of-meaning, not pitch. Lower number
+    80	#: = closer to home, more frequent visits. Higher number = farther,
+
+codex
+Editing the module and its focused regression test now. I’m only adding the missing `"sampler"` mapping and tightening the role test to assert that exact behavior.
+apply patch
+patch: completed
+/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/artist_identity.py
+/Users/anthony/Programming/PromptClaw/tests/test_artist_identity.py
+diff --git a/my-claw/tools/senseweave/artist_identity.py b/my-claw/tools/senseweave/artist_identity.py
+index dac86712afbf46a36e0bfbbadc26c98ac09839a7..6beb90bd2922ba8d92bea25f17f913c5ab14196a
+--- a/my-claw/tools/senseweave/artist_identity.py
++++ b/my-claw/tools/senseweave/artist_identity.py
+@@ -69,6 +69,7 @@
+     "color": "sw_breath",
+     "texture": "sw_pad",
+     "bass": "sw_pad",
++    "sampler": "sw_sampler",
+ }
+ 
+ 
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index 668c1f829f29ea12d0ed74a60659d8edc6936ec6..32c3c0bc9e94b600ca22cb1a709b257bc3151047
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -56,9 +56,10 @@
+ 
+     def test_voice_roles_complete(self):
+         # Every musical role has a canonical signature voice
+-        for role in ("melody", "counter", "color", "texture", "bass"):
++        for role in ("melody", "counter", "color", "texture", "bass", "sampler"):
+             assert role in VOICE_ROLES
+             assert VOICE_ROLES[role] in SIGNATURE_VOICES
++        assert VOICE_ROLES["sampler"] == "sw_sampler"
+ 
+ 
+ # ---------------------------------------------------------------------------
+
+diff --git a/my-claw/tools/senseweave/artist_identity.py b/my-claw/tools/senseweave/artist_identity.py
+index dac86712afbf46a36e0bfbbadc26c98ac09839a7..6beb90bd2922ba8d92bea25f17f913c5ab14196a
+--- a/my-claw/tools/senseweave/artist_identity.py
++++ b/my-claw/tools/senseweave/artist_identity.py
+@@ -69,6 +69,7 @@
+     "color": "sw_breath",
+     "texture": "sw_pad",
+     "bass": "sw_pad",
++    "sampler": "sw_sampler",
+ }
+ 
+ 
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index 668c1f829f29ea12d0ed74a60659d8edc6936ec6..32c3c0bc9e94b600ca22cb1a709b257bc3151047
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -56,9 +56,10 @@
+ 
+     def test_voice_roles_complete(self):
+         # Every musical role has a canonical signature voice
+-        for role in ("melody", "counter", "color", "texture", "bass"):
++        for role in ("melody", "counter", "color", "texture", "bass", "sampler"):
+             assert role in VOICE_ROLES
+             assert VOICE_ROLES[role] in SIGNATURE_VOICES
++        assert VOICE_ROLES["sampler"] == "sw_sampler"
+ 
+ 
+ # ---------------------------------------------------------------------------
+
+codex
+The code change is in place. I’m running a focused test first, then the task’s required validation commands before committing.
+exec
+/bin/zsh -lc "pip install -e '.[dev]'" in /Users/anthony/Programming/PromptClaw
+diff --git a/my-claw/tools/senseweave/artist_identity.py b/my-claw/tools/senseweave/artist_identity.py
+index dac86712afbf46a36e0bfbbadc26c98ac09839a7..6beb90bd2922ba8d92bea25f17f913c5ab14196a
+--- a/my-claw/tools/senseweave/artist_identity.py
++++ b/my-claw/tools/senseweave/artist_identity.py
+@@ -69,6 +69,7 @@
+     "color": "sw_breath",
+     "texture": "sw_pad",
+     "bass": "sw_pad",
++    "sampler": "sw_sampler",
+ }
+ 
+ 
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index 668c1f829f29ea12d0ed74a60659d8edc6936ec6..32c3c0bc9e94b600ca22cb1a709b257bc3151047
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -56,9 +56,10 @@
+ 
+     def test_voice_roles_complete(self):
+         # Every musical role has a canonical signature voice
+-        for role in ("melody", "counter", "color", "texture", "bass"):
++        for role in ("melody", "counter", "color", "texture", "bass", "sampler"):
+             assert role in VOICE_ROLES
+             assert VOICE_ROLES[role] in SIGNATURE_VOICES
++        assert VOICE_ROLES["sampler"] == "sw_sampler"
+ 
+ 
+ # ---------------------------------------------------------------------------
+
+ succeeded in 3224ms:
+Obtaining file:///Users/anthony/Programming/PromptClaw
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: partitura<2,>=1.8 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.8.0)
+Requirement already satisfied: librosa<1,>=0.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.11.0)
+Requirement already satisfied: mypy>=1.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.19.1)
+Requirement already satisfied: pytest>=8.0 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (8.3.5)
+Requirement already satisfied: ruff>=0.9 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.9.2)
+Requirement already satisfied: audioread>=2.1.9 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (3.1.0)
+Requirement already satisfied: numba>=0.51.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.59.0)
+Requirement already satisfied: numpy>=1.22.3 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.26.0)
+Requirement already satisfied: scipy>=1.6.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.11.4)
+Requirement already satisfied: scikit-learn>=1.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.2)
+Requirement already satisfied: joblib>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.0)
+Requirement already satisfied: decorator>=4.3.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (5.1.1)
+Requirement already satisfied: soundfile>=0.12.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.13.1)
+Requirement already satisfied: pooch>=1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.9.0)
+Requirement already satisfied: soxr>=0.3.2 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: typing_extensions>=4.1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (4.15.0)
+Requirement already satisfied: lazy_loader>=0.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.3)
+Requirement already satisfied: msgpack>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.3)
+Requirement already satisfied: lxml in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.9.3)
+Requirement already satisfied: lark-parser in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (0.12.0)
+Requirement already satisfied: xmlschema in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.3.1)
+Requirement already satisfied: mido in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (1.3.3)
+Requirement already satisfied: mypy_extensions>=1.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: pathspec>=0.9.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.10.3)
+Requirement already satisfied: librt>=0.6.2 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.8.1)
+Requirement already satisfied: llvmlite<0.43,>=0.42.0dev0 in /opt/anaconda3/lib/python3.11/site-packages (from numba>=0.51.0->librosa<1,>=0.10->promptclaw==3.0.0) (0.42.0)
+Requirement already satisfied: platformdirs>=2.5.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (4.5.1)
+Requirement already satisfied: packaging>=20.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (23.2)
+Requirement already satisfied: requests>=2.19.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.32.3)
+Requirement already satisfied: iniconfig in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.1.1)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.5.0)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.4)
+Requirement already satisfied: idna<4,>=2.5 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (3.4)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.6.3)
+Requirement already satisfied: certifi>=2017.4.17 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2026.1.4)
+Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from scikit-learn>=1.1.0->librosa<1,>=0.10->promptclaw==3.0.0) (2.2.0)
+Requirement already satisfied: cffi>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.0)
+Requirement already satisfied: pycparser in /opt/anaconda3/lib/python3.11/site-packages (from cffi>=1.0->soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.21)
+Requirement already satisfied: elementpath<6.0.0,>=5.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from xmlschema->partitura<2,>=1.8->promptclaw==3.0.0) (5.1.1)
+Building wheels for collected packages: promptclaw
+  Building editable for promptclaw (pyproject.toml): started
+  Building editable for promptclaw (pyproject.toml): finished with status 'done'
+  Created wheel for promptclaw: filename=promptclaw-3.0.0-0.editable-py3-none-any.whl size=5894 sha256=2a0d42059d52c200ba94700ae2718d80673f48df7a2f8f64124ba024c709822a
+  Stored in directory: /private/var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/pip-ephem-wheel-cache-wshce75x/wheels/ab/f4/89/0cacd29874f6252d7c6bef0fca4c14839da91ab6a8d842965e
+Successfully built promptclaw
+Installing collected packages: promptclaw
+  Attempting uninstall: promptclaw
+    Found existing installation: promptclaw 3.0.0
+    Uninstalling promptclaw-3.0.0:
+      Successfully uninstalled promptclaw-3.0.0
+Successfully installed promptclaw-3.0.0
+
+codex
+The editable install is still running. Once that finishes I’ll run the focused test, then the broader pytest, ruff, and mypy checks in the order required.
+diff --git a/my-claw/tools/senseweave/artist_identity.py b/my-claw/tools/senseweave/artist_identity.py
+index dac86712afbf46a36e0bfbbadc26c98ac09839a7..6beb90bd2922ba8d92bea25f17f913c5ab14196a
+--- a/my-claw/tools/senseweave/artist_identity.py
++++ b/my-claw/tools/senseweave/artist_identity.py
+@@ -69,6 +69,7 @@
+     "color": "sw_breath",
+     "texture": "sw_pad",
+     "bass": "sw_pad",
++    "sampler": "sw_sampler",
+ }
+ 
+ 
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index 668c1f829f29ea12d0ed74a60659d8edc6936ec6..32c3c0bc9e94b600ca22cb1a709b257bc3151047
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -56,9 +56,10 @@
+ 
+     def test_voice_roles_complete(self):
+         # Every musical role has a canonical signature voice
+-        for role in ("melody", "counter", "color", "texture", "bass"):
++        for role in ("melody", "counter", "color", "texture", "bass", "sampler"):
+             assert role in VOICE_ROLES
+             assert VOICE_ROLES[role] in SIGNATURE_VOICES
++        assert VOICE_ROLES["sampler"] == "sw_sampler"
+ 
+ 
+ # ---------------------------------------------------------------------------
+
+exec
+/bin/zsh -lc 'pytest tests/test_artist_identity.py -x --tb=short' in /Users/anthony/Programming/PromptClaw
+diff --git a/my-claw/tools/senseweave/artist_identity.py b/my-claw/tools/senseweave/artist_identity.py
+index dac86712afbf46a36e0bfbbadc26c98ac09839a7..6beb90bd2922ba8d92bea25f17f913c5ab14196a
+--- a/my-claw/tools/senseweave/artist_identity.py
++++ b/my-claw/tools/senseweave/artist_identity.py
+@@ -69,6 +69,7 @@
+     "color": "sw_breath",
+     "texture": "sw_pad",
+     "bass": "sw_pad",
++    "sampler": "sw_sampler",
+ }
+ 
+ 
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index 668c1f829f29ea12d0ed74a60659d8edc6936ec6..32c3c0bc9e94b600ca22cb1a709b257bc3151047
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -56,9 +56,10 @@
+ 
+     def test_voice_roles_complete(self):
+         # Every musical role has a canonical signature voice
+-        for role in ("melody", "counter", "color", "texture", "bass"):
++        for role in ("melody", "counter", "color", "texture", "bass", "sampler"):
+             assert role in VOICE_ROLES
+             assert VOICE_ROLES[role] in SIGNATURE_VOICES
++        assert VOICE_ROLES["sampler"] == "sw_sampler"
+ 
+ 
+ # ---------------------------------------------------------------------------
+
+ succeeded in 811ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 37 items
+
+tests/test_artist_identity.py .....................................      [100%]
+
+============================== 37 passed in 0.13s ==============================
+
+codex
+The focused regression test passed. I’m running the required full test suite, `ruff`, and `mypy` now to make sure this small change didn’t expose anything else.
+exec
+/bin/zsh -lc 'ruff check src/ tests/' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+All checks passed!
+
+exec
+/bin/zsh -lc 'pytest tests/ -x --tb=short' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'mypy src/' in /Users/anthony/Programming/PromptClaw
+ succeeded in 378ms:
+Success: no issues found in 23 source files
+
+diff --git a/my-claw/tools/senseweave/artist_identity.py b/my-claw/tools/senseweave/artist_identity.py
+index dac86712afbf46a36e0bfbbadc26c98ac09839a7..6beb90bd2922ba8d92bea25f17f913c5ab14196a
+--- a/my-claw/tools/senseweave/artist_identity.py
++++ b/my-claw/tools/senseweave/artist_identity.py
+@@ -69,6 +69,7 @@
+     "color": "sw_breath",
+     "texture": "sw_pad",
+     "bass": "sw_pad",
++    "sampler": "sw_sampler",
+ }
+ 
+ 
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index 668c1f829f29ea12d0ed74a60659d8edc6936ec6..32c3c0bc9e94b600ca22cb1a709b257bc3151047
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -56,9 +56,10 @@
+ 
+     def test_voice_roles_complete(self):
+         # Every musical role has a canonical signature voice
+-        for role in ("melody", "counter", "color", "texture", "bass"):
++        for role in ("melody", "counter", "color", "texture", "bass", "sampler"):
+             assert role in VOICE_ROLES
+             assert VOICE_ROLES[role] in SIGNATURE_VOICES
++        assert VOICE_ROLES["sampler"] == "sw_sampler"
+ 
+ 
+ # ---------------------------------------------------------------------------
+
+diff --git a/my-claw/tools/senseweave/artist_identity.py b/my-claw/tools/senseweave/artist_identity.py
+index dac86712afbf46a36e0bfbbadc26c98ac09839a7..6beb90bd2922ba8d92bea25f17f913c5ab14196a
+--- a/my-claw/tools/senseweave/artist_identity.py
++++ b/my-claw/tools/senseweave/artist_identity.py
+@@ -69,6 +69,7 @@
+     "color": "sw_breath",
+     "texture": "sw_pad",
+     "bass": "sw_pad",
++    "sampler": "sw_sampler",
+ }
+ 
+ 
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index 668c1f829f29ea12d0ed74a60659d8edc6936ec6..32c3c0bc9e94b600ca22cb1a709b257bc3151047
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -56,9 +56,10 @@
+ 
+     def test_voice_roles_complete(self):
+         # Every musical role has a canonical signature voice
+-        for role in ("melody", "counter", "color", "texture", "bass"):
++        for role in ("melody", "counter", "color", "texture", "bass", "sampler"):
+             assert role in VOICE_ROLES
+             assert VOICE_ROLES[role] in SIGNATURE_VOICES
++        assert VOICE_ROLES["sampler"] == "sw_sampler"
+ 
+ 
+ # ---------------------------------------------------------------------------
+
+codex
+The broad test suite is still running and has cleared the first large chunk without failures. `ruff` and `mypy` have already passed.
+diff --git a/my-claw/tools/senseweave/artist_identity.py b/my-claw/tools/senseweave/artist_identity.py
+index dac86712afbf46a36e0bfbbadc26c98ac09839a7..6beb90bd2922ba8d92bea25f17f913c5ab14196a
+--- a/my-claw/tools/senseweave/artist_identity.py
++++ b/my-claw/tools/senseweave/artist_identity.py
+@@ -69,6 +69,7 @@
+     "color": "sw_breath",
+     "texture": "sw_pad",
+     "bass": "sw_pad",
++    "sampler": "sw_sampler",
+ }
+ 
+ 
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index 668c1f829f29ea12d0ed74a60659d8edc6936ec6..32c3c0bc9e94b600ca22cb1a709b257bc3151047
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -56,9 +56,10 @@
+ 
+     def test_voice_roles_complete(self):
+         # Every musical role has a canonical signature voice
+-        for role in ("melody", "counter", "color", "texture", "bass"):
++        for role in ("melody", "counter", "color", "texture", "bass", "sampler"):
+             assert role in VOICE_ROLES
+             assert VOICE_ROLES[role] in SIGNATURE_VOICES
++        assert VOICE_ROLES["sampler"] == "sw_sampler"
+ 
+ 
+ # ---------------------------------------------------------------------------
+
+diff --git a/my-claw/tools/senseweave/artist_identity.py b/my-claw/tools/senseweave/artist_identity.py
+index dac86712afbf46a36e0bfbbadc26c98ac09839a7..6beb90bd2922ba8d92bea25f17f913c5ab14196a
+--- a/my-claw/tools/senseweave/artist_identity.py
++++ b/my-claw/tools/senseweave/artist_identity.py
+@@ -69,6 +69,7 @@
+     "color": "sw_breath",
+     "texture": "sw_pad",
+     "bass": "sw_pad",
++    "sampler": "sw_sampler",
+ }
+ 
+ 
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index 668c1f829f29ea12d0ed74a60659d8edc6936ec6..32c3c0bc9e94b600ca22cb1a709b257bc3151047
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -56,9 +56,10 @@
+ 
+     def test_voice_roles_complete(self):
+         # Every musical role has a canonical signature voice
+-        for role in ("melody", "counter", "color", "texture", "bass"):
++        for role in ("melody", "counter", "color", "texture", "bass", "sampler"):
+             assert role in VOICE_ROLES
+             assert VOICE_ROLES[role] in SIGNATURE_VOICES
++        assert VOICE_ROLES["sampler"] == "sw_sampler"
+ 
+ 
+ # ---------------------------------------------------------------------------
+
+codex
+The suite is near the end and still clean. I’m waiting for completion, then I’ll commit just the two task files.
+diff --git a/my-claw/tools/senseweave/artist_identity.py b/my-claw/tools/senseweave/artist_identity.py
+index dac86712afbf46a36e0bfbbadc26c98ac09839a7..6beb90bd2922ba8d92bea25f17f913c5ab14196a
+--- a/my-claw/tools/senseweave/artist_identity.py
++++ b/my-claw/tools/senseweave/artist_identity.py
+@@ -69,6 +69,7 @@
+     "color": "sw_breath",
+     "texture": "sw_pad",
+     "bass": "sw_pad",
++    "sampler": "sw_sampler",
+ }
+ 
+ 
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index 668c1f829f29ea12d0ed74a60659d8edc6936ec6..32c3c0bc9e94b600ca22cb1a709b257bc3151047
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -56,9 +56,10 @@
+ 
+     def test_voice_roles_complete(self):
+         # Every musical role has a canonical signature voice
+-        for role in ("melody", "counter", "color", "texture", "bass"):
++        for role in ("melody", "counter", "color", "texture", "bass", "sampler"):
+             assert role in VOICE_ROLES
+             assert VOICE_ROLES[role] in SIGNATURE_VOICES
++        assert VOICE_ROLES["sampler"] == "sw_sampler"
+ 
+ 
+ # ---------------------------------------------------------------------------
+
+ succeeded in 32411ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3577 items
+
+tests/test_accompaniment.py ...........................                  [  0%]
+tests/test_acoustic_ecology.py .................................         [  1%]
+tests/test_agent_runtime.py ..                                           [  1%]
+tests/test_agent_selector_defaults.py .                                  [  1%]
+tests/test_agent_selector_quota.py ........                              [  1%]
+tests/test_agogic_rule.py ...                                            [  2%]
+tests/test_antenna_to_skin.py .................................          [  2%]
+tests/test_archive_daemon_runtime.py .                                   [  3%]
+tests/test_archive_paths.py .....                                        [  3%]
+tests/test_arrangement_engine.py ....................................... [  4%]
+                                                                         [  4%]
+tests/test_art_engine_runtime.py ....                                    [  4%]
+tests/test_articulation.py ......                                        [  4%]
+tests/test_artist_identity.py .....................................      [  5%]
+tests/test_artistic_identity.py .                                        [  5%]
+tests/test_audio_analysis.py .....................................       [  6%]
+tests/test_audio_novelty.py ....                                         [  6%]
+tests/test_bootstrap.py ..                                               [  6%]
+tests/test_breath_to_filter.py .............................             [  7%]
+tests/test_cadence_engine.py .......                                     [  7%]
+tests/test_call_response.py ..........                                   [  8%]
+tests/test_capstone_engine.py ...                                        [  8%]
+tests/test_capture_alias.py ..                                           [  8%]
+tests/test_cast_planner.py .............                                 [  8%]
+tests/test_character_registry.py ......                                  [  8%]
+tests/test_check_status_runtime.py ..                                    [  8%]
+tests/test_coherence_engine.py ..............                            [  9%]
+tests/test_coherence_integration.py ............                         [  9%]
+tests/test_collaborative_canvas.py ......................                [ 10%]
+tests/test_commission_context.py ..                                      [ 10%]
+tests/test_composer_quote_verify.py .....                                [ 10%]
+tests/test_config.py ..                                                  [ 10%]
+tests/test_constitution.py .......................                       [ 11%]
+tests/test_contact_listener_runtime.py ....                              [ 11%]
+tests/test_contact_mic_calibration_runtime.py ....                       [ 11%]
+tests/test_context_pulse_runtime.py .                                    [ 11%]
+tests/test_continuous_learner.py ......................                  [ 11%]
+tests/test_counterpoint_pipeline.py ...........................          [ 12%]
+tests/test_counterpoint_rules.py ....................................... [ 13%]
+......................                                                   [ 14%]
+tests/test_course_critique.py ...............................            [ 15%]
+tests/test_cypherclaw_audio_runtime.py .....                             [ 15%]
+tests/test_cypherclaw_av_stack_service.py ...                            [ 15%]
+tests/test_cypherclaw_boot_runtime.py ......                             [ 15%]
+tests/test_cypherclaw_musicianship_roadmap.py ..                         [ 15%]
+tests/test_cypherclaw_runtime.py .....                                   [ 15%]
+tests/test_cypherclaw_sampler_architecture.py ......                     [ 15%]
+tests/test_cypherclaw_sampler_artistic_intent.py .....                   [ 16%]
+tests/test_daemon_concurrency_compat.py ...                              [ 16%]
+tests/test_daemon_fallback.py ...............                            [ 16%]
+tests/test_daemon_scheduler.py ..                                        [ 16%]
+tests/test_daemon_status_ollama.py .......                               [ 16%]
+tests/test_dashboard_generator.py ...................................... [ 17%]
+.......                                                                  [ 18%]
+tests/test_dashboard_generator_runtime.py ...                            [ 18%]
+tests/test_decision_store.py .........                                   [ 18%]
+tests/test_doctor.py ...                                                 [ 18%]
+tests/test_dsp_scene_lab.py ................                             [ 19%]
+tests/test_duration_contrast_rule.py .......                             [ 19%]
+tests/test_ear_engine.py ............                                    [ 19%]
+tests/test_emsd_curriculum.py ...............                            [ 19%]
+tests/test_emsd_performance.py ....                                      [ 20%]
+tests/test_emsd_runtime.py ...                                           [ 20%]
+tests/test_event_store.py .......                                        [ 20%]
+tests/test_executable_curriculum.py ...                                  [ 20%]
+tests/test_face_display_sample_status.py ....                            [ 20%]
+tests/test_federation_discovery.py ........                              [ 20%]
+tests/test_final_rit.py ...                                              [ 20%]
+tests/test_first_boot.py ...................................             [ 21%]
+tests/test_form_grammar.py ..                                            [ 21%]
+tests/test_fractal_form.py ...............                               [ 22%]
+tests/test_functional_harmony.py ...............................         [ 23%]
+tests/test_gallery.py ..........................                         [ 23%]
+tests/test_gallery_x11_runtime.py ...                                    [ 23%]
+tests/test_garden_watcher.py ........................................... [ 25%]
+.                                                                        [ 25%]
+tests/test_gemini_image_runtime.py ...                                   [ 25%]
+tests/test_generative_scores.py ........................................ [ 26%]
+.............................................                            [ 27%]
+tests/test_genre_literacy.py ............                                [ 28%]
+tests/test_glyphweave_cli.py ....                                        [ 28%]
+tests/test_glyphweave_runtime.py ....                                    [ 28%]
+tests/test_governor_integration.py ..............                        [ 28%]
+tests/test_graduation.py ......................                          [ 29%]
+tests/test_groove_engine.py ............................................ [ 30%]
+......................................                                   [ 31%]
+tests/test_harmonic_planner.py .........                                 [ 31%]
+tests/test_healer_runtime.py .....                                       [ 31%]
+tests/test_healthcheck_script_runtime.py ...                             [ 32%]
+tests/test_hook_engine.py .................                              [ 32%]
+tests/test_human_phrase_capture_verify.py .                              [ 32%]
+tests/test_image_api_app.py ........                                     [ 32%]
+tests/test_image_api_jobs_db.py ............                             [ 33%]
+tests/test_image_api_s3_uploader.py ....                                 [ 33%]
+tests/test_image_api_spec_parser.py ...................                  [ 33%]
+tests/test_image_api_worker.py ........                                  [ 33%]
+tests/test_inkplate_display.py ....                                      [ 34%]
+tests/test_inner_life.py ...................................             [ 35%]
+tests/test_instrument_patches.py ........                                [ 35%]
+tests/test_ixml_chunk_writer.py .......                                  [ 35%]
+tests/test_keyboard_chat.py ..............................               [ 36%]
+tests/test_lifeimprover_bridge_runtime.py .....                          [ 36%]
+tests/test_listener_review.py .....                                      [ 36%]
+tests/test_live_buffer.py ...                                            [ 36%]
+tests/test_local_command_runtime.py ....                                 [ 36%]
+tests/test_lung_capacity_rule.py .......                                 [ 36%]
+tests/test_macbook_codex_monitor.py ....                                 [ 37%]
+tests/test_maintenance_mode.py .....                                     [ 37%]
+tests/test_master_bus.py ......                                          [ 37%]
+tests/test_master_smooth_scd.py ...                                      [ 37%]
+tests/test_melodic_mind.py ............................................. [ 38%]
+..........................................................               [ 40%]
+tests/test_metric_accent_rule.py ....                                    [ 40%]
+tests/test_microtiming.py .....................                          [ 41%]
+tests/test_midi_keyboard_listener_runtime.py .....                       [ 41%]
+tests/test_midi_state.py .......................................         [ 42%]
+tests/test_mix_engine.py ..............................                  [ 43%]
+tests/test_mix_verify.py ............................................... [ 44%]
+                                                                         [ 44%]
+tests/test_mood_mirror.py .....................................          [ 45%]
+tests/test_motif_lifecycle.py ............................               [ 46%]
+tests/test_motif_memory.py ...............                               [ 46%]
+tests/test_music_theory.py ............................................. [ 47%]
+........................................                                 [ 49%]
+tests/test_music_tracker.py ..........................................   [ 50%]
+tests/test_music_tracker_runtime.py .................................... [ 51%]
+........                                                                 [ 51%]
+tests/test_musical_integration_runtime.py .                              [ 51%]
+tests/test_musical_marathon_integration.py ..                            [ 51%]
+tests/test_narrative_envelope.py ..............                          [ 51%]
+tests/test_observatory_authority.py .....                                [ 52%]
+tests/test_observatory_runtime.py ..                                     [ 52%]
+tests/test_observatory_verification.py ..                                [ 52%]
+tests/test_observer_vision_runtime.py ..............                     [ 52%]
+tests/test_ollama_daemon_health.py ...                                   [ 52%]
+tests/test_ollama_health.py ......                                       [ 52%]
+tests/test_ollama_invoke.py ...                                          [ 52%]
+tests/test_ollama_routing.py ...................                         [ 53%]
+tests/test_ollama_run_agent.py .......                                   [ 53%]
+tests/test_operator_diagnostics.py ...............                       [ 54%]
+tests/test_operator_diagnostics_sample_status.py ....                    [ 54%]
+tests/test_ops_helpers_runtime.py ....                                   [ 54%]
+tests/test_orchestral_form.py ...............................            [ 55%]
+tests/test_orchestrator.py ...                                           [ 55%]
+tests/test_pareidolia_art_engine.py .......                              [ 55%]
+tests/test_pareidolia_characters.py .................................    [ 56%]
+tests/test_pareidolia_color.py ......................................... [ 57%]
+........................................................................ [ 59%]
+....                                                                     [ 59%]
+tests/test_pedals_to_key.py ............................                 [ 60%]
+tests/test_phrase_arch.py ..........                                     [ 60%]
+tests/test_phrase_capture.py ........................                    [ 61%]
+tests/test_phrase_capture_runtime.py ...                                 [ 61%]
+tests/test_phrase_tracker.py ............                                [ 61%]
+tests/test_piece_brief.py ........                                       [ 61%]
+tests/test_piece_commission.py ....                                      [ 62%]
+tests/test_piece_queue.py ..                                             [ 62%]
+tests/test_porch_eye.py ..................................               [ 63%]
+tests/test_portfolio_report.py .........................                 [ 63%]
+tests/test_practice_curriculum.py ..                                     [ 63%]
+tests/test_preflight.py ......                                           [ 64%]
+tests/test_presence_engine.py ............                               [ 64%]
+tests/test_procedural_arc.py .....                                       [ 64%]
+tests/test_production_course_integration.py ..........                   [ 64%]
+tests/test_production_course_knowledge_base.py ...                       [ 64%]
+tests/test_project_scanner_runtime.py ....                               [ 64%]
+tests/test_prosody_engine.py ........                                    [ 65%]
+tests/test_punctuation_rule.py ............                              [ 65%]
+tests/test_quota_monitor.py .....................                        [ 66%]
+tests/test_reharmonizer.py ...                                           [ 66%]
+tests/test_render_ablation.py ....                                       [ 66%]
+tests/test_render_antipatterns.py ......................                 [ 66%]
+tests/test_render_audio_sidecar.py ...                                   [ 67%]
+tests/test_render_debugger.py ..                                         [ 67%]
+tests/test_render_diff.py ................                               [ 67%]
+tests/test_render_events.py ....................                         [ 68%]
+tests/test_render_export.py ......                                       [ 68%]
+tests/test_render_features.py ...                                        [ 68%]
+tests/test_render_metrics.py ..............                              [ 68%]
+tests/test_render_pass.py ....................                           [ 69%]
+tests/test_render_replay.py ..                                           [ 69%]
+tests/test_render_seed.py .............                                  [ 69%]
+tests/test_render_worm.py ..........                                     [ 69%]
+tests/test_repertoire_memory.py .................                        [ 70%]
+tests/test_repertoire_memory_score_tree.py .                             [ 70%]
+tests/test_research_runtime.py .....                                     [ 70%]
+tests/test_resilience_runtime_scripts.py ..............                  [ 71%]
+tests/test_resource_governor.py ..........................               [ 71%]
+tests/test_restraint.py ...                                              [ 71%]
+tests/test_reviewer_runtime.py ...                                       [ 71%]
+tests/test_role_gate_integration.py .................................... [ 72%]
+....                                                                     [ 73%]
+tests/test_room_listener_runtime.py ..................                   [ 73%]
+tests/test_room_presence_daemon.py ......                                [ 73%]
+tests/test_router.py .....                                               [ 73%]
+tests/test_row_automation.py ...........                                 [ 74%]
+tests/test_runtime_checkpoint.py ...                                     [ 74%]
+tests/test_runtime_paths.py ..                                           [ 74%]
+tests/test_sample_capture_daemon.py .................................... [ 75%]
+.............                                                            [ 75%]
+tests/test_sample_capture_service_verify.py ....                         [ 75%]
+tests/test_sample_capture_verify.py ....                                 [ 75%]
+tests/test_sample_dsp_activity.py ...........                            [ 76%]
+tests/test_sample_event_renderer.py .....                                [ 76%]
+tests/test_sample_lab.py ....                                            [ 76%]
+tests/test_sample_library.py ...................                         [ 76%]
+tests/test_sample_library_import.py ...                                  [ 77%]
+tests/test_sample_playback_engine.py .......                             [ 77%]
+tests/test_sample_record_audio_analysis.py .............                 [ 77%]
+tests/test_sample_record_context.py ..........                           [ 77%]
+tests/test_sample_record_json.py ..............                          [ 78%]
+tests/test_sample_record_skeleton.py .........                           [ 78%]
+tests/test_sample_selector.py .................                          [ 79%]
+tests/test_sample_status.py .....                                        [ 79%]
+tests/test_sampler_buffers.py ...............                            [ 79%]
+tests/test_sampler_dispatch.py ....................................      [ 80%]
+tests/test_sampler_effects.py .......................................... [ 81%]
+.......                                                                  [ 81%]
+tests/test_sampler_fx_mode_verify.py ...                                 [ 82%]
+tests/test_sampler_scheduler.py ...........                              [ 82%]
+tests/test_scene_composer.py ......................................      [ 83%]
+tests/test_score_tree.py .                                               [ 83%]
+tests/test_score_tree_composer.py .......................                [ 84%]
+tests/test_score_tree_pipeline.py .                                      [ 84%]
+tests/test_self_critique.py .........................                    [ 84%]
+tests/test_self_listener_quote_verify.py ......                          [ 84%]
+tests/test_self_listener_tracker_runtime.py ...............              [ 85%]
+tests/test_senseweave_rollout_controls.py .....                          [ 85%]
+tests/test_senseweave_voice.py ..........................                [ 86%]
+tests/test_sensor_fusion.py ...............................              [ 87%]
+tests/test_sensor_intent_rule.py ....                                    [ 87%]
+tests/test_sensory_journal.py ............................               [ 88%]
+tests/test_server_health.py ...                                          [ 88%]
+tests/test_silence_budget_rule.py .................                      [ 88%]
+tests/test_sound_palette_lab.py ..                                       [ 88%]
+tests/test_startle.py ................................                   [ 89%]
+tests/test_supercollider_recipes.py ...                                  [ 89%]
+tests/test_sw_sampler.py .......................................         [ 90%]
+tests/test_syncopation_features.py .........................             [ 91%]
+tests/test_synthdef_registry.py ...................................      [ 92%]
+tests/test_synthesis_architecture_registry.py .......................... [ 93%]
+.......                                                                  [ 93%]
+tests/test_tamagotchi_runtime.py ......                                  [ 93%]
+tests/test_telegram_runtime.py ......                                    [ 93%]
+tests/test_theramini_duet.py ........................................... [ 94%]
+.........                                                                [ 95%]
+tests/test_theramini_listener_runtime.py ............                    [ 95%]
+tests/test_tracker_cadence.py ............                               [ 95%]
+tests/test_tracker_compiler.py ................                          [ 96%]
+tests/test_tracker_variation.py .....                                    [ 96%]
+tests/test_trust.py ................                                     [ 96%]
+tests/test_usage_journal.py ..............                               [ 97%]
+tests/test_usage_journal_integration.py .                                [ 97%]
+tests/test_voice_aliases.py .......                                      [ 97%]
+tests/test_voice_interpretation_rules.py ............................... [ 98%]
+..                                                                       [ 98%]
+tests/test_voice_manager_v2.py ......................................... [ 99%]
+............                                                             [ 99%]
+tests/test_voice_shaping.py ....                                         [ 99%]
+tests/test_wizard.py ...                                                 [100%]
+
+=============================== warnings summary ===============================
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163: DeprecationWarning: module 'sre_parse' is deprecated
+    import sre_parse
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164: DeprecationWarning: module 'sre_constants' is deprecated
+    import sre_constants
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25
+  /opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    from pkg_resources import resource_stream, resource_exists
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google.cloud')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(parent)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('ruamel')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('zope')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:16: DeprecationWarning: 'aifc' is deprecated and slated for removal in Python 3.13
+    import aifc
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:17: DeprecationWarning: 'audioop' is deprecated and slated for removal in Python 3.13
+    import audioop
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:19: DeprecationWarning: 'sunau' is deprecated and slated for removal in Python 3.13
+    import sunau
+
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+  /Users/anthony/Programming/PromptClaw/tests/test_gallery.py:108: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(result.getdata()), list(canvas.getdata()))
+
+tests/test_pareidolia_characters.py: 189 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:85: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pixels = list(img.getdata())
+
+tests/test_pareidolia_characters.py: 21 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:254: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    rendered[name] = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:310: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:314: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:316: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:339: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_low = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:343: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_high = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:326: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:352: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:331: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:333: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:361: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:376: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:366: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:368: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_add_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:429: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:451: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_with_palette
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:443: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:434: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:436: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:481: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_curious_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:554: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_happy_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:542: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_neutral_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:536: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sad_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:548: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sleeping_eyes_no_highlights
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:560: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:571: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_bush
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:621: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:615: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:609: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:585: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_without_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:591: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:597: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:603: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:642: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:661: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:674: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    basalt_pixels = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:678: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pebble_pixels = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:870: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+===================== 3577 passed, 296 warnings in 31.11s ======================
+
+codex
+Validation is clean. I’m checking the exact diff and then I’ll commit only the two task files so the unrelated workspace changes remain untouched.
+exec
+/bin/zsh -lc 'git diff -- my-claw/tools/senseweave/artist_identity.py tests/test_artist_identity.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+diff --git a/my-claw/tools/senseweave/artist_identity.py b/my-claw/tools/senseweave/artist_identity.py
+index dac8671..6beb90b 100644
+--- a/my-claw/tools/senseweave/artist_identity.py
++++ b/my-claw/tools/senseweave/artist_identity.py
+@@ -69,6 +69,7 @@ VOICE_ROLES: dict[str, str] = {
+     "color": "sw_breath",
+     "texture": "sw_pad",
+     "bass": "sw_pad",
++    "sampler": "sw_sampler",
+ }
+ 
+ 
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index 668c1f8..32c3c0b 100644
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -56,9 +56,10 @@ class TestSignatureVoices:
+ 
+     def test_voice_roles_complete(self):
+         # Every musical role has a canonical signature voice
+-        for role in ("melody", "counter", "color", "texture", "bass"):
++        for role in ("melody", "counter", "color", "texture", "bass", "sampler"):
+             assert role in VOICE_ROLES
+             assert VOICE_ROLES[role] in SIGNATURE_VOICES
++        assert VOICE_ROLES["sampler"] == "sw_sampler"
+ 
+ 
+ # ---------------------------------------------------------------------------
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M my-claw/tools/senseweave/artist_identity.py
+ M progress.md
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M sdp/telemetry/prompt-review-2026-04-26.md
+ M tests/test_artist_identity.py
+?? sdp/logs/Lead_T-018_20260425T183959Zd_1777170439.log
+?? sdp/logs/Lead_T-020_20260425T183959Za_1777172243.log
+?? sdp/logs/Lead_T-020_20260425T183959Zb_1777172606.log
+?? sdp/logs/Lead_T-020_20260425T183959Zc_1777173092.log
+?? sdp/logs/Lead_T-021_20260425T183959Za_1777174559.log
+?? sdp/logs/Lead_T-021_20260425T183959Zb_1777175434.log
+?? sdp/logs/Lead_T-021_20260425T183959Zc_1777175888.log
+?? sdp/logs/Lead_T-021_20260425T183959Zd_1777176738.log
+?? sdp/logs/Lead_T-022_20260425T183959Za_1777177698.log
+?? sdp/logs/Lead_T-022_20260425T183959Zb_1777178096.log
+?? sdp/logs/Lead_T-022_20260425T183959Zc_1777178453.log
+?? sdp/logs/Lead_T-022_20260425T183959Zd_1777178822.log
+?? sdp/logs/Lead_T-024_20260425T183959Za_1777181245.log
+?? sdp/logs/Lead_T-024_20260425T183959Zb_1777181562.log
+?? sdp/logs/Lead_T-024_20260425T183959Zc_1777181943.log
+?? sdp/logs/Lead_T-024_20260425T183959Zd_1777182233.log
+?? sdp/logs/Lead_T-025_20260425T183959Z_1777171970.log
+?? sdp/logs/Lead_T-026_20260425T183959Z_1777173578.log
+?? sdp/logs/Lead_T-027_20260425T183959Za_1777183773.log
+?? sdp/logs/Lead_T-027_20260425T183959Zb_1777183990.log
+?? sdp/logs/Lead_T-027_20260425T183959Zc_1777184287.log
+?? sdp/logs/Lead_T-027_20260425T183959Zd_1777184841.log
+?? sdp/logs/Lead_T-028_20260425T183959Z_1777173995.log
+?? sdp/logs/Lead_T-029_20260425T183959Za_1777185189.log
+?? sdp/logs/Lead_T-029_20260425T183959Zb_1777185413.log
+?? sdp/logs/Lead_T-031_20260425T183959Z_1777177160.log
+?? sdp/logs/Lead_T-032_20260425T183959Z_1777180722.log
+?? sdp/logs/Lead_T-033_20260425T183959Z_1777182542.log
+?? sdp/logs/Verify_T-018_20260425T183959Zc_1777170297.log
+?? sdp/logs/Verify_T-018_20260425T183959Zd_1777171756.log
+?? sdp/logs/Verify_T-020_20260425T183959Za_1777172464.log
+?? sdp/logs/Verify_T-020_20260425T183959Zb_1777172836.log
+?? sdp/logs/Verify_T-020_20260425T183959Zc_1777173407.log
+?? sdp/logs/Verify_T-021_20260425T183959Za_1777175250.log
+?? sdp/logs/Verify_T-021_20260425T183959Zb_1777175768.log
+?? sdp/logs/Verify_T-021_20260425T183959Zc_1777176570.log
+?? sdp/logs/Verify_T-021_20260425T183959Zd_1777177041.log
+?? sdp/logs/Verify_T-022_20260425T183959Za_1777177930.log
+?? sdp/logs/Verify_T-022_20260425T183959Zb_1777178339.log
+?? sdp/logs/Verify_T-022_20260425T183959Zc_1777178693.log
+?? sdp/logs/Verify_T-022_20260425T183959Zd_1777179855.log
+?? sdp/logs/Verify_T-024_20260425T183959Za_1777181396.log
+?? sdp/logs/Verify_T-024_20260425T183959Zb_1777181763.log
+?? sdp/logs/Verify_T-024_20260425T183959Zc_1777182065.log
+?? sdp/logs/Verify_T-024_20260425T183959Zd_1777182410.log
+?? sdp/logs/Verify_T-025_20260425T183959Z_1777172133.log
+?? sdp/logs/Verify_T-026_20260425T183959Z_1777173892.log
+?? sdp/logs/Verify_T-027_20260425T183959Za_1777183840.log
+?? sdp/logs/Verify_T-027_20260425T183959Zb_1777184186.log
+?? sdp/logs/Verify_T-027_20260425T183959Zc_1777184670.log
+?? sdp/logs/Verify_T-027_20260425T183959Zd_1777185037.log
+?? sdp/logs/Verify_T-028_20260425T183959Z_1777174326.log
+?? sdp/logs/Verify_T-029_20260425T183959Za_1777185313.log
+?? sdp/logs/Verify_T-031_20260425T183959Z_1777177489.log
+?? sdp/logs/Verify_T-032_20260425T183959Z_1777181096.log
+?? sdp/logs/Verify_T-033_20260425T183959Z_1777183467.log
+?? sdp/logs/claude_1777172204.log
+?? sdp/logs/claude_1777174507.log
+?? sdp/logs/claude_1777177655.log
+?? sdp/logs/claude_1777181202.log
+?? sdp/logs/claude_1777183730.log
+?? sdp/logs/claude_1777185132.log
+?? sdp/verification/t-022@20260425t183959zc-verify.md
+?? sdp/verification/t-024@20260425t183959zd-verify.md
+?? sdp/verification/t-026@20260425t183959z-verify.md
+?? temp_sampler_dispatch.py
+
+diff --git a/my-claw/tools/senseweave/artist_identity.py b/my-claw/tools/senseweave/artist_identity.py
+index dac86712afbf46a36e0bfbbadc26c98ac09839a7..6beb90bd2922ba8d92bea25f17f913c5ab14196a
+--- a/my-claw/tools/senseweave/artist_identity.py
++++ b/my-claw/tools/senseweave/artist_identity.py
+@@ -69,6 +69,7 @@
+     "color": "sw_breath",
+     "texture": "sw_pad",
+     "bass": "sw_pad",
++    "sampler": "sw_sampler",
+ }
+ 
+ 
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index 668c1f829f29ea12d0ed74a60659d8edc6936ec6..32c3c0bc9e94b600ca22cb1a709b257bc3151047
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -56,9 +56,10 @@
+ 
+     def test_voice_roles_complete(self):
+         # Every musical role has a canonical signature voice
+-        for role in ("melody", "counter", "color", "texture", "bass"):
++        for role in ("melody", "counter", "color", "texture", "bass", "sampler"):
+             assert role in VOICE_ROLES
+             assert VOICE_ROLES[role] in SIGNATURE_VOICES
++        assert VOICE_ROLES["sampler"] == "sw_sampler"
+ 
+ 
+ # ---------------------------------------------------------------------------
+
+codex
+The diff is exactly scoped to the requested mapping and its regression test. I’m committing only those two paths now with the task-specific message.
+exec
+/bin/zsh -lc 'git commit -m "fix(senseweave): add sampler role mapping [T-029@20260425T183959Zb]" -- my-claw/tools/senseweave/artist_identity.py tests/test_artist_identity.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+[feat/graceful-degradation 20d4d4c] fix(senseweave): add sampler role mapping [T-029@20260425T183959Zb]
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/my-claw/tools/senseweave/artist_identity.py b/my-claw/tools/senseweave/artist_identity.py
+index dac86712afbf46a36e0bfbbadc26c98ac09839a7..6beb90bd2922ba8d92bea25f17f913c5ab14196a
+--- a/my-claw/tools/senseweave/artist_identity.py
++++ b/my-claw/tools/senseweave/artist_identity.py
+@@ -69,6 +69,7 @@
+     "color": "sw_breath",
+     "texture": "sw_pad",
+     "bass": "sw_pad",
++    "sampler": "sw_sampler",
+ }
+ 
+ 
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index 668c1f829f29ea12d0ed74a60659d8edc6936ec6..32c3c0bc9e94b600ca22cb1a709b257bc3151047
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -56,9 +56,10 @@
+ 
+     def test_voice_roles_complete(self):
+         # Every musical role has a canonical signature voice
+-        for role in ("melody", "counter", "color", "texture", "bass"):
++        for role in ("melody", "counter", "color", "texture", "bass", "sampler"):
+             assert role in VOICE_ROLES
+             assert VOICE_ROLES[role] in SIGNATURE_VOICES
++        assert VOICE_ROLES["sampler"] == "sw_sampler"
+ 
+ 
+ # ---------------------------------------------------------------------------
+
+codex
+The commit is in. I’m doing one last status check to confirm there are no remaining uncommitted changes from this task before I close out.
+exec
+/bin/zsh -lc 'git status --short -- my-claw/tools/senseweave/artist_identity.py tests/test_artist_identity.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+exec
+/bin/zsh -lc 'git rev-parse --short HEAD' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+20d4d4c
+
+diff --git a/my-claw/tools/senseweave/artist_identity.py b/my-claw/tools/senseweave/artist_identity.py
+index dac86712afbf46a36e0bfbbadc26c98ac09839a7..6beb90bd2922ba8d92bea25f17f913c5ab14196a
+--- a/my-claw/tools/senseweave/artist_identity.py
++++ b/my-claw/tools/senseweave/artist_identity.py
+@@ -69,6 +69,7 @@
+     "color": "sw_breath",
+     "texture": "sw_pad",
+     "bass": "sw_pad",
++    "sampler": "sw_sampler",
+ }
+ 
+ 
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index 668c1f829f29ea12d0ed74a60659d8edc6936ec6..32c3c0bc9e94b600ca22cb1a709b257bc3151047
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -56,9 +56,10 @@
+ 
+     def test_voice_roles_complete(self):
+         # Every musical role has a canonical signature voice
+-        for role in ("melody", "counter", "color", "texture", "bass"):
++        for role in ("melody", "counter", "color", "texture", "bass", "sampler"):
+             assert role in VOICE_ROLES
+             assert VOICE_ROLES[role] in SIGNATURE_VOICES
++        assert VOICE_ROLES["sampler"] == "sw_sampler"
+ 
+ 
+ # ---------------------------------------------------------------------------
+
+codex
+Updated [artist_identity.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/artist_identity.py:66) to add `VOICE_ROLES["sampler"] = "sw_sampler"`, and tightened [test_artist_identity.py](/Users/anthony/Programming/PromptClaw/tests/test_artist_identity.py:58) to require the new role and exact mapping.
+
+Validation passed with `pytest tests/test_artist_identity.py -x --tb=short`, `pytest tests/ -x --tb=short`, `ruff check src/ tests/`, and `mypy src/`. Committed as `20d4d4c` with `fix(senseweave): add sampler role mapping [T-029@20260425T183959Zb]`.
+diff --git a/my-claw/tools/senseweave/artist_identity.py b/my-claw/tools/senseweave/artist_identity.py
+index dac86712afbf46a36e0bfbbadc26c98ac09839a7..6beb90bd2922ba8d92bea25f17f913c5ab14196a
+--- a/my-claw/tools/senseweave/artist_identity.py
++++ b/my-claw/tools/senseweave/artist_identity.py
+@@ -69,6 +69,7 @@
+     "color": "sw_breath",
+     "texture": "sw_pad",
+     "bass": "sw_pad",
++    "sampler": "sw_sampler",
+ }
+ 
+ 
+diff --git a/tests/test_artist_identity.py b/tests/test_artist_identity.py
+index 668c1f829f29ea12d0ed74a60659d8edc6936ec6..32c3c0bc9e94b600ca22cb1a709b257bc3151047
+--- a/tests/test_artist_identity.py
++++ b/tests/test_artist_identity.py
+@@ -56,9 +56,10 @@
+ 
+     def test_voice_roles_complete(self):
+         # Every musical role has a canonical signature voice
+-        for role in ("melody", "counter", "color", "texture", "bass"):
++        for role in ("melody", "counter", "color", "texture", "bass", "sampler"):
+             assert role in VOICE_ROLES
+             assert VOICE_ROLES[role] in SIGNATURE_VOICES
++        assert VOICE_ROLES["sampler"] == "sw_sampler"
+ 
+ 
+ # ---------------------------------------------------------------------------
+
+2026-04-26T06:39:05.097341Z ERROR codex_core::session: failed to record rollout items: thread 019dc881-5cc1-7451-b215-cfe21e7f15a7 not found
+tokens used
+36,918

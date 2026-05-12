@@ -1,0 +1,20 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3781 chars)
+---
+
+Task frac-0071 complete. Summary:
+
+**Three commits on `feat/graceful-degradation`:**
+- `7011cda` — `feat(test_federation_discovery): add depth gate and spec [frac-0071]` — `specs/frac-0071-spec.md` + `tests/test_test_federation_discovery_depth.py`
+- `b30a29c` — `feat(test_federation_discovery): add end-to-end depth-2 coverage [frac-0071]` — appended `FederationDiscoveryEndToEndTests` (3 scenarios) to `tests/test_federation_discovery.py`
+- `d96d82f` — `feat(test_federation_discovery): document depth-2 completion [frac-0071]` — CHANGELOG + ESCALATIONS
+
+**Validation results:**
+- Red phase confirmed (depth gate failed before adding the e2e class)
+- `pytest tests/test_federation_discovery.py tests/test_test_federation_discovery_depth.py -q` → **12 passed**
+- Startup identity hardening anchors → **7 passed**
+- Full gate `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` → **4483 passed, 3 skipped**, ruff clean, mypy clean
+
+**Scope notes:**
+- Production `promptclaw/federation/discovery.py` already implemented the simplest one-path API end-to-end; no production gap, so this is test-deepening only.
+- Pre-existing dirty changes (`my-claw/scripts/cypherclaw_boot.sh`, `progress.md`, `sdp/notifications.log`, `sdp/run-log.md`, `my-claw/systemd/dropins/`, `sdp/logs/*`) were left untouched to stay in scope.

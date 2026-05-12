@@ -1,0 +1,2639 @@
+Command: codex exec --dangerously-bypass-approvals-and-sandbox -c model_reasoning_effort=xhigh -m gpt-5.4 -
+Prompt delivered via: stdin (1253 chars)
+---
+
+Implemented and committed the scoped test update.
+
+Commit: `78daea2 test(render): verify WAV iXML round-trip and sidecar schema [T-018@20260416T181925Zd]`
+
+Changed [tests/test_render_export.py](/Users/anthony/Programming/PromptClaw/tests/test_render_export.py) to:
+- Assert exported WAV iXML readback exactly matches `ExportResult.ixml_keys`.
+- Pin the sidecar JSON top-level schema keys and `rule_stack_provenance` shape.
+- Verify merged extra iXML metadata round-trips from the exported WAV.
+
+Validation run:
+- `pytest tests/test_render_export.py -x --tb=short`
+- `pip install -e '.[dev]'`
+- `pytest tests/ -x --tb=short` -> `2827 passed`
+- `ruff check src/ tests/`
+- `mypy src/`
+
+The remaining uncommitted files are the pre-existing unrelated SDP/progress/temp artifacts; I left them untouched.
+
+--- STDERR ---
+OpenAI Codex v0.120.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019d9926-4358-72e3-b43f-00b08d5ea8ec
+--------
+user
+<!--
+  sdp-cli agent-specific template for codex
+  Edit this file to tune how codex handles lead_t1.md.
+  The shipped default lives at src/sdp/prompts/templates/lead_t1.md.
+  Delete this file to revert to the default.
+-->
+# Task T-018@20260416T181925Zd: Add tests verifying round-trip read of iXML metadata from exported WAV and correctness of sidecar JSON schema
+
+
+**Tier:** T1
+
+## Instructions
+
+Handle this directly. Skip broad discovery and do not write a spec.
+
+1. Read only the file(s) you expect to change and the closest relevant tests.
+2. Make the smallest change that satisfies the task.
+3. Add or update a regression test when behavior changes.
+4. Run focused validation, then broader checks if needed.
+5. Commit as soon as the change works: `<type>(scope): summary [T-018@20260416T181925Zd]`
+
+## Rules
+
+- Stay in scope; no unrelated cleanup.
+- Follow existing patterns and type hints.
+- Record blocking assumptions in `ESCALATIONS.md`.
+- Do not finish with uncommitted changes you introduced for this task.
+- Do not clean, revert, commit, or otherwise normalize unrelated pre-existing
+  workspace changes.
+
+## Validation
+
+Run before committing:
+```bash
+pip install -e '.[dev]'
+pytest tests/ -x --tb=short
+ruff check src/ tests/
+mypy src/
+```
+
+codex
+I’ll keep this scoped to the WAV export/iXML path and its nearest tests, then commit only the changes for this task. First I’m checking the repo status and locating the relevant files so I can avoid touching unrelated work.
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/logs/Verify_T-016_20260416T181925Z_1776388476.log
+ M sdp/logs/Verify_T-018_20260416T181925Zc_1776390724.log
+ M sdp/notifications.log
+ M sdp/run-log.md
+?? sdp/logs/Lead_T-017_20260416T181925Z_1776388749.log
+?? sdp/logs/Lead_T-018_20260416T181925Za_1776389332.log
+?? sdp/logs/Lead_T-018_20260416T181925Zb_1776389692.log
+?? sdp/logs/Lead_T-018_20260416T181925Zd_1776390913.log
+?? sdp/logs/Verify_T-017_20260416T181925Z_1776389171.log
+?? sdp/logs/Verify_T-018_20260416T181925Za_1776389586.log
+?? sdp/logs/Verify_T-018_20260416T181925Zb_1776390086.log
+?? sdp/telemetry/experiment-exp-071b22fb7762.md
+?? sdp/telemetry/prompt-review-2026-04-17.md
+?? temp_artifacts/
+
+exec
+/bin/zsh -lc 'rg --files src tests | rg "(wav|wave|export|ixml|metadata|sidecar)"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_render_export.py
+tests/test_render_audio_sidecar.py
+tests/test_ixml_chunk_writer.py
+
+exec
+/bin/zsh -lc 'rg -n "iXML|ixml|sidecar|WAV|wave|export" src tests' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_render_audio_sidecar.py:1:"""Tests for exported render-audio JSON sidecars."""
+tests/test_render_audio_sidecar.py:14:    audio_metadata_sidecar_path,
+tests/test_render_audio_sidecar.py:15:    read_audio_metadata_sidecar,
+tests/test_render_audio_sidecar.py:16:    write_audio_metadata_sidecar,
+tests/test_render_audio_sidecar.py:20:def test_write_audio_metadata_sidecar_records_rule_stack_provenance(tmp_path: Path) -> None:
+tests/test_render_audio_sidecar.py:21:    audio_path = tmp_path / "exports" / "piece.wav"
+tests/test_render_audio_sidecar.py:23:    audio_path.write_bytes(b"RIFFfake WAVE")
+tests/test_render_audio_sidecar.py:24:    delta_path = tmp_path / "exports" / "piece.delta.json"
+tests/test_render_audio_sidecar.py:32:    sidecar_path = write_audio_metadata_sidecar(
+tests/test_render_audio_sidecar.py:52:    assert sidecar_path == audio_path.with_suffix(".meta.json")
+tests/test_render_audio_sidecar.py:53:    payload = json.loads(sidecar_path.read_text())
+tests/test_render_audio_sidecar.py:54:    assert payload["schema_version"] == "render-audio-sidecar/v1"
+tests/test_render_audio_sidecar.py:72:def test_sidecar_writer_falls_back_to_render_pass_rule_stack_for_events(tmp_path: Path) -> None:
+tests/test_render_audio_sidecar.py:79:    audio_path.write_bytes(b"RIFFfake WAVE")
+tests/test_render_audio_sidecar.py:81:    write_audio_metadata_sidecar(
+tests/test_render_audio_sidecar.py:88:    payload = read_audio_metadata_sidecar(audio_path)
+tests/test_render_audio_sidecar.py:99:def test_audio_metadata_sidecar_path_replaces_audio_suffix() -> None:
+tests/test_render_audio_sidecar.py:100:    assert audio_metadata_sidecar_path("render.wav") == Path("render.meta.json")
+tests/test_render_audio_sidecar.py:101:    assert audio_metadata_sidecar_path("render") == Path("render.meta.json")
+tests/test_gallery.py:165:    def test_sidecar_metadata_loaded_at_display(self):
+tests/test_gallery.py:181:        piece = gallery._load_metadata_sidecar(dict(gallery.playlist[0]))
+tests/test_generative_scores.py:148:    def test_wave_contour_produces_notes(self):
+tests/test_generative_scores.py:149:        p = generate_melody("C", length=8, contour="wave")
+tests/test_generative_scores.py:223:            contour="wave",
+tests/test_synthesis_architecture_registry.py:180:            get_strategy("wavetable")
+tests/test_audio_analysis.py:21:def _sine_wave(freq: float, sr: int, duration: float, amplitude: int = 16000) -> list[int]:
+tests/test_audio_analysis.py:22:    """Generate a synthetic sine wave as 16-bit integer samples."""
+tests/test_audio_analysis.py:31:def _saw_wave(freq: float, sr: int, duration: float, amplitude: int = 16000) -> list[int]:
+tests/test_audio_analysis.py:32:    """Generate a synthetic saw wave as 16-bit integer samples."""
+tests/test_audio_analysis.py:57:        samples = _sine_wave(440, 44100, 0.1, amplitude=32767)
+tests/test_audio_analysis.py:63:        samples = _sine_wave(440, 44100, 0.1, amplitude=3276)
+tests/test_audio_analysis.py:74:        samples = _sine_wave(440.0, 44100, 0.25)
+tests/test_audio_analysis.py:81:        samples = _sine_wave(220.0, 44100, 0.25)
+tests/test_audio_analysis.py:88:        samples = _sine_wave(246.94, 44100, 0.25)
+tests/test_audio_analysis.py:95:        samples = _sine_wave(207.65, 44100, 0.25)
+tests/test_audio_analysis.py:102:        samples = _sine_wave(1000.0, 44100, 0.25)
+tests/test_audio_analysis.py:108:        samples = _sine_wave(100.0, 44100, 0.25)
+tests/test_audio_analysis.py:121:        samples = _sine_wave(61.8, 44100, 0.25)
+tests/test_audio_analysis.py:126:        samples = _sine_wave(440.0, 48000, 0.25)
+tests/test_audio_analysis.py:162:        samples = _sine_wave(220.0, 48000, 1.0, amplitude=6000)
+tests/test_audio_analysis.py:169:        samples = _sine_wave(220.0, 48000, 1.0, amplitude=6000)
+tests/test_audio_analysis.py:180:        samples = _sine_wave(220.0, 48000, 1.0, amplitude=5000)
+tests/test_audio_analysis.py:205:        # A steady sine wave = tonal
+tests/test_audio_analysis.py:206:        samples = _sine_wave(440, 44100, 1.0)
+tests/test_audio_analysis.py:273:    def test_extract_spectral_peaks_sine_wave(self) -> None:
+tests/test_audio_analysis.py:275:        samples = _sine_wave(440.0, 44100, 0.1)
+tests/test_audio_analysis.py:282:        samples1 = _sine_wave(440.0, 44100, 0.1)
+tests/test_audio_analysis.py:283:        samples2 = _sine_wave(880.0, 44100, 0.1)
+tests/test_mix_verify.py:51:    """Pure sine wave at *freq_hz* for *duration_s* seconds."""
+tests/test_sample_event_renderer.py:6:import wave
+tests/test_sample_event_renderer.py:20:    with wave.open(str(path), "wb") as handle:
+tests/test_render_export.py:1:"""Tests for the audio export provenance integration."""
+tests/test_render_export.py:7:import wave
+tests/test_render_export.py:12:from senseweave.ixml_chunk_writer import read_ixml  # noqa: E402
+tests/test_render_export.py:16:    export_audio,
+tests/test_render_export.py:17:    read_audio_metadata_sidecar,
+tests/test_render_export.py:24:    with wave.open(str(path), "wb") as handle:
+tests/test_render_export.py:31:def test_export_audio_writes_sidecar_and_ixml_from_performed_part(tmp_path: Path) -> None:
+tests/test_render_export.py:42:    result = export_audio(
+tests/test_render_export.py:51:    assert result.sidecar_path == wav.with_suffix(".meta.json")
+tests/test_render_export.py:52:    assert result.sidecar_path.exists()
+tests/test_render_export.py:54:    sidecar = read_audio_metadata_sidecar(wav)
+tests/test_render_export.py:55:    assert sidecar["rule_stack"] == ["R1", "R6"]
+tests/test_render_export.py:56:    assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+tests/test_render_export.py:57:    assert sidecar["seeds"] == {"root": 7}
+tests/test_render_export.py:59:    ixml = read_ixml(wav)
+tests/test_render_export.py:60:    assert ixml["rule_stack"] == "R1,R6"
+tests/test_render_export.py:61:    quantities = json.loads(ixml["rule_quantities"])
+tests/test_render_export.py:65:def test_export_audio_with_explicit_rule_stack(tmp_path: Path) -> None:
+tests/test_render_export.py:69:    export_audio(
+tests/test_render_export.py:75:    sidecar = read_audio_metadata_sidecar(wav)
+tests/test_render_export.py:76:    assert sidecar["rule_stack"] == ["R3", "R4"]
+tests/test_render_export.py:78:    ixml = read_ixml(wav)
+tests/test_render_export.py:79:    assert ixml["rule_stack"] == "R3,R4"
+tests/test_render_export.py:80:    assert json.loads(ixml["rule_quantities"]) == {"R3": 0.8, "R4": 1.0}
+tests/test_render_export.py:83:def test_export_audio_ixml_extra_merged(tmp_path: Path) -> None:
+tests/test_render_export.py:87:    export_audio(
+tests/test_render_export.py:92:        ixml_extra={"scene": "forest", "sensor_id": "mic-01"},
+tests/test_render_export.py:95:    ixml = read_ixml(wav)
+tests/test_render_export.py:96:    assert ixml["rule_stack"] == "R1"
+tests/test_render_export.py:97:    assert ixml["scene"] == "forest"
+tests/test_render_export.py:98:    assert ixml["sensor_id"] == "mic-01"
+tests/test_render_export.py:101:def test_export_audio_empty_rule_stack(tmp_path: Path) -> None:
+tests/test_render_export.py:105:    export_audio(wav)
+tests/test_render_export.py:107:    sidecar = read_audio_metadata_sidecar(wav)
+tests/test_render_export.py:108:    assert sidecar["rule_stack"] == []
+tests/test_render_export.py:110:    ixml = read_ixml(wav)
+tests/test_render_export.py:111:    assert "rule_stack" not in ixml
+tests/test_render_export.py:114:def test_export_audio_wav_still_readable(tmp_path: Path) -> None:
+tests/test_render_export.py:118:    export_audio(
+tests/test_render_export.py:125:    with wave.open(str(wav), "rb") as handle:
+tests/test_render_export.py:131:def test_export_audio_events_inherit_rule_stack(tmp_path: Path) -> None:
+tests/test_render_export.py:139:    export_audio(
+tests/test_render_export.py:145:    sidecar = read_audio_metadata_sidecar(wav)
+tests/test_render_export.py:146:    assert sidecar["events"][0]["rule_stack"] == ["R5"]
+tests/test_art_engine_runtime.py:55:def test_generate_art_persists_sidecars_and_advances_state(tmp_path, monkeypatch) -> None:
+tests/test_theramini_listener_runtime.py:9:import wave
+tests/test_theramini_listener_runtime.py:19:    """Write a synthetic sine wave WAV file."""
+tests/test_theramini_listener_runtime.py:22:    with wave.open(str(path), "w") as w:
+tests/test_theramini_listener_runtime.py:35:    with wave.open(str(path), "w") as w:
+tests/test_theramini_listener_runtime.py:100:        # Pre-write the WAV so capture_jack "succeeds"
+tests/test_project_scanner_runtime.py:55:    (project / "src" / "app.tsx").write_text("export default function App() { return null }\n")
+tests/test_contact_mic_calibration_runtime.py:9:import wave
+tests/test_contact_mic_calibration_runtime.py:24:    with wave.open(str(path), "wb") as handle:
+tests/test_contact_listener_runtime.py:8:import wave
+tests/test_contact_listener_runtime.py:24:    with wave.open(str(path), "w") as w:
+tests/test_scene_composer.py:11:- save_to_gallery writes PNG + JSON sidecar
+tests/test_scene_composer.py:417:    """save_to_gallery writes PNG + JSON sidecar."""
+tests/test_scene_composer.py:435:            # JSON sidecar should exist alongside
+tests/test_synthdef_registry.py:220:        for method in ("subtractive", "additive", "fm", "wavetable", "physical_model", "granular"):
+tests/test_glyphweave_runtime.py:15:def test_package_lazy_exports_expose_canvas_and_pet_helpers() -> None:
+tests/test_pareidolia_art_engine.py:64:def test_generate_art_piece_creates_png_and_sidecar(tmp_path, monkeypatch):
+tests/test_pareidolia_art_engine.py:65:    """generate_art_piece should produce a .png and matching .json sidecar."""
+tests/test_pareidolia_art_engine.py:77:    # JSON sidecar should exist next to the PNG
+tests/test_self_listener_tracker_runtime.py:9:import wave
+tests/test_self_listener_tracker_runtime.py:256:        with wave.open(str(path), "wb") as wav_file:
+tests/test_room_listener_runtime.py:24:def _sine_wave(freq: float, sr: int, duration: float, amp: int = 16000) -> list[int]:
+tests/test_room_listener_runtime.py:57:        # Steady sine wave = tonal (Theramini-like)
+tests/test_room_listener_runtime.py:58:        samples = _sine_wave(440, 44100, 1.0)
+tests/test_room_listener_runtime.py:73:        samples = _sine_wave(440, 16000, 8.0)
+tests/test_sound_palette_lab.py:17:    assert {"subtractive", "additive", "fm", "wavetable", "granular"} <= set(methods)
+tests/test_runtime_checkpoint.py:1:"""Tests for runtime checkpoint export."""
+tests/test_ixml_chunk_writer.py:1:"""Tests for WAV iXML chunk writer."""
+tests/test_ixml_chunk_writer.py:6:import wave
+tests/test_ixml_chunk_writer.py:12:from senseweave.ixml_chunk_writer import read_ixml, write_ixml
+tests/test_ixml_chunk_writer.py:19:    with wave.open(str(path), "wb") as handle:
+tests/test_ixml_chunk_writer.py:33:    write_ixml(wav, {"scene": "forest"})
+tests/test_ixml_chunk_writer.py:34:    result = read_ixml(wav)
+tests/test_ixml_chunk_writer.py:47:    write_ixml(wav, meta)
+tests/test_ixml_chunk_writer.py:48:    assert read_ixml(wav) == meta
+tests/test_ixml_chunk_writer.py:54:    write_ixml(wav, {})
+tests/test_ixml_chunk_writer.py:55:    assert read_ixml(wav) == {}
+tests/test_ixml_chunk_writer.py:58:def test_no_ixml_returns_empty(tmp_path: Path) -> None:
+tests/test_ixml_chunk_writer.py:61:    assert read_ixml(wav) == {}
+tests/test_ixml_chunk_writer.py:64:def test_wav_still_readable_after_ixml(tmp_path: Path) -> None:
+tests/test_ixml_chunk_writer.py:67:    write_ixml(wav, {"key": "value"})
+tests/test_ixml_chunk_writer.py:68:    with wave.open(str(wav), "rb") as handle:
+tests/test_ixml_chunk_writer.py:78:        write_ixml(bad, {"k": "v"})
+tests/test_ixml_chunk_writer.py:83:        read_ixml(bad)
+tests/test_ixml_chunk_writer.py:93:    write_ixml(wav, meta)
+tests/test_ixml_chunk_writer.py:94:    assert read_ixml(wav) == meta
+tests/test_resilience_runtime_scripts.py:328:def test_runner_launcher_exports_sibling_sdp_cli_pythonpath_when_unset(tmp_path: Path) -> None:
+
+codex
+The workspace already has unrelated SDP/progress files modified, so I’ll leave those alone and make a separate scoped commit. The closest coverage is `tests/test_render_export.py`, `tests/test_render_audio_sidecar.py`, and the iXML helper tests.
+exec
+/bin/zsh -lc "sed -n '1,220p' tests/test_render_export.py" in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc "sed -n '1,220p' tests/test_render_audio_sidecar.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Tests for the audio export provenance integration."""
+from __future__ import annotations
+
+import json
+import os
+import sys
+import wave
+from pathlib import Path
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+
+from senseweave.ixml_chunk_writer import read_ixml  # noqa: E402
+from senseweave.render import (  # noqa: E402
+    ExportResult,
+    PerformedPart,
+    export_audio,
+    read_audio_metadata_sidecar,
+)
+
+SAMPLE_RATE = 16000
+
+
+def _make_wav(path: Path, *, frames: int = 1600) -> None:
+    with wave.open(str(path), "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(SAMPLE_RATE)
+        handle.writeframes(b"\x00\x00" * frames)
+
+
+def test_export_audio_writes_sidecar_and_ixml_from_performed_part(tmp_path: Path) -> None:
+    wav = tmp_path / "piece.wav"
+    _make_wav(wav)
+
+    performed = PerformedPart(
+        score={},
+        applied_rules=("R1", "R6"),
+        quantities={"R1": 1.0, "R2": 0.0, "R6": 0.45},
+        metadata={"intent_tags": "withhold"},
+    )
+
+    result = export_audio(
+        wav,
+        performed_part=performed,
+        seeds={"root": 7},
+        extra_metadata={"renderer": "test"},
+    )
+
+    assert isinstance(result, ExportResult)
+    assert result.audio_path == wav
+    assert result.sidecar_path == wav.with_suffix(".meta.json")
+    assert result.sidecar_path.exists()
+
+    sidecar = read_audio_metadata_sidecar(wav)
+    assert sidecar["rule_stack"] == ["R1", "R6"]
+    assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+    assert sidecar["seeds"] == {"root": 7}
+
+    ixml = read_ixml(wav)
+    assert ixml["rule_stack"] == "R1,R6"
+    quantities = json.loads(ixml["rule_quantities"])
+    assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+
+
+def test_export_audio_with_explicit_rule_stack(tmp_path: Path) -> None:
+    wav = tmp_path / "take.wav"
+    _make_wav(wav)
+
+    export_audio(
+        wav,
+        rule_stack=["R3", "R4"],
+        rule_quantities={"R3": 0.8, "R4": 1.0},
+    )
+
+    sidecar = read_audio_metadata_sidecar(wav)
+    assert sidecar["rule_stack"] == ["R3", "R4"]
+
+    ixml = read_ixml(wav)
+    assert ixml["rule_stack"] == "R3,R4"
+    assert json.loads(ixml["rule_quantities"]) == {"R3": 0.8, "R4": 1.0}
+
+
+def test_export_audio_ixml_extra_merged(tmp_path: Path) -> None:
+    wav = tmp_path / "extra.wav"
+    _make_wav(wav)
+
+    export_audio(
+        wav,
+        performed_part=PerformedPart(
+            score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+        ),
+        ixml_extra={"scene": "forest", "sensor_id": "mic-01"},
+    )
+
+    ixml = read_ixml(wav)
+    assert ixml["rule_stack"] == "R1"
+    assert ixml["scene"] == "forest"
+    assert ixml["sensor_id"] == "mic-01"
+
+
+def test_export_audio_empty_rule_stack(tmp_path: Path) -> None:
+    wav = tmp_path / "empty.wav"
+    _make_wav(wav)
+
+    export_audio(wav)
+
+    sidecar = read_audio_metadata_sidecar(wav)
+    assert sidecar["rule_stack"] == []
+
+    ixml = read_ixml(wav)
+    assert "rule_stack" not in ixml
+
+
+def test_export_audio_wav_still_readable(tmp_path: Path) -> None:
+    wav = tmp_path / "check.wav"
+    _make_wav(wav, frames=SAMPLE_RATE)
+
+    export_audio(
+        wav,
+        performed_part=PerformedPart(
+            score={}, applied_rules=("R1", "R2"), quantities={"R1": 1.0, "R2": 0.5},
+        ),
+    )
+
+    with wave.open(str(wav), "rb") as handle:
+        assert handle.getnchannels() == 1
+        assert handle.getframerate() == SAMPLE_RATE
+        assert handle.getnframes() == SAMPLE_RATE
+
+
+def test_export_audio_events_inherit_rule_stack(tmp_path: Path) -> None:
+    wav = tmp_path / "events.wav"
+    _make_wav(wav)
+
+    performed = PerformedPart(
+        score={}, applied_rules=("R5",), quantities={"R5": 0.7},
+    )
+
+    export_audio(
+        wav,
+        performed_part=performed,
+        events=[{"event_id": "e1", "pitch": 60}],
+    )
+
+    sidecar = read_audio_metadata_sidecar(wav)
+    assert sidecar["events"][0]["rule_stack"] == ["R5"]
+
+ succeeded in 0ms:
+"""Tests for exported render-audio JSON sidecars."""
+from __future__ import annotations
+
+import json
+import os
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+
+from senseweave.render import (  # noqa: E402
+    PerformedPart,
+    audio_metadata_sidecar_path,
+    read_audio_metadata_sidecar,
+    write_audio_metadata_sidecar,
+)
+
+
+def test_write_audio_metadata_sidecar_records_rule_stack_provenance(tmp_path: Path) -> None:
+    audio_path = tmp_path / "exports" / "piece.wav"
+    audio_path.parent.mkdir()
+    audio_path.write_bytes(b"RIFFfake WAVE")
+    delta_path = tmp_path / "exports" / "piece.delta.json"
+    performed = PerformedPart(
+        score={},
+        applied_rules=("R1", "R6"),
+        quantities={"R1": 1.0, "R2": 0.0, "R6": 0.45},
+        metadata={"intent_tags": "withhold"},
+    )
+
+    sidecar_path = write_audio_metadata_sidecar(
+        audio_path,
+        performed_part=performed,
+        events=[
+            {
+                "event_id": "evt-1",
+                "phrase_id": "phrase-a",
+                "section_id": "intro",
+                "pitch": 64,
+                "rule_stack": ["R1", "R6"],
+                "seed_path": [7, 11],
+            }
+        ],
+        performance_intents={"phrase-a": {"intent_tag": "withhold"}},
+        section_envelopes={"intro": {"tempo_base": 112.0}},
+        seeds={"root": 7, "microtiming": 11},
+        delta_track_path=delta_path,
+        extra_metadata={"renderer": "unit-test"},
+    )
+
+    assert sidecar_path == audio_path.with_suffix(".meta.json")
+    payload = json.loads(sidecar_path.read_text())
+    assert payload["schema_version"] == "render-audio-sidecar/v1"
+    assert payload["audio_path"] == str(audio_path)
+    assert payload["rule_stack"] == ["R1", "R6"]
+    assert payload["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+    assert payload["rule_stack_provenance"] == {
+        "applied_rules": ["R1", "R6"],
+        "quantities": {"R1": 1.0, "R2": 0.0, "R6": 0.45},
+        "metadata": {"intent_tags": "withhold"},
+    }
+    assert payload["events"][0]["rule_stack"] == ["R1", "R6"]
+    assert payload["events"][0]["seed_path"] == [7, 11]
+    assert payload["performance_intents"] == {"phrase-a": {"intent_tag": "withhold"}}
+    assert payload["section_envelopes"] == {"intro": {"tempo_base": 112.0}}
+    assert payload["seeds"] == {"microtiming": 11, "root": 7}
+    assert payload["delta_track_path"] == str(delta_path)
+    assert payload["metadata"] == {"renderer": "unit-test"}
+
+
+def test_sidecar_writer_falls_back_to_render_pass_rule_stack_for_events(tmp_path: Path) -> None:
+    @dataclass(frozen=True)
+    class BareEvent:
+        event_id: str
+        seed_path: tuple[int, ...]
+
+    audio_path = tmp_path / "take.wav"
+    audio_path.write_bytes(b"RIFFfake WAVE")
+
+    write_audio_metadata_sidecar(
+        audio_path,
+        rule_stack=("R3", "R4"),
+        rule_quantities={"R3": 0.8, "R4": 1.0},
+        events=[BareEvent(event_id="evt-bare", seed_path=(3, 4))],
+    )
+
+    payload = read_audio_metadata_sidecar(audio_path)
+    assert payload["events"] == [
+        {
+            "event_id": "evt-bare",
+            "seed_path": [3, 4],
+            "rule_stack": ["R3", "R4"],
+        }
+    ]
+    assert payload["rule_stack"] == ["R3", "R4"]
+
+
+def test_audio_metadata_sidecar_path_replaces_audio_suffix() -> None:
+    assert audio_metadata_sidecar_path("render.wav") == Path("render.meta.json")
+    assert audio_metadata_sidecar_path("render") == Path("render.meta.json")
+
+exec
+/bin/zsh -lc "sed -n '1,180p' tests/test_ixml_chunk_writer.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Tests for WAV iXML chunk writer."""
+from __future__ import annotations
+
+import os
+import sys
+import wave
+from pathlib import Path
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
+
+from senseweave.ixml_chunk_writer import read_ixml, write_ixml
+
+SAMPLE_RATE = 16000
+
+
+def _make_wav(path: Path, *, frames: int = 1600) -> None:
+    samples = [0] * frames
+    with wave.open(str(path), "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(SAMPLE_RATE)
+        handle.writeframes(
+            b"".join(
+                int(s).to_bytes(2, "little", signed=True) for s in samples
+            )
+        )
+
+
+def test_roundtrip_single_key(tmp_path: Path) -> None:
+    wav = tmp_path / "test.wav"
+    _make_wav(wav)
+    write_ixml(wav, {"scene": "forest"})
+    result = read_ixml(wav)
+    assert result == {"scene": "forest"}
+
+
+def test_roundtrip_multiple_keys(tmp_path: Path) -> None:
+    wav = tmp_path / "test.wav"
+    _make_wav(wav)
+    meta = {
+        "activity_mode": "grain_cloud",
+        "wet_mix": "0.42",
+        "grain_density_hz": "8.0",
+        "sensor_id": "contact-mic-01",
+    }
+    write_ixml(wav, meta)
+    assert read_ixml(wav) == meta
+
+
+def test_empty_metadata(tmp_path: Path) -> None:
+    wav = tmp_path / "test.wav"
+    _make_wav(wav)
+    write_ixml(wav, {})
+    assert read_ixml(wav) == {}
+
+
+def test_no_ixml_returns_empty(tmp_path: Path) -> None:
+    wav = tmp_path / "test.wav"
+    _make_wav(wav)
+    assert read_ixml(wav) == {}
+
+
+def test_wav_still_readable_after_ixml(tmp_path: Path) -> None:
+    wav = tmp_path / "test.wav"
+    _make_wav(wav, frames=SAMPLE_RATE)
+    write_ixml(wav, {"key": "value"})
+    with wave.open(str(wav), "rb") as handle:
+        assert handle.getnchannels() == 1
+        assert handle.getframerate() == SAMPLE_RATE
+        assert handle.getnframes() == SAMPLE_RATE
+
+
+def test_invalid_file_raises(tmp_path: Path) -> None:
+    bad = tmp_path / "bad.wav"
+    bad.write_bytes(b"not a wav file")
+    try:
+        write_ixml(bad, {"k": "v"})
+        assert False, "should have raised"
+    except ValueError:
+        pass
+    try:
+        read_ixml(bad)
+        assert False, "should have raised"
+    except ValueError:
+        pass
+
+
+def test_special_characters_in_values(tmp_path: Path) -> None:
+    wav = tmp_path / "test.wav"
+    _make_wav(wav)
+    meta = {"note": "loud & clear", "path": "/tmp/<test>", "quote": 'say "hi"'}
+    write_ixml(wav, meta)
+    assert read_ixml(wav) == meta
+
+exec
+/bin/zsh -lc 'rg -n "def export_audio|write_audio_metadata_sidecar|read_audio_metadata_sidecar|schema_version|write_ixml|read_ixml" src' in /Users/anthony/Programming/PromptClaw
+ exited 1 in 0ms:
+exec
+/bin/zsh -lc 'rg -n "def export_audio|write_audio_metadata_sidecar|read_audio_metadata_sidecar|schema_version|write_ixml|read_ixml" my-claw/tools/senseweave' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+my-claw/tools/senseweave/ixml_chunk_writer.py:38:def write_ixml(path: str | Path, metadata: dict[str, str]) -> None:
+my-claw/tools/senseweave/ixml_chunk_writer.py:57:def read_ixml(path: str | Path) -> dict[str, str]:
+my-claw/tools/senseweave/render/__init__.py:7:    read_audio_metadata_sidecar,
+my-claw/tools/senseweave/render/__init__.py:8:    write_audio_metadata_sidecar,
+my-claw/tools/senseweave/render/__init__.py:59:    "read_audio_metadata_sidecar",
+my-claw/tools/senseweave/render/__init__.py:61:    "write_audio_metadata_sidecar",
+my-claw/tools/senseweave/render/export.py:14:from ..ixml_chunk_writer import write_ixml
+my-claw/tools/senseweave/render/export.py:15:from .audio_sidecar import write_audio_metadata_sidecar
+my-claw/tools/senseweave/render/export.py:50:def export_audio(
+my-claw/tools/senseweave/render/export.py:69:    2. Writes a JSON ``.meta.json`` sidecar via :func:`write_audio_metadata_sidecar`.
+my-claw/tools/senseweave/render/export.py:70:    3. Embeds rule-stack provenance as iXML metadata in the WAV via :func:`write_ixml`.
+my-claw/tools/senseweave/render/export.py:76:    sidecar_path = write_audio_metadata_sidecar(
+my-claw/tools/senseweave/render/export.py:94:    write_ixml(wav, ixml_meta)
+my-claw/tools/senseweave/render/audio_sidecar.py:75:def write_audio_metadata_sidecar(
+my-claw/tools/senseweave/render/audio_sidecar.py:101:        "schema_version": SCHEMA_VERSION,
+my-claw/tools/senseweave/render/audio_sidecar.py:121:def read_audio_metadata_sidecar(audio_path: str | Path) -> dict[str, Any]:
+
+exec
+/bin/zsh -lc 'rg --files my-claw/tools/senseweave | rg "(render|ixml)"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+my-claw/tools/senseweave/render/diff.py
+my-claw/tools/senseweave/render/rules/duration_contrast.py
+my-claw/tools/senseweave/render/rules/sensor_intent.py
+my-claw/tools/senseweave/render/rules/__init__.py
+my-claw/tools/senseweave/render/rules/agogic.py
+my-claw/tools/senseweave/render/rules/punctuation.py
+my-claw/tools/senseweave/render/rules/metric_accent.py
+my-claw/tools/senseweave/render/audio_sidecar.py
+my-claw/tools/senseweave/render/debugger.py
+my-claw/tools/senseweave/render/export.py
+my-claw/tools/senseweave/render/__init__.py
+my-claw/tools/senseweave/render/ablation.py
+my-claw/tools/senseweave/render/worm.py
+my-claw/tools/senseweave/render/antipatterns.py
+my-claw/tools/senseweave/render/pass_.py
+my-claw/tools/senseweave/render/metrics.py
+my-claw/tools/senseweave/sample_event_renderer.py
+my-claw/tools/senseweave/ixml_chunk_writer.py
+
+codex
+The implementation lives under `my-claw/tools/senseweave`, which is what these tests import. I’m reading only the export, sidecar, and iXML helpers before deciding whether this is test-only or needs a tiny schema/readback tweak.
+exec
+/bin/zsh -lc "sed -n '1,180p' my-claw/tools/senseweave/render/export.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Audio export with integrated provenance capture.
+
+Collects rule-stack context at export time and passes it to both the
+iXML chunk writer (embedded in WAV) and the JSON sidecar writer.
+"""
+from __future__ import annotations
+
+import json
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+from ..ixml_chunk_writer import write_ixml
+from .audio_sidecar import write_audio_metadata_sidecar
+from .pass_ import PerformedPart
+
+
+@dataclass(frozen=True)
+class ExportResult:
+    audio_path: Path
+    sidecar_path: Path
+    ixml_keys: dict[str, str]
+
+
+def _provenance_to_ixml(
+    performed_part: PerformedPart | None,
+    rule_stack: Sequence[str] | None,
+    rule_quantities: Mapping[str, float] | None,
+) -> dict[str, str]:
+    if performed_part is not None:
+        applied = list(performed_part.applied_rules)
+        quantities = performed_part.quantities
+    else:
+        applied = list(rule_stack or ())
+        quantities = dict(rule_quantities or {})
+
+    meta: dict[str, str] = {}
+    if applied:
+        meta["rule_stack"] = ",".join(applied)
+    if quantities:
+        meta["rule_quantities"] = json.dumps(
+            {str(k): float(v) for k, v in quantities.items()},
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+    return meta
+
+
+def export_audio(
+    audio_path: str | Path,
+    *,
+    performed_part: PerformedPart | None = None,
+    rule_stack: Sequence[str] | None = None,
+    rule_quantities: Mapping[str, float] | None = None,
+    rule_metadata: Mapping[str, Any] | None = None,
+    events: Sequence[Any] | None = None,
+    performance_intents: Mapping[str, Any] | Sequence[Any] | None = None,
+    section_envelopes: Mapping[str, Any] | Sequence[Any] | None = None,
+    seeds: Mapping[str, int] | None = None,
+    delta_track_path: str | Path = "",
+    extra_metadata: Mapping[str, Any] | None = None,
+    ixml_extra: Mapping[str, str] | None = None,
+) -> ExportResult:
+    """Export provenance for an audio file to both iXML and JSON sidecar.
+
+    The WAV at *audio_path* must already exist.  This function:
+    1. Extracts rule-stack context from *performed_part* (or explicit params).
+    2. Writes a JSON ``.meta.json`` sidecar via :func:`write_audio_metadata_sidecar`.
+    3. Embeds rule-stack provenance as iXML metadata in the WAV via :func:`write_ixml`.
+
+    Returns an :class:`ExportResult` with paths and the iXML keys that were written.
+    """
+    wav = Path(audio_path)
+
+    sidecar_path = write_audio_metadata_sidecar(
+        wav,
+        performed_part=performed_part,
+        rule_stack=rule_stack,
+        rule_quantities=rule_quantities,
+        rule_metadata=rule_metadata,
+        events=events,
+        performance_intents=performance_intents,
+        section_envelopes=section_envelopes,
+        seeds=seeds,
+        delta_track_path=delta_track_path,
+        extra_metadata=extra_metadata,
+    )
+
+    ixml_meta = _provenance_to_ixml(performed_part, rule_stack, rule_quantities)
+    if ixml_extra:
+        ixml_meta.update(ixml_extra)
+
+    write_ixml(wav, ixml_meta)
+
+    return ExportResult(
+        audio_path=wav,
+        sidecar_path=sidecar_path,
+        ixml_keys=ixml_meta,
+    )
+
+exec
+/bin/zsh -lc "sed -n '1,180p' my-claw/tools/senseweave/ixml_chunk_writer.py" in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc "sed -n '1,200p' my-claw/tools/senseweave/render/audio_sidecar.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""WAV iXML chunk writer for embedding key-value metadata."""
+from __future__ import annotations
+
+import struct
+from pathlib import Path
+from xml.etree.ElementTree import Element, SubElement, fromstring, tostring
+
+IXML_CHUNK_ID = b"iXML"
+
+
+def _build_ixml(metadata: dict[str, str]) -> bytes:
+    root = Element("BWFXML")
+    version = SubElement(root, "IXML_VERSION")
+    version.text = "1.61"
+    user = SubElement(root, "USER")
+    for key, value in metadata.items():
+        entry = SubElement(user, "ENTRY")
+        entry.set("KEY", key)
+        entry.text = value
+    return (
+        b'<?xml version="1.0" encoding="UTF-8"?>\n'
+        + tostring(root, encoding="unicode").encode("utf-8")
+    )
+
+
+def _parse_ixml(data: bytes) -> dict[str, str]:
+    root = fromstring(data.decode("utf-8"))
+    user = root.find("USER")
+    if user is None:
+        return {}
+    result: dict[str, str] = {}
+    for entry in user.findall("ENTRY"):
+        key = entry.get("KEY", "")
+        result[key] = entry.text or ""
+    return result
+
+
+def write_ixml(path: str | Path, metadata: dict[str, str]) -> None:
+    """Append an iXML chunk with key-value metadata to an existing WAV file."""
+    wav_path = Path(path)
+    data = wav_path.read_bytes()
+    if data[:4] != b"RIFF" or data[8:12] != b"WAVE":
+        raise ValueError("not a valid WAV file")
+
+    payload = _build_ixml(metadata)
+    chunk_size = len(payload)
+    chunk = IXML_CHUNK_ID + struct.pack("<I", chunk_size) + payload
+    if chunk_size % 2 != 0:
+        chunk += b"\x00"
+
+    new_data = data + chunk
+    riff_size = len(new_data) - 8
+    new_data = new_data[:4] + struct.pack("<I", riff_size) + new_data[8:]
+    wav_path.write_bytes(new_data)
+
+
+def read_ixml(path: str | Path) -> dict[str, str]:
+    """Read iXML metadata from a WAV file. Returns empty dict if no iXML chunk."""
+    wav_path = Path(path)
+    data = wav_path.read_bytes()
+    if data[:4] != b"RIFF" or data[8:12] != b"WAVE":
+        raise ValueError("not a valid WAV file")
+
+    offset = 12
+    while offset + 8 <= len(data):
+        chunk_id = data[offset : offset + 4]
+        chunk_size = struct.unpack("<I", data[offset + 4 : offset + 8])[0]
+        if chunk_id == IXML_CHUNK_ID:
+            return _parse_ixml(data[offset + 8 : offset + 8 + chunk_size])
+        offset += 8 + chunk_size
+        if chunk_size % 2 != 0:
+            offset += 1
+    return {}
+
+ succeeded in 0ms:
+"""JSON sidecar writer for exported render audio."""
+from __future__ import annotations
+
+import json
+import os
+from collections.abc import Mapping, Sequence
+from dataclasses import asdict, is_dataclass
+from pathlib import Path
+from typing import Any
+
+from .pass_ import PerformedPart
+
+SCHEMA_VERSION = "render-audio-sidecar/v1"
+
+
+def audio_metadata_sidecar_path(audio_path: str | Path) -> Path:
+    """Return the default ``.meta.json`` sidecar path for an audio export."""
+    path = Path(audio_path)
+    if path.suffix:
+        return path.with_suffix(".meta.json")
+    return path.with_name(f"{path.name}.meta.json")
+
+
+def _json_safe(value: Any) -> Any:
+    if is_dataclass(value) and not isinstance(value, type):
+        return _json_safe(asdict(value))
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, Mapping):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set, frozenset)):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    return str(value)
+
+
+def _provenance(
+    *,
+    performed_part: PerformedPart | None,
+    rule_stack: Sequence[str] | None,
+    rule_quantities: Mapping[str, float] | None,
+    rule_metadata: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    if performed_part is not None:
+        applied_rules = list(performed_part.applied_rules)
+        quantities = {str(key): float(value) for key, value in performed_part.quantities.items()}
+        metadata = _json_safe(performed_part.metadata)
+    else:
+        applied_rules = [str(rule_id) for rule_id in (rule_stack or ())]
+        quantities = {str(key): float(value) for key, value in dict(rule_quantities or {}).items()}
+        metadata = _json_safe(rule_metadata or {})
+    return {
+        "applied_rules": applied_rules,
+        "quantities": quantities,
+        "metadata": metadata,
+    }
+
+
+def _event_payload(event: Any, fallback_rule_stack: Sequence[str]) -> dict[str, Any]:
+    payload = _json_safe(event)
+    if not isinstance(payload, dict):
+        payload = {"value": payload}
+    if "rule_stack" not in payload:
+        payload["rule_stack"] = list(fallback_rule_stack)
+    else:
+        rule_stack = payload["rule_stack"]
+        if isinstance(rule_stack, str):
+            payload["rule_stack"] = [rule_stack]
+        else:
+            payload["rule_stack"] = list(_json_safe(rule_stack))
+    return payload
+
+
+def write_audio_metadata_sidecar(
+    audio_path: str | Path,
+    *,
+    performed_part: PerformedPart | None = None,
+    rule_stack: Sequence[str] | None = None,
+    rule_quantities: Mapping[str, float] | None = None,
+    rule_metadata: Mapping[str, Any] | None = None,
+    events: Sequence[Any] | None = None,
+    performance_intents: Mapping[str, Any] | Sequence[Any] | None = None,
+    section_envelopes: Mapping[str, Any] | Sequence[Any] | None = None,
+    seeds: Mapping[str, int] | None = None,
+    delta_track_path: str | Path = "",
+    extra_metadata: Mapping[str, Any] | None = None,
+    sidecar_path: str | Path | None = None,
+) -> Path:
+    """Write a JSON sidecar preserving render rule-stack provenance."""
+    audio = Path(audio_path)
+    sidecar = Path(sidecar_path) if sidecar_path is not None else audio_metadata_sidecar_path(audio)
+    provenance = _provenance(
+        performed_part=performed_part,
+        rule_stack=rule_stack,
+        rule_quantities=rule_quantities,
+        rule_metadata=rule_metadata,
+    )
+    applied_rules = list(provenance["applied_rules"])
+    payload = {
+        "schema_version": SCHEMA_VERSION,
+        "audio_path": str(audio),
+        "rule_stack": applied_rules,
+        "rule_quantities": dict(provenance["quantities"]),
+        "rule_stack_provenance": provenance,
+        "events": [_event_payload(event, applied_rules) for event in (events or ())],
+        "performance_intents": _json_safe(performance_intents or {}),
+        "section_envelopes": _json_safe(section_envelopes or {}),
+        "seeds": {str(key): int(value) for key, value in dict(seeds or {}).items()},
+        "delta_track_path": str(delta_track_path) if delta_track_path else "",
+        "metadata": _json_safe(extra_metadata or {}),
+    }
+
+    sidecar.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = sidecar.with_suffix(f"{sidecar.suffix}.tmp")
+    tmp_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    os.replace(tmp_path, sidecar)
+    return sidecar
+
+
+def read_audio_metadata_sidecar(audio_path: str | Path) -> dict[str, Any]:
+    """Read the default ``.meta.json`` sidecar for an audio export."""
+    path = Path(audio_path)
+    sidecar = path if path.name.endswith(".meta.json") else audio_metadata_sidecar_path(path)
+    return dict(json.loads(sidecar.read_text()))
+
+exec
+/bin/zsh -lc "sed -n '1,100p' my-claw/tools/senseweave/render/__init__.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Structured expression rendering helpers for SenseWeave."""
+from __future__ import annotations
+
+from .ablation import ablate, filter_active_rules
+from .audio_sidecar import (
+    audio_metadata_sidecar_path,
+    read_audio_metadata_sidecar,
+    write_audio_metadata_sidecar,
+)
+from .export import ExportResult, export_audio
+from .debugger import (
+    AblationRun,
+    LocalizationReport,
+    ProblemRegion,
+    RuleImpact,
+    localize_rule_impacts,
+    run_debugger,
+)
+from .diff import NoteDelta, PhraseDelta, ScoreDelta, diff_scores
+from .pass_ import RULE_ORDER, PerformedPart, RenderPass, RenderRule
+from .rules import (
+    AgogicAccentRule,
+    DurationContrastRule,
+    METRIC_ACCENT_4_4,
+    MetricAccentRule,
+    apply_agogic_accent,
+    apply_duration_contrast,
+    apply_metric_accent,
+    metric_accent_table,
+)
+
+__all__ = [
+    "AblationRun",
+    "AgogicAccentRule",
+    "DurationContrastRule",
+    "ExportResult",
+    "LocalizationReport",
+    "METRIC_ACCENT_4_4",
+    "MetricAccentRule",
+    "NoteDelta",
+    "RULE_ORDER",
+    "PerformedPart",
+    "PhraseDelta",
+    "ProblemRegion",
+    "RenderPass",
+    "RenderRule",
+    "RuleImpact",
+    "ScoreDelta",
+    "ablate",
+    "audio_metadata_sidecar_path",
+    "apply_agogic_accent",
+    "apply_duration_contrast",
+    "apply_metric_accent",
+    "diff_scores",
+    "export_audio",
+    "filter_active_rules",
+    "localize_rule_impacts",
+    "metric_accent_table",
+    "read_audio_metadata_sidecar",
+    "run_debugger",
+    "write_audio_metadata_sidecar",
+]
+
+codex
+The export code already writes both artifacts; the missing coverage is stricter: compare iXML readback to the export result keys, and pin the sidecar’s top-level/nested schema shape. I’m going to add that coverage in the existing focused tests without changing production code.
+apply patch
+patch: completed
+/Users/anthony/Programming/PromptClaw/tests/test_render_export.py
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723ba6aa8fba006f989d145e997a05a3d856c..75ee27e89883d9271aa5e1c5589cfe56d5e8e99e
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723ba6aa8fba006f989d145e997a05a3d856c..75ee27e89883d9271aa5e1c5589cfe56d5e8e99e
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+codex
+The test file now pins the sidecar schema shape and asserts the iXML metadata read back from the exported WAV matches the keys returned by `export_audio`. I’m running the focused export tests first.
+exec
+/bin/zsh -lc 'pytest tests/test_render_export.py -x --tb=short' in /Users/anthony/Programming/PromptClaw
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723ba6aa8fba006f989d145e997a05a3d856c..75ee27e89883d9271aa5e1c5589cfe56d5e8e99e
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+ succeeded in 1150ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 6 items
+
+tests/test_render_export.py ......                                       [100%]
+
+============================== 6 passed in 0.16s ===============================
+
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723ba6aa8fba006f989d145e997a05a3d856c..75ee27e89883d9271aa5e1c5589cfe56d5e8e99e
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+codex
+Focused export coverage passes. I’m moving on to the required validation commands from the task before committing.
+exec
+/bin/zsh -lc "pip install -e '.[dev]'" in /Users/anthony/Programming/PromptClaw
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723ba6aa8fba006f989d145e997a05a3d856c..75ee27e89883d9271aa5e1c5589cfe56d5e8e99e
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723ba6aa8fba006f989d145e997a05a3d856c..75ee27e89883d9271aa5e1c5589cfe56d5e8e99e
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+ succeeded in 3470ms:
+Obtaining file:///Users/anthony/Programming/PromptClaw
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: mypy>=1.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.19.1)
+Requirement already satisfied: pytest>=8.0 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (8.3.5)
+Requirement already satisfied: ruff>=0.9 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.9.2)
+Requirement already satisfied: typing_extensions>=4.6.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (4.15.0)
+Requirement already satisfied: mypy_extensions>=1.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: pathspec>=0.9.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.10.3)
+Requirement already satisfied: librt>=0.6.2 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.8.1)
+Requirement already satisfied: iniconfig in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.1.1)
+Requirement already satisfied: packaging in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (23.2)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.5.0)
+Building wheels for collected packages: promptclaw
+  Building editable for promptclaw (pyproject.toml): started
+  Building editable for promptclaw (pyproject.toml): finished with status 'done'
+  Created wheel for promptclaw: filename=promptclaw-3.0.0-0.editable-py3-none-any.whl size=5869 sha256=5470267eec54628818fc15d43c29cafdfef20df70c957e5500767b878238161b
+  Stored in directory: /private/var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/pip-ephem-wheel-cache-qqbguco9/wheels/ab/f4/89/0cacd29874f6252d7c6bef0fca4c14839da91ab6a8d842965e
+Successfully built promptclaw
+Installing collected packages: promptclaw
+  Attempting uninstall: promptclaw
+    Found existing installation: promptclaw 3.0.0
+    Uninstalling promptclaw-3.0.0:
+      Successfully uninstalled promptclaw-3.0.0
+Successfully installed promptclaw-3.0.0
+
+exec
+/bin/zsh -lc 'pytest tests/ -x --tb=short' in /Users/anthony/Programming/PromptClaw
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723ba6aa8fba006f989d145e997a05a3d856c..75ee27e89883d9271aa5e1c5589cfe56d5e8e99e
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723ba6aa8fba006f989d145e997a05a3d856c..75ee27e89883d9271aa5e1c5589cfe56d5e8e99e
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723ba6aa8fba006f989d145e997a05a3d856c..75ee27e89883d9271aa5e1c5589cfe56d5e8e99e
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+ succeeded in 17441ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 2827 items
+
+tests/test_accompaniment.py ...........................                  [  0%]
+tests/test_acoustic_ecology.py .................................         [  2%]
+tests/test_agent_runtime.py ..                                           [  2%]
+tests/test_agent_selector_defaults.py .                                  [  2%]
+tests/test_agent_selector_quota.py ........                              [  2%]
+tests/test_agogic_rule.py ...                                            [  2%]
+tests/test_antenna_to_skin.py .................................          [  3%]
+tests/test_archive_daemon_runtime.py .                                   [  3%]
+tests/test_archive_paths.py .....                                        [  3%]
+tests/test_arrangement_engine.py ....................................... [  5%]
+                                                                         [  5%]
+tests/test_art_engine_runtime.py ....                                    [  5%]
+tests/test_articulation.py ......                                        [  5%]
+tests/test_artistic_identity.py .                                        [  5%]
+tests/test_audio_analysis.py .....................................       [  7%]
+tests/test_bootstrap.py ..                                               [  7%]
+tests/test_breath_to_filter.py .............................             [  8%]
+tests/test_cadence_engine.py .......                                     [  8%]
+tests/test_capstone_engine.py ...                                        [  8%]
+tests/test_capture_alias.py ..                                           [  8%]
+tests/test_cast_planner.py ...                                           [  8%]
+tests/test_check_status_runtime.py ..                                    [  8%]
+tests/test_coherence_engine.py ..............                            [  9%]
+tests/test_coherence_integration.py ............                         [  9%]
+tests/test_collaborative_canvas.py ......................                [ 10%]
+tests/test_commission_context.py ..                                      [ 10%]
+tests/test_config.py ..                                                  [ 10%]
+tests/test_constitution.py .......................                       [ 11%]
+tests/test_contact_listener_runtime.py ....                              [ 11%]
+tests/test_contact_mic_calibration_runtime.py ....                       [ 11%]
+tests/test_context_pulse_runtime.py .                                    [ 11%]
+tests/test_continuous_learner.py ......................                  [ 12%]
+tests/test_counterpoint_pipeline.py ...........................          [ 13%]
+tests/test_counterpoint_rules.py ....................................... [ 14%]
+......................                                                   [ 15%]
+tests/test_course_critique.py ...............................            [ 16%]
+tests/test_cypherclaw_audio_runtime.py .....                             [ 16%]
+tests/test_cypherclaw_av_stack_service.py ...                            [ 17%]
+tests/test_cypherclaw_boot_runtime.py ....                               [ 17%]
+tests/test_cypherclaw_runtime.py .....                                   [ 17%]
+tests/test_daemon_concurrency_compat.py ...                              [ 17%]
+tests/test_daemon_fallback.py ...............                            [ 17%]
+tests/test_daemon_scheduler.py ..                                        [ 18%]
+tests/test_daemon_status_ollama.py .......                               [ 18%]
+tests/test_dashboard_generator.py ...................................... [ 19%]
+.......                                                                  [ 19%]
+tests/test_dashboard_generator_runtime.py ...                            [ 19%]
+tests/test_decision_store.py .........                                   [ 20%]
+tests/test_doctor.py ...                                                 [ 20%]
+tests/test_dsp_scene_lab.py ................                             [ 20%]
+tests/test_duration_contrast_rule.py .......                             [ 21%]
+tests/test_ear_engine.py ............                                    [ 21%]
+tests/test_emsd_curriculum.py ...............                            [ 22%]
+tests/test_emsd_performance.py ....                                      [ 22%]
+tests/test_emsd_runtime.py ...                                           [ 22%]
+tests/test_event_store.py .......                                        [ 22%]
+tests/test_executable_curriculum.py ...                                  [ 22%]
+tests/test_federation_discovery.py ........                              [ 23%]
+tests/test_final_rit.py ...                                              [ 23%]
+tests/test_first_boot.py .................................               [ 24%]
+tests/test_form_grammar.py ..                                            [ 24%]
+tests/test_fractal_form.py ...............                               [ 24%]
+tests/test_functional_harmony.py ...............................         [ 26%]
+tests/test_gallery.py ..........................                         [ 26%]
+tests/test_gallery_x11_runtime.py ...                                    [ 27%]
+tests/test_garden_watcher.py ........................................... [ 28%]
+.                                                                        [ 28%]
+tests/test_gemini_image_runtime.py ...                                   [ 28%]
+tests/test_generative_scores.py ........................................ [ 30%]
+.............................................                            [ 31%]
+tests/test_genre_literacy.py ............                                [ 32%]
+tests/test_glyphweave_cli.py ....                                        [ 32%]
+tests/test_glyphweave_runtime.py ....                                    [ 32%]
+tests/test_governor_integration.py ..............                        [ 32%]
+tests/test_graduation.py ......................                          [ 33%]
+tests/test_groove_engine.py ............................................ [ 35%]
+...............                                                          [ 35%]
+tests/test_harmonic_planner.py .........                                 [ 36%]
+tests/test_healer_runtime.py .....                                       [ 36%]
+tests/test_healthcheck_script_runtime.py ...                             [ 36%]
+tests/test_hook_engine.py .................                              [ 37%]
+tests/test_inner_life.py ...................................             [ 38%]
+tests/test_instrument_patches.py ........                                [ 38%]
+tests/test_ixml_chunk_writer.py .......                                  [ 38%]
+tests/test_keyboard_chat.py ..............................               [ 39%]
+tests/test_lifeimprover_bridge_runtime.py .....                          [ 40%]
+tests/test_live_buffer.py ...                                            [ 40%]
+tests/test_local_command_runtime.py ....                                 [ 40%]
+tests/test_macbook_codex_monitor.py ....                                 [ 40%]
+tests/test_maintenance_mode.py .....                                     [ 40%]
+tests/test_master_bus.py ...                                             [ 40%]
+tests/test_melodic_mind.py ............................................. [ 42%]
+..........................................................               [ 44%]
+tests/test_metric_accent_rule.py ....                                    [ 44%]
+tests/test_microtiming.py ....................                           [ 45%]
+tests/test_midi_keyboard_listener_runtime.py ...                         [ 45%]
+tests/test_midi_state.py .......................................         [ 46%]
+tests/test_mix_engine.py ..............................                  [ 47%]
+tests/test_mix_verify.py ............................................... [ 49%]
+                                                                         [ 49%]
+tests/test_mood_mirror.py .....................................          [ 50%]
+tests/test_motif_lifecycle.py ............................               [ 51%]
+tests/test_music_theory.py ............................................. [ 53%]
+........................................                                 [ 54%]
+tests/test_music_tracker.py ..........................................   [ 56%]
+tests/test_music_tracker_runtime.py .................................... [ 57%]
+                                                                         [ 57%]
+tests/test_musical_integration_runtime.py .                              [ 57%]
+tests/test_musical_marathon_integration.py ..                            [ 57%]
+tests/test_observatory_authority.py .....                                [ 57%]
+tests/test_observatory_runtime.py ..                                     [ 57%]
+tests/test_observatory_verification.py ..                                [ 57%]
+tests/test_observer_vision_runtime.py ..............                     [ 58%]
+tests/test_ollama_daemon_health.py ...                                   [ 58%]
+tests/test_ollama_health.py ......                                       [ 58%]
+tests/test_ollama_invoke.py ...                                          [ 58%]
+tests/test_ollama_routing.py ...................                         [ 59%]
+tests/test_ollama_run_agent.py .......                                   [ 59%]
+tests/test_operator_diagnostics.py ...........                           [ 60%]
+tests/test_ops_helpers_runtime.py ....                                   [ 60%]
+tests/test_orchestral_form.py ...............................            [ 61%]
+tests/test_orchestrator.py ...                                           [ 61%]
+tests/test_pareidolia_art_engine.py .......                              [ 61%]
+tests/test_pareidolia_characters.py .................................    [ 62%]
+tests/test_pareidolia_color.py ......................................... [ 64%]
+........................................................................ [ 66%]
+....                                                                     [ 66%]
+tests/test_pedals_to_key.py ............................                 [ 67%]
+tests/test_phrase_arch.py ....                                           [ 68%]
+tests/test_piece_brief.py ........                                       [ 68%]
+tests/test_piece_commission.py ....                                      [ 68%]
+tests/test_piece_queue.py ..                                             [ 68%]
+tests/test_porch_eye.py ..................................               [ 69%]
+tests/test_portfolio_report.py .........................                 [ 70%]
+tests/test_practice_curriculum.py ..                                     [ 70%]
+tests/test_preflight.py ......                                           [ 70%]
+tests/test_presence_engine.py ............                               [ 71%]
+tests/test_procedural_arc.py .....                                       [ 71%]
+tests/test_production_course_integration.py ..........                   [ 71%]
+tests/test_production_course_knowledge_base.py ...                       [ 72%]
+tests/test_project_scanner_runtime.py ....                               [ 72%]
+tests/test_prosody_engine.py ........                                    [ 72%]
+tests/test_punctuation_rule.py ............                              [ 72%]
+tests/test_quota_monitor.py .....................                        [ 73%]
+tests/test_reharmonizer.py ...                                           [ 73%]
+tests/test_render_ablation.py ....                                       [ 73%]
+tests/test_render_antipatterns.py ............                           [ 74%]
+tests/test_render_audio_sidecar.py ...                                   [ 74%]
+tests/test_render_debugger.py ..                                         [ 74%]
+tests/test_render_diff.py ................                               [ 75%]
+tests/test_render_export.py ......                                       [ 75%]
+tests/test_render_metrics.py .....                                       [ 75%]
+tests/test_render_pass.py ..................                             [ 76%]
+tests/test_render_worm.py ..........                                     [ 76%]
+tests/test_repertoire_memory.py .................                        [ 77%]
+tests/test_repertoire_memory_score_tree.py .                             [ 77%]
+tests/test_research_runtime.py .....                                     [ 77%]
+tests/test_resilience_runtime_scripts.py ..............                  [ 77%]
+tests/test_resource_governor.py ..........................               [ 78%]
+tests/test_reviewer_runtime.py ...                                       [ 78%]
+tests/test_room_listener_runtime.py ..................                   [ 79%]
+tests/test_room_presence_daemon.py ......                                [ 79%]
+tests/test_router.py .....                                               [ 79%]
+tests/test_row_automation.py ...........                                 [ 80%]
+tests/test_runtime_checkpoint.py ...                                     [ 80%]
+tests/test_runtime_paths.py ..                                           [ 80%]
+tests/test_sample_dsp_activity.py ...........                            [ 80%]
+tests/test_sample_event_renderer.py .....                                [ 80%]
+tests/test_sample_lab.py ....                                            [ 81%]
+tests/test_sample_playback_engine.py .......                             [ 81%]
+tests/test_sample_status.py ....                                         [ 81%]
+tests/test_scene_composer.py ......................................      [ 82%]
+tests/test_score_tree.py .                                               [ 82%]
+tests/test_score_tree_composer.py ....................                   [ 83%]
+tests/test_score_tree_pipeline.py .                                      [ 83%]
+tests/test_self_critique.py .........................                    [ 84%]
+tests/test_self_listener_tracker_runtime.py ...............              [ 85%]
+tests/test_senseweave_rollout_controls.py .....                          [ 85%]
+tests/test_senseweave_voice.py ..........................                [ 86%]
+tests/test_sensor_fusion.py ...............................              [ 87%]
+tests/test_sensor_intent_rule.py ....                                    [ 87%]
+tests/test_sensory_journal.py ............................               [ 88%]
+tests/test_server_health.py ...                                          [ 88%]
+tests/test_sound_palette_lab.py ..                                       [ 88%]
+tests/test_startle.py ................................                   [ 89%]
+tests/test_supercollider_recipes.py ...                                  [ 89%]
+tests/test_synthdef_registry.py ...................................      [ 90%]
+tests/test_synthesis_architecture_registry.py .......................... [ 91%]
+.......                                                                  [ 92%]
+tests/test_tamagotchi_runtime.py ......                                  [ 92%]
+tests/test_telegram_runtime.py ......                                    [ 92%]
+tests/test_theramini_duet.py ........................................... [ 94%]
+.........                                                                [ 94%]
+tests/test_theramini_listener_runtime.py .........                       [ 94%]
+tests/test_tracker_cadence.py ............                               [ 95%]
+tests/test_tracker_compiler.py ................                          [ 95%]
+tests/test_tracker_variation.py .....                                    [ 95%]
+tests/test_trust.py ................                                     [ 96%]
+tests/test_voice_aliases.py .......                                      [ 96%]
+tests/test_voice_interpretation_rules.py ............................... [ 97%]
+..                                                                       [ 97%]
+tests/test_voice_manager_v2.py ......................................... [ 99%]
+............                                                             [ 99%]
+tests/test_voice_shaping.py ....                                         [ 99%]
+tests/test_wizard.py ...                                                 [100%]
+
+=============================== warnings summary ===============================
+../../../../opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25
+  /opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    from pkg_resources import resource_stream, resource_exists
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google.cloud')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(parent)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('ruamel')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('zope')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+  /Users/anthony/Programming/PromptClaw/tests/test_gallery.py:108: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(result.getdata()), list(canvas.getdata()))
+
+tests/test_pareidolia_characters.py: 189 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:85: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pixels = list(img.getdata())
+
+tests/test_pareidolia_characters.py: 21 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:254: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    rendered[name] = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:310: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:314: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:316: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:339: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_low = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:343: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_high = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:326: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:352: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:331: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:333: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:361: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:376: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:366: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:368: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_add_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:429: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:451: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_with_palette
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:443: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:434: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:436: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:481: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_curious_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:554: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_happy_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:542: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_neutral_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:536: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sad_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:548: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sleeping_eyes_no_highlights
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:560: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:571: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_bush
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:621: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:615: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:609: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:585: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_without_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:591: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:597: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:603: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:642: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:661: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:674: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    basalt_pixels = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:678: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pebble_pixels = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:870: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+===================== 2827 passed, 291 warnings in 16.22s ======================
+
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723ba6aa8fba006f989d145e997a05a3d856c..75ee27e89883d9271aa5e1c5589cfe56d5e8e99e
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+codex
+The full test suite passed. I’m running `ruff` and `mypy` now; these may cover areas outside the changed file, but they’re part of the requested validation.
+exec
+/bin/zsh -lc 'ruff check src/ tests/' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+All checks passed!
+
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723ba6aa8fba006f989d145e997a05a3d856c..75ee27e89883d9271aa5e1c5589cfe56d5e8e99e
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+exec
+/bin/zsh -lc 'mypy src/' in /Users/anthony/Programming/PromptClaw
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723ba6aa8fba006f989d145e997a05a3d856c..75ee27e89883d9271aa5e1c5589cfe56d5e8e99e
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+ succeeded in 210ms:
+Success: no issues found in 7 source files
+
+codex
+Validation is clean. Before committing, I’m checking the diff and staging only the test file I changed, leaving the pre-existing SDP/progress edits untouched.
+exec
+/bin/zsh -lc 'git diff -- tests/test_render_export.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723b..75ee27e 100644
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@ def test_export_audio_writes_sidecar_and_ixml_from_performed_part(tmp_path: Path
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@ def test_export_audio_ixml_extra_merged(tmp_path: Path) -> None:
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@ def test_export_audio_ixml_extra_merged(tmp_path: Path) -> None:
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/logs/Verify_T-016_20260416T181925Z_1776388476.log
+ M sdp/logs/Verify_T-018_20260416T181925Zc_1776390724.log
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M tests/test_render_export.py
+?? sdp/logs/Lead_T-017_20260416T181925Z_1776388749.log
+?? sdp/logs/Lead_T-018_20260416T181925Za_1776389332.log
+?? sdp/logs/Lead_T-018_20260416T181925Zb_1776389692.log
+?? sdp/logs/Lead_T-018_20260416T181925Zd_1776390913.log
+?? sdp/logs/Verify_T-017_20260416T181925Z_1776389171.log
+?? sdp/logs/Verify_T-018_20260416T181925Za_1776389586.log
+?? sdp/logs/Verify_T-018_20260416T181925Zb_1776390086.log
+?? sdp/telemetry/experiment-exp-071b22fb7762.md
+?? sdp/telemetry/prompt-review-2026-04-17.md
+?? temp_artifacts/
+
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723ba6aa8fba006f989d145e997a05a3d856c..75ee27e89883d9271aa5e1c5589cfe56d5e8e99e
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+exec
+/bin/zsh -lc 'git add tests/test_render_export.py && git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/logs/Verify_T-016_20260416T181925Z_1776388476.log
+ M sdp/logs/Verify_T-018_20260416T181925Zc_1776390724.log
+ M sdp/notifications.log
+ M sdp/run-log.md
+M  tests/test_render_export.py
+?? sdp/logs/Lead_T-017_20260416T181925Z_1776388749.log
+?? sdp/logs/Lead_T-018_20260416T181925Za_1776389332.log
+?? sdp/logs/Lead_T-018_20260416T181925Zb_1776389692.log
+?? sdp/logs/Lead_T-018_20260416T181925Zd_1776390913.log
+?? sdp/logs/Verify_T-017_20260416T181925Z_1776389171.log
+?? sdp/logs/Verify_T-018_20260416T181925Za_1776389586.log
+?? sdp/logs/Verify_T-018_20260416T181925Zb_1776390086.log
+?? sdp/telemetry/experiment-exp-071b22fb7762.md
+?? sdp/telemetry/prompt-review-2026-04-17.md
+?? temp_artifacts/
+
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723ba6aa8fba006f989d145e997a05a3d856c..75ee27e89883d9271aa5e1c5589cfe56d5e8e99e
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+exec
+/bin/zsh -lc 'git commit -m "test(render): verify WAV iXML round-trip and sidecar schema [T-018@20260416T181925Zd]"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+[feat/graceful-degradation 78daea2] test(render): verify WAV iXML round-trip and sidecar schema [T-018@20260416T181925Zd]
+ 1 file changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723ba6aa8fba006f989d145e997a05a3d856c..75ee27e89883d9271aa5e1c5589cfe56d5e8e99e
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+codex
+The scoped commit is created. I’m doing one final status check to confirm there are no uncommitted changes from this task left behind.
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/logs/Verify_T-016_20260416T181925Z_1776388476.log
+ M sdp/logs/Verify_T-018_20260416T181925Zc_1776390724.log
+ M sdp/notifications.log
+ M sdp/run-log.md
+?? sdp/logs/Lead_T-017_20260416T181925Z_1776388749.log
+?? sdp/logs/Lead_T-018_20260416T181925Za_1776389332.log
+?? sdp/logs/Lead_T-018_20260416T181925Zb_1776389692.log
+?? sdp/logs/Lead_T-018_20260416T181925Zd_1776390913.log
+?? sdp/logs/Verify_T-017_20260416T181925Z_1776389171.log
+?? sdp/logs/Verify_T-018_20260416T181925Za_1776389586.log
+?? sdp/logs/Verify_T-018_20260416T181925Zb_1776390086.log
+?? sdp/telemetry/experiment-exp-071b22fb7762.md
+?? sdp/telemetry/prompt-review-2026-04-17.md
+?? temp_artifacts/
+
+exec
+/bin/zsh -lc 'git show --stat --oneline --decorate HEAD' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+78daea2 (HEAD -> feat/graceful-degradation) test(render): verify WAV iXML round-trip and sidecar schema [T-018@20260416T181925Zd]
+ tests/test_render_export.py | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723ba6aa8fba006f989d145e997a05a3d856c..75ee27e89883d9271aa5e1c5589cfe56d5e8e99e
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+codex
+Implemented and committed the scoped test update.
+
+Commit: `78daea2 test(render): verify WAV iXML round-trip and sidecar schema [T-018@20260416T181925Zd]`
+
+Changed [tests/test_render_export.py](/Users/anthony/Programming/PromptClaw/tests/test_render_export.py) to:
+- Assert exported WAV iXML readback exactly matches `ExportResult.ixml_keys`.
+- Pin the sidecar JSON top-level schema keys and `rule_stack_provenance` shape.
+- Verify merged extra iXML metadata round-trips from the exported WAV.
+
+Validation run:
+- `pytest tests/test_render_export.py -x --tb=short`
+- `pip install -e '.[dev]'`
+- `pytest tests/ -x --tb=short` -> `2827 passed`
+- `ruff check src/ tests/`
+- `mypy src/`
+
+The remaining uncommitted files are the pre-existing unrelated SDP/progress/temp artifacts; I left them untouched.
+diff --git a/tests/test_render_export.py b/tests/test_render_export.py
+index 5d5723ba6aa8fba006f989d145e997a05a3d856c..75ee27e89883d9271aa5e1c5589cfe56d5e8e99e
+--- a/tests/test_render_export.py
++++ b/tests/test_render_export.py
+@@ -52,11 +52,31 @@
+     assert result.sidecar_path.exists()
+ 
+     sidecar = read_audio_metadata_sidecar(wav)
++    assert set(sidecar) == {
++        "audio_path",
++        "delta_track_path",
++        "events",
++        "metadata",
++        "performance_intents",
++        "rule_quantities",
++        "rule_stack",
++        "rule_stack_provenance",
++        "schema_version",
++        "section_envelopes",
++        "seeds",
++    }
++    assert sidecar["schema_version"] == "render-audio-sidecar/v1"
++    assert set(sidecar["rule_stack_provenance"]) == {
++        "applied_rules",
++        "metadata",
++        "quantities",
++    }
+     assert sidecar["rule_stack"] == ["R1", "R6"]
+     assert sidecar["rule_quantities"] == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+     assert sidecar["seeds"] == {"root": 7}
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1,R6"
+     quantities = json.loads(ixml["rule_quantities"])
+     assert quantities == {"R1": 1.0, "R2": 0.0, "R6": 0.45}
+@@ -84,7 +104,7 @@
+     wav = tmp_path / "extra.wav"
+     _make_wav(wav)
+ 
+-    export_audio(
++    result = export_audio(
+         wav,
+         performed_part=PerformedPart(
+             score={}, applied_rules=("R1",), quantities={"R1": 1.0},
+@@ -93,6 +113,7 @@
+     )
+ 
+     ixml = read_ixml(wav)
++    assert ixml == result.ixml_keys
+     assert ixml["rule_stack"] == "R1"
+     assert ixml["scene"] == "forest"
+     assert ixml["sensor_id"] == "mic-01"
+
+tokens used
+65,719

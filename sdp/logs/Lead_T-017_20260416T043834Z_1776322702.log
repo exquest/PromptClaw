@@ -1,0 +1,10 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1085 chars)
+---
+
+Fixed. The single issue was that `MotifNode.timbral_tags` in `my-claw/tools/senseweave/score_tree.py:33` was declared as a required field with no default, but the test (and likely other call sites) constructs `MotifNode` without passing it. Changed `timbral_tags: tuple[str, ...]` to `timbral_tags: tuple[str, ...] = ()`.
+
+Gate results after fix:
+- **pytest**: 1891 passed
+- **ruff**: All checks passed
+- **mypy**: No issues found

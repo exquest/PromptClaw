@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2754 chars)
+---
+
+**Verdict: PASS**
+
+The LEAD agent's work is correct and complete. Key findings:
+
+- `## Auth Token (optional)` section is present in `ESCALATIONS.md` with all three required elements: env var description, systemd `Environment=` placement + drop-in instructions, and `X-Narrative-Auth` client header example.
+- Implementation in `app.py` and `__main__.py` is consistent with the documentation.
+- Tests in `test_escalations_lingering.py` provide precise regression guards for the new section.
+- Full suite: **3869 passed, 3 skipped** — no regressions.
+- Candidate hardening check for `bootstrap_identity`: already resolved — wired in `__main__.py:21` with AST-level test coverage.
+
+Three minor documentation notes logged (token generation example, `EnvironmentFile=` alternative, system-scope unit caveat) — none blocking.

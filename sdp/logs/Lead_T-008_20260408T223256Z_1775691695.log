@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1476 chars)
+---
+
+**T-008 complete.** All acceptance criteria met:
+
+| Criterion | Status |
+|---|---|
+| First boot generates unique UUID `instance_id` | `mint_identity()` / `bootstrap_identity()` use `uuid.uuid4()` |
+| Artistic name from word lists | `generate_artistic_name()` — 50 adjectives × 50 nouns (e.g. `"molten-sigil"`) |
+| Persists to `~/.promptclaw/identity.json` | Default path updated from hardcoded server path to `Path.home() / ".promptclaw" / "identity.json"` |
+| Subsequent boots load without regenerating | `bootstrap_identity()` loads existing valid identity, only mints on first boot or corruption |
+
+**Validation:** 1448 tests green, ruff clean, mypy clean. Committed as `75b6368`.

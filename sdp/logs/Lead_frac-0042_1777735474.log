@@ -1,0 +1,21 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3448 chars)
+---
+
+All four ADP phases for frac-0042 are already committed:
+
+- `a289ebf` — Specify (`specs/frac-0042-spec.md`)
+- `294ff6c` — Test (`tests/test_promptclaw_sdp_cost_depth.py`, 236 lines)
+- `be09e26` — Implement (`promptclaw/sdp_cost.py`: `total_cost_usd`, `cost_by_model`, `aggregate_rows`, `summarize_cost_run`, `CostRunSummary`)
+- `47b0d04` — Document (CHANGELOG entry)
+
+Verification:
+- Targeted tests: **23 passed** (`test_promptclaw_sdp_cost_depth.py` + extractor/telemetry regression anchors)
+- `ruff check promptclaw/sdp_cost.py tests/test_promptclaw_sdp_cost_depth.py` — clean
+- `mypy promptclaw/sdp_cost.py` — clean
+
+The prior Lead invocation (`Lead_frac-0042_1777733674.log`) finished the work and committed it, then timed out at the 1800s wall-clock limit before exiting. The current re-trigger has nothing new to do — all four sub-tasks are already in git.
+
+The uncommitted working-tree changes (`progress.md`, `sdp/logs/*`, `sdp/runner.log`, `sdp/notifications.log`, `sdp/run-log.md`) are SDP framework bookkeeping written by the runner itself, not task output, so I'm leaving them alone for the runner/verifier to manage.
+
+frac-0042 is complete; ready for Verify.

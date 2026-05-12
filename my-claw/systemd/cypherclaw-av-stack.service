@@ -1,0 +1,19 @@
+[Unit]
+Description=CypherClaw AV Stack
+After=display-manager.service network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=user
+Group=user
+WorkingDirectory=/home/user/cypherclaw
+Environment=HOME=/home/user
+Environment=DISPLAY=:0
+Environment=PYTHONPATH=/home/user/cypherclaw/src:/home/user/cypherclaw/tools
+ExecStartPre=/bin/sleep 8
+ExecStart=/home/user/cypherclaw/scripts/cypherclaw_av_boot.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=graphical.target

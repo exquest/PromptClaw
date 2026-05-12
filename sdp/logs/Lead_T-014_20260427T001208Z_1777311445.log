@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1755 chars)
+---
+
+T-014 done. The `_should_queue_now(mode, mood, learning)` heuristic now properly enforces all three gates at runtime by reading `last_generation_enqueued_at` from `learning` (with `last_enqueued_at` kwarg still working for tests). The composer hook injects the module-level timestamp into `learning` before calling, fixing the throttle regression flagged in T-013's verify report.
+
+Branches covered by tests:
+- cold start → True
+- rate too soon (via learning) → False
+- rate satisfied (via learning) → True
+- budget ≤ $0.50 → False
+- working_ambience + arc_payoff < 0.4 → False
+- sampler_dominating antipattern → False
+
+Validation: 3790 passed / 3 skipped, ruff + mypy clean. Committed as `b854f62`.

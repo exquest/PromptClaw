@@ -1,0 +1,23 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (2189 chars)
+---
+
+T-012 is complete. Here's the summary:
+
+## T-012 Results
+
+**New files:**
+- `promptclaw/federation/__init__.py` — federation package init
+- `promptclaw/federation/discovery.py` — peer discovery via Tailscale
+- `tests/test_federation_discovery.py` — 8 tests, all passing
+- `specs/t-012@20260408t223256z-spec.md` — specification
+
+**What it does:**
+1. Runs `tailscale status --json` to enumerate tailnet peers
+2. Probes each online peer at `http://{ip}:8443/federation/v1/identity`
+3. Parses valid `InstanceIdentity` responses into `PeerInfo` dataclasses
+4. Persists/loads/merges a peer registry at `~/.promptclaw/federation/peers.json`
+5. Excludes self, skips offline peers, handles malformed responses gracefully
+6. Zero external dependencies (stdlib only)
+
+**Verification:** 8/8 tests pass, ruff clean, mypy clean, no regressions in existing tests.

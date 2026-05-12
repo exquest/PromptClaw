@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2869 chars)
+---
+
+**Verdict: PASS**
+
+All three acceptance-criteria tests pass, full suite is clean at 3444 tests. Key findings:
+
+- The `combine_activity_and_playback=True` opt-in flag correctly merges plan + playback into one line: `"currently sampling theramini in via room mic · playing sample freeze bed from source self bus"`
+- Legacy path (face display) is untouched — default flag routes through unchanged helpers
+- All edge cases from the spec are covered: inactive playback, `no_capture` monitor error, capture-not-ready, and requested-vs-resolved source divergence
+- One pre-existing minor issue noted: `_legacy_activity_phrase` can emit a trailing `·` when `activity_mode` is absent — not introduced by this PR
+
+Report committed at `sdp/verification/t-021@20260425t183959za-verify.md`.

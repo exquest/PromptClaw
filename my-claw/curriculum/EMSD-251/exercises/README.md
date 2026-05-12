@@ -1,0 +1,36 @@
+# EMSD-251 Exercises
+
+## ex01: Theramini Ensemble Cue Sheet
+
+**Objective:** Design a duet cue sheet that gives the Theramini and generated voices distinct ensemble roles, response windows, and balance rules.
+
+**Verifier:** `constraint`
+
+**Template:**
+
+```json
+{
+  "theramini_roles": [
+    "soloist",
+    "gesture_source"
+  ],
+  "response_windows": {
+    "imitate_after_seconds": 2.0,
+    "thin_after_seconds": 0.5
+  },
+  "call_response": "answer sustained human pitch with contrary motion",
+  "deference_policy": "reduce accompaniment density while Theramini is active",
+  "ensemble_balance": {
+    "theramini_db_priority": 3.0
+  }
+}
+```
+
+**Expected features:**
+
+- `theramini_roles`
+- `response_windows`
+- `call_response`
+- `deference_policy`
+- `ensemble_balance`
+

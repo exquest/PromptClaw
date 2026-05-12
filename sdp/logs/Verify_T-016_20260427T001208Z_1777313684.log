@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2999 chars)
+---
+
+Verification complete. **Verdict: PASS**
+
+**Summary of findings:**
+
+- All acceptance criteria are met: env loading, all 6 object constructions, `asyncio.run`, SIGTERM/SIGINT handling, subprocess+signal tests.
+- All 3 new worker tests pass; full suite 3795 passed, zero regressions.
+- One **minor** note: graceful shutdown cancels at the next `await` checkpoint rather than waiting for the in-flight item to fully complete — the idle-path tests satisfy the spec as written, but a long-running Replicate call mid-flight would get `CancelledError`. A `stop_requested` event plumbed into `_worker_loop` would give true item-drain semantics if needed.
+- `bootstrap_identity` hardening bullets are **out of scope** per the established project pattern — this worker is a focused queue runner, not a daemon with identity/federation concerns.

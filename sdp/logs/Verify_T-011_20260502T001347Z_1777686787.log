@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2955 chars)
+---
+
+**Verdict: PASS**
+
+All nine acceptance-criteria tests pass, 87 regression tests are green, ruff and mypy are clean. Key findings:
+
+- **Correctness**: `POST /beats/next` correctly delegates to `NarrativeEngine.next_beat()`, passes all request fields, and returns the engine's output shape verbatim.
+- **Completeness**: All spec edge cases covered — arc position out of range, blank `force_arc_event`, missing engine (503), engine runtime failure (502), nested dataclass serialization, and auth gating.
+- **Consistency**: Follows the established factory injection, error taxonomy, and auth patterns of the surrounding narrative API.
+- **Security**: `extra="forbid"` on the request schema, no credential exposure, no injection paths.
+- **Quality**: Tests cover shape preservation, pre-engine validation short-circuit (`ShouldNotBeCalledEngine`), and the serialization layer independently. 87 regression tests remain green.
+
+No issues found. Verification report committed as `sdp/verification/t-011@20260502t001347z-verify.md`.

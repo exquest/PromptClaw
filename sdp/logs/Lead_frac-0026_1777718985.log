@@ -1,0 +1,21 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3452 chars)
+---
+
+frac-0026 complete. Summary:
+
+**Module deepened:** `my-claw/tools/senseweave/emsd_runtime.py` — depth 1 (`3/4 trivial, 1 real`) → depth 3 (`6 real`, `329 lines`), satisfying `>= 2`.
+
+**Added (mirroring the frac-0024/0025 pattern):**
+- `CANONICAL_ARC_PHASES`, `CANONICAL_DENSITY_BANDS`
+- Frozen dataclasses `EMSDPhaseSnapshot` and `EMSDRuntimeReport`
+- Helpers `arc_phase_index`, `arc_phase_band`, `density_pressure_band`, `build_phase_snapshot`, `build_runtime_report`, `summarize_runtime_report`
+
+**Preserved:** `EMSDLiveContext`, `build_live_emsd_context(...)`, `composer_emsd_extras(...)` — all existing tests pass.
+
+**Validation:**
+- `pytest tests/test_emsd_runtime_depth.py tests/test_emsd_runtime.py -q` → 12 passed
+- Hardening anchors (`tests/test_smoke_narrative_script.py`, startup identity tests) → 15 passed
+- Full gate `pytest tests/ -x && ruff check src/ tests/ && mypy src/` → 4094 passed, 3 skipped, ruff clean, mypy clean
+
+**Commits (per sub-task):** spec → tests → implementation → docs.

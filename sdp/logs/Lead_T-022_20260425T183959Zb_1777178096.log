@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1314 chars)
+---
+
+T-022@20260425T183959Zb committed as `b8b3ac7`.
+
+**What changed**
+- `my-claw/tools/senseweave/usage_journal.py` — added `SampleUsageTracker` dataclass: `start_piece(piece_id, timestamp)` opens a session, `record_play(...)` accumulates `SamplePlay` events (sample_id, source, transposition, fx_preset, played_at_row), `finish_piece(arc_payoff)` returns a `JournalEntry` snapshot and resets state. Errors if used before `start_piece`.
+- `tests/test_usage_journal.py` — 7 new tests covering ordered accumulation, finish→reset, snapshot independence from later activity, back-to-back pieces, both pre-start error paths, and a round-trip through `append_to_journal`/`read_journal`.
+
+**Validation**: 9/9 tests pass, ruff clean on src/tests, mypy clean on `src/`. Pre-existing mypy warning in `usage_journal.py:48` (untyped `entries` list in `read_journal`) is from prior task and out of scope.

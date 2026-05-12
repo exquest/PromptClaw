@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1352 chars)
+---
+
+Done.
+
+**Summary**
+- Added `sampler_density: float` field (default 0.0) to `ArtistMode` at `my-claw/tools/senseweave/artist_identity.py:165`
+- Added `__post_init__` validation that raises `ValueError` for values outside [0.0, 1.0]
+- Set `EVENING_REFLECTION.sampler_density = 0.45` (the only mode listing `sw_sampler` in `preferred_voices`)
+- Serialized as `mode_sampler_density` in `apply_mode_to_commission`
+- Added `TestSamplerDensity` (8 tests) covering field presence on all modes, default value, in-range modes, boundary acceptance (0.0/1.0), out-of-range rejection (-0.01/1.01), and serialization
+- Full suite: 3586 passed, mypy clean. Committed as `3b1ebd6`.

@@ -1,0 +1,20 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1715 chars)
+---
+
+Done. Committed as `4f8ffea`. Here's what was implemented:
+
+**`mix_engine.py`** — new `SpatialProfile` dataclass with stereo width, near/far depth, reverb size/decay/damping, delay style, delay send, and transition-space behavior. Per-phase lookup table `_PHASE_SPATIAL` covers all 5 arc phases with musically appropriate values:
+- **Divination**: wide (0.85), deep, large bright reverb (4.5s), no delay — sparse opening
+- **Emergence**: moderate (0.65), slapback delay — patterns appearing
+- **Conversation**: narrow (0.45), short damped reverb (1.2s), dotted-eighth delay — clarity for dialogue
+- **Convergence**: focused (0.5), controlled reverb (2.0s), quarter delay — material returning
+- **Crystallization**: wide (0.8), longest tails (5.5s), tape echo — distilled residue
+
+Quiet cadences (sleep/wind_down) automatically widen stereo, deepen depth, lengthen decay, and brighten damping.
+
+**`music_tracker.py`** — `_SCENE_SPATIAL_DEFAULTS` table provides `stereo_width`, `depth`, and `delay_send` automation for all 10 tracker scene types. Values merge into `automation_defaults` during song building via `setdefault`, so family-specific overrides take precedence.
+
+**`tracker_compiler.py`** — `_SECTION_DEFAULTS` updated with matching spatial automation keys.
+
+**Tests** — 11 new tests covering all acceptance criteria: wide sparse openings, clearer Conversation space, focused Convergence, long Crystallization tails, sleep cadence widening, and spatial defaults coverage for all tracker families. Full suite: 2264 passed.

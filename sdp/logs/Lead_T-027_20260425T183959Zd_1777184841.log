@@ -1,0 +1,3075 @@
+Command: codex exec --dangerously-bypass-approvals-and-sandbox -c model_reasoning_effort=xhigh -m gpt-5.4 -
+Prompt delivered via: stdin (1339 chars)
+---
+
+Added `init_sample_storage(base)` in [sample_library.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/sample_library.py:99). It composes the existing layout bootstrap and SQLite bootstrap, then returns the `SampleLibraryLayout` so callers can use the same resolved paths.
+
+Added the end-to-end tmpdir regression in [test_sample_library.py](/Users/anthony/Programming/PromptClaw/tests/test_sample_library.py:303). The test verifies the six sample subdirectories are created and `index.sqlite` contains the expected schema tables.
+
+Validation passed:
+- `pip install -e '.[dev]'`
+- `pytest tests/ -x --tb=short`
+- `ruff check src/ tests/`
+- `mypy src/`
+
+Committed as `23c9f43` with `feat(sample-library): expose init_sample_storage [T-027@20260425T183959Zd]`. Pre-existing unrelated workspace changes remain untouched.
+
+--- STDERR ---
+OpenAI Codex v0.125.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019dc878-a323-7183-bbdd-e46218351384
+--------
+user
+<!--
+  sdp-cli agent-specific template for codex
+  Edit this file to tune how codex handles lead_t1.md.
+  The shipped default lives at src/sdp/prompts/templates/lead_t1.md.
+  Delete this file to revert to the default.
+-->
+# Task T-027@20260425T183959Zd: Wire layout init into sample-library entry point: expose a `init_sample_storage(base)` callable that invokes the directory + sqlite bootstrap together, with an end-to-end test against a tmp path.
+
+
+**Tier:** T1
+
+## Instructions
+
+Handle this directly. Skip broad discovery and do not write a spec.
+
+1. Read only the file(s) you expect to change and the closest relevant tests.
+2. Make the smallest change that satisfies the task.
+3. Add or update a regression test when behavior changes.
+4. Run focused validation, then broader checks if needed.
+5. Commit as soon as the change works: `<type>(scope): summary [T-027@20260425T183959Zd]`
+
+## Rules
+
+- Stay in scope; no unrelated cleanup.
+- Follow existing patterns and type hints.
+- Record blocking assumptions in `ESCALATIONS.md`.
+- Do not finish with uncommitted changes you introduced for this task.
+- Do not clean, revert, commit, or otherwise normalize unrelated pre-existing
+  workspace changes.
+
+## Validation
+
+Run before committing:
+```bash
+pip install -e '.[dev]'
+pytest tests/ -x --tb=short
+ruff check src/ tests/
+mypy src/
+```
+
+codex
+Task is to expose a single `init_sample_storage(base)` entry point in the sample-library path, cover it with an end-to-end tmpdir test, and keep the change minimal. I’m locating the current sample storage bootstrap code and the nearest tests first so I can add the failing test before wiring the implementation.
+exec
+/bin/zsh -lc 'rg --files src tests | rg "sample|storage|sqlite"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_sample_lab.py
+tests/test_sample_library.py
+tests/test_sample_capture_verify.py
+tests/test_sample_record_audio_analysis.py
+tests/test_sampler_buffers.py
+tests/test_sampler_dispatch.py
+tests/test_operator_diagnostics_sample_status.py
+tests/test_sample_playback_engine.py
+tests/test_sampler_fx_mode_verify.py
+tests/test_sample_dsp_activity.py
+tests/test_sample_capture_daemon.py
+tests/test_sw_sampler.py
+tests/test_sample_library_import.py
+tests/test_sample_record_skeleton.py
+tests/test_sample_record_json.py
+tests/test_sample_capture_service_verify.py
+tests/test_sampler_scheduler.py
+tests/test_sample_selector.py
+tests/test_face_display_sample_status.py
+tests/test_sample_status.py
+tests/test_sampler_effects.py
+tests/test_cypherclaw_sampler_architecture.py
+tests/test_sample_record_context.py
+tests/test_cypherclaw_sampler_artistic_intent.py
+tests/test_sample_event_renderer.py
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'rg -n "sample_storage|sample library|sample-library|sqlite bootstrap|init_.*storage|bootstrap" src tests' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M sdp/telemetry/prompt-review-2026-04-26.md
+?? sdp/logs/Lead_T-018_20260425T183959Zd_1777170439.log
+?? sdp/logs/Lead_T-020_20260425T183959Za_1777172243.log
+?? sdp/logs/Lead_T-020_20260425T183959Zb_1777172606.log
+?? sdp/logs/Lead_T-020_20260425T183959Zc_1777173092.log
+?? sdp/logs/Lead_T-021_20260425T183959Za_1777174559.log
+?? sdp/logs/Lead_T-021_20260425T183959Zb_1777175434.log
+?? sdp/logs/Lead_T-021_20260425T183959Zc_1777175888.log
+?? sdp/logs/Lead_T-021_20260425T183959Zd_1777176738.log
+?? sdp/logs/Lead_T-022_20260425T183959Za_1777177698.log
+?? sdp/logs/Lead_T-022_20260425T183959Zb_1777178096.log
+?? sdp/logs/Lead_T-022_20260425T183959Zc_1777178453.log
+?? sdp/logs/Lead_T-022_20260425T183959Zd_1777178822.log
+?? sdp/logs/Lead_T-024_20260425T183959Za_1777181245.log
+?? sdp/logs/Lead_T-024_20260425T183959Zb_1777181562.log
+?? sdp/logs/Lead_T-024_20260425T183959Zc_1777181943.log
+?? sdp/logs/Lead_T-024_20260425T183959Zd_1777182233.log
+?? sdp/logs/Lead_T-025_20260425T183959Z_1777171970.log
+?? sdp/logs/Lead_T-026_20260425T183959Z_1777173578.log
+?? sdp/logs/Lead_T-027_20260425T183959Za_1777183773.log
+?? sdp/logs/Lead_T-027_20260425T183959Zb_1777183990.log
+?? sdp/logs/Lead_T-027_20260425T183959Zc_1777184287.log
+?? sdp/logs/Lead_T-027_20260425T183959Zd_1777184841.log
+?? sdp/logs/Lead_T-028_20260425T183959Z_1777173995.log
+?? sdp/logs/Lead_T-031_20260425T183959Z_1777177160.log
+?? sdp/logs/Lead_T-032_20260425T183959Z_1777180722.log
+?? sdp/logs/Lead_T-033_20260425T183959Z_1777182542.log
+?? sdp/logs/Verify_T-018_20260425T183959Zc_1777170297.log
+?? sdp/logs/Verify_T-018_20260425T183959Zd_1777171756.log
+?? sdp/logs/Verify_T-020_20260425T183959Za_1777172464.log
+?? sdp/logs/Verify_T-020_20260425T183959Zb_1777172836.log
+?? sdp/logs/Verify_T-020_20260425T183959Zc_1777173407.log
+?? sdp/logs/Verify_T-021_20260425T183959Za_1777175250.log
+?? sdp/logs/Verify_T-021_20260425T183959Zb_1777175768.log
+?? sdp/logs/Verify_T-021_20260425T183959Zc_1777176570.log
+?? sdp/logs/Verify_T-021_20260425T183959Zd_1777177041.log
+?? sdp/logs/Verify_T-022_20260425T183959Za_1777177930.log
+?? sdp/logs/Verify_T-022_20260425T183959Zb_1777178339.log
+?? sdp/logs/Verify_T-022_20260425T183959Zc_1777178693.log
+?? sdp/logs/Verify_T-022_20260425T183959Zd_1777179855.log
+?? sdp/logs/Verify_T-024_20260425T183959Za_1777181396.log
+?? sdp/logs/Verify_T-024_20260425T183959Zb_1777181763.log
+?? sdp/logs/Verify_T-024_20260425T183959Zc_1777182065.log
+?? sdp/logs/Verify_T-024_20260425T183959Zd_1777182410.log
+?? sdp/logs/Verify_T-025_20260425T183959Z_1777172133.log
+?? sdp/logs/Verify_T-026_20260425T183959Z_1777173892.log
+?? sdp/logs/Verify_T-027_20260425T183959Za_1777183840.log
+?? sdp/logs/Verify_T-027_20260425T183959Zb_1777184186.log
+?? sdp/logs/Verify_T-027_20260425T183959Zc_1777184670.log
+?? sdp/logs/Verify_T-028_20260425T183959Z_1777174326.log
+?? sdp/logs/Verify_T-031_20260425T183959Z_1777177489.log
+?? sdp/logs/Verify_T-032_20260425T183959Z_1777181096.log
+?? sdp/logs/Verify_T-033_20260425T183959Z_1777183467.log
+?? sdp/logs/claude_1777172204.log
+?? sdp/logs/claude_1777174507.log
+?? sdp/logs/claude_1777177655.log
+?? sdp/logs/claude_1777181202.log
+?? sdp/logs/claude_1777183730.log
+?? sdp/verification/t-022@20260425t183959zc-verify.md
+?? sdp/verification/t-024@20260425t183959zd-verify.md
+?? sdp/verification/t-026@20260425t183959z-verify.md
+?? temp_sampler_dispatch.py
+
+ succeeded in 0ms:
+tests/test_sample_library_import.py:1:"""Tests for manifest-driven sample library imports."""
+src/cypherclaw/first_boot.py:187:def bootstrap_identity(
+src/cypherclaw/__init__.py:6:    bootstrap_identity,
+src/cypherclaw/__init__.py:15:    "bootstrap_identity",
+tests/test_emsd_curriculum.py:10:from curriculum.bootstrap import materialize_curriculum
+tests/conftest.py:1:"""Shared test bootstrap."""
+tests/test_wizard.py:6:from promptclaw.bootstrap import init_project
+tests/test_daemon_fallback.py:858:                ("T-002@20260402T175501Z", "write unattended bootstrap", "T1", "pending", "", 3, "", 0, ""),
+tests/test_sample_library.py:21:    bootstrap_sample_index,
+tests/test_sample_library.py:275:def test_bootstrap_sample_index(tmp_path: Path) -> None:
+tests/test_sample_library.py:277:    bootstrap_sample_index(db_path)
+tests/test_sample_library.py:291:def test_bootstrap_sample_index_idempotent(tmp_path: Path) -> None:
+tests/test_sample_library.py:293:    bootstrap_sample_index(db_path)
+tests/test_sample_library.py:294:    bootstrap_sample_index(db_path)
+tests/test_coherence_integration.py:13:from promptclaw.bootstrap import init_project
+tests/test_governor_integration.py:9:- Both daemon entrypoints wire bootstrap_identity before startup.
+tests/test_governor_integration.py:143:# Startup identity wiring: both daemon entrypoints call bootstrap_identity
+tests/test_governor_integration.py:148:    """Verify both daemon entrypoints wire bootstrap_identity before main loop.
+tests/test_governor_integration.py:154:    def test_daemon_py_calls_bootstrap_identity(self) -> None:
+tests/test_governor_integration.py:155:        """daemon.py poll_loop must call bootstrap_identity()."""
+tests/test_governor_integration.py:164:        assert "bootstrap_identity" in calls, (
+tests/test_governor_integration.py:165:            "daemon.py poll_loop() must call bootstrap_identity() before main loop"
+tests/test_governor_integration.py:168:    def test_cypherclaw_daemon_py_calls_bootstrap_identity(self) -> None:
+tests/test_governor_integration.py:169:        """cypherclaw_daemon.py poll_loop must call bootstrap_identity()."""
+tests/test_governor_integration.py:180:        assert "bootstrap_identity" in calls, (
+tests/test_governor_integration.py:181:            "cypherclaw_daemon.py poll_loop() must call bootstrap_identity() before main loop"
+tests/test_governor_integration.py:184:    def test_bootstrap_identity_before_announcer_in_both(self) -> None:
+tests/test_governor_integration.py:185:        """bootstrap_identity must come before FirstBootAnnouncer in both daemons."""
+tests/test_governor_integration.py:195:            bootstrap_line = None
+tests/test_governor_integration.py:198:                if call_name == "bootstrap_identity" and bootstrap_line is None:
+tests/test_governor_integration.py:199:                    bootstrap_line = lineno
+tests/test_governor_integration.py:203:            assert bootstrap_line is not None, (
+tests/test_governor_integration.py:204:                f"{name}: bootstrap_identity not found in poll_loop"
+tests/test_governor_integration.py:209:            assert bootstrap_line < announcer_line, (
+tests/test_governor_integration.py:210:                f"{name}: bootstrap_identity (line {bootstrap_line}) must come "
+tests/test_executable_curriculum.py:11:from curriculum.bootstrap import materialize_curriculum
+tests/test_self_listener_quote_verify.py:21:def _bootstrap_quotes(tmp_path):
+tests/test_self_listener_quote_verify.py:34:    index_path = _bootstrap_quotes(tmp_path)
+tests/test_self_listener_quote_verify.py:48:    index_path = _bootstrap_quotes(tmp_path)
+tests/test_self_listener_quote_verify.py:61:    index_path = _bootstrap_quotes(tmp_path)
+tests/test_bootstrap.py:6:from promptclaw.bootstrap import bootstrap_task_from_prompts, init_project
+tests/test_bootstrap.py:22:    def test_bootstrap_task_includes_three_bootstrap_prompts(self):
+tests/test_bootstrap.py:24:        task_text = bootstrap_task_from_prompts(self.temp_dir)
+tests/test_first_boot.py:19:    bootstrap_identity,
+tests/test_first_boot.py:305:    """Startup bootstrap must persist identity across repeated boots."""
+tests/test_first_boot.py:307:    def test_standalone_bootstrap_reuses_persisted_identity(self, tmp_path):
+tests/test_first_boot.py:310:        first = bootstrap_identity(
+tests/test_first_boot.py:315:        second = bootstrap_identity(
+tests/test_first_boot.py:328:    def test_federated_bootstrap_reuses_persisted_identity(self, tmp_path):
+tests/test_first_boot.py:331:        first = bootstrap_identity(
+tests/test_first_boot.py:337:        second = bootstrap_identity(
+tests/test_first_boot.py:462:# ── bootstrap_identity ─────────────────────────────────────────
+tests/test_first_boot.py:466:    """Tests for the load-or-create bootstrap_identity function."""
+tests/test_first_boot.py:470:        identity = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:479:        first = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:480:        second = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:491:        identity = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:501:        identity = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:510:        identity = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:517:        identity = bootstrap_identity(
+tests/test_first_boot.py:530:# ── Startup flow integration: bootstrap → announce ───────────────
+tests/test_first_boot.py:534:    """Simulate the daemon startup flow: bootstrap_identity then FirstBootAnnouncer.
+tests/test_first_boot.py:545:        # Simulate startup: bootstrap creates identity
+tests/test_first_boot.py:546:        identity = bootstrap_identity(
+tests/test_first_boot.py:574:        first = bootstrap_identity(identity_path=identity_path)
+tests/test_first_boot.py:575:        second = bootstrap_identity(identity_path=identity_path)
+tests/test_first_boot.py:576:        third = bootstrap_identity(identity_path=identity_path)
+tests/test_first_boot.py:587:        identity = bootstrap_identity(mode="standalone", identity_path=identity_path)
+tests/test_orchestrator.py:6:from promptclaw.bootstrap import init_project
+tests/test_resilience_runtime_scripts.py:539:def test_systemd_units_wire_bootstrap_and_runner_services() -> None:
+tests/test_resilience_runtime_scripts.py:540:    bootstrap_unit = (SYSTEMD_DIR / "cypherclaw-bootstrap.service").read_text()
+tests/test_resilience_runtime_scripts.py:543:    assert "ExecStart=/home/user/cypherclaw/tools/init_workdir.sh" in bootstrap_unit
+tests/test_resilience_runtime_scripts.py:544:    assert "Before=cypherclaw.service cypherclaw-sdp-runner.service" in bootstrap_unit
+tests/test_resilience_runtime_scripts.py:546:    assert "After=cypherclaw-bootstrap.service cypherclaw.service" in runner_unit
+tests/test_resilience_runtime_scripts.py:561:    assert "cypherclaw-bootstrap.service" in boot_hardening
+tests/test_config.py:6:from promptclaw.bootstrap import init_project
+
+codex
+The storage code is concentrated in the sample library module and already has bootstrap tests. I’m reading just that implementation plus its closest test file now so I can add the end-to-end regression in the existing test area instead of introducing new surface area.
+exec
+/bin/zsh -lc "sed -n '1,260p' src/cypherclaw/sample_library.py" in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'rg -n "bootstrap_sample_index|sample library|sqlite|storage" src/cypherclaw tests/test_sample_library.py tests/test_sample_library_import.py' in /Users/anthony/Programming/PromptClaw
+ exited 1 in 0ms:
+sed: src/cypherclaw/sample_library.py: No such file or directory
+
+ succeeded in 0ms:
+tests/test_sample_library_import.py:1:"""Tests for manifest-driven sample library imports."""
+tests/test_sample_library_import.py:116:    assert (library_root / "index.sqlite").exists()
+tests/test_sample_library.py:21:    bootstrap_sample_index,
+tests/test_sample_library.py:106:    assert (tmp_path / "index.sqlite").exists()
+tests/test_sample_library.py:265:    db = tmp_path / "index.sqlite"
+tests/test_sample_library.py:266:    db.write_bytes(b"this is not a sqlite database")
+tests/test_sample_library.py:275:def test_bootstrap_sample_index(tmp_path: Path) -> None:
+tests/test_sample_library.py:276:    db_path = tmp_path / "index.sqlite"
+tests/test_sample_library.py:277:    bootstrap_sample_index(db_path)
+tests/test_sample_library.py:281:    import sqlite3
+tests/test_sample_library.py:282:    with sqlite3.connect(db_path) as conn:
+tests/test_sample_library.py:283:        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+tests/test_sample_library.py:291:def test_bootstrap_sample_index_idempotent(tmp_path: Path) -> None:
+tests/test_sample_library.py:292:    db_path = tmp_path / "index.sqlite"
+tests/test_sample_library.py:293:    bootstrap_sample_index(db_path)
+tests/test_sample_library.py:294:    bootstrap_sample_index(db_path)
+tests/test_sample_library.py:296:    import sqlite3
+tests/test_sample_library.py:297:    with sqlite3.connect(db_path) as conn:
+src/cypherclaw/image_api/jobs_db.py:11:import sqlite3
+src/cypherclaw/image_api/jobs_db.py:65:    def _connect(self) -> Iterator[sqlite3.Connection]:
+src/cypherclaw/image_api/jobs_db.py:66:        conn = sqlite3.connect(self.path, isolation_level=None, timeout=10.0)
+src/cypherclaw/image_api/jobs_db.py:67:        conn.row_factory = sqlite3.Row
+src/cypherclaw/image_api/jobs_db.py:160:    def _row_to_record(row: sqlite3.Row) -> JobRecord:
+
+exec
+/bin/zsh -lc "sed -n '1,360p' tests/test_sample_library.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Tests for the controlled CHARACTER_TAGS vocabulary, SampleRecord validation, and SampleLibrary store."""
+from __future__ import annotations
+
+import os
+import sys
+import wave
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
+
+from senseweave.sample_library import (
+    CHARACTER_TAGS,
+    SAMPLE_SUBDIRS,
+    SampleLibrary,
+    SampleLibraryLayout,
+    SampleRecord,
+    bootstrap_sample_index,
+    create_sample_library_layout,
+)
+
+
+CANONICAL_TAGS = frozenset(
+    {
+        "warm",
+        "metallic",
+        "wind",
+        "pulse",
+        "voice",
+        "mechanical",
+        "water",
+        "sustained",
+        "transient",
+        "percussive",
+        "harmonic",
+        "noisy",
+    }
+)
+
+
+def test_character_tags_is_canonical_twelve_tag_frozenset() -> None:
+    assert isinstance(CHARACTER_TAGS, frozenset)
+    assert len(CHARACTER_TAGS) == 12
+    assert CHARACTER_TAGS == CANONICAL_TAGS
+
+
+def test_sample_record_accepts_known_tags() -> None:
+    record = SampleRecord(character_tags=frozenset({"warm", "harmonic"}))
+    assert record.character_tags == frozenset({"warm", "harmonic"})
+
+
+def test_sample_record_rejects_unknown_tag() -> None:
+    with pytest.raises(ValueError, match="unknown character_tags"):
+        SampleRecord(character_tags=frozenset({"warm", "sparkly"}))
+
+
+def test_sample_record_rejects_all_unknown_tags() -> None:
+    with pytest.raises(ValueError, match="unknown character_tags"):
+        SampleRecord(character_tags=frozenset({"sparkly", "buzzy"}))
+
+
+# ---------------------------------------------------------------------------
+# SampleLibrary on-disk store
+# ---------------------------------------------------------------------------
+
+
+def _touch_wav(path: Path) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(48_000)
+        w.writeframes(b"\x00\x00")
+    return path
+
+
+def _make_record(
+    path: Path,
+    *,
+    sample_id: str,
+    source: str = "human",
+    tags: frozenset[str] = frozenset({"warm", "harmonic"}),
+    pitch_hz: float | None = 220.0,
+    arc_phase: str | None = "Emergence",
+    mood: float | None = 0.2,
+    captured_at: datetime | None = None,
+) -> SampleRecord:
+    return SampleRecord(
+        character_tags=tags,
+        sample_id=sample_id,
+        path=path,
+        source=source,
+        pitch_hz=pitch_hz,
+        arc_phase=arc_phase,
+        mood=mood,
+        captured_at=captured_at or datetime(2026, 4, 25, 12, 0, tzinfo=timezone.utc),
+    )
+
+
+def test_library_creates_index_and_persists_record(tmp_path: Path) -> None:
+    wav = _touch_wav(tmp_path / "samples" / "human" / "phrase.wav")
+    library = SampleLibrary(tmp_path)
+    assert (tmp_path / "index.sqlite").exists()
+
+    sid = library.add(_make_record(wav, sample_id="s1"))
+    assert sid == "s1"
+
+    rows = library.find()
+    assert len(rows) == 1
+    assert rows[0].sample_id == "s1"
+    assert rows[0].path == wav
+    assert rows[0].character_tags == frozenset({"warm", "harmonic"})
+    library.close()
+
+
+def test_library_add_rejects_missing_file(tmp_path: Path) -> None:
+    library = SampleLibrary(tmp_path)
+    ghost = tmp_path / "samples" / "human" / "ghost.wav"
+    with pytest.raises(FileNotFoundError):
+        library.add(_make_record(ghost, sample_id="ghost"))
+    library.close()
+
+
+def test_library_filters_by_each_field(tmp_path: Path) -> None:
+    wavs = [_touch_wav(tmp_path / "samples" / f"s{i}.wav") for i in range(4)]
+    library = SampleLibrary(tmp_path)
+    base = datetime(2026, 4, 25, 12, 0, tzinfo=timezone.utc)
+
+    library.add(_make_record(
+        wavs[0], sample_id="a", source="human",
+        tags=frozenset({"warm", "harmonic"}),
+        pitch_hz=220.0, arc_phase="Emergence", mood=0.4,
+        captured_at=base,
+    ))
+    library.add(_make_record(
+        wavs[1], sample_id="b", source="library",
+        tags=frozenset({"metallic", "transient"}),
+        pitch_hz=880.0, arc_phase="Convergence", mood=-0.3,
+        captured_at=base + timedelta(seconds=1),
+    ))
+    library.add(_make_record(
+        wavs[2], sample_id="c", source="human",
+        tags=frozenset({"warm", "voice"}),
+        pitch_hz=440.0, arc_phase="Convergence", mood=0.1,
+        captured_at=base + timedelta(seconds=2),
+    ))
+    library.add(_make_record(
+        wavs[3], sample_id="d", source="self",
+        tags=frozenset({"pulse", "percussive", "noisy"}),
+        pitch_hz=110.0, arc_phase="Emergence", mood=0.8,
+        captured_at=base + timedelta(seconds=3),
+    ))
+
+    by_source = [r.sample_id for r in library.find(source="human")]
+    assert by_source == ["c", "a"]  # most-recent-first
+
+    any_warm = {r.sample_id for r in library.find(character_any=["warm"])}
+    assert any_warm == {"a", "c"}
+
+    all_pulse_perc = [r.sample_id for r in library.find(character_all=["pulse", "percussive"])]
+    assert all_pulse_perc == ["d"]
+
+    pitch_mid = [r.sample_id for r in library.find(pitch_band=(200.0, 500.0))]
+    assert pitch_mid == ["c", "a"]
+
+    by_phase = [r.sample_id for r in library.find(arc_phase="Convergence")]
+    assert by_phase == ["c", "b"]
+
+    by_mood = [r.sample_id for r in library.find(mood_range=(0.0, 0.5))]
+    assert by_mood == ["c", "a"]
+
+    limited = [r.sample_id for r in library.find(limit=2)]
+    assert limited == ["d", "c"]
+
+    library.close()
+
+
+def test_library_find_empty_result(tmp_path: Path) -> None:
+    wav = _touch_wav(tmp_path / "s.wav")
+    library = SampleLibrary(tmp_path)
+    library.add(_make_record(wav, sample_id="only", source="human"))
+
+    assert library.find(source="theramini") == []
+    assert library.find(arc_phase="Crystallization") == []
+    assert library.find(character_all=["wind", "water"]) == []
+    assert library.find(pitch_band=(2000.0, 3000.0)) == []
+    assert library.find(mood_range=(-1.0, -0.9)) == []
+    library.close()
+
+
+# ---------------------------------------------------------------------------
+# create_sample_library_layout
+# ---------------------------------------------------------------------------
+
+
+EXPECTED_SUBDIRS = ("library", "self", "room", "contact", "theramini", "keyboard")
+
+
+def test_sample_subdirs_constant_matches_spec() -> None:
+    assert SAMPLE_SUBDIRS == EXPECTED_SUBDIRS
+
+
+def test_create_sample_library_layout_creates_all_six_subdirs(tmp_path: Path) -> None:
+    base = tmp_path / "samples"
+    layout = create_sample_library_layout(base)
+
+    assert isinstance(layout, SampleLibraryLayout)
+    assert layout.base == base
+    assert base.is_dir()
+    for name in EXPECTED_SUBDIRS:
+        assert (base / name).is_dir()
+    assert layout.as_dict() == {name: base / name for name in EXPECTED_SUBDIRS}
+
+
+def test_create_sample_library_layout_accepts_str_base(tmp_path: Path) -> None:
+    base = tmp_path / "samples"
+    layout = create_sample_library_layout(str(base))
+    assert layout.base == Path(str(base))
+    assert layout.library == base / "library"
+
+
+def test_create_sample_library_layout_is_idempotent(tmp_path: Path) -> None:
+    base = tmp_path / "samples"
+    first = create_sample_library_layout(base)
+    sentinel = first.library / "keep.txt"
+    sentinel.write_text("preserved")
+
+    second = create_sample_library_layout(base)
+    assert second == first
+    assert sentinel.read_text() == "preserved"
+
+
+def test_create_sample_library_layout_creates_missing_parents(tmp_path: Path) -> None:
+    base = tmp_path / "deep" / "nested" / "samples"
+    layout = create_sample_library_layout(base)
+    assert base.is_dir()
+    assert layout.theramini.is_dir()
+
+
+def test_create_sample_library_layout_rejects_file_at_subdir_path(tmp_path: Path) -> None:
+    base = tmp_path / "samples"
+    base.mkdir()
+    (base / "room").write_text("oops")
+    with pytest.raises(NotADirectoryError):
+        create_sample_library_layout(base)
+
+
+def test_create_sample_library_layout_rejects_file_at_base(tmp_path: Path) -> None:
+    base = tmp_path / "samples"
+    base.parent.mkdir(parents=True, exist_ok=True)
+    base.write_text("not a dir")
+    with pytest.raises((NotADirectoryError, FileExistsError)):
+        create_sample_library_layout(base)
+
+
+def test_library_rebuilds_corrupted_index(tmp_path: Path) -> None:
+    wav = _touch_wav(tmp_path / "x.wav")
+    library = SampleLibrary(tmp_path)
+    library.add(_make_record(wav, sample_id="pre"))
+    library.close()
+
+    db = tmp_path / "index.sqlite"
+    db.write_bytes(b"this is not a sqlite database")
+
+    rebuilt = SampleLibrary(tmp_path)
+    assert rebuilt.find() == []
+    rebuilt.add(_make_record(wav, sample_id="post"))
+    assert [r.sample_id for r in rebuilt.find()] == ["post"]
+    rebuilt.close()
+
+
+def test_bootstrap_sample_index(tmp_path: Path) -> None:
+    db_path = tmp_path / "index.sqlite"
+    bootstrap_sample_index(db_path)
+    
+    assert db_path.exists()
+    
+    import sqlite3
+    with sqlite3.connect(db_path) as conn:
+        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert "schema_version" in tables
+        assert "samples" in tables
+        
+        version = conn.execute("SELECT version FROM schema_version").fetchone()[0]
+        assert version == 1
+
+
+def test_bootstrap_sample_index_idempotent(tmp_path: Path) -> None:
+    db_path = tmp_path / "index.sqlite"
+    bootstrap_sample_index(db_path)
+    bootstrap_sample_index(db_path)
+    
+    import sqlite3
+    with sqlite3.connect(db_path) as conn:
+        count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+        assert count == 1
+
+
+codex
+The tests import the sample library from `my-claw/tools/senseweave`, not `src/`, so the change is there. I’m reading that module next and then I’ll add the failing end-to-end test against the same import path the suite already uses.
+exec
+/bin/zsh -lc "sed -n '1,320p' my-claw/tools/senseweave/sample_library.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Sample library vocabulary, record schema, and on-disk SQLite store.
+
+Defines the controlled `CHARACTER_TAGS` vocabulary used to describe the
+timbral character of recorded and curated samples. `SampleRecord` carries
+the sample-id, on-disk path, capture source, validated character tags,
+pitch (Hz), arc-phase context, mood, and capture timestamp.
+
+`SampleLibrary(root)` opens (or creates) ``index.sqlite`` under ``root``,
+maintains a `samples` row per record alongside an FTS5 index over
+`character_tags`, and exposes :meth:`SampleLibrary.find` for querying by
+source / tag-overlap / pitch-band / arc-phase / mood-range with
+most-recent-first ordering. A corrupted index is detected on open and
+rebuilt empty so callers can re-add records from canonical state.
+"""
+from __future__ import annotations
+
+import json
+import sqlite3
+import uuid
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass, field, replace
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Optional
+
+
+SAMPLE_SUBDIRS: tuple[str, ...] = (
+    "library",
+    "self",
+    "room",
+    "contact",
+    "theramini",
+    "keyboard",
+)
+
+
+@dataclass(frozen=True)
+class SampleLibraryLayout:
+    """Resolved paths for the cypherclaw sample library directory tree.
+
+    See ``docs/cypherclaw-sample-directory-layout.md``. ``self_`` maps to
+    the on-disk ``self/`` subdir (the trailing underscore avoids the
+    dataclass field-name clash with the implicit ``self`` parameter).
+    """
+
+    base: Path
+    library: Path
+    self_: Path
+    room: Path
+    contact: Path
+    theramini: Path
+    keyboard: Path
+
+    def as_dict(self) -> dict[str, Path]:
+        """Return a mapping keyed by on-disk subdir name (``self`` not ``self_``)."""
+        return {
+            "library": self.library,
+            "self": self.self_,
+            "room": self.room,
+            "contact": self.contact,
+            "theramini": self.theramini,
+            "keyboard": self.keyboard,
+        }
+
+
+def create_sample_library_layout(base_path: Path | str) -> SampleLibraryLayout:
+    """Create the six cypherclaw sample subdirs idempotently under ``base_path``.
+
+    Creates ``base_path`` and each subdir (``library/``, ``self/``,
+    ``room/``, ``contact/``, ``theramini/``, ``keyboard/``) with
+    ``parents=True, exist_ok=True``. Returns a :class:`SampleLibraryLayout`
+    with resolved paths. Pre-existing directories are left untouched;
+    pre-existing files at any target path raise ``NotADirectoryError``.
+    """
+    base = Path(base_path)
+    base.mkdir(parents=True, exist_ok=True)
+    if not base.is_dir():
+        raise NotADirectoryError(f"sample library base is not a directory: {base}")
+
+    resolved: dict[str, Path] = {}
+    for name in SAMPLE_SUBDIRS:
+        sub = base / name
+        if sub.exists() and not sub.is_dir():
+            raise NotADirectoryError(f"sample subdir path is not a directory: {sub}")
+        sub.mkdir(parents=True, exist_ok=True)
+        resolved[name] = sub
+
+    return SampleLibraryLayout(
+        base=base,
+        library=resolved["library"],
+        self_=resolved["self"],
+        room=resolved["room"],
+        contact=resolved["contact"],
+        theramini=resolved["theramini"],
+        keyboard=resolved["keyboard"],
+    )
+
+
+CHARACTER_TAGS: frozenset[str] = frozenset(
+    {
+        "warm",
+        "metallic",
+        "wind",
+        "pulse",
+        "voice",
+        "mechanical",
+        "water",
+        "sustained",
+        "transient",
+        "percussive",
+        "harmonic",
+        "noisy",
+    }
+)
+
+
+@dataclass(frozen=True)
+class SampleRecord:
+    """Sample-library record.
+
+    Only ``character_tags`` is required (validated against
+    :data:`CHARACTER_TAGS`). The remaining fields default to "unset"
+    sentinels so the T-025 vocabulary tests can keep constructing
+    tag-only records; :meth:`SampleLibrary.add` requires ``path`` to be
+    set and the file to exist on disk.
+    """
+
+    character_tags: frozenset[str]
+    sample_id: str = ""
+    path: Optional[Path] = None
+    source: str = ""
+    pitch_hz: Optional[float] = None
+    arc_phase: Optional[str] = None
+    mood: Optional[float] = None
+    captured_at: Optional[datetime] = None
+    arc_context: dict | str = ""
+    pitch: Optional[float] = None
+    duration: float = 0.0
+    rms: float = 0.0
+    peak: float = 0.0
+    transient_density: float = 0.0
+    extras: dict[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        tags = frozenset(self.character_tags)
+        unknown = tags - CHARACTER_TAGS
+        if unknown:
+            raise ValueError(
+                f"unknown character_tags: {sorted(unknown)}; "
+                f"allowed: {sorted(CHARACTER_TAGS)}"
+            )
+        if not isinstance(self.character_tags, frozenset):
+            object.__setattr__(self, "character_tags", tags)
+        if not isinstance(self.extras, Mapping):
+            raise TypeError("extras must be a mapping of string keys/values")
+        normalized_extras = {
+            str(key): str(value)
+            for key, value in dict(self.extras).items()
+        }
+        if normalized_extras != self.extras:
+            object.__setattr__(self, "extras", normalized_extras)
+        if self.rms < 0:
+            raise ValueError(f"rms must be non-negative, got {self.rms}")
+        if self.peak < 0:
+            raise ValueError(f"peak must be non-negative, got {self.peak}")
+        if self.transient_density < 0:
+            raise ValueError(
+                f"transient_density must be non-negative, got {self.transient_density}"
+            )
+        if self.peak < self.rms:
+            raise ValueError(
+                f"peak ({self.peak}) must be >= rms ({self.rms})"
+            )
+
+    def to_dict(self) -> dict:
+        """Serialize to a JSON-compatible dict for catalog persistence."""
+        return {
+            "character_tags": sorted(self.character_tags),
+            "sample_id": self.sample_id,
+            "path": str(self.path) if self.path is not None else None,
+            "source": self.source,
+            "pitch_hz": self.pitch_hz,
+            "arc_phase": self.arc_phase,
+            "mood": self.mood,
+            "captured_at": (
+                self.captured_at.isoformat()
+                if self.captured_at is not None
+                else None
+            ),
+            "arc_context": self.arc_context,
+            "pitch": self.pitch,
+            "duration": self.duration,
+            "rms": self.rms,
+            "peak": self.peak,
+            "transient_density": self.transient_density,
+            "extras": dict(self.extras),
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict) -> "SampleRecord":
+        """Restore from a dict produced by :meth:`to_dict`, coercing types."""
+        data = dict(payload)
+        tags_value = data.get("character_tags", ())
+        data["character_tags"] = frozenset(tags_value) if tags_value else frozenset()
+        path_value = data.get("path")
+        data["path"] = Path(path_value) if path_value is not None else None
+        captured_value = data.get("captured_at")
+        if isinstance(captured_value, str):
+            data["captured_at"] = datetime.fromisoformat(captured_value)
+        extras_value = data.get("extras", {})
+        data["extras"] = dict(extras_value) if isinstance(extras_value, Mapping) else {}
+        return cls(**data)
+
+
+_SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS schema_version (
+    version INTEGER PRIMARY KEY,
+    applied_at TEXT NOT NULL
+);
+INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES (1, CURRENT_TIMESTAMP);
+
+CREATE TABLE IF NOT EXISTS samples (
+    sample_id TEXT PRIMARY KEY,
+    path TEXT NOT NULL,
+    source TEXT NOT NULL,
+    character_tags TEXT NOT NULL,
+    pitch_hz REAL,
+    arc_phase TEXT,
+    mood REAL,
+    captured_at TEXT NOT NULL,
+    record_json TEXT NOT NULL DEFAULT '{}'
+);
+CREATE VIRTUAL TABLE IF NOT EXISTS samples_tags_fts USING fts5(
+    sample_id UNINDEXED,
+    character_tags,
+    tokenize='unicode61'
+);
+"""
+
+def bootstrap_sample_index(db_path: Path | str) -> None:
+    """Create the SQLite index file at the given path with an initial schema stub."""
+    path = Path(db_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(path) as conn:
+        conn.executescript(_SCHEMA_SQL)
+        conn.commit()
+
+
+
+class SampleLibrary:
+    """On-disk sample store backed by ``index.sqlite`` under ``root``."""
+
+    def __init__(self, root: Path) -> None:
+        self.root = Path(root)
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.db_path = self.root / "index.sqlite"
+        self._conn: sqlite3.Connection
+        self._open()
+
+    def _open(self) -> None:
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.row_factory = sqlite3.Row
+            check = conn.execute("PRAGMA integrity_check").fetchone()
+            if check is None or (check[0] or "").lower() != "ok":
+                conn.close()
+                self._rebuild()
+                return
+            self._conn = conn
+            self._ensure_schema()
+        except sqlite3.DatabaseError:
+            self._rebuild()
+
+    def _rebuild(self) -> None:
+        if self.db_path.exists():
+            self.db_path.unlink()
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        self._conn = conn
+        self._ensure_schema()
+
+    def _ensure_schema(self) -> None:
+        self._conn.executescript(_SCHEMA_SQL)
+        columns = {
+            str(row["name"])
+            for row in self._conn.execute("PRAGMA table_info(samples)")
+        }
+        if "record_json" not in columns:
+            self._conn.execute(
+                "ALTER TABLE samples ADD COLUMN record_json TEXT NOT NULL DEFAULT '{}'"
+            )
+        self._conn.commit()
+
+    def add(self, record: SampleRecord) -> str:
+        """Persist ``record`` and verify its on-disk file exists.
+
+        Returns the assigned ``sample_id`` (auto-generated if the record
+        did not carry one). Raises ``FileNotFoundError`` if ``path`` is
+        unset or missing.
+        """
+        if record.path is None:
+            raise FileNotFoundError("SampleRecord.path is required to persist")
+        path = Path(record.path)
+        if not path.exists():
+            raise FileNotFoundError(f"sample file missing: {path}")
+
+        sample_id = record.sample_id or uuid.uuid4().hex
+        captured = record.captured_at or datetime.now(timezone.utc)
+        tags_text = " ".join(sorted(record.character_tags))
+        stored_record = replace(
+            record,
+            sample_id=sample_id,
+            path=path,
+            captured_at=captured,
+        )
+        record_json = json.dumps(stored_record.to_dict(), sort_keys=True)
+
+        self._conn.execute(
+            """
+            INSERT OR REPLACE INTO samples
+
+exec
+/bin/zsh -lc "sed -n '320,520p' my-claw/tools/senseweave/sample_library.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+            INSERT OR REPLACE INTO samples
+                (sample_id, path, source, character_tags,
+                 pitch_hz, arc_phase, mood, captured_at, record_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                sample_id,
+                str(path),
+                record.source,
+                tags_text,
+                record.pitch_hz,
+                record.arc_phase,
+                record.mood,
+                captured.isoformat(),
+                record_json,
+            ),
+        )
+        self._conn.execute(
+            "DELETE FROM samples_tags_fts WHERE sample_id = ?", (sample_id,)
+        )
+        self._conn.execute(
+            "INSERT INTO samples_tags_fts (sample_id, character_tags) VALUES (?, ?)",
+            (sample_id, tags_text),
+        )
+        self._conn.commit()
+        return sample_id
+
+    def find(
+        self,
+        *,
+        source: Optional[str] = None,
+        character_any: Optional[Iterable[str]] = None,
+        character_all: Optional[Iterable[str]] = None,
+        pitch_band: Optional[tuple[float, float]] = None,
+        arc_phase: Optional[str] = None,
+        mood_range: Optional[tuple[float, float]] = None,
+        limit: Optional[int] = None,
+    ) -> list[SampleRecord]:
+        """Return records matching the given filters, most-recent-first."""
+        clauses: list[str] = []
+        params: list[object] = []
+
+        if source is not None:
+            clauses.append("source = ?")
+            params.append(source)
+        if arc_phase is not None:
+            clauses.append("arc_phase = ?")
+            params.append(arc_phase)
+        if pitch_band is not None:
+            lo, hi = pitch_band
+            clauses.append("pitch_hz IS NOT NULL AND pitch_hz BETWEEN ? AND ?")
+            params.extend([lo, hi])
+        if mood_range is not None:
+            lo, hi = mood_range
+            clauses.append("mood IS NOT NULL AND mood BETWEEN ? AND ?")
+            params.extend([lo, hi])
+        if character_any:
+            any_tags = [t for t in character_any if t]
+            if any_tags:
+                fts_query = " OR ".join(any_tags)
+                clauses.append(
+                    "sample_id IN (SELECT sample_id FROM samples_tags_fts "
+                    "WHERE samples_tags_fts MATCH ?)"
+                )
+                params.append(fts_query)
+
+        sql = "SELECT * FROM samples"
+        if clauses:
+            sql += " WHERE " + " AND ".join(clauses)
+        sql += " ORDER BY captured_at DESC, sample_id DESC"
+
+        rows = list(self._conn.execute(sql, params))
+
+        if character_all:
+            required = {t for t in character_all if t}
+            if required:
+                rows = [
+                    r
+                    for r in rows
+                    if required.issubset(set((r["character_tags"] or "").split()))
+                ]
+
+        if limit is not None:
+            rows = rows[:limit]
+
+        return [self._row_to_record(r) for r in rows]
+
+    def _row_to_record(self, row: sqlite3.Row) -> SampleRecord:
+        payload_text = row["record_json"] if "record_json" in row.keys() else None
+        if isinstance(payload_text, str) and payload_text not in {"", "{}"}:
+            payload = json.loads(payload_text)
+            return SampleRecord.from_dict(payload)
+        tags_text = row["character_tags"] or ""
+        tags = frozenset(tags_text.split()) if tags_text else frozenset()
+        captured = datetime.fromisoformat(row["captured_at"])
+        return SampleRecord(
+            character_tags=tags,
+            sample_id=row["sample_id"],
+            path=Path(row["path"]),
+            source=row["source"],
+            pitch_hz=row["pitch_hz"],
+            arc_phase=row["arc_phase"],
+            mood=row["mood"],
+            captured_at=captured,
+            extras={},
+        )
+
+    def close(self) -> None:
+        self._conn.close()
+
+    def __enter__(self) -> "SampleLibrary":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()
+
+exec
+/bin/zsh -lc "sed -n '1,220p' tests/test_sample_library_import.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Tests for manifest-driven sample library imports."""
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
+
+from sample_library_import import main
+from senseweave.sample_library import SampleLibrary
+
+
+def _write_audio(path: Path, payload: bytes = b"audio-bytes") -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(payload)
+    return path
+
+
+def _write_manifest(manifest_path: Path) -> tuple[Path, Path, Path]:
+    source_root = manifest_path.parent / "inputs"
+    single = _write_audio(source_root / "field notes" / "single voice memo.wav")
+    stem_dir = source_root / "song stems"
+    drum = _write_audio(stem_dir / "tight kick.wav")
+    pad = _write_audio(stem_dir / "warm pad.aif")
+    _write_audio(stem_dir / "skip me.wav")
+    (stem_dir / "notes.txt").write_text("ignore me")
+
+    manifest_path.write_text(
+        "\n".join(
+            [
+                'captured_by = "anthony"',
+                "",
+                "[[imports]]",
+                'path = "inputs/field notes/single voice memo.wav"',
+                'character_tags = ["voice", "noisy"]',
+                'extras = { collection = "field-notes" }',
+                "",
+                "[[imports]]",
+                'path = "inputs/song stems"',
+                "recursive = true",
+                'include = ["*.wav", "*.aif"]',
+                'exclude = ["skip*"]',
+                'captured_by = "anthony-worker-drive"',
+                'character_tags = ["harmonic", "sustained"]',
+                'extras = { collection = "song-stems" }',
+                "",
+            ]
+        )
+    )
+    return single, drum, pad
+
+
+def test_import_manifest_supports_single_file_and_directory_entries(tmp_path: Path) -> None:
+    manifest = tmp_path / "manifest.toml"
+    single, drum, pad = _write_manifest(manifest)
+    library_root = tmp_path / "samples"
+
+    rc = main([str(manifest), "--library-root", str(library_root)])
+
+    assert rc == 0
+    library = SampleLibrary(library_root)
+    records = library.find()
+    library.close()
+
+    assert len(records) == 3
+    originals = {record.extras["original_path"] for record in records}
+    assert originals == {str(single.resolve()), str(drum.resolve()), str(pad.resolve())}
+
+    copied_paths = {record.path for record in records}
+    assert all(path is not None and path.parent == library_root / "library" for path in copied_paths)
+    assert {path.suffix for path in copied_paths} == {".wav", ".aif"}
+
+
+def test_imported_records_preserve_provenance_extras(tmp_path: Path) -> None:
+    manifest = tmp_path / "manifest.toml"
+    single, drum, pad = _write_manifest(manifest)
+    library_root = tmp_path / "samples"
+
+    rc = main([str(manifest), "--library-root", str(library_root)])
+
+    assert rc == 0
+    library = SampleLibrary(library_root)
+    records = {record.extras["original_path"]: record for record in library.find()}
+    library.close()
+
+    single_record = records[str(single.resolve())]
+    assert single_record.character_tags == frozenset({"voice", "noisy"})
+    assert single_record.extras == {
+        "collection": "field-notes",
+        "original_path": str(single.resolve()),
+        "captured_by": "anthony",
+    }
+
+    for source_path in (str(drum.resolve()), str(pad.resolve())):
+        record = records[source_path]
+        assert record.character_tags == frozenset({"harmonic", "sustained"})
+        assert record.extras == {
+            "collection": "song-stems",
+            "original_path": source_path,
+            "captured_by": "anthony-worker-drive",
+        }
+
+
+def test_main_imports_manifest_and_reports_count(tmp_path: Path, capsys) -> None:
+    manifest = tmp_path / "manifest.toml"
+    _write_manifest(manifest)
+    library_root = tmp_path / "samples"
+
+    rc = main([str(manifest), "--library-root", str(library_root)])
+
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "Imported 3 samples" in out
+    assert (library_root / "index.sqlite").exists()
+    copied = sorted((library_root / "library").iterdir())
+    assert len(copied) == 3
+
+codex
+I have the exact surface now: `create_sample_library_layout()` handles directories and `bootstrap_sample_index()` handles SQLite, both in the same module. I’m checking how that module is exported so the new callable lands in the same public entry point rather than adding a parallel API.
+exec
+/bin/zsh -lc "sed -n '1,220p' my-claw/tools/senseweave/__init__.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+exec
+/bin/zsh -lc 'rg -n "create_sample_library_layout|bootstrap_sample_index|SampleLibraryLayout|sample_library import|from senseweave.sample_library import" my-claw/tools/senseweave tests' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_sample_library_import.py:12:from senseweave.sample_library import SampleLibrary
+my-claw/tools/senseweave/sample_library.py:38:class SampleLibraryLayout:
+my-claw/tools/senseweave/sample_library.py:66:def create_sample_library_layout(base_path: Path | str) -> SampleLibraryLayout:
+my-claw/tools/senseweave/sample_library.py:71:    ``parents=True, exist_ok=True``. Returns a :class:`SampleLibraryLayout`
+my-claw/tools/senseweave/sample_library.py:88:    return SampleLibraryLayout(
+my-claw/tools/senseweave/sample_library.py:240:def bootstrap_sample_index(db_path: Path | str) -> None:
+tests/test_sample_record_audio_analysis.py:13:from senseweave.sample_library import SampleRecord
+tests/test_sample_record_skeleton.py:15:from senseweave.sample_library import SampleRecord
+tests/test_sample_library.py:15:from senseweave.sample_library import (
+tests/test_sample_library.py:19:    SampleLibraryLayout,
+tests/test_sample_library.py:21:    bootstrap_sample_index,
+tests/test_sample_library.py:22:    create_sample_library_layout,
+tests/test_sample_library.py:195:# create_sample_library_layout
+tests/test_sample_library.py:206:def test_create_sample_library_layout_creates_all_six_subdirs(tmp_path: Path) -> None:
+tests/test_sample_library.py:208:    layout = create_sample_library_layout(base)
+tests/test_sample_library.py:210:    assert isinstance(layout, SampleLibraryLayout)
+tests/test_sample_library.py:218:def test_create_sample_library_layout_accepts_str_base(tmp_path: Path) -> None:
+tests/test_sample_library.py:220:    layout = create_sample_library_layout(str(base))
+tests/test_sample_library.py:225:def test_create_sample_library_layout_is_idempotent(tmp_path: Path) -> None:
+tests/test_sample_library.py:227:    first = create_sample_library_layout(base)
+tests/test_sample_library.py:231:    second = create_sample_library_layout(base)
+tests/test_sample_library.py:236:def test_create_sample_library_layout_creates_missing_parents(tmp_path: Path) -> None:
+tests/test_sample_library.py:238:    layout = create_sample_library_layout(base)
+tests/test_sample_library.py:243:def test_create_sample_library_layout_rejects_file_at_subdir_path(tmp_path: Path) -> None:
+tests/test_sample_library.py:248:        create_sample_library_layout(base)
+tests/test_sample_library.py:251:def test_create_sample_library_layout_rejects_file_at_base(tmp_path: Path) -> None:
+tests/test_sample_library.py:256:        create_sample_library_layout(base)
+tests/test_sample_library.py:275:def test_bootstrap_sample_index(tmp_path: Path) -> None:
+tests/test_sample_library.py:277:    bootstrap_sample_index(db_path)
+tests/test_sample_library.py:291:def test_bootstrap_sample_index_idempotent(tmp_path: Path) -> None:
+tests/test_sample_library.py:293:    bootstrap_sample_index(db_path)
+tests/test_sample_library.py:294:    bootstrap_sample_index(db_path)
+tests/test_sample_record_json.py:13:from senseweave.sample_library import SampleRecord
+tests/test_sample_selector.py:16:from senseweave.sample_library import SampleLibrary, SampleRecord
+tests/test_sample_record_context.py:13:from senseweave.sample_library import SampleRecord
+my-claw/tools/senseweave/sample_selector.py:19:from senseweave.sample_library import SampleLibrary, SampleRecord
+
+exec
+/bin/zsh -lc 'rg -n "sample storage|sample directory layout|index.sqlite" docs my-claw/tools/senseweave tests' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_sample_library_import.py:116:    assert (library_root / "index.sqlite").exists()
+my-claw/tools/senseweave/sample_library.py:8:`SampleLibrary(root)` opens (or creates) ``index.sqlite`` under ``root``,
+my-claw/tools/senseweave/sample_library.py:251:    """On-disk sample store backed by ``index.sqlite`` under ``root``."""
+my-claw/tools/senseweave/sample_library.py:256:        self.db_path = self.root / "index.sqlite"
+tests/test_sample_capture_verify.py:58:    index_path = tmp_path / "index.sqlite"
+tests/test_sample_library.py:106:    assert (tmp_path / "index.sqlite").exists()
+tests/test_sample_library.py:265:    db = tmp_path / "index.sqlite"
+tests/test_sample_library.py:276:    db_path = tmp_path / "index.sqlite"
+tests/test_sample_library.py:292:    db_path = tmp_path / "index.sqlite"
+tests/test_sample_capture_daemon.py:880:    index_path = tmp_path / "index.sqlite"
+tests/test_sample_capture_daemon.py:937:    with sqlite3.connect(tmp_path / "index.sqlite") as con:
+tests/test_sample_capture_daemon.py:1048:    with sqlite3.connect(tmp_path / "index.sqlite") as con:
+tests/test_sample_capture_daemon.py:1183:    with sqlite3.connect(tmp_path / "index.sqlite") as con:
+tests/test_self_listener_quote_verify.py:30:    return tmp_path / "index.sqlite"
+docs/cypherclaw-sampler-architecture.md:43:| `my-claw/tools/sample_capture_verify.py` | Deterministic smoke verifier. Synthesizes a known room sound, drives `save_capture`, and asserts the descriptor lands in `index.sqlite` with the expected context and acoustic tags. Used to sanity-check the capture pipeline without requiring live audio hardware. |
+docs/cypherclaw-sampler-architecture.md:82:   inserts a row into `index.sqlite` carrying the flattened tag
+docs/cypherclaw-sampler-architecture.md:198:  `index.sqlite`.
+docs/cypherclaw-sample-directory-layout.md:14:├── index.sqlite
+docs/cypherclaw-sample-directory-layout.md:25:* **`index.sqlite`**: The primary SQLite database file used to index all samples within the subdirectories, store metadata, tag information, and maintain relationships between samples and their sources. It must reside in the root of the `samples/` directory.
+tests/test_composer_quote_verify.py:41:    assert _self_quote_count(tmp_path / "index.sqlite") == PIECES_TO_RUN
+tests/test_cypherclaw_sampler_architecture.py:74:        "index.sqlite",
+
+exec
+/bin/zsh -lc 'rg -n "init_sample_storage" .' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+./sdp/logs/claude_1777183730.log:5:[{"id":"a","description":"Document directory layout spec: define `/home/user/cypherclaw-data/samples/` tree with `library/`, `self/`, `room/`, `contact/`, `theramini/`, `keyboard/` subdirs and `index.sqlite` location; write to a markdown spec file describing purpose of each subdir.","tier":"T1"},{"id":"b","description":"Implement directory creation helper: add a Python function (with tests) that creates the six subdirs idempotently under a configurable base path, returning paths as a dataclass/namedtuple.","tier":"T1"},{"id":"c","description":"Implement `index.sqlite` bootstrap: add a function (with tests) that creates the SQLite index file at the layout root with an initial schema stub and a schema_version table.","tier":"T1"},{"id":"d","description":"Wire layout init into sample-library entry point: expose a `init_sample_storage(base)` callable that invokes the directory + sqlite bootstrap together, with an end-to-end test against a tmp path.","tier":"T1"}]
+
+codex
+I’ve got the minimal shape: add `init_sample_storage(base)` beside the existing helpers, make it create the six subdirs and `index.sqlite`, and return the resolved layout so callers keep the same path access pattern. I’m editing the existing sample-library test file first to add the end-to-end failure case, then I’ll wire the helper into the module and run focused validation before the full required checks.
+apply patch
+patch: completed
+/Users/anthony/Programming/PromptClaw/tests/test_sample_library.py
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+codex
+The regression is in place. I’m running the targeted sample-library test file now to confirm the new public callable is the missing piece and keep the implementation change tightly scoped.
+exec
+/bin/zsh -lc 'pytest tests/test_sample_library.py -x --tb=short' in /Users/anthony/Programming/PromptClaw
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+ exited 2 in 798ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 0 items / 1 error
+
+==================================== ERRORS ====================================
+________________ ERROR collecting tests/test_sample_library.py _________________
+ImportError while importing test module '/Users/anthony/Programming/PromptClaw/tests/test_sample_library.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/anaconda3/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_sample_library.py:15: in <module>
+    from senseweave.sample_library import (
+E   ImportError: cannot import name 'init_sample_storage' from 'senseweave.sample_library' (/Users/anthony/Programming/PromptClaw/tests/../my-claw/tools/senseweave/sample_library.py)
+=========================== short test summary info ============================
+ERROR tests/test_sample_library.py
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+=============================== 1 error in 0.14s ===============================
+
+codex
+I confirmed the test fails exactly on the missing import, so the implementation scope is clean. I’m adding the new helper directly in `senseweave.sample_library`, implemented as a thin composition of the existing layout and SQLite bootstrap functions.
+apply patch
+patch: completed
+/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/sample_library.py
+diff --git a/my-claw/tools/senseweave/sample_library.py b/my-claw/tools/senseweave/sample_library.py
+index d4e5d6eb6217c79f8f6b71fd724563d7af92e319..4e6a8dad2a5668422e6c823a07178f0b3b4f7e0c
+--- a/my-claw/tools/senseweave/sample_library.py
++++ b/my-claw/tools/senseweave/sample_library.py
+@@ -96,6 +96,13 @@
+     )
+ 
+ 
++def init_sample_storage(base_path: Path | str) -> SampleLibraryLayout:
++    """Create the sample directory layout and bootstrap ``index.sqlite``."""
++    layout = create_sample_library_layout(base_path)
++    bootstrap_sample_index(layout.base / "index.sqlite")
++    return layout
++
++
+ CHARACTER_TAGS: frozenset[str] = frozenset(
+     {
+         "warm",
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+diff --git a/my-claw/tools/senseweave/sample_library.py b/my-claw/tools/senseweave/sample_library.py
+index d4e5d6eb6217c79f8f6b71fd724563d7af92e319..4e6a8dad2a5668422e6c823a07178f0b3b4f7e0c
+--- a/my-claw/tools/senseweave/sample_library.py
++++ b/my-claw/tools/senseweave/sample_library.py
+@@ -96,6 +96,13 @@
+     )
+ 
+ 
++def init_sample_storage(base_path: Path | str) -> SampleLibraryLayout:
++    """Create the sample directory layout and bootstrap ``index.sqlite``."""
++    layout = create_sample_library_layout(base_path)
++    bootstrap_sample_index(layout.base / "index.sqlite")
++    return layout
++
++
+ CHARACTER_TAGS: frozenset[str] = frozenset(
+     {
+         "warm",
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+exec
+/bin/zsh -lc 'pytest tests/test_sample_library.py -x --tb=short' in /Users/anthony/Programming/PromptClaw
+diff --git a/my-claw/tools/senseweave/sample_library.py b/my-claw/tools/senseweave/sample_library.py
+index d4e5d6eb6217c79f8f6b71fd724563d7af92e319..4e6a8dad2a5668422e6c823a07178f0b3b4f7e0c
+--- a/my-claw/tools/senseweave/sample_library.py
++++ b/my-claw/tools/senseweave/sample_library.py
+@@ -96,6 +96,13 @@
+     )
+ 
+ 
++def init_sample_storage(base_path: Path | str) -> SampleLibraryLayout:
++    """Create the sample directory layout and bootstrap ``index.sqlite``."""
++    layout = create_sample_library_layout(base_path)
++    bootstrap_sample_index(layout.base / "index.sqlite")
++    return layout
++
++
+ CHARACTER_TAGS: frozenset[str] = frozenset(
+     {
+         "warm",
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+ succeeded in 1113ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 19 items
+
+tests/test_sample_library.py ...................                         [100%]
+
+============================== 19 passed in 0.12s ==============================
+
+codex
+The targeted regression is passing. I’m moving into the required validation sequence from the task: refresh the editable dev install, then run the full test suite and static checks so the branch is commit-ready if nothing else is broken.
+exec
+/bin/zsh -lc "pip install -e '.[dev]'" in /Users/anthony/Programming/PromptClaw
+diff --git a/my-claw/tools/senseweave/sample_library.py b/my-claw/tools/senseweave/sample_library.py
+index d4e5d6eb6217c79f8f6b71fd724563d7af92e319..4e6a8dad2a5668422e6c823a07178f0b3b4f7e0c
+--- a/my-claw/tools/senseweave/sample_library.py
++++ b/my-claw/tools/senseweave/sample_library.py
+@@ -96,6 +96,13 @@
+     )
+ 
+ 
++def init_sample_storage(base_path: Path | str) -> SampleLibraryLayout:
++    """Create the sample directory layout and bootstrap ``index.sqlite``."""
++    layout = create_sample_library_layout(base_path)
++    bootstrap_sample_index(layout.base / "index.sqlite")
++    return layout
++
++
+ CHARACTER_TAGS: frozenset[str] = frozenset(
+     {
+         "warm",
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+ succeeded in 2585ms:
+Obtaining file:///Users/anthony/Programming/PromptClaw
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: partitura<2,>=1.8 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.8.0)
+Requirement already satisfied: librosa<1,>=0.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.11.0)
+Requirement already satisfied: mypy>=1.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.19.1)
+Requirement already satisfied: pytest>=8.0 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (8.3.5)
+Requirement already satisfied: ruff>=0.9 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.9.2)
+Requirement already satisfied: audioread>=2.1.9 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (3.1.0)
+Requirement already satisfied: numba>=0.51.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.59.0)
+Requirement already satisfied: numpy>=1.22.3 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.26.0)
+Requirement already satisfied: scipy>=1.6.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.11.4)
+Requirement already satisfied: scikit-learn>=1.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.2)
+Requirement already satisfied: joblib>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.0)
+Requirement already satisfied: decorator>=4.3.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (5.1.1)
+Requirement already satisfied: soundfile>=0.12.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.13.1)
+Requirement already satisfied: pooch>=1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.9.0)
+Requirement already satisfied: soxr>=0.3.2 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: typing_extensions>=4.1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (4.15.0)
+Requirement already satisfied: lazy_loader>=0.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.3)
+Requirement already satisfied: msgpack>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.3)
+Requirement already satisfied: lxml in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.9.3)
+Requirement already satisfied: lark-parser in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (0.12.0)
+Requirement already satisfied: xmlschema in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.3.1)
+Requirement already satisfied: mido in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (1.3.3)
+Requirement already satisfied: mypy_extensions>=1.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: pathspec>=0.9.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.10.3)
+Requirement already satisfied: librt>=0.6.2 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.8.1)
+Requirement already satisfied: llvmlite<0.43,>=0.42.0dev0 in /opt/anaconda3/lib/python3.11/site-packages (from numba>=0.51.0->librosa<1,>=0.10->promptclaw==3.0.0) (0.42.0)
+Requirement already satisfied: platformdirs>=2.5.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (4.5.1)
+Requirement already satisfied: packaging>=20.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (23.2)
+Requirement already satisfied: requests>=2.19.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.32.3)
+Requirement already satisfied: iniconfig in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.1.1)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.5.0)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.4)
+Requirement already satisfied: idna<4,>=2.5 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (3.4)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.6.3)
+Requirement already satisfied: certifi>=2017.4.17 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2026.1.4)
+Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from scikit-learn>=1.1.0->librosa<1,>=0.10->promptclaw==3.0.0) (2.2.0)
+Requirement already satisfied: cffi>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.0)
+Requirement already satisfied: pycparser in /opt/anaconda3/lib/python3.11/site-packages (from cffi>=1.0->soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.21)
+Requirement already satisfied: elementpath<6.0.0,>=5.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from xmlschema->partitura<2,>=1.8->promptclaw==3.0.0) (5.1.1)
+Building wheels for collected packages: promptclaw
+  Building editable for promptclaw (pyproject.toml): started
+  Building editable for promptclaw (pyproject.toml): finished with status 'done'
+  Created wheel for promptclaw: filename=promptclaw-3.0.0-0.editable-py3-none-any.whl size=5894 sha256=dd5349b69e51f8d5f5801ea03c90d97a0f8554754e03a3dbd8bc923b2917fd5d
+  Stored in directory: /private/var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/pip-ephem-wheel-cache-3gni64po/wheels/ab/f4/89/0cacd29874f6252d7c6bef0fca4c14839da91ab6a8d842965e
+Successfully built promptclaw
+Installing collected packages: promptclaw
+  Attempting uninstall: promptclaw
+    Found existing installation: promptclaw 3.0.0
+    Uninstalling promptclaw-3.0.0:
+      Successfully uninstalled promptclaw-3.0.0
+Successfully installed promptclaw-3.0.0
+
+diff --git a/my-claw/tools/senseweave/sample_library.py b/my-claw/tools/senseweave/sample_library.py
+index d4e5d6eb6217c79f8f6b71fd724563d7af92e319..4e6a8dad2a5668422e6c823a07178f0b3b4f7e0c
+--- a/my-claw/tools/senseweave/sample_library.py
++++ b/my-claw/tools/senseweave/sample_library.py
+@@ -96,6 +96,13 @@
+     )
+ 
+ 
++def init_sample_storage(base_path: Path | str) -> SampleLibraryLayout:
++    """Create the sample directory layout and bootstrap ``index.sqlite``."""
++    layout = create_sample_library_layout(base_path)
++    bootstrap_sample_index(layout.base / "index.sqlite")
++    return layout
++
++
+ CHARACTER_TAGS: frozenset[str] = frozenset(
+     {
+         "warm",
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+exec
+/bin/zsh -lc 'ruff check src/ tests/' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+All checks passed!
+
+exec
+/bin/zsh -lc 'pytest tests/ -x --tb=short' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'mypy src/' in /Users/anthony/Programming/PromptClaw
+ succeeded in 229ms:
+Success: no issues found in 23 source files
+
+diff --git a/my-claw/tools/senseweave/sample_library.py b/my-claw/tools/senseweave/sample_library.py
+index d4e5d6eb6217c79f8f6b71fd724563d7af92e319..4e6a8dad2a5668422e6c823a07178f0b3b4f7e0c
+--- a/my-claw/tools/senseweave/sample_library.py
++++ b/my-claw/tools/senseweave/sample_library.py
+@@ -96,6 +96,13 @@
+     )
+ 
+ 
++def init_sample_storage(base_path: Path | str) -> SampleLibraryLayout:
++    """Create the sample directory layout and bootstrap ``index.sqlite``."""
++    layout = create_sample_library_layout(base_path)
++    bootstrap_sample_index(layout.base / "index.sqlite")
++    return layout
++
++
+ CHARACTER_TAGS: frozenset[str] = frozenset(
+     {
+         "warm",
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+codex
+Static checks are clean. The remaining gate is the full `pytest tests/ -x --tb=short` run, which is still in flight; I’m polling that now because it determines whether the branch is safe to commit without widening scope.
+diff --git a/my-claw/tools/senseweave/sample_library.py b/my-claw/tools/senseweave/sample_library.py
+index d4e5d6eb6217c79f8f6b71fd724563d7af92e319..4e6a8dad2a5668422e6c823a07178f0b3b4f7e0c
+--- a/my-claw/tools/senseweave/sample_library.py
++++ b/my-claw/tools/senseweave/sample_library.py
+@@ -96,6 +96,13 @@
+     )
+ 
+ 
++def init_sample_storage(base_path: Path | str) -> SampleLibraryLayout:
++    """Create the sample directory layout and bootstrap ``index.sqlite``."""
++    layout = create_sample_library_layout(base_path)
++    bootstrap_sample_index(layout.base / "index.sqlite")
++    return layout
++
++
+ CHARACTER_TAGS: frozenset[str] = frozenset(
+     {
+         "warm",
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+diff --git a/my-claw/tools/senseweave/sample_library.py b/my-claw/tools/senseweave/sample_library.py
+index d4e5d6eb6217c79f8f6b71fd724563d7af92e319..4e6a8dad2a5668422e6c823a07178f0b3b4f7e0c
+--- a/my-claw/tools/senseweave/sample_library.py
++++ b/my-claw/tools/senseweave/sample_library.py
+@@ -96,6 +96,13 @@
+     )
+ 
+ 
++def init_sample_storage(base_path: Path | str) -> SampleLibraryLayout:
++    """Create the sample directory layout and bootstrap ``index.sqlite``."""
++    layout = create_sample_library_layout(base_path)
++    bootstrap_sample_index(layout.base / "index.sqlite")
++    return layout
++
++
+ CHARACTER_TAGS: frozenset[str] = frozenset(
+     {
+         "warm",
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+diff --git a/my-claw/tools/senseweave/sample_library.py b/my-claw/tools/senseweave/sample_library.py
+index d4e5d6eb6217c79f8f6b71fd724563d7af92e319..4e6a8dad2a5668422e6c823a07178f0b3b4f7e0c
+--- a/my-claw/tools/senseweave/sample_library.py
++++ b/my-claw/tools/senseweave/sample_library.py
+@@ -96,6 +96,13 @@
+     )
+ 
+ 
++def init_sample_storage(base_path: Path | str) -> SampleLibraryLayout:
++    """Create the sample directory layout and bootstrap ``index.sqlite``."""
++    layout = create_sample_library_layout(base_path)
++    bootstrap_sample_index(layout.base / "index.sqlite")
++    return layout
++
++
+ CHARACTER_TAGS: frozenset[str] = frozenset(
+     {
+         "warm",
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+codex
+The suite is through the sample-library area cleanly and still advancing, so there’s no sign of fallout from the new helper. I’m staying with the full run to completion before I stage and commit, per the task’s “leave nothing broken” rule.
+diff --git a/my-claw/tools/senseweave/sample_library.py b/my-claw/tools/senseweave/sample_library.py
+index d4e5d6eb6217c79f8f6b71fd724563d7af92e319..4e6a8dad2a5668422e6c823a07178f0b3b4f7e0c
+--- a/my-claw/tools/senseweave/sample_library.py
++++ b/my-claw/tools/senseweave/sample_library.py
+@@ -96,6 +96,13 @@
+     )
+ 
+ 
++def init_sample_storage(base_path: Path | str) -> SampleLibraryLayout:
++    """Create the sample directory layout and bootstrap ``index.sqlite``."""
++    layout = create_sample_library_layout(base_path)
++    bootstrap_sample_index(layout.base / "index.sqlite")
++    return layout
++
++
+ CHARACTER_TAGS: frozenset[str] = frozenset(
+     {
+         "warm",
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+ succeeded in 32501ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3576 items
+
+tests/test_accompaniment.py ...........................                  [  0%]
+tests/test_acoustic_ecology.py .................................         [  1%]
+tests/test_agent_runtime.py ..                                           [  1%]
+tests/test_agent_selector_defaults.py .                                  [  1%]
+tests/test_agent_selector_quota.py ........                              [  1%]
+tests/test_agogic_rule.py ...                                            [  2%]
+tests/test_antenna_to_skin.py .................................          [  2%]
+tests/test_archive_daemon_runtime.py .                                   [  3%]
+tests/test_archive_paths.py .....                                        [  3%]
+tests/test_arrangement_engine.py ....................................... [  4%]
+                                                                         [  4%]
+tests/test_art_engine_runtime.py ....                                    [  4%]
+tests/test_articulation.py ......                                        [  4%]
+tests/test_artist_identity.py ....................................       [  5%]
+tests/test_artistic_identity.py .                                        [  5%]
+tests/test_audio_analysis.py .....................................       [  6%]
+tests/test_audio_novelty.py ....                                         [  6%]
+tests/test_bootstrap.py ..                                               [  6%]
+tests/test_breath_to_filter.py .............................             [  7%]
+tests/test_cadence_engine.py .......                                     [  7%]
+tests/test_call_response.py ..........                                   [  8%]
+tests/test_capstone_engine.py ...                                        [  8%]
+tests/test_capture_alias.py ..                                           [  8%]
+tests/test_cast_planner.py .............                                 [  8%]
+tests/test_character_registry.py ......                                  [  8%]
+tests/test_check_status_runtime.py ..                                    [  8%]
+tests/test_coherence_engine.py ..............                            [  9%]
+tests/test_coherence_integration.py ............                         [  9%]
+tests/test_collaborative_canvas.py ......................                [ 10%]
+tests/test_commission_context.py ..                                      [ 10%]
+tests/test_composer_quote_verify.py .....                                [ 10%]
+tests/test_config.py ..                                                  [ 10%]
+tests/test_constitution.py .......................                       [ 11%]
+tests/test_contact_listener_runtime.py ....                              [ 11%]
+tests/test_contact_mic_calibration_runtime.py ....                       [ 11%]
+tests/test_context_pulse_runtime.py .                                    [ 11%]
+tests/test_continuous_learner.py ......................                  [ 11%]
+tests/test_counterpoint_pipeline.py ...........................          [ 12%]
+tests/test_counterpoint_rules.py ....................................... [ 13%]
+......................                                                   [ 14%]
+tests/test_course_critique.py ...............................            [ 15%]
+tests/test_cypherclaw_audio_runtime.py .....                             [ 15%]
+tests/test_cypherclaw_av_stack_service.py ...                            [ 15%]
+tests/test_cypherclaw_boot_runtime.py ......                             [ 15%]
+tests/test_cypherclaw_musicianship_roadmap.py ..                         [ 15%]
+tests/test_cypherclaw_runtime.py .....                                   [ 15%]
+tests/test_cypherclaw_sampler_architecture.py ......                     [ 15%]
+tests/test_cypherclaw_sampler_artistic_intent.py .....                   [ 16%]
+tests/test_daemon_concurrency_compat.py ...                              [ 16%]
+tests/test_daemon_fallback.py ...............                            [ 16%]
+tests/test_daemon_scheduler.py ..                                        [ 16%]
+tests/test_daemon_status_ollama.py .......                               [ 16%]
+tests/test_dashboard_generator.py ...................................... [ 17%]
+.......                                                                  [ 18%]
+tests/test_dashboard_generator_runtime.py ...                            [ 18%]
+tests/test_decision_store.py .........                                   [ 18%]
+tests/test_doctor.py ...                                                 [ 18%]
+tests/test_dsp_scene_lab.py ................                             [ 18%]
+tests/test_duration_contrast_rule.py .......                             [ 19%]
+tests/test_ear_engine.py ............                                    [ 19%]
+tests/test_emsd_curriculum.py ...............                            [ 19%]
+tests/test_emsd_performance.py ....                                      [ 20%]
+tests/test_emsd_runtime.py ...                                           [ 20%]
+tests/test_event_store.py .......                                        [ 20%]
+tests/test_executable_curriculum.py ...                                  [ 20%]
+tests/test_face_display_sample_status.py ....                            [ 20%]
+tests/test_federation_discovery.py ........                              [ 20%]
+tests/test_final_rit.py ...                                              [ 20%]
+tests/test_first_boot.py ...................................             [ 21%]
+tests/test_form_grammar.py ..                                            [ 21%]
+tests/test_fractal_form.py ...............                               [ 22%]
+tests/test_functional_harmony.py ...............................         [ 23%]
+tests/test_gallery.py ..........................                         [ 23%]
+tests/test_gallery_x11_runtime.py ...                                    [ 23%]
+tests/test_garden_watcher.py ........................................... [ 25%]
+.                                                                        [ 25%]
+tests/test_gemini_image_runtime.py ...                                   [ 25%]
+tests/test_generative_scores.py ........................................ [ 26%]
+.............................................                            [ 27%]
+tests/test_genre_literacy.py ............                                [ 27%]
+tests/test_glyphweave_cli.py ....                                        [ 28%]
+tests/test_glyphweave_runtime.py ....                                    [ 28%]
+tests/test_governor_integration.py ..............                        [ 28%]
+tests/test_graduation.py ......................                          [ 29%]
+tests/test_groove_engine.py ............................................ [ 30%]
+......................................                                   [ 31%]
+tests/test_harmonic_planner.py .........                                 [ 31%]
+tests/test_healer_runtime.py .....                                       [ 31%]
+tests/test_healthcheck_script_runtime.py ...                             [ 31%]
+tests/test_hook_engine.py .................                              [ 32%]
+tests/test_human_phrase_capture_verify.py .                              [ 32%]
+tests/test_image_api_app.py ........                                     [ 32%]
+tests/test_image_api_jobs_db.py ............                             [ 33%]
+tests/test_image_api_s3_uploader.py ....                                 [ 33%]
+tests/test_image_api_spec_parser.py ...................                  [ 33%]
+tests/test_image_api_worker.py ........                                  [ 33%]
+tests/test_inkplate_display.py ....                                      [ 34%]
+tests/test_inner_life.py ...................................             [ 35%]
+tests/test_instrument_patches.py ........                                [ 35%]
+tests/test_ixml_chunk_writer.py .......                                  [ 35%]
+tests/test_keyboard_chat.py ..............................               [ 36%]
+tests/test_lifeimprover_bridge_runtime.py .....                          [ 36%]
+tests/test_listener_review.py .....                                      [ 36%]
+tests/test_live_buffer.py ...                                            [ 36%]
+tests/test_local_command_runtime.py ....                                 [ 36%]
+tests/test_lung_capacity_rule.py .......                                 [ 36%]
+tests/test_macbook_codex_monitor.py ....                                 [ 37%]
+tests/test_maintenance_mode.py .....                                     [ 37%]
+tests/test_master_bus.py ......                                          [ 37%]
+tests/test_master_smooth_scd.py ...                                      [ 37%]
+tests/test_melodic_mind.py ............................................. [ 38%]
+..........................................................               [ 40%]
+tests/test_metric_accent_rule.py ....                                    [ 40%]
+tests/test_microtiming.py .....................                          [ 41%]
+tests/test_midi_keyboard_listener_runtime.py .....                       [ 41%]
+tests/test_midi_state.py .......................................         [ 42%]
+tests/test_mix_engine.py ..............................                  [ 43%]
+tests/test_mix_verify.py ............................................... [ 44%]
+                                                                         [ 44%]
+tests/test_mood_mirror.py .....................................          [ 45%]
+tests/test_motif_lifecycle.py ............................               [ 46%]
+tests/test_motif_memory.py ...............                               [ 46%]
+tests/test_music_theory.py ............................................. [ 47%]
+........................................                                 [ 49%]
+tests/test_music_tracker.py ..........................................   [ 50%]
+tests/test_music_tracker_runtime.py .................................... [ 51%]
+........                                                                 [ 51%]
+tests/test_musical_integration_runtime.py .                              [ 51%]
+tests/test_musical_marathon_integration.py ..                            [ 51%]
+tests/test_narrative_envelope.py ..............                          [ 51%]
+tests/test_observatory_authority.py .....                                [ 52%]
+tests/test_observatory_runtime.py ..                                     [ 52%]
+tests/test_observatory_verification.py ..                                [ 52%]
+tests/test_observer_vision_runtime.py ..............                     [ 52%]
+tests/test_ollama_daemon_health.py ...                                   [ 52%]
+tests/test_ollama_health.py ......                                       [ 52%]
+tests/test_ollama_invoke.py ...                                          [ 52%]
+tests/test_ollama_routing.py ...................                         [ 53%]
+tests/test_ollama_run_agent.py .......                                   [ 53%]
+tests/test_operator_diagnostics.py ...............                       [ 54%]
+tests/test_operator_diagnostics_sample_status.py ....                    [ 54%]
+tests/test_ops_helpers_runtime.py ....                                   [ 54%]
+tests/test_orchestral_form.py ...............................            [ 55%]
+tests/test_orchestrator.py ...                                           [ 55%]
+tests/test_pareidolia_art_engine.py .......                              [ 55%]
+tests/test_pareidolia_characters.py .................................    [ 56%]
+tests/test_pareidolia_color.py ......................................... [ 57%]
+........................................................................ [ 59%]
+....                                                                     [ 59%]
+tests/test_pedals_to_key.py ............................                 [ 60%]
+tests/test_phrase_arch.py ..........                                     [ 60%]
+tests/test_phrase_capture.py ........................                    [ 61%]
+tests/test_phrase_capture_runtime.py ...                                 [ 61%]
+tests/test_phrase_tracker.py ............                                [ 61%]
+tests/test_piece_brief.py ........                                       [ 61%]
+tests/test_piece_commission.py ....                                      [ 62%]
+tests/test_piece_queue.py ..                                             [ 62%]
+tests/test_porch_eye.py ..................................               [ 63%]
+tests/test_portfolio_report.py .........................                 [ 63%]
+tests/test_practice_curriculum.py ..                                     [ 63%]
+tests/test_preflight.py ......                                           [ 64%]
+tests/test_presence_engine.py ............                               [ 64%]
+tests/test_procedural_arc.py .....                                       [ 64%]
+tests/test_production_course_integration.py ..........                   [ 64%]
+tests/test_production_course_knowledge_base.py ...                       [ 64%]
+tests/test_project_scanner_runtime.py ....                               [ 64%]
+tests/test_prosody_engine.py ........                                    [ 65%]
+tests/test_punctuation_rule.py ............                              [ 65%]
+tests/test_quota_monitor.py .....................                        [ 66%]
+tests/test_reharmonizer.py ...                                           [ 66%]
+tests/test_render_ablation.py ....                                       [ 66%]
+tests/test_render_antipatterns.py ......................                 [ 66%]
+tests/test_render_audio_sidecar.py ...                                   [ 67%]
+tests/test_render_debugger.py ..                                         [ 67%]
+tests/test_render_diff.py ................                               [ 67%]
+tests/test_render_events.py ....................                         [ 68%]
+tests/test_render_export.py ......                                       [ 68%]
+tests/test_render_features.py ...                                        [ 68%]
+tests/test_render_metrics.py ..............                              [ 68%]
+tests/test_render_pass.py ....................                           [ 69%]
+tests/test_render_replay.py ..                                           [ 69%]
+tests/test_render_seed.py .............                                  [ 69%]
+tests/test_render_worm.py ..........                                     [ 69%]
+tests/test_repertoire_memory.py .................                        [ 70%]
+tests/test_repertoire_memory_score_tree.py .                             [ 70%]
+tests/test_research_runtime.py .....                                     [ 70%]
+tests/test_resilience_runtime_scripts.py ..............                  [ 71%]
+tests/test_resource_governor.py ..........................               [ 71%]
+tests/test_restraint.py ...                                              [ 71%]
+tests/test_reviewer_runtime.py ...                                       [ 71%]
+tests/test_role_gate_integration.py .................................... [ 72%]
+....                                                                     [ 73%]
+tests/test_room_listener_runtime.py ..................                   [ 73%]
+tests/test_room_presence_daemon.py ......                                [ 73%]
+tests/test_router.py .....                                               [ 73%]
+tests/test_row_automation.py ...........                                 [ 74%]
+tests/test_runtime_checkpoint.py ...                                     [ 74%]
+tests/test_runtime_paths.py ..                                           [ 74%]
+tests/test_sample_capture_daemon.py .................................... [ 75%]
+.............                                                            [ 75%]
+tests/test_sample_capture_service_verify.py ....                         [ 75%]
+tests/test_sample_capture_verify.py ....                                 [ 75%]
+tests/test_sample_dsp_activity.py ...........                            [ 76%]
+tests/test_sample_event_renderer.py .....                                [ 76%]
+tests/test_sample_lab.py ....                                            [ 76%]
+tests/test_sample_library.py ...................                         [ 76%]
+tests/test_sample_library_import.py ...                                  [ 77%]
+tests/test_sample_playback_engine.py .......                             [ 77%]
+tests/test_sample_record_audio_analysis.py .............                 [ 77%]
+tests/test_sample_record_context.py ..........                           [ 77%]
+tests/test_sample_record_json.py ..............                          [ 78%]
+tests/test_sample_record_skeleton.py .........                           [ 78%]
+tests/test_sample_selector.py .................                          [ 78%]
+tests/test_sample_status.py .....                                        [ 79%]
+tests/test_sampler_buffers.py ...............                            [ 79%]
+tests/test_sampler_dispatch.py ....................................      [ 80%]
+tests/test_sampler_effects.py .......................................... [ 81%]
+.......                                                                  [ 81%]
+tests/test_sampler_fx_mode_verify.py ...                                 [ 82%]
+tests/test_sampler_scheduler.py ...........                              [ 82%]
+tests/test_scene_composer.py ......................................      [ 83%]
+tests/test_score_tree.py .                                               [ 83%]
+tests/test_score_tree_composer.py .......................                [ 84%]
+tests/test_score_tree_pipeline.py .                                      [ 84%]
+tests/test_self_critique.py .........................                    [ 84%]
+tests/test_self_listener_quote_verify.py ......                          [ 84%]
+tests/test_self_listener_tracker_runtime.py ...............              [ 85%]
+tests/test_senseweave_rollout_controls.py .....                          [ 85%]
+tests/test_senseweave_voice.py ..........................                [ 86%]
+tests/test_sensor_fusion.py ...............................              [ 87%]
+tests/test_sensor_intent_rule.py ....                                    [ 87%]
+tests/test_sensory_journal.py ............................               [ 88%]
+tests/test_server_health.py ...                                          [ 88%]
+tests/test_silence_budget_rule.py .................                      [ 88%]
+tests/test_sound_palette_lab.py ..                                       [ 88%]
+tests/test_startle.py ................................                   [ 89%]
+tests/test_supercollider_recipes.py ...                                  [ 89%]
+tests/test_sw_sampler.py .......................................         [ 90%]
+tests/test_syncopation_features.py .........................             [ 91%]
+tests/test_synthdef_registry.py ...................................      [ 92%]
+tests/test_synthesis_architecture_registry.py .......................... [ 93%]
+.......                                                                  [ 93%]
+tests/test_tamagotchi_runtime.py ......                                  [ 93%]
+tests/test_telegram_runtime.py ......                                    [ 93%]
+tests/test_theramini_duet.py ........................................... [ 94%]
+.........                                                                [ 95%]
+tests/test_theramini_listener_runtime.py ............                    [ 95%]
+tests/test_tracker_cadence.py ............                               [ 95%]
+tests/test_tracker_compiler.py ................                          [ 96%]
+tests/test_tracker_variation.py .....                                    [ 96%]
+tests/test_trust.py ................                                     [ 96%]
+tests/test_usage_journal.py ..............                               [ 97%]
+tests/test_usage_journal_integration.py .                                [ 97%]
+tests/test_voice_aliases.py .......                                      [ 97%]
+tests/test_voice_interpretation_rules.py ............................... [ 98%]
+..                                                                       [ 98%]
+tests/test_voice_manager_v2.py ......................................... [ 99%]
+............                                                             [ 99%]
+tests/test_voice_shaping.py ....                                         [ 99%]
+tests/test_wizard.py ...                                                 [100%]
+
+=============================== warnings summary ===============================
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163: DeprecationWarning: module 'sre_parse' is deprecated
+    import sre_parse
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164: DeprecationWarning: module 'sre_constants' is deprecated
+    import sre_constants
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25
+  /opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    from pkg_resources import resource_stream, resource_exists
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google.cloud')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(parent)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('ruamel')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('zope')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:16: DeprecationWarning: 'aifc' is deprecated and slated for removal in Python 3.13
+    import aifc
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:17: DeprecationWarning: 'audioop' is deprecated and slated for removal in Python 3.13
+    import audioop
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:19: DeprecationWarning: 'sunau' is deprecated and slated for removal in Python 3.13
+    import sunau
+
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+  /Users/anthony/Programming/PromptClaw/tests/test_gallery.py:108: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(result.getdata()), list(canvas.getdata()))
+
+tests/test_pareidolia_characters.py: 189 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:85: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pixels = list(img.getdata())
+
+tests/test_pareidolia_characters.py: 21 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:254: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    rendered[name] = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:310: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:314: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:316: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:339: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_low = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:343: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_high = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:326: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:352: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:331: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:333: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:361: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:376: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:366: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:368: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_add_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:429: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:451: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_with_palette
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:443: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:434: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:436: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:481: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_curious_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:554: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_happy_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:542: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_neutral_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:536: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sad_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:548: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sleeping_eyes_no_highlights
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:560: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:571: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_bush
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:621: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:615: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:609: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:585: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_without_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:591: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:597: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:603: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:642: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:661: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:674: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    basalt_pixels = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:678: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pebble_pixels = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:870: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+===================== 3576 passed, 296 warnings in 31.21s ======================
+
+codex
+Validation is clean across the repo. I’m doing one last diff/status pass to confirm only the intended files changed for this task, then I’ll commit just those paths with the task-scoped message.
+exec
+/bin/zsh -lc 'git diff -- my-claw/tools/senseweave/sample_library.py tests/test_sample_library.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+diff --git a/my-claw/tools/senseweave/sample_library.py b/my-claw/tools/senseweave/sample_library.py
+index d4e5d6e..4e6a8da 100644
+--- a/my-claw/tools/senseweave/sample_library.py
++++ b/my-claw/tools/senseweave/sample_library.py
+@@ -96,6 +96,13 @@ def create_sample_library_layout(base_path: Path | str) -> SampleLibraryLayout:
+     )
+ 
+ 
++def init_sample_storage(base_path: Path | str) -> SampleLibraryLayout:
++    """Create the sample directory layout and bootstrap ``index.sqlite``."""
++    layout = create_sample_library_layout(base_path)
++    bootstrap_sample_index(layout.base / "index.sqlite")
++    return layout
++
++
+ CHARACTER_TAGS: frozenset[str] = frozenset(
+     {
+         "warm",
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4..28b4a61 100644
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@ from senseweave.sample_library import (
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@ def test_bootstrap_sample_index_idempotent(tmp_path: Path) -> None:
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M my-claw/tools/senseweave/sample_library.py
+ M progress.md
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M sdp/telemetry/prompt-review-2026-04-26.md
+ M tests/test_sample_library.py
+?? sdp/logs/Lead_T-018_20260425T183959Zd_1777170439.log
+?? sdp/logs/Lead_T-020_20260425T183959Za_1777172243.log
+?? sdp/logs/Lead_T-020_20260425T183959Zb_1777172606.log
+?? sdp/logs/Lead_T-020_20260425T183959Zc_1777173092.log
+?? sdp/logs/Lead_T-021_20260425T183959Za_1777174559.log
+?? sdp/logs/Lead_T-021_20260425T183959Zb_1777175434.log
+?? sdp/logs/Lead_T-021_20260425T183959Zc_1777175888.log
+?? sdp/logs/Lead_T-021_20260425T183959Zd_1777176738.log
+?? sdp/logs/Lead_T-022_20260425T183959Za_1777177698.log
+?? sdp/logs/Lead_T-022_20260425T183959Zb_1777178096.log
+?? sdp/logs/Lead_T-022_20260425T183959Zc_1777178453.log
+?? sdp/logs/Lead_T-022_20260425T183959Zd_1777178822.log
+?? sdp/logs/Lead_T-024_20260425T183959Za_1777181245.log
+?? sdp/logs/Lead_T-024_20260425T183959Zb_1777181562.log
+?? sdp/logs/Lead_T-024_20260425T183959Zc_1777181943.log
+?? sdp/logs/Lead_T-024_20260425T183959Zd_1777182233.log
+?? sdp/logs/Lead_T-025_20260425T183959Z_1777171970.log
+?? sdp/logs/Lead_T-026_20260425T183959Z_1777173578.log
+?? sdp/logs/Lead_T-027_20260425T183959Za_1777183773.log
+?? sdp/logs/Lead_T-027_20260425T183959Zb_1777183990.log
+?? sdp/logs/Lead_T-027_20260425T183959Zc_1777184287.log
+?? sdp/logs/Lead_T-027_20260425T183959Zd_1777184841.log
+?? sdp/logs/Lead_T-028_20260425T183959Z_1777173995.log
+?? sdp/logs/Lead_T-031_20260425T183959Z_1777177160.log
+?? sdp/logs/Lead_T-032_20260425T183959Z_1777180722.log
+?? sdp/logs/Lead_T-033_20260425T183959Z_1777182542.log
+?? sdp/logs/Verify_T-018_20260425T183959Zc_1777170297.log
+?? sdp/logs/Verify_T-018_20260425T183959Zd_1777171756.log
+?? sdp/logs/Verify_T-020_20260425T183959Za_1777172464.log
+?? sdp/logs/Verify_T-020_20260425T183959Zb_1777172836.log
+?? sdp/logs/Verify_T-020_20260425T183959Zc_1777173407.log
+?? sdp/logs/Verify_T-021_20260425T183959Za_1777175250.log
+?? sdp/logs/Verify_T-021_20260425T183959Zb_1777175768.log
+?? sdp/logs/Verify_T-021_20260425T183959Zc_1777176570.log
+?? sdp/logs/Verify_T-021_20260425T183959Zd_1777177041.log
+?? sdp/logs/Verify_T-022_20260425T183959Za_1777177930.log
+?? sdp/logs/Verify_T-022_20260425T183959Zb_1777178339.log
+?? sdp/logs/Verify_T-022_20260425T183959Zc_1777178693.log
+?? sdp/logs/Verify_T-022_20260425T183959Zd_1777179855.log
+?? sdp/logs/Verify_T-024_20260425T183959Za_1777181396.log
+?? sdp/logs/Verify_T-024_20260425T183959Zb_1777181763.log
+?? sdp/logs/Verify_T-024_20260425T183959Zc_1777182065.log
+?? sdp/logs/Verify_T-024_20260425T183959Zd_1777182410.log
+?? sdp/logs/Verify_T-025_20260425T183959Z_1777172133.log
+?? sdp/logs/Verify_T-026_20260425T183959Z_1777173892.log
+?? sdp/logs/Verify_T-027_20260425T183959Za_1777183840.log
+?? sdp/logs/Verify_T-027_20260425T183959Zb_1777184186.log
+?? sdp/logs/Verify_T-027_20260425T183959Zc_1777184670.log
+?? sdp/logs/Verify_T-028_20260425T183959Z_1777174326.log
+?? sdp/logs/Verify_T-031_20260425T183959Z_1777177489.log
+?? sdp/logs/Verify_T-032_20260425T183959Z_1777181096.log
+?? sdp/logs/Verify_T-033_20260425T183959Z_1777183467.log
+?? sdp/logs/claude_1777172204.log
+?? sdp/logs/claude_1777174507.log
+?? sdp/logs/claude_1777177655.log
+?? sdp/logs/claude_1777181202.log
+?? sdp/logs/claude_1777183730.log
+?? sdp/verification/t-022@20260425t183959zc-verify.md
+?? sdp/verification/t-024@20260425t183959zd-verify.md
+?? sdp/verification/t-026@20260425t183959z-verify.md
+?? temp_sampler_dispatch.py
+
+diff --git a/my-claw/tools/senseweave/sample_library.py b/my-claw/tools/senseweave/sample_library.py
+index d4e5d6eb6217c79f8f6b71fd724563d7af92e319..4e6a8dad2a5668422e6c823a07178f0b3b4f7e0c
+--- a/my-claw/tools/senseweave/sample_library.py
++++ b/my-claw/tools/senseweave/sample_library.py
+@@ -96,6 +96,13 @@
+     )
+ 
+ 
++def init_sample_storage(base_path: Path | str) -> SampleLibraryLayout:
++    """Create the sample directory layout and bootstrap ``index.sqlite``."""
++    layout = create_sample_library_layout(base_path)
++    bootstrap_sample_index(layout.base / "index.sqlite")
++    return layout
++
++
+ CHARACTER_TAGS: frozenset[str] = frozenset(
+     {
+         "warm",
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+codex
+Only the two task files are changed on my side; the rest of the dirty tree is pre-existing and I’m leaving it untouched. I’m staging just the sample-library module and its regression test, then committing them with the required task tag.
+exec
+/bin/zsh -lc 'git add my-claw/tools/senseweave/sample_library.py tests/test_sample_library.py && git commit -m "feat(sample-library): expose init_sample_storage [T-027@20260425T183959Zd]"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+[feat/graceful-degradation 23c9f43] feat(sample-library): expose init_sample_storage [T-027@20260425T183959Zd]
+ 2 files changed, 25 insertions(+)
+
+diff --git a/my-claw/tools/senseweave/sample_library.py b/my-claw/tools/senseweave/sample_library.py
+index d4e5d6eb6217c79f8f6b71fd724563d7af92e319..4e6a8dad2a5668422e6c823a07178f0b3b4f7e0c
+--- a/my-claw/tools/senseweave/sample_library.py
++++ b/my-claw/tools/senseweave/sample_library.py
+@@ -96,6 +96,13 @@
+     )
+ 
+ 
++def init_sample_storage(base_path: Path | str) -> SampleLibraryLayout:
++    """Create the sample directory layout and bootstrap ``index.sqlite``."""
++    layout = create_sample_library_layout(base_path)
++    bootstrap_sample_index(layout.base / "index.sqlite")
++    return layout
++
++
+ CHARACTER_TAGS: frozenset[str] = frozenset(
+     {
+         "warm",
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+codex
+The task commit is in place. I’m doing a final status check to confirm there are no leftover edits in the files I touched before I close this out.
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M sdp/telemetry/prompt-review-2026-04-26.md
+?? sdp/logs/Lead_T-018_20260425T183959Zd_1777170439.log
+?? sdp/logs/Lead_T-020_20260425T183959Za_1777172243.log
+?? sdp/logs/Lead_T-020_20260425T183959Zb_1777172606.log
+?? sdp/logs/Lead_T-020_20260425T183959Zc_1777173092.log
+?? sdp/logs/Lead_T-021_20260425T183959Za_1777174559.log
+?? sdp/logs/Lead_T-021_20260425T183959Zb_1777175434.log
+?? sdp/logs/Lead_T-021_20260425T183959Zc_1777175888.log
+?? sdp/logs/Lead_T-021_20260425T183959Zd_1777176738.log
+?? sdp/logs/Lead_T-022_20260425T183959Za_1777177698.log
+?? sdp/logs/Lead_T-022_20260425T183959Zb_1777178096.log
+?? sdp/logs/Lead_T-022_20260425T183959Zc_1777178453.log
+?? sdp/logs/Lead_T-022_20260425T183959Zd_1777178822.log
+?? sdp/logs/Lead_T-024_20260425T183959Za_1777181245.log
+?? sdp/logs/Lead_T-024_20260425T183959Zb_1777181562.log
+?? sdp/logs/Lead_T-024_20260425T183959Zc_1777181943.log
+?? sdp/logs/Lead_T-024_20260425T183959Zd_1777182233.log
+?? sdp/logs/Lead_T-025_20260425T183959Z_1777171970.log
+?? sdp/logs/Lead_T-026_20260425T183959Z_1777173578.log
+?? sdp/logs/Lead_T-027_20260425T183959Za_1777183773.log
+?? sdp/logs/Lead_T-027_20260425T183959Zb_1777183990.log
+?? sdp/logs/Lead_T-027_20260425T183959Zc_1777184287.log
+?? sdp/logs/Lead_T-027_20260425T183959Zd_1777184841.log
+?? sdp/logs/Lead_T-028_20260425T183959Z_1777173995.log
+?? sdp/logs/Lead_T-031_20260425T183959Z_1777177160.log
+?? sdp/logs/Lead_T-032_20260425T183959Z_1777180722.log
+?? sdp/logs/Lead_T-033_20260425T183959Z_1777182542.log
+?? sdp/logs/Verify_T-018_20260425T183959Zc_1777170297.log
+?? sdp/logs/Verify_T-018_20260425T183959Zd_1777171756.log
+?? sdp/logs/Verify_T-020_20260425T183959Za_1777172464.log
+?? sdp/logs/Verify_T-020_20260425T183959Zb_1777172836.log
+?? sdp/logs/Verify_T-020_20260425T183959Zc_1777173407.log
+?? sdp/logs/Verify_T-021_20260425T183959Za_1777175250.log
+?? sdp/logs/Verify_T-021_20260425T183959Zb_1777175768.log
+?? sdp/logs/Verify_T-021_20260425T183959Zc_1777176570.log
+?? sdp/logs/Verify_T-021_20260425T183959Zd_1777177041.log
+?? sdp/logs/Verify_T-022_20260425T183959Za_1777177930.log
+?? sdp/logs/Verify_T-022_20260425T183959Zb_1777178339.log
+?? sdp/logs/Verify_T-022_20260425T183959Zc_1777178693.log
+?? sdp/logs/Verify_T-022_20260425T183959Zd_1777179855.log
+?? sdp/logs/Verify_T-024_20260425T183959Za_1777181396.log
+?? sdp/logs/Verify_T-024_20260425T183959Zb_1777181763.log
+?? sdp/logs/Verify_T-024_20260425T183959Zc_1777182065.log
+?? sdp/logs/Verify_T-024_20260425T183959Zd_1777182410.log
+?? sdp/logs/Verify_T-025_20260425T183959Z_1777172133.log
+?? sdp/logs/Verify_T-026_20260425T183959Z_1777173892.log
+?? sdp/logs/Verify_T-027_20260425T183959Za_1777183840.log
+?? sdp/logs/Verify_T-027_20260425T183959Zb_1777184186.log
+?? sdp/logs/Verify_T-027_20260425T183959Zc_1777184670.log
+?? sdp/logs/Verify_T-028_20260425T183959Z_1777174326.log
+?? sdp/logs/Verify_T-031_20260425T183959Z_1777177489.log
+?? sdp/logs/Verify_T-032_20260425T183959Z_1777181096.log
+?? sdp/logs/Verify_T-033_20260425T183959Z_1777183467.log
+?? sdp/logs/claude_1777172204.log
+?? sdp/logs/claude_1777174507.log
+?? sdp/logs/claude_1777177655.log
+?? sdp/logs/claude_1777181202.log
+?? sdp/logs/claude_1777183730.log
+?? sdp/verification/t-022@20260425t183959zc-verify.md
+?? sdp/verification/t-024@20260425t183959zd-verify.md
+?? sdp/verification/t-026@20260425t183959z-verify.md
+?? temp_sampler_dispatch.py
+
+diff --git a/my-claw/tools/senseweave/sample_library.py b/my-claw/tools/senseweave/sample_library.py
+index d4e5d6eb6217c79f8f6b71fd724563d7af92e319..4e6a8dad2a5668422e6c823a07178f0b3b4f7e0c
+--- a/my-claw/tools/senseweave/sample_library.py
++++ b/my-claw/tools/senseweave/sample_library.py
+@@ -96,6 +96,13 @@
+     )
+ 
+ 
++def init_sample_storage(base_path: Path | str) -> SampleLibraryLayout:
++    """Create the sample directory layout and bootstrap ``index.sqlite``."""
++    layout = create_sample_library_layout(base_path)
++    bootstrap_sample_index(layout.base / "index.sqlite")
++    return layout
++
++
+ CHARACTER_TAGS: frozenset[str] = frozenset(
+     {
+         "warm",
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+exec
+/bin/zsh -lc "nl -ba my-claw/tools/senseweave/sample_library.py | sed -n '88,112p'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+    88	    return SampleLibraryLayout(
+    89	        base=base,
+    90	        library=resolved["library"],
+    91	        self_=resolved["self"],
+    92	        room=resolved["room"],
+    93	        contact=resolved["contact"],
+    94	        theramini=resolved["theramini"],
+    95	        keyboard=resolved["keyboard"],
+    96	    )
+    97	
+    98	
+    99	def init_sample_storage(base_path: Path | str) -> SampleLibraryLayout:
+   100	    """Create the sample directory layout and bootstrap ``index.sqlite``."""
+   101	    layout = create_sample_library_layout(base_path)
+   102	    bootstrap_sample_index(layout.base / "index.sqlite")
+   103	    return layout
+   104	
+   105	
+   106	CHARACTER_TAGS: frozenset[str] = frozenset(
+   107	    {
+   108	        "warm",
+   109	        "metallic",
+   110	        "wind",
+   111	        "pulse",
+   112	        "voice",
+
+exec
+/bin/zsh -lc "nl -ba tests/test_sample_library.py | sed -n '294,324p'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+   294	    bootstrap_sample_index(db_path)
+   295	    bootstrap_sample_index(db_path)
+   296	    
+   297	    import sqlite3
+   298	    with sqlite3.connect(db_path) as conn:
+   299	        count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+   300	        assert count == 1
+   301	
+   302	
+   303	def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
+   304	    layout = init_sample_storage(tmp_path / "samples")
+   305	
+   306	    assert isinstance(layout, SampleLibraryLayout)
+   307	    assert layout.base == tmp_path / "samples"
+   308	    for name in EXPECTED_SUBDIRS:
+   309	        assert (layout.base / name).is_dir()
+   310	
+   311	    db_path = layout.base / "index.sqlite"
+   312	    assert db_path.exists()
+   313	
+   314	    import sqlite3
+   315	    with sqlite3.connect(db_path) as conn:
+   316	        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+   317	        assert "schema_version" in tables
+   318	        assert "samples" in tables
+
+diff --git a/my-claw/tools/senseweave/sample_library.py b/my-claw/tools/senseweave/sample_library.py
+index d4e5d6eb6217c79f8f6b71fd724563d7af92e319..4e6a8dad2a5668422e6c823a07178f0b3b4f7e0c
+--- a/my-claw/tools/senseweave/sample_library.py
++++ b/my-claw/tools/senseweave/sample_library.py
+@@ -96,6 +96,13 @@
+     )
+ 
+ 
++def init_sample_storage(base_path: Path | str) -> SampleLibraryLayout:
++    """Create the sample directory layout and bootstrap ``index.sqlite``."""
++    layout = create_sample_library_layout(base_path)
++    bootstrap_sample_index(layout.base / "index.sqlite")
++    return layout
++
++
+ CHARACTER_TAGS: frozenset[str] = frozenset(
+     {
+         "warm",
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+codex
+Added `init_sample_storage(base)` in [sample_library.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/sample_library.py:99). It composes the existing layout bootstrap and SQLite bootstrap, then returns the `SampleLibraryLayout` so callers can use the same resolved paths.
+
+Added the end-to-end tmpdir regression in [test_sample_library.py](/Users/anthony/Programming/PromptClaw/tests/test_sample_library.py:303). The test verifies the six sample subdirectories are created and `index.sqlite` contains the expected schema tables.
+
+Validation passed:
+- `pip install -e '.[dev]'`
+- `pytest tests/ -x --tb=short`
+- `ruff check src/ tests/`
+- `mypy src/`
+
+Committed as `23c9f43` with `feat(sample-library): expose init_sample_storage [T-027@20260425T183959Zd]`. Pre-existing unrelated workspace changes remain untouched.
+diff --git a/my-claw/tools/senseweave/sample_library.py b/my-claw/tools/senseweave/sample_library.py
+index d4e5d6eb6217c79f8f6b71fd724563d7af92e319..4e6a8dad2a5668422e6c823a07178f0b3b4f7e0c
+--- a/my-claw/tools/senseweave/sample_library.py
++++ b/my-claw/tools/senseweave/sample_library.py
+@@ -96,6 +96,13 @@
+     )
+ 
+ 
++def init_sample_storage(base_path: Path | str) -> SampleLibraryLayout:
++    """Create the sample directory layout and bootstrap ``index.sqlite``."""
++    layout = create_sample_library_layout(base_path)
++    bootstrap_sample_index(layout.base / "index.sqlite")
++    return layout
++
++
+ CHARACTER_TAGS: frozenset[str] = frozenset(
+     {
+         "warm",
+diff --git a/tests/test_sample_library.py b/tests/test_sample_library.py
+index 47665c4e17094ed5d4c7c62bc89acb181a0c5faf..28b4a61c3732bc98b6a83f058a621b0c6bf928f1
+--- a/tests/test_sample_library.py
++++ b/tests/test_sample_library.py
+@@ -20,6 +20,7 @@
+     SampleRecord,
+     bootstrap_sample_index,
+     create_sample_library_layout,
++    init_sample_storage,
+ )
+ 
+ 
+@@ -298,3 +299,20 @@
+         count = conn.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]
+         assert count == 1
+ 
++
++def test_init_sample_storage_bootstraps_layout_and_index(tmp_path: Path) -> None:
++    layout = init_sample_storage(tmp_path / "samples")
++
++    assert isinstance(layout, SampleLibraryLayout)
++    assert layout.base == tmp_path / "samples"
++    for name in EXPECTED_SUBDIRS:
++        assert (layout.base / name).is_dir()
++
++    db_path = layout.base / "index.sqlite"
++    assert db_path.exists()
++
++    import sqlite3
++    with sqlite3.connect(db_path) as conn:
++        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++        assert "schema_version" in tables
++        assert "samples" in tables
+
+2026-04-26T06:30:05.173732Z ERROR codex_core::session: failed to record rollout items: thread 019dc878-a323-7183-bbdd-e46218351384 not found
+tokens used
+50,116

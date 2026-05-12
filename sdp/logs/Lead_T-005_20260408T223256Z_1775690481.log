@@ -1,0 +1,20 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1407 chars)
+---
+
+**T-005 verification: PASS**
+
+All acceptance criteria met:
+
+| Criterion | Status |
+|---|---|
+| `get_agent_headroom("ollama")` returns 1.0 | `test_get_agent_headroom_ollama_returns_one` |
+| Ollama never excluded from selection due to quota | `test_ollama_never_excluded_from_selection` |
+| Tests verify infinite headroom for local provider | `test_local_provider_always_healthy`, `test_local_provider_skips_sdp_lookup` |
+
+Validation results:
+- **pytest**: 1430 passed
+- **ruff**: All checks passed
+- **mypy**: No issues found
+
+The implementation adds a `LOCAL_PROVIDERS` frozenset and short-circuits `_load_provider_headroom` to return `(1.0, "local")` for any local provider, skipping SDP lookups entirely. Six new/updated tests cover the behavior. Commit `9b4b1c1` is clean.

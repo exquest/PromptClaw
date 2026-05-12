@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3450 chars)
+---
+
+frac-0053 complete. ADP phases executed:
+
+- **Specify** (`b890dc7`): `specs/frac-0053-spec.md` — 12 acceptance criteria including narrative HTTP smoke (`/healthz` + `/readyz` + bearer auth) and startup identity hardening anchors per the candidate-hardening checks.
+- **Test** (`f6ad9cc`): `tests/test_test_genai_depth.py` — 9 tests covering the probe surface, client construction (explicit + default-auth env), limit-bounded model sampling, success/error result paths, JSON-safe summary, canonical CLI lines, end-to-end `main`, and fractal depth ≥ 2.
+- **Implement** (`4c1a865`): `test_genai.py` rewritten as a typed module with frozen `GenAIProbeResult` and `create_genai_client`, `list_model_names`, `probe_genai_client`, `summarize_probe_result`, `format_probe_lines`, `main`. Force-added (gitignored). CLI byte-for-byte preserved (`python test_genai.py` still prints the original `Error: …` line and exits 0).
+- **Verify**: full validation clean — `pytest tests/` 4253 passed / 3 skipped, `ruff check src/ tests/` clean, `mypy src/` clean, startup identity + narrative HTTP smoke anchors green.
+- **Document** (`4220e0b`): CHANGELOG entry added at the top of Unreleased; progress.md flipped frac-0053 to in_progress (the SDP runner promotes pending → complete after the verify-agent run).

@@ -1,0 +1,25 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3777 chars)
+---
+
+Task frac-0075 complete. Summary:
+
+**Spec** — `specs/frac-0075-spec.md` defines the depth-2 deepening, listing the public-API end-to-end paths to cover (miss→put→hit→replace, queue/storage aliases, JSON round-trip, multi-entry restart with prune, combined count+size LRU) and re-uses startup identity hardening anchors.
+
+**Depth gate** — `tests/test_test_generation_cache_depth.py` loads `sdp/fractal.py` via `importlib.util` and asserts `tests/test_generation_cache.py` contains `GenerationCacheEndToEndTests` and classifies depth ≥ 2.
+
+**End-to-end tests** — Appended `GenerationCacheEndToEndTests` (5 methods, `__test__ = True`) to the existing test file without touching the prior locked assertions. No production source changes were needed; the cache module already exposed the surface the spec drives.
+
+**Validation**
+- `pytest tests/ -x` → 4504 passed, 3 skipped
+- `ruff check src/ tests/` → clean
+- `mypy src/` → clean
+- Startup identity anchors (CLI, first boot, governor, narrative ASGI) → 9 passed
+
+**Commits** (per sub-task, on `task/frac-0074` branch):
+1. `3469851` spec
+2. `61154cc` depth gate
+3. `96f84e6` depth-2 tests
+4. `f0d9443` CHANGELOG + progress.md
+
+Pre-existing dirty SDP files (ESCALATIONS.md, sdp/logs/*, sdp/notifications.log, sdp/run-log.md) were left untouched as out-of-scope SDP machinery state.

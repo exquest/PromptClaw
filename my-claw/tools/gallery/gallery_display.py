@@ -5,7 +5,6 @@ import json
 import os
 import signal
 import subprocess
-import sys
 import threading
 import time
 from pathlib import Path
@@ -14,8 +13,8 @@ try:
     from .tty_renderer import TTYRenderer
     from .fb_renderer import FramebufferRenderer
 except ImportError:
-    from tty_renderer import TTYRenderer
-    from fb_renderer import FramebufferRenderer
+    from gallery.tty_renderer import TTYRenderer  # type: ignore[no-redef]
+    from gallery.fb_renderer import FramebufferRenderer  # type: ignore[no-redef]
 
 
 class GalleryDisplay:
@@ -24,6 +23,9 @@ class GalleryDisplay:
     STATIC_DURATION = 60       # seconds per static piece
     ANIMATION_LOOPS = 3        # times to loop animations
     OVERLAY_ENABLED = True     # toggled with 'i' key
+    IMAGE_OVERLAY_HOLD = 2.0   # seconds to show caption at full opacity
+    IMAGE_OVERLAY_FADE = 1.5   # seconds to fade caption out
+    IMAGE_OVERLAY_STEPS = 3    # fade steps before removing caption
 
     # Recognized art file extensions
     TEXT_EXTENSIONS = {".txt", ".ans", ".ansi", ".asc"}
@@ -181,11 +183,9 @@ class GalleryDisplay:
         if art_type == "animation":
             self._display_animation(piece)
         elif art_type == "image" and use_fb and self.fb_renderer and self.fb_renderer.available:
-            self.fb_renderer.render_image(str(art_path))
-            if self.overlay_visible:
-                overlay = self._build_overlay(piece)
-                # For fb mode, render overlay via TTY on top
-                self.tty_renderer.render_overlay("", overlay)
+            overlay = self._build_overlay(piece) if self.overlay_visible else None
+            self.tty_renderer.clear()
+            self.fb_renderer.render_image(str(art_path), overlay_lines=overlay, overlay_alpha=1.0)
         elif art_type in ("text", "ansi"):
             self._display_text_art(piece)
         elif art_type == "image":
@@ -438,14 +438,53 @@ class GalleryDisplay:
         while elapsed < duration and self.running and not self.paused:
             if self._skip_event.is_set():
                 self._skip_event.clear()
-                return
+                return "skip"
             if self._prev_event.is_set():
                 self._prev_event.clear()
                 # Go back two so the main loop's +1 lands on previous
                 self.current_index = (self.current_index - 2) % max(1, len(self.playlist))
-                return
+                return "prev"
             time.sleep(interval)
             elapsed += interval
+        if self.paused:
+            return "paused"
+        if not self.running:
+            return "stopped"
+        return "completed"
+
+    def _display_image_for_duration(self, piece: dict) -> None:
+        """Display an image piece with a fading caption, then show the unobstructed image."""
+        piece = self._load_metadata_sidecar(piece)
+        if not self.fb_renderer or not self.fb_renderer.available:
+            self._display_piece(piece)
+            self._wait_or_skip(self.STATIC_DURATION)
+            return
+
+        art_path = Path(piece["path"])
+        overlay = self._build_overlay(piece) if self.overlay_visible else None
+        self.tty_renderer.clear()
+
+        if not overlay:
+            self.fb_renderer.render_image(str(art_path))
+            self._wait_or_skip(self.STATIC_DURATION)
+            return
+
+        self.fb_renderer.render_image(str(art_path), overlay_lines=overlay, overlay_alpha=1.0)
+        status = self._wait_or_skip(self.IMAGE_OVERLAY_HOLD)
+        if status != "completed":
+            return
+
+        step_duration = self.IMAGE_OVERLAY_FADE / max(1, self.IMAGE_OVERLAY_STEPS)
+        for step in range(self.IMAGE_OVERLAY_STEPS, 0, -1):
+            alpha = step / self.IMAGE_OVERLAY_STEPS
+            self.fb_renderer.render_image(str(art_path), overlay_lines=overlay, overlay_alpha=alpha)
+            status = self._wait_or_skip(step_duration)
+            if status != "completed":
+                return
+
+        self.fb_renderer.render_image(str(art_path))
+        remaining = max(0.0, self.STATIC_DURATION - self.IMAGE_OVERLAY_HOLD - self.IMAGE_OVERLAY_FADE)
+        self._wait_or_skip(remaining)
 
     # -- Screen blanking --------------------------------------------------------
 
@@ -516,8 +555,16 @@ class GalleryDisplay:
 
                 if not self.paused:
                     piece = self.playlist[self.current_index % len(self.playlist)]
-                    self._display_piece(piece)
-                    self._wait_or_skip(self.STATIC_DURATION)
+                    if (
+                        piece.get("type") == "image"
+                        and self.render_mode != "ansi"
+                        and self.fb_renderer
+                        and self.fb_renderer.available
+                    ):
+                        self._display_image_for_duration(piece)
+                    else:
+                        self._display_piece(piece)
+                        self._wait_or_skip(self.STATIC_DURATION)
                     if not self.paused and self.running:
                         self.current_index = (self.current_index + 1) % len(self.playlist)
                 else:

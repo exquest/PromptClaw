@@ -1,0 +1,23 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (3609 chars)
+---
+
+All three verification issues resolved:
+
+**Issue 1 (blocking) — Budget enforcement in `tracker_solo_song`:**
+- `grain_density`: Grain/sample voice events are probabilistically skipped when `grain_density < 1.0` (in `_play_tracker_event`)
+- `density_multiplier`: Non-accent events thinned proportionally when `density_multiplier < 1.0`
+- `suppress_llm`: Next-piece pre-composition (the expensive `_build_score_tree_piece` for song_num+1) is skipped entirely
+- `dsp_blocks_allowed`: EMSD context's DSP blocks are truncated via `dataclasses.replace()` on the frozen dataclass chain
+
+**Issue 2 (blocking) — Startup hardening in `cypherclaw_daemon.py`:**
+- Added `bootstrap_identity()` + `FirstBootAnnouncer.maybe_announce()` to `poll_loop()`, mirroring the `daemon.py` pattern at lines 2445-2452
+
+**Issue 3 (minor) — Integration tests:**
+- `TestBudgetEnforcesGrainDensity`: Verifies grain_density scales with pressure and reaches emergency levels
+- `TestBudgetEnforcesDensityMultiplier`: Verifies density only kicks in at high pressure
+- `TestBudgetEnforcesDSPCap`: Verifies DSP capping works with frozen dataclass replace
+- `TestBudgetSuppressLLM`: Verifies suppress_llm activates under pressure
+- `TestStartupIdentityWiring`: AST-inspects both `daemon.py` and `cypherclaw_daemon.py` to confirm `bootstrap_identity()` is called before `FirstBootAnnouncer` in `poll_loop()`
+
+Validation: 2133 tests pass, ruff clean, mypy clean.

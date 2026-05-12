@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3772 chars)
+---
+
+frac-0106 complete. Summary:
+
+- **Spec:** `specs/frac-0106-spec.md` — depth-2 deepening of `tests/test_render_seed.py`, no production changes; startup identity hardening covered by re-running existing anchors.
+- **Red phase:** `tests/test_test_render_seed_depth.py` failed on missing `RenderSeedEndToEndTests` class before implementation.
+- **Green phase:** `RenderSeedEndToEndTests.test_full_seed_derivation_lifecycle_is_json_safe_and_event_round_trip_safe` drives `derive_seed(...)` over a phrase → voice → event family of `seed_path` tuples, asserts 32-bit range / determinism / uniqueness / root-seed sensitivity, round-trips through `Event.seed_path`, and JSON-round-trips a diagnostic of seeds + paths. Class opts in via `__test__ = True` to match the depth-2 collection pattern used by frac-0104/0105.
+- **Validation:** `pytest tests/ -x` → 4637 passed, 3 skipped; ruff clean; mypy clean. Identity hardening anchors → 11 passed.
+- **Commits on `task/frac-0074`:** depth gate, end-to-end class, docs (CHANGELOG.md, progress.md, ESCALATIONS.md).

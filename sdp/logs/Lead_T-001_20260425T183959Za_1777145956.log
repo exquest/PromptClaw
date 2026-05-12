@@ -1,0 +1,9 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1313 chars)
+---
+
+Committed `3c9da82`. Summary:
+
+- **New module** `my-claw/tools/senseweave/sampler_buffers.py` — `BufferLoader.on_sampler_load(record)` reads the WAV header, sends `/b_alloc bufnum frames channels` then `/b_allocRead bufnum path 0 -1`, and writes the assigned bufnum onto the record.
+- **New tests** `tests/test_sampler_buffers.py` — 5 cases with a recording mock OSC client: mono load, stereo load, monotonic bufnum allocation, str-path acceptance, and missing-WAV raises with no OSC traffic.
+- ruff, mypy, and the focused pytest run all pass. Pre-existing workspace edits left untouched per the task rules. Full `BufferPool` + LRU eviction + `OnSamplerFree` remain for later T-001 slices.

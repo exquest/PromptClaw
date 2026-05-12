@@ -1,0 +1,17 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high -p -
+Prompt delivered via: stdin (2960 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+All 56 tests pass. Here's the summary:
+
+**Correctness** — All acceptance criteria met. `normalize_theramini_state()` is the shared state contract used by both listeners and the composer. `plan_duet_response()` correctly blocks output (`may_play=False`) while human gesture is active, and all five policies (turn_taking, imitation, counterpoint, accompaniment, silence_request) plus solo recovery are implemented.
+
+**Completeness** — Two minor gaps:
+1. Neither listener computes `onset_rate` — the adaptive density logic (counterpoint for fast play, imitation for slow) always defaults to imitation unless `requested_policy` is set explicitly.
+2. No pipeline integration test for `duet_loop()` — coverage stops at the unit level.
+
+**Hardening items** — The `bootstrap_identity` recurring pattern is already wired correctly in `daemon.py:2445` (before `FirstBootAnnouncer` at 2448). Not a T-008 regression.
+
+**Notes for Lead:** (1) Add `onset_rate` computation to both listeners. (2) Add a `duet_loop()` integration test that exercises the full state sequence.

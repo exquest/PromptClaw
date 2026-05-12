@@ -1,0 +1,1907 @@
+Command: gemini -p <!--
+  sdp-cli agent-specific template for gemini
+  Edit this file to tune how gemini handles fix_gate.md.
+  The shipped default lives at src/sdp/prompts/templates/fix_gate.md.
+  Delete this file to revert to the default.
+-->
+# Fix Gate Failures: Task T-022@20260416T043834Z
+
+Your previous work failed the quality gate.
+
+## Gate Output
+
+```
+  [PASS] pytest: pytest tests/ --tb=short -q
+  [FAIL] ruff: ruff check src/ tests/
+  [PASS] mypy: mypy src/
+```
+
+## Instructions
+
+1.  **Analyze**: Read the gate output above. Identify the specific errors.
+2.  **Auto-Fix First**: For linting errors, run `ruff check . --fix` first, as it may solve many issues automatically.
+3.  **Manual Fix**: Manually fix any remaining test failures or type errors. Fix ONLY what the gate complained about. Do not refactor other code.
+4.  **Verify**: Run the full validation suite to confirm all issues are resolved.
+5.  **Commit**: Commit the fix with the exact message: `fix(scope): address gate failures [T-022@20260416T043834Z]`
+
+## Acceptance Criteria
+
+- stable buffers expose source name, capture path, freshness, RMS, spectral profile, and transform history<br/>- sample banks can retain selected clips on archive storage with metadata<br/>- tests verify buffer refresh and archive path selection
+ --output-format stream-json --approval-mode yolo --sandbox -m gemini-3.1-pro-preview
+Prompt delivered via: argv
+---
+
+{"type":"init","timestamp":"2026-04-16T11:58:23.647Z","session_id":"d96de100-a4b9-451f-bb97-676ab84dd0d7","model":"gemini-3.1-pro-preview"}
+{"type":"message","timestamp":"2026-04-16T11:58:23.835Z","role":"user","content":"<!--\n  sdp-cli agent-specific template for gemini\n  Edit this file to tune how gemini handles fix_gate.md.\n  The shipped default lives at src/sdp/prompts/templates/fix_gate.md.\n  Delete this file to revert to the default.\n-->\n# Fix Gate Failures: Task T-022@20260416T043834Z\n\nYour previous work failed the quality gate.\n\n## Gate Output\n\n```\n  [PASS] pytest: pytest tests/ --tb=short -q\n  [FAIL] ruff: ruff check src/ tests/\n  [PASS] mypy: mypy src/\n```\n\n## Instructions\n\n1.  **Analyze**: Read the gate output above. Identify the specific errors.\n2.  **Auto-Fix First**: For linting errors, run `ruff check . --fix` first, as it may solve many issues automatically.\n3.  **Manual Fix**: Manually fix any remaining test failures or type errors. Fix ONLY what the gate complained about. Do not refactor other code.\n4.  **Verify**: Run the full validation suite to confirm all issues are resolved.\n5.  **Commit**: Commit the fix with the exact message: `fix(scope): address gate failures [T-022@20260416T043834Z]`\n\n## Acceptance Criteria\n\n- stable buffers expose source name, capture path, freshness, RMS, spectral profile, and transform history<br/>- sample banks can retain selected clips on archive storage with metadata<br/>- tests verify buffer refresh and archive path selection\n"}
+{"type":"message","timestamp":"2026-04-16T11:58:55.700Z","role":"assistant","content":"I will run `ruff","delta":true}
+{"type":"message","timestamp":"2026-04-16T11:58:55.714Z","role":"assistant","content":" check src/ tests/` to see the specific linting errors that caused the gate to fail.","delta":true}
+{"type":"tool_use","timestamp":"2026-04-16T11:58:55.761Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1776340735760_0","parameters":{"command":"ruff check src/ tests/"}}
+{"type":"tool_result","timestamp":"2026-04-16T11:58:56.360Z","tool_id":"run_shell_command_1776340735760_0","status":"success","output":"tests/test_live_buffer.py:4:8: F401 [*] `time` imported but unused\n  |\n2 | import os\n3 | import sys\n4 | import time\n  |        ^^^^ F401\n5 | from pathlib import Path\n  |\n  = help: Remove unused import: `time`\n\ntests/test_live_buffer.py:5:21: F401 [*] `pathlib.Path` imported but unused\n  |\n3 | import sys\n4 | import time\n5 | from pathlib import Path\n  |                     ^^^^ F401\n6 |\n7 | import pytest\n  |\n  = help: Remove unused import: `pathlib.Path`\n\ntests/test_live_buffer.py:7:8: F401 [*] `pytest` imported but unused\n  |\n5 | from pathlib import Path\n6 |\n7 | import pytest\n  |        ^^^^^^ F401\n8 |\n9 | sys.path.insert(0, os.path.join(os.path.dirname(__file__), \"..\", \"my-claw\", \"tools\"))\n  |\n  = help: Remove unused import: `pytest`\n\nFound 3 errors.\n[*] 3 fixable with the `--fix` option."}
+{"type":"message","timestamp":"2026-04-16T12:00:56.360Z","role":"assistant","content":"I will now run `ruff check . --fix` to","delta":true}
+{"type":"message","timestamp":"2026-04-16T12:00:56.374Z","role":"assistant","content":" automatically remove the unused imports, and then verify that all checks (pytest, ruff, mypy) pass.","delta":true}
+{"type":"tool_use","timestamp":"2026-04-16T12:00:56.427Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1776340856427_0","parameters":{"command":"ruff check . --fix && ruff check src/ tests/ && pytest tests/ --tb=short -q && mypy src/"}}
+{"type":"tool_result","timestamp":"2026-04-16T12:00:57.627Z","tool_id":"run_shell_command_1776340856427_0","status":"success","output":"my-claw/tools/diffusion_art.py:30:5: F841 Local variable `palette` is assigned to but never used\n   |\n28 |     weather = scene_spec.get(\"weather\", {})\n29 |     mood = scene_spec.get(\"mood_tag\", \"calm\")\n30 |     palette = scene_spec.get(\"palette_name\", \"day_calm\")\n   |     ^^^^^^^ F841\n31 |     title = scene_spec.get(\"title\", \"\")\n32 |     hour = scene_spec.get(\"hour\", 12)\n   |\n   = help: Remove assignment to unused variable `palette`\n\nmy-claw/tools/diffusion_art.py:31:5: F841 Local variable `title` is assigned to but never used\n   |\n29 |     mood = scene_spec.get(\"mood_tag\", \"calm\")\n30 |     palette = scene_spec.get(\"palette_name\", \"day_calm\")\n31 |     title = scene_spec.get(\"title\", \"\")\n   |     ^^^^^ F841\n32 |     hour = scene_spec.get(\"hour\", 12)\n   |\n   = help: Remove assignment to unused variable `title`\n\nmy-claw/tools/diffusion_art.py:104:55: F821 Undefined name `Image`\n    |\n102 | def generate(prompt: str, init_image=None, strength: float = 0.7,\n103 |              steps: int = 20, guidance: float = 7.5,\n104 |              width: int = 512, height: int = 512) -> \"Image\":\n    |                                                       ^^^^^ F821\n105 |     \"\"\"Generate an image. Loads model, generates, fully unloads.\n    |\n\nmy-claw/tools/duet_composer.py:348:1: E402 Module level import not at top of file\n    |\n346 | # Character System — each organism character has a visual form + musical voice\n347 | # ---------------------------------------------------------------------------\n348 | import sys as _sys\n    | ^^^^^^^^^^^^^^^^^^ E402\n349 | _sys.path.insert(0, \"/home/user/cypherclaw/tools/senseweave\")\n350 | from character_registry import CharacterRegistry\n    |\n\nmy-claw/tools/duet_composer.py:350:1: E402 Module level import not at top of file\n    |\n348 | import sys as _sys\n349 | _sys.path.insert(0, \"/home/user/cypherclaw/tools/senseweave\")\n350 | from character_registry import CharacterRegistry\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ E402\n351 |\n352 | _char_registry = CharacterRegistry()\n    |\n\nmy-claw/tools/duet_composer.py:1428:5: F841 Local variable `cresc_plan` is assigned to but never used\n     |\n1427 |     # Ch.5: diverging crescendo — build from center outward\n1428 |     cresc_plan = plan_diverging_crescendo(4)\n     |     ^^^^^^^^^^ F841\n1429 |\n1430 |     # Development: bell melody, bowed counterpoint, breath swell, pluck bass\n     |\n     = help: Remove assignment to unused variable `cresc_plan`\n\nmy-claw/tools/duet_composer.py:1458:25: E701 Multiple statements on one line (colon)\n     |\n1456 |         counter_phrase = counter_mind.generate_phrase(5)\n1457 |         for freq, dur, accent in counter_phrase:\n1458 |             if freq == 0: continue\n     |                         ^ E701\n1459 |             play_voice(\"bowed\", freq / 2, 0.06 * loud, bt * 1.5)\n1460 |             time.sleep(dur * bt * 1.3)\n     |\n\nmy-claw/tools/duet_composer.py:1507:25: E701 Multiple statements on one line (colon)\n     |\n1505 |         fusion_phrase = dev_mind.generate_phrase(4)\n1506 |         for freq, dur, accent in fusion_phrase:\n1507 |             if freq == 0: continue\n     |                         ^ E701\n1508 |             play_voice(fp[0], freq, 0.14, 0.45)\n1509 |             play_voice(fp[1], freq * 2, 0.04, 0.3)\n     |\n\nmy-claw/tools/gallery/gallery_x11.py:86:9: F841 Local variable `font_sm` is assigned to but never used\n   |\n84 |     except Exception:\n85 |         font = pygame.font.SysFont(None, 36)\n86 |         font_sm = font\n   |         ^^^^^^^ F841\n87 |         font_xs = font\n   |\n   = help: Remove assignment to unused variable `font_sm`\n\nmy-claw/tools/gallery/gallery_x11.py:87:9: F841 Local variable `font_xs` is assigned to but never used\n   |\n85 |         font = pygame.font.SysFont(None, 36)\n86 |         font_sm = font\n87 |         font_xs = font\n   |         ^^^^^^^ F841\n88 |     \n89 |     y = HEIGHT - 200\n   |\n   = help: Remove assignment to unused variable `font_xs`\n\nmy-claw/tools/gallery/gallery_x11.py:155:21: F821 Undefined name `surface`\n    |\n153 |                     raw = icon.tobytes(\"raw\", \"RGBA\")\n154 |                     icon_surf = pygame.image.fromstring(raw, (icon_size, icon_size), \"RGBA\")\n155 |                     surface.blit(icon_surf, (start_x + i * spacing, y - 10))\n    |                     ^^^^^^^ F821\n156 |                 \n157 |                 # Name label below icon\n    |\n\nmy-claw/tools/gallery/gallery_x11.py:155:69: F821 Undefined name `y`\n    |\n153 |                     raw = icon.tobytes(\"raw\", \"RGBA\")\n154 |                     icon_surf = pygame.image.fromstring(raw, (icon_size, icon_size), \"RGBA\")\n155 |                     surface.blit(icon_surf, (start_x + i * spacing, y - 10))\n    |                                                                     ^ F821\n156 |                 \n157 |                 # Name label below icon\n    |\n\nmy-claw/tools/gallery/gallery_x11.py:159:29: F821 Undefined name `font_xs`\n    |\n157 |                 # Name label below icon\n158 |                 name = cid.replace(\"_\", \" \").replace(\"sense \", \"\").replace(\"voice \", \"\").replace(\"output \", \"\").replace(\"pet \", \"\")\n159 |                 name_surf = font_xs.render(name, True, (140, 155, 185))\n    |                             ^^^^^^^ F821\n160 |                 surface.blit(name_surf, (start_x + i * spacing, y + icon_size))\n161 |             y += icon_size + 30\n    |\n\nmy-claw/tools/gallery/gallery_x11.py:160:17: F821 Undefined name `surface`\n    |\n158 |                 name = cid.replace(\"_\", \" \").replace(\"sense \", \"\").replace(\"voice \", \"\").replace(\"output \", \"\").replace(\"pet \", \"\")\n159 |                 name_surf = font_xs.render(name, True, (140, 155, 185))\n160 |                 surface.blit(name_surf, (start_x + i * spacing, y + icon_size))\n    |                 ^^^^^^^ F821\n161 |             y += icon_size + 30\n162 |     except Exception:\n    |\n\nmy-claw/tools/gallery/gallery_x11.py:160:65: F821 Undefined name `y`\n    |\n158 |                 name = cid.replace(\"_\", \" \").replace(\"sense \", \"\").replace(\"voice \", \"\").replace(\"output \", \"\").replace(\"pet \", \"\")\n159 |                 name_surf = font_xs.render(name, True, (140, 155, 185))\n160 |                 surface.blit(name_surf, (start_x + i * spacing, y + icon_size))\n    |                                                                 ^ F821\n161 |             y += icon_size + 30\n162 |     except Exception:\n    |\n\nmy-claw/tools/gallery/gallery_x11.py:161:13: F821 Undefined name `y`\n    |\n159 |                 name_surf = font_xs.render(name, True, (140, 155, 185))\n160 |                 surface.blit(name_surf, (start_x + i * spacing, y + icon_size))\n161 |             y += icon_size + 30\n    |             ^ F821\n162 |     except Exception:\n163 |         pass\n    |\n\nmy-claw/tools/gallery/gallery_x11.py:170:16: F821 Undefined name `font_xs`\n    |\n168 |         light = gs.get(\"light\", \"?\")\n169 |         season = gs.get(\"season\", \"?\")\n170 |         surf = font_xs.render(f\"{season} · {light}\", True, (130, 150, 170, 120))\n    |                ^^^^^^^ F821\n171 |         surface.blit(surf, (40, y))\n172 |     except Exception:\n    |\n\nmy-claw/tools/gallery/gallery_x11.py:171:9: F821 Undefined name `surface`\n    |\n169 |         season = gs.get(\"season\", \"?\")\n170 |         surf = font_xs.render(f\"{season} · {light}\", True, (130, 150, 170, 120))\n171 |         surface.blit(surf, (40, y))\n    |         ^^^^^^^ F821\n172 |     except Exception:\n173 |         pass\n    |\n\nmy-claw/tools/input_monitor.py:38:27: E702 Multiple statements on one line (semicolon)\n   |\n36 |     for a in args:\n37 |         if isinstance(a, int):\n38 |             typetag += \"i\"; argdata += struct.pack(\">i\", a)\n   |                           ^ E702\n39 |         elif isinstance(a, float):\n40 |             typetag += \"f\"; argdata += struct.pack(\">f\", a)\n   |\n\nmy-claw/tools/input_monitor.py:40:27: E702 Multiple statements on one line (semicolon)\n   |\n38 |             typetag += \"i\"; argdata += struct.pack(\">i\", a)\n39 |         elif isinstance(a, float):\n40 |             typetag += \"f\"; argdata += struct.pack(\">f\", a)\n   |                           ^ E702\n41 |         elif isinstance(a, str):\n42 |             typetag += \"s\"; argdata += osc_string(a)\n   |\n\nmy-claw/tools/input_monitor.py:42:27: E702 Multiple statements on one line (semicolon)\n   |\n40 |             typetag += \"f\"; argdata += struct.pack(\">f\", a)\n41 |         elif isinstance(a, str):\n42 |             typetag += \"s\"; argdata += osc_string(a)\n   |                           ^ E702\n43 |         elif isinstance(a, bytes):\n44 |             typetag += \"b\"; argdata += struct.pack(\">i\", len(a)) + a + b\"\\x00\" * ((4 - len(a) % 4) % 4)\n   |\n\nmy-claw/tools/input_monitor.py:44:27: E702 Multiple statements on one line (semicolon)\n   |\n42 |             typetag += \"s\"; argdata += osc_string(a)\n43 |         elif isinstance(a, bytes):\n44 |             typetag += \"b\"; argdata += struct.pack(\">i\", len(a)) + a + b\"\\x00\" * ((4 - len(a) % 4) % 4)\n   |                           ^ E702\n45 |     msg += osc_string(typetag) + argdata\n46 |     return msg\n   |\n\nmy-claw/tools/input_monitor.py:64:13: F841 Local variable `node_id` is assigned to but never used\n   |\n62 |         # args: node_id(i), reply_id(i), bus(f), amp(f)\n63 |         if i + 16 <= len(data):\n64 |             node_id = struct.unpack(\">i\", data[i:i+4])[0]\n   |             ^^^^^^^ F841\n65 |             reply_id = struct.unpack(\">i\", data[i+4:i+8])[0]\n66 |             bus = struct.unpack(\">f\", data[i+8:i+12])[0]\n   |\n   = help: Remove assignment to unused variable `node_id`\n\nmy-claw/tools/input_monitor.py:65:13: F841 Local variable `reply_id` is assigned to but never used\n   |\n63 |         if i + 16 <= len(data):\n64 |             node_id = struct.unpack(\">i\", data[i:i+4])[0]\n65 |             reply_id = struct.unpack(\">i\", data[i+4:i+8])[0]\n   |             ^^^^^^^^ F841\n66 |             bus = struct.unpack(\">f\", data[i+8:i+12])[0]\n67 |             amp = struct.unpack(\">f\", data[i+12:i+16])[0]\n   |\n   = help: Remove assignment to unused variable `reply_id`\n\nmy-claw/tools/input_monitor.py:89:5: E731 Do not assign a `lambda` expression, use a `def`\n   |\n87 |     print(f\"Input monitor on port {sock.getsockname()[1]}\", flush=True)\n88 |\n89 |     send = lambda addr, args: sock.sendto(osc_msg(addr, args), SC_ADDR)\n   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ E731\n90 |\n91 |     # Load synthdef\n   |\n   = help: Rewrite `send` as a `def`\n\nmy-claw/tools/senseweave/keyboard_chat.py:289:36: E741 Ambiguous variable name: `l`\n    |\n287 |             data = json.loads(resp.read())\n288 |             text = data.get(\"response\", \"\").strip()\n289 |             lines = [l.strip() for l in text.splitlines() if l.strip() and len(l.strip()) < 40]\n    |                                    ^ E741\n290 |             if lines and self.is_thinking:\n291 |                 self._thinking_phrases = lines[:5]\n    |\n\nmy-claw/tools/senseweave/mood_mirror.py:63:5: F841 Local variable `valence` is assigned to but never used\n   |\n61 |     \"\"\"\n62 |     energy = _clamp(mood.get(\"energy\", 0.5))\n63 |     valence = _clamp(mood.get(\"valence\", 0.5))\n   |     ^^^^^^^ F841\n64 |     arousal = _clamp(mood.get(\"arousal\", 0.5))\n   |\n   = help: Remove assignment to unused variable `valence`\n\nmy-claw/tools/senseweave/mood_mirror.py:64:5: F841 Local variable `arousal` is assigned to but never used\n   |\n62 |     energy = _clamp(mood.get(\"energy\", 0.5))\n63 |     valence = _clamp(mood.get(\"valence\", 0.5))\n64 |     arousal = _clamp(mood.get(\"arousal\", 0.5))\n   |     ^^^^^^^ F841\n65 |\n66 |     expression = mood_to_face_expression(mood)\n   |\n   = help: Remove assignment to unused variable `arousal`\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:46:16: E701 Multiple statements on one line (colon)\n   |\n44 |     hour = getattr(spec, \"hour\", 12)\n45 |\n46 |     if hour < 6: tod = \"deep night, moonlit\"\n   |                ^ E701\n47 |     elif hour < 9: tod = \"early morning, golden dawn\"\n48 |     elif hour < 12: tod = \"morning, soft daylight\"\n   |\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:47:18: E701 Multiple statements on one line (colon)\n   |\n46 |     if hour < 6: tod = \"deep night, moonlit\"\n47 |     elif hour < 9: tod = \"early morning, golden dawn\"\n   |                  ^ E701\n48 |     elif hour < 12: tod = \"morning, soft daylight\"\n49 |     elif hour < 17: tod = \"afternoon, warm sunlight\"\n   |\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:48:19: E701 Multiple statements on one line (colon)\n   |\n46 |     if hour < 6: tod = \"deep night, moonlit\"\n47 |     elif hour < 9: tod = \"early morning, golden dawn\"\n48 |     elif hour < 12: tod = \"morning, soft daylight\"\n   |                   ^ E701\n49 |     elif hour < 17: tod = \"afternoon, warm sunlight\"\n50 |     elif hour < 20: tod = \"evening, golden hour\"\n   |\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:49:19: E701 Multiple statements on one line (colon)\n   |\n47 |     elif hour < 9: tod = \"early morning, golden dawn\"\n48 |     elif hour < 12: tod = \"morning, soft daylight\"\n49 |     elif hour < 17: tod = \"afternoon, warm sunlight\"\n   |                   ^ E701\n50 |     elif hour < 20: tod = \"evening, golden hour\"\n51 |     else: tod = \"night, blue-purple darkness\"\n   |\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:50:19: E701 Multiple statements on one line (colon)\n   |\n48 |     elif hour < 12: tod = \"morning, soft daylight\"\n49 |     elif hour < 17: tod = \"afternoon, warm sunlight\"\n50 |     elif hour < 20: tod = \"evening, golden hour\"\n   |                   ^ E701\n51 |     else: tod = \"night, blue-purple darkness\"\n   |\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:51:9: E701 Multiple statements on one line (colon)\n   |\n49 |     elif hour < 17: tod = \"afternoon, warm sunlight\"\n50 |     elif hour < 20: tod = \"evening, golden hour\"\n51 |     else: tod = \"night, blue-purple darkness\"\n   |         ^ E701\n52 |\n53 |     weather_words = []\n   |\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:54:36: E701 Multiple statements on one line (colon)\n   |\n53 |     weather_words = []\n54 |     if weather.get(\"rain\", 0) > 0.1: weather_words.append(\"rainy\")\n   |                                    ^ E701\n55 |     if weather.get(\"snow\", 0) > 0.1: weather_words.append(\"snowy\")\n56 |     if weather.get(\"fog\"): weather_words.append(\"foggy misty\")\n   |\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:55:36: E701 Multiple statements on one line (colon)\n   |\n53 |     weather_words = []\n54 |     if weather.get(\"rain\", 0) > 0.1: weather_words.append(\"rainy\")\n55 |     if weather.get(\"snow\", 0) > 0.1: weather_words.append(\"snowy\")\n   |                                    ^ E701\n56 |     if weather.get(\"fog\"): weather_words.append(\"foggy misty\")\n57 |     if weather.get(\"clouds\", 0) >= 3: weather_words.append(\"overcast\")\n   |\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:56:26: E701 Multiple statements on one line (colon)\n   |\n54 |     if weather.get(\"rain\", 0) > 0.1: weather_words.append(\"rainy\")\n55 |     if weather.get(\"snow\", 0) > 0.1: weather_words.append(\"snowy\")\n56 |     if weather.get(\"fog\"): weather_words.append(\"foggy misty\")\n   |                          ^ E701\n57 |     if weather.get(\"clouds\", 0) >= 3: weather_words.append(\"overcast\")\n58 |     weather_str = \", \".join(weather_words) if weather_words else \"clear sky\"\n   |\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:57:37: E701 Multiple statements on one line (colon)\n   |\n55 |     if weather.get(\"snow\", 0) > 0.1: weather_words.append(\"snowy\")\n56 |     if weather.get(\"fog\"): weather_words.append(\"foggy misty\")\n57 |     if weather.get(\"clouds\", 0) >= 3: weather_words.append(\"overcast\")\n   |                                     ^ E701\n58 |     weather_str = \", \".join(weather_words) if weather_words else \"clear sky\"\n   |\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:62:27: E701 Multiple statements on one line (colon)\n   |\n60 |     char_desc = []\n61 |     for name in char_names[:3]:\n62 |         if \"heart\" in name: char_desc.append(\"a pulsing organic form\")\n   |                           ^ E701\n63 |         elif \"eye\" in name or \"garden\" in name: char_desc.append(\"a watchful presence among leaves\")\n64 |         elif \"window\" in name: char_desc.append(\"light streaming through glass\")\n   |\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:63:47: E701 Multiple statements on one line (colon)\n   |\n61 |     for name in char_names[:3]:\n62 |         if \"heart\" in name: char_desc.append(\"a pulsing organic form\")\n63 |         elif \"eye\" in name or \"garden\" in name: char_desc.append(\"a watchful presence among leaves\")\n   |                                               ^ E701\n64 |         elif \"window\" in name: char_desc.append(\"light streaming through glass\")\n65 |         elif \"poet\" in name: char_desc.append(\"a flowing figure\")\n   |\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:64:30: E701 Multiple statements on one line (colon)\n   |\n62 |         if \"heart\" in name: char_desc.append(\"a pulsing organic form\")\n63 |         elif \"eye\" in name or \"garden\" in name: char_desc.append(\"a watchful presence among leaves\")\n64 |         elif \"window\" in name: char_desc.append(\"light streaming through glass\")\n   |                              ^ E701\n65 |         elif \"poet\" in name: char_desc.append(\"a flowing figure\")\n66 |         elif \"claude\" in name or \"codex\" in name or \"gemini\" in name: char_desc.append(\"a luminous spirit\")\n   |\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:65:28: E701 Multiple statements on one line (colon)\n   |\n63 |         elif \"eye\" in name or \"garden\" in name: char_desc.append(\"a watchful presence among leaves\")\n64 |         elif \"window\" in name: char_desc.append(\"light streaming through glass\")\n65 |         elif \"poet\" in name: char_desc.append(\"a flowing figure\")\n   |                            ^ E701\n66 |         elif \"claude\" in name or \"codex\" in name or \"gemini\" in name: char_desc.append(\"a luminous spirit\")\n67 |         elif \"basalt\" in name: char_desc.append(\"a solid ancient stone figure\")\n   |\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:66:69: E701 Multiple statements on one line (colon)\n   |\n64 |         elif \"window\" in name: char_desc.append(\"light streaming through glass\")\n65 |         elif \"poet\" in name: char_desc.append(\"a flowing figure\")\n66 |         elif \"claude\" in name or \"codex\" in name or \"gemini\" in name: char_desc.append(\"a luminous spirit\")\n   |                                                                     ^ E701\n67 |         elif \"basalt\" in name: char_desc.append(\"a solid ancient stone figure\")\n68 |         elif \"pebble\" in name: char_desc.append(\"a small bright curious stone\")\n   |\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:67:30: E701 Multiple statements on one line (colon)\n   |\n65 |         elif \"poet\" in name: char_desc.append(\"a flowing figure\")\n66 |         elif \"claude\" in name or \"codex\" in name or \"gemini\" in name: char_desc.append(\"a luminous spirit\")\n67 |         elif \"basalt\" in name: char_desc.append(\"a solid ancient stone figure\")\n   |                              ^ E701\n68 |         elif \"pebble\" in name: char_desc.append(\"a small bright curious stone\")\n69 |         else: char_desc.append(\"an abstract being\")\n   |\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:68:30: E701 Multiple statements on one line (colon)\n   |\n66 |         elif \"claude\" in name or \"codex\" in name or \"gemini\" in name: char_desc.append(\"a luminous spirit\")\n67 |         elif \"basalt\" in name: char_desc.append(\"a solid ancient stone figure\")\n68 |         elif \"pebble\" in name: char_desc.append(\"a small bright curious stone\")\n   |                              ^ E701\n69 |         else: char_desc.append(\"an abstract being\")\n   |\n\nmy-claw/tools/senseweave/pareidolia_diffusion.py:69:13: E701 Multiple statements on one line (colon)\n   |\n67 |         elif \"basalt\" in name: char_desc.append(\"a solid ancient stone figure\")\n68 |         elif \"pebble\" in name: char_desc.append(\"a small bright curious stone\")\n69 |         else: char_desc.append(\"an abstract being\")\n   |             ^ E701\n70 |\n71 |     chars_str = \", \".join(char_desc) if char_desc else \"abstract forms\"\n   |\n\nmy-claw/tools/senseweave/scene_composer.py:143:5: F841 Local variable `valence` is assigned to but never used\n    |\n141 |     count = max(1, min(4, count))\n142 |     energy = mood.get(\"energy\", 0.5)\n143 |     valence = mood.get(\"valence\", 0.5)\n    |     ^^^^^^^ F841\n144 |     arousal = mood.get(\"arousal\", 0.5)\n    |\n    = help: Remove assignment to unused variable `valence`\n\nmy-claw/tools/senseweave/scene_composer.py:144:5: F841 Local variable `arousal` is assigned to but never used\n    |\n142 |     energy = mood.get(\"energy\", 0.5)\n143 |     valence = mood.get(\"valence\", 0.5)\n144 |     arousal = mood.get(\"arousal\", 0.5)\n    |     ^^^^^^^ F841\n145 |\n146 |     expression = mood_to_face_expression(mood)\n    |\n    = help: Remove assignment to unused variable `arousal`\n\nmy-claw/tools/senseweave/scene_composer.py:470:5: F841 Local variable `art_params` is assigned to but never used\n    |\n469 |     # --- Art params from mood ---\n470 |     art_params = mood_to_art_params(mood)\n    |     ^^^^^^^^^^ F841\n471 |\n472 |     # --- Season ---\n    |\n    = help: Remove assignment to unused variable `art_params`\n\nmy-claw/tools/senseweave/synthesis/melodic_mind.py:432:9: F841 Local variable `saved_counter` is assigned to but never used\n    |\n430 |         # Generate the antecedent phrase\n431 |         saved_degree = self._current_degree\n432 |         saved_counter = self._note_counter\n    |         ^^^^^^^^^^^^^ F841\n433 |\n434 |         self._in_consequent = False\n    |\n    = help: Remove assignment to unused variable `saved_counter`\n\nmy-claw/tools/senseweave/theramini_duet.py:138:5: F841 Local variable `root_idx_map` is assigned to but never used\n    |\n136 |     \"\"\"Return frequencies for all scale degrees in a given octave.\"\"\"\n137 |     freqs = []\n138 |     root_idx_map = {\n    |     ^^^^^^^^^^^^ F841\n139 |         \"C\": 0, \"C#\": 1, \"D\": 2, \"D#\": 3, \"E\": 4, \"F\": 5,\n140 |         \"F#\": 6, \"G\": 7, \"G#\": 8, \"A\": 9, \"A#\": 10, \"B\": 11,\n    |\n    = help: Remove assignment to unused variable `root_idx_map`\n\npromptclaw/orchestrator.py:51:9: F841 Local variable `task_path` is assigned to but never used\n   |\n49 |         self.artifacts = ArtifactManager(self.paths, run_id)\n50 |         self.artifacts.create_run_layout()\n51 |         task_path = self.artifacts.write_task(task_text)\n   |         ^^^^^^^^^ F841\n52 |         memory_text = self.memory_store.read()\n   |\n   = help: Remove assignment to unused variable `task_path`\n\npromptclaw/orchestrator.py:95:9: F841 Local variable `coherence_b` is assigned to but never used\n   |\n94 |         # --- Hook B: Post-routing coherence ---\n95 |         coherence_b = self.coherence.post_routing(run_id, asdict(decision))\n   |         ^^^^^^^^^^^ F841\n96 |\n97 |         if decision.ambiguous and self.config.routing.ask_user_on_ambiguity:\n   |\n   = help: Remove assignment to unused variable `coherence_b`\n\npromptclaw/orchestrator.py:280:9: F841 Local variable `output_path` is assigned to but never used\n    |\n278 |             task_text=state.task_text,\n279 |         )\n280 |         output_path = self.artifacts.write_output(f\"lead-{agent.name}.md\", result.output_text)\n    |         ^^^^^^^^^^^ F841\n281 |         self._log(state, \"lead_complete\", f\"Lead output written by {agent.name}\", phase=\"lead\", agent=agent.name, role=\"lead\")\n    |\n    = help: Remove assignment to unused variable `output_path`\n\npromptclaw/orchestrator.py:366:13: F841 Local variable `retry_output_path` is assigned to but never used\n    |\n364 | …         task_text=state.task_text,\n365 | …     )\n366 | …     retry_output_path = self.artifacts.write_output(f\"retry-{retry_agent.name}.md\", retry_result.output_text)\n    |       ^^^^^^^^^^^^^^^^^ F841\n367 | …     self._log(state, \"retry_complete\", f\"Retry completed by {retry_agent.name}\", phase=\"retry\", agent=retry_agent.name, role=\"lead\")\n368 | …     summary = (\n    |\n    = help: Remove assignment to unused variable `retry_output_path`\n\nFound 124 errors (69 fixed, 55 remaining).\nNo fixes available (19 hidden fixes can be enabled with the `--unsafe-fixes` option)."}
+{"type":"result","timestamp":"2026-04-16T12:05:15.354Z","status":"error","error":{"type":"unknown","message":"[API Error: No capacity available for model gemini-3.1-pro-preview on the server]"},"stats":{"total_tokens":21205,"input_tokens":20311,"output_tokens":114,"cached":8984,"input":11327,"duration_ms":0,"tool_calls":2,"models":{"gemini-3.1-pro-preview":{"total_tokens":21205,"input_tokens":20311,"output_tokens":114,"cached":8984,"input":11327}}}}
+
+--- STDERR ---
+YOLO mode is enabled. All tool calls will be automatically approved.
+YOLO mode is enabled. All tool calls will be automatically approved.
+Attempt 1 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:6581:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:8544:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276956:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276756:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:277597:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:254636:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274556:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309884:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309727:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.37.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/22.22.2'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Thu, 16 Apr 2026 11:58:24 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=96',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': 'e7950386106e1eb8',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Attempt 2 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:6581:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:8544:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276956:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276756:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:277597:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:254636:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274556:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309884:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309727:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.37.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/22.22.2'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Thu, 16 Apr 2026 11:58:33 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=5835',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': 'daf1072aab4174ed',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Attempt 1 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:6581:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:8544:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276956:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276756:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:277597:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:254636:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274556:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309884:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309727:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.37.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/22.22.2'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Thu, 16 Apr 2026 11:58:56 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=58',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': '2328e1cea38c6b2a',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Attempt 2 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:6581:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:8544:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276956:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276756:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:277597:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:254636:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274556:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309884:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309727:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.37.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/22.22.2'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Thu, 16 Apr 2026 11:59:01 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=60',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': '5c83b314266650b2',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Attempt 3 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:6581:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:8544:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276956:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276756:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:277597:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:254636:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274556:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309884:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309727:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.37.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/22.22.2'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Thu, 16 Apr 2026 11:59:11 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=68',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': 'efe7aec39a367797',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Attempt 4 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:6581:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:8544:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276956:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276756:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:277597:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:254636:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274556:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309884:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309727:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.37.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/22.22.2'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Thu, 16 Apr 2026 11:59:31 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=100',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': 'f5dcb1e3ffe60e96',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Attempt 5 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:6581:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:8544:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276956:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276756:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:277597:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:254636:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274556:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309884:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309727:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.37.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/22.22.2'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Thu, 16 Apr 2026 12:00:09 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=5601',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': 'a8a5b44d624dda8',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Attempt 1 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:6581:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:8544:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276956:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276756:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:277597:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:254636:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274556:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309884:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309727:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.37.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/22.22.2'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Thu, 16 Apr 2026 12:01:03 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=5690',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': 'f0f344affa66d25a',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Attempt 2 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:6581:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:8544:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276956:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276756:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:277597:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:254636:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274556:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309884:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309727:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.37.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/22.22.2'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Thu, 16 Apr 2026 12:01:16 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=6895',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': '87b44fa3e9ee8426',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Attempt 3 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:6581:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:8544:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276956:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276756:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:277597:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:254636:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274556:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309884:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309727:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.37.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/22.22.2'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Thu, 16 Apr 2026 12:01:30 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=6329',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': '5e86a939014ab4f4',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Attempt 4 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:6581:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:8544:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276956:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276756:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:277597:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:254636:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274556:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309884:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309727:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.37.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/22.22.2'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Thu, 16 Apr 2026 12:01:59 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=6070',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': 'a7aa5e936f2bd376',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Attempt 5 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:6581:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:8544:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276956:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276756:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:277597:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:254636:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274556:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309884:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309727:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.37.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/22.22.2'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Thu, 16 Apr 2026 12:02:33 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=182',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': 'f374f7db3c4dec5c',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Attempt 6 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:6581:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:8544:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276956:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276756:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:277597:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:254636:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274556:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309884:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309727:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.37.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/22.22.2'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Thu, 16 Apr 2026 12:02:57 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=187',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': 'e3378ceb61a8444e',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Attempt 7 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:6581:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:8544:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276956:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276756:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:277597:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:254636:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274556:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309884:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309727:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.37.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/22.22.2'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Thu, 16 Apr 2026 12:03:30 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=5516',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': 'eaee381356d0f6cf',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Attempt 8 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:6581:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:8544:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276956:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276756:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:277597:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:254636:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274556:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309884:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309727:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.37.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/22.22.2'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Thu, 16 Apr 2026 12:04:08 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=6060',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': '52c70c03eb42a99d',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Attempt 9 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:6581:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:8544:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276956:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:276756:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:277597:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:254636:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274556:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309884:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309727:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.37.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/22.22.2'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Thu, 16 Apr 2026 12:04:43 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=5319',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': 'ca1c6ada10a8e4a6',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Attempt 10 failed: No capacity available for model gemini-3.1-pro-preview on the server. Max attempts reached
+Error when talking to Gemini API Full report available at: /var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/gemini-client-error-Turn.run-sendMessageStream-2026-04-16T12-05-15-352Z.json RetryableQuotaError: No capacity available for model gemini-3.1-pro-preview on the server
+    at classifyGoogleError (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274012:12)
+    at retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:274577:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309884:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:309727:29)
+    at async Turn.run (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:310214:24)
+    at async GeminiClient.processTurn (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:314287:22)
+    at async GeminiClient.sendMessageStream (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-2P3YD5SP.js:314400:14)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/gemini.js:9701:26
+    at async main (file:///opt/homebrew/Cellar/gemini-cli/0.37.1/libexec/lib/node_modules/@google/gemini-cli/bundle/gemini.js:14721:5) {
+  cause: {
+    code: 429,
+    message: 'No capacity available for model gemini-3.1-pro-preview on the server',
+    details: [ [Object] ]
+  },
+  retryDelayMs: undefined
+}

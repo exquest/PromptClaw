@@ -1,0 +1,33 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1531 chars)
+---
+
+Done. Committed `a4fd6cf` on `feat/graceful-degradation`.
+
+**What was built:**
+
+**`my-claw/tools/senseweave/mix_verify.py`** — Pure verification module with:
+- `peak_dbfs` / `rms_dbfs` — dBFS measurement on float samples
+- `estimate_lufs_proxy` — K-weighted loudness proxy with high-pass roll-off
+- `check_clipping` — flags peaks exceeding ceiling
+- `check_silence` — flags RMS below floor
+- `check_harshness_proxy` — scores combined drive/saturation/brightness
+- `lane_overlap_ratio` / `check_masking` — detects frequency-lane overlap between roles
+- `verify_mix_profile` — composite validation (LUFS range, ceiling, comp ratio, ducking, lane geometry, masking)
+- `verify_render_loudness` — checks rendered audio against LUFS target within tolerance
+
+**`tests/test_mix_verify.py`** — 43 tests covering:
+- Peak/RMS measurement on synthetic sines and silence
+- LUFS proxy ordering and known-level ranges
+- Clipping detection (single voice, summed voices)
+- Silence detection at various thresholds
+- Harshness proxy with master-bus drive across all cadence states
+- Frequency-lane overlap math and masking detection
+- All 5 cadence states × 3 patches pass composite profile verification
+- Bogus profile catches all violation types
+- Master bus amp/drive/reverb bounds for every cadence state
+- Theramini ducking lowers master amp
+- Per-note voice shaping amp never exceeds 1.0, high registers fold down
+- EMSD performance amp/release/brightness stay within clamp bounds
+- Synthetic 4-voice render stays below peak ceiling and above silence floor
+- LUFS target ordering (sleep < occupied_day < away_practice)

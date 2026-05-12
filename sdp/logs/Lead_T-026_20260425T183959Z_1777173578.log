@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1764 chars)
+---
+
+T-026 is done and committed as `74f6fbc`.
+
+**What changed:**
+- `my-claw/tools/senseweave/sample_library.py:31` — extended `SampleRecord` with `sample_id`, `path`, `source`, `pitch_hz`, `arc_phase`, `mood`, `captured_at` (all defaulted so T-025 tag-only construction still works).
+- `my-claw/tools/senseweave/sample_library.py:91` — new `SampleLibrary` class: opens/creates `index.sqlite`, mirrors record fields in a `samples` table with an FTS5 index over `character_tags`, verifies file presence in `add()`, and detects/rebuilds a corrupted index on open. `find()` supports `source`, `character_any`, `character_all`, `pitch_band`, `arc_phase`, `mood_range`, `limit`, ordered most-recent-first.
+- `tests/test_sample_library.py` — 5 new tests covering insert, each filter (per field + limit), empty-result paths, missing-file rejection, and corrupted-DB rebuild.
+
+**Validation:** `pytest tests/` — 3425 passed; `ruff check` — clean; `mypy src/` and `mypy sample_library.py` — clean.

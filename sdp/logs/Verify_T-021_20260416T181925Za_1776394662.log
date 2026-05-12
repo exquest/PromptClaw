@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2805 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+All 9 motif memory tests pass and the full suite (2869 tests) is green. The implementation correctly delivers:
+- Fixed-capacity `OrderedDict`-backed LRU cache with `insert`, `lookup`, `evict`, and `return_home_decay`
+- Phase-linear decay weight cycling back to 1.0 at period boundaries
+- R9 rule wrapper with pitch-class hashing, role gating, and inverse-recency variation selection
+
+Minor notes: missing tests for the two `ValueError` guards (capacity=0, return_home_iterations=0), and `should_return_home` silently mutates state as a side-effect — non-blocking but worth documenting. Startup hardening items (bootstrap_identity) are correctly out-of-scope.

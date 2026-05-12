@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (4144 chars)
+---
+
+Addressed the verify FAIL on T-031 by fixing the systemd packaging gap:
+
+- **`cypherclaw-idyom-kl-audit.service`**: added `Environment=PYTHONPATH=/home/user/cypherclaw/tools` (so `python3 -m senseweave.generation.health` resolves) and `Environment=IDYOM_KL_AUDIT_CONFIG=...` pointing at the deployed JSON config; added a `ConditionPathExists` guard so the unit no-ops when the config isn't installed.
+- **`idyom_kl_audit_config.json.example`**: new runnable template documenting the required `current_ltm_path`, `snapshot_path`, `test_ngrams`, `generated_ratio`, `clap_centroid_variance` and optional `history_path` / `alert_path` overrides.
+- **`health.py::_main()`**: docstring now accurately describes the JSON-config-via-`IDYOM_KL_AUDIT_CONFIG` mechanism and points operators at the example template; the error message references the template.
+- **CHANGELOG**: updated to call out the env wiring and example file.
+
+Validation: `pytest tests/test_generation_health.py -v` → 12/12 pass; `pytest tests/ -x` → 3763 passed, 3 skipped; `ruff check src/ tests/` → all checks passed; `mypy src/` → no issues. Committed as `30c1445` on `feat/graceful-degradation`.

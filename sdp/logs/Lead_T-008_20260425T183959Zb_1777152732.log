@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1327 chars)
+---
+
+Done. Committed as `f4e2e46`.
+
+**Changes:**
+- `my-claw/tools/sample_capture_daemon.py:627` — added `AcousticFeatures` frozen dataclass and `analyze_acoustic_features(samples, sample_rate, *, transient_threshold_db=6.0)` returning raw `spectral_centroid_hz`, `spectral_bandwidth_hz`, and `transient_density_hz` (per second). Reuses existing `_spectral_magnitude` (FFT) and `_count_transients` primitives.
+- `tests/test_sample_capture_daemon.py` — 5 regression tests: empty/silent edge cases, centroid tracks dominant frequency (220 Hz vs 2200 Hz tones), bandwidth widens for broadband noise vs pure tone, transient density scales per-second, and `as_dict()` exposes the three numeric fields.
+
+**Validation:** 24/24 pytest pass. Ruff and mypy show only pre-existing unrelated errors (unused `jack` TYPE_CHECKING import, F841 on `daemon` local in `main()`, missing `types-JACK-Client` stubs); my new code is clean under `mypy --ignore-missing-imports`.

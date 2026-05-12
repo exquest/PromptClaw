@@ -1,0 +1,23 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1586 chars)
+---
+
+Done. Committed as `5fbecba`.
+
+**What changed:**
+
+`my-claw/tools/senseweave/arrangement_engine.py` — Added 6 new types and 5 new functions:
+
+- **`LaneEvent`** — voice enter/exit/double/dropout/return at normalised time, with primary/support role
+- **`RegisterBand`** — MIDI range constraints per voice
+- **`DensityGate`** — time-varying density thresholds (non-flat arc)
+- **`AutomationCurve`** — named parameter with interpolable `(t, value)` points
+- **`ArrangementTimeline`** — bundles all of the above per scene
+- **`build_scene_timeline()`** — builds a timeline from scene name + max_polyphony, staging voices in centre-outward (sparse=2, medium=4, full=7), with support dropout/return and doubling
+- **`active_voices_at()`** — resolves which voices are live at a given time
+- **`thin_events()`** — strips support voices while preserving primary melody/bass continuity
+- **`registers_safe()`** — validates band ranges (>= octave, within MIDI bounds)
+- **`interpolate_automation()`** — linear interpolation across curve points
+- **`build_arrangement_plan()`** now attaches a timeline to every `ArrangementScenePlan`
+
+`tests/test_arrangement_engine.py` — 28 new tests (32 total) covering staged ensemble growth, active-voice queries, thinning preserves primary continuity, register safety, non-flat automation curves, interpolation, and plan integration.

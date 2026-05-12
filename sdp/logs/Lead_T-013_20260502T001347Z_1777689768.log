@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1323 chars)
+---
+
+T-013 complete. Implemented `GET /world/entities/{entity_id}`:
+
+- **`entities.py`**: new `get_world_entity()` that prefers `store.get_entity` (matching `WorldState` PRD), with fallback duck-typed lookup names and a list-scan fallback for stores without point lookup
+- **`app.py`**: `/world/entities/{entity_id}` route, 404 on miss, 502/503 on store failure (matching neighboring endpoints' error pattern)
+- **`tests/test_narrative_api_entities.py`**: 4 new tests — known ID, unknown → 404, unauth → 401, fallback path via list_entities
+
+All checks pass: 10/10 entity tests, 48/48 sibling narrative_api tests, ruff clean, mypy clean. Committed as `2c4a2e6`.

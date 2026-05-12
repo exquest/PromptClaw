@@ -1,0 +1,18 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high -p -
+Prompt delivered via: stdin (2016 chars)
+---
+
+**Verdict: PASS**
+
+Report committed at `sdp/verification/t-004@20260408t223256z-verify.md`.
+
+**Summary of findings:**
+
+- `run_agent("ollama", ...)` correctly routes to `_invoke_ollama()` at line 798 — subprocess path is never reached
+- Observatory records `record_task_result` + `semaphore_released` for the ollama path
+- Pet lifecycle (`on_task_start` / `on_task_end` / `schedule_idle`) is fully preserved
+- Full suite: **1425 passed, 0 failed**
+
+Two minor (non-blocking) notes:
+1. Duplicate `elif not success` block in the ollama branch is technically dead code for the common error cases (mirrors existing subprocess pattern)
+2. `tokens=0` is hardcoded — ollama's `eval_count` field could provide real token counts in a future task

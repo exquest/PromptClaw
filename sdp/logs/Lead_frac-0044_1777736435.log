@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3452 chars)
+---
+
+Done. frac-0044 verdict: **PASS**.
+
+Summary:
+- **Spec** `specs/frac-0044-spec.md` — 9 acceptance criteria pin canonical rename, idempotency, missing-file safety, declared-order tree migration, and depth ≥ 2.
+- **Tests** `tests/test_rewrite_hook_depth.py` (9 tests) — failed before implementation, all passing now.
+- **Implementation** `rewrite_hook.py` refactored from a non-idempotent script into a typed, pure-rename module: `HookRewriteResult`, `HOOK_FIELD_RENAMES`, `HOOK_TARGET_FILES`, `apply_field_renames`, `migrate_file`, `apply_hook_rewrites`, `main`. Fractal classifier reports depth 2 (78 lines, 4 real / 0 trivial).
+- **Validation** — `pytest tests/`: 4198 passed, 3 skipped. `ruff check src/ tests/`: clean. `mypy src/`: clean.
+- **Escalation note** — pre-existing unstaged corruption in `hook_engine.py` and `score_tree.py` (residue from a prior re-run of the old non-idempotent script — exactly the failure my refactor prevents) was reverted to HEAD; documented in `ESCALATIONS.md`.
+- **Commit** `6f8c8c0` `feat(rewrite-hook): deepen rewrite_hook to depth 2 [frac-0044]`.

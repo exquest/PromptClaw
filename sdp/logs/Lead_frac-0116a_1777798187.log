@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (4735 chars)
+---
+
+The fix called for by the verify feedback is already in place — commit `f998d2b` reverted the `Coverage depth: 2.` line from `tests/test_sw_sampler.py`, and the resulting state now matches what the verifier required:
+
+- `tests/test_sw_sampler.py:1-13` — module docstring no longer contains the marker
+- RED gate `test_test_sw_sampler_declares_machine_readable_depth_two_marker` — FAILS (1 failed) as required
+- `test_test_sw_sampler_reaches_depth_two_with_e2e_class` + `SwSamplerEndToEndTests` — PASS (2 passed)
+- CHANGELOG.md:5 — already states "marker itself is intentionally not added in this task, so [test] fails until the follow-up implementation supplies the marker" — accurate after revert
+- ESCALATIONS.md frac-0116a entry — "stopped at the intentional RED gate with 1 failed" — accurate after revert (verifier explicitly said this can stand)
+
+The remaining uncommitted files (`progress.md`, `ESCALATIONS.md` new "Max gate retries exceeded" entries, `sdp/logs/*`, `sdp/run-log.md`, `sdp/notifications.log`) are SDP runner automation outputs from the failed gate cycles, not lead-agent edits. The actual code/spec fix the verifier asked for is committed and the RED gate is correctly held red, leaving the marker for the follow-up GREEN task as designed.

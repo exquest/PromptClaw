@@ -1,0 +1,90 @@
+Command: gemini -p # Task T-012@20260408T223256Z: Implement federation peer discovery via Tailscale: detect other PromptClaw instances on the tailnet by scanning for the identity endpoint.
+
+## Acceptance Criteria
+
+- Discovers CypherClaw and other peers on the Tailscale network<br/>- Reads their public identity summary<br/>- Stores peer registry in `~/.promptclaw/federation/peers.json`
+
+**Tier:** T2 — Standard (New feature / moderate refactoring)
+
+## Instructions
+
+Read the project's ADP documentation and understand existing patterns before making changes.
+
+**ADP Phases:** Explore → Specify → Test → Implement → Verify → Document
+
+### Phase 0: Explore
+- Read all files in the affected area of the codebase.
+- Identify existing patterns, naming conventions, and architectural decisions.
+- Review related tests to understand expected behavior.
+- Update progress.md with exploration findings.
+
+### Phase 1: Specify
+- Write a specification to `specs/t-012@20260408t223256z-spec.md`.
+- Include: problem statement, technical approach, edge cases, acceptance criteria.
+- Each acceptance criterion must have a VERIFY command.
+
+### Phase 2: Test Development
+- Write tests BEFORE implementation, derived from the specification.
+- Tests must FAIL before implementation (Red phase).
+- After this phase, test files are LOCKED — do not modify assertions.
+
+### Phase 3: Implement
+- Implement the minimum code needed to pass all tests.
+- One sub-task at a time, commit each logical unit.
+- Type hints on all function signatures.
+- Follow existing patterns.
+
+### Phase 4: Verify & Document
+- Run full test suite and quality checks.
+- Update CHANGELOG.md, progress.md.
+
+## Rules
+
+- No questions — document assumptions in ESCALATIONS.md.
+- Do not modify locked test assertions.
+- Log new dependencies to ESCALATIONS.md.
+- Commit per sub-task: `feat(scope): summary [T-012@20260408T223256Z]`
+
+## Validation
+
+Run before final commit:
+```bash
+pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/
+```
+
+All must pass.
+ --output-format stream-json --approval-mode yolo --sandbox -m gemini-3.1-pro-preview
+Prompt delivered via: argv
+---
+
+{"type":"init","timestamp":"2026-04-09T00:54:40.127Z","session_id":"ee12335c-16e4-4ca0-8f05-cab64a7c9b1e","model":"gemini-3.1-pro-preview"}
+{"type":"message","timestamp":"2026-04-09T00:54:40.255Z","role":"user","content":"# Task T-012@20260408T223256Z: Implement federation peer discovery via Tailscale: detect other PromptClaw instances on the tailnet by scanning for the identity endpoint.\n\n## Acceptance Criteria\n\n- Discovers CypherClaw and other peers on the Tailscale network<br/>- Reads their public identity summary<br/>- Stores peer registry in `~/.promptclaw/federation/peers.json`\n\n**Tier:** T2 — Standard (New feature / moderate refactoring)\n\n## Instructions\n\nRead the project's ADP documentation and understand existing patterns before making changes.\n\n**ADP Phases:** Explore → Specify → Test → Implement → Verify → Document\n\n### Phase 0: Explore\n- Read all files in the affected area of the codebase.\n- Identify existing patterns, naming conventions, and architectural decisions.\n- Review related tests to understand expected behavior.\n- Update progress.md with exploration findings.\n\n### Phase 1: Specify\n- Write a specification to `specs/t-012@20260408t223256z-spec.md`.\n- Include: problem statement, technical approach, edge cases, acceptance criteria.\n- Each acceptance criterion must have a VERIFY command.\n\n### Phase 2: Test Development\n- Write tests BEFORE implementation, derived from the specification.\n- Tests must FAIL before implementation (Red phase).\n- After this phase, test files are LOCKED — do not modify assertions.\n\n### Phase 3: Implement\n- Implement the minimum code needed to pass all tests.\n- One sub-task at a time, commit each logical unit.\n- Type hints on all function signatures.\n- Follow existing patterns.\n\n### Phase 4: Verify & Document\n- Run full test suite and quality checks.\n- Update CHANGELOG.md, progress.md.\n\n## Rules\n\n- No questions — document assumptions in ESCALATIONS.md.\n- Do not modify locked test assertions.\n- Log new dependencies to ESCALATIONS.md.\n- Commit per sub-task: `feat(scope): summary [T-012@20260408T223256Z]`\n\n## Validation\n\nRun before final commit:\n```bash\npip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/\n```\n\nAll must pass.\n"}
+{"type":"result","timestamp":"2026-04-09T00:54:40.581Z","status":"error","error":{"type":"Error","message":"[API Error: You have exhausted your capacity on this model. Your quota will reset after 4h26m11s.]"},"stats":{"total_tokens":0,"input_tokens":0,"output_tokens":0,"cached":0,"input":0,"duration_ms":0,"tool_calls":0,"models":{"gemini-3.1-pro-preview":{"total_tokens":0,"input_tokens":0,"output_tokens":0,"cached":0,"input":0}}}}
+
+--- STDERR ---
+YOLO mode is enabled. All tool calls will be automatically approved.
+Keychain initialization encountered an error: Cannot find module '../build/Release/keytar.node'
+Require stack:
+- /opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/node_modules/keytar/lib/keytar.js
+Using FileKeychain fallback for secure storage.
+Loaded cached credentials.
+YOLO mode is enabled. All tool calls will be automatically approved.
+Error when talking to Gemini API Full report available at: /var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/gemini-client-error-Turn.run-sendMessageStream-2026-04-09T00-54-40-566Z.json TerminalQuotaError: You have exhausted your capacity on this model. Your quota will reset after 4h26m11s.
+    at classifyGoogleError (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:273011:18)
+    at retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:273607:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:308672:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:308515:29)
+    at async Turn.run (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:309002:24)
+    at async GeminiClient.processTurn (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:312720:22)
+    at async GeminiClient.sendMessageStream (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:312833:14)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/gemini.js:9681:26
+    at async main (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/gemini.js:14349:5) {
+  cause: {
+    code: 429,
+    message: 'You have exhausted your capacity on this model. Your quota will reset after 4h26m11s.',
+    details: [ [Object], [Object] ]
+  },
+  retryDelayMs: 15971425.341721,
+  reason: 'QUOTA_EXHAUSTED'
+}

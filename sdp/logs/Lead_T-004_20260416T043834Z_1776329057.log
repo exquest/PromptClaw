@@ -1,0 +1,22 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1558 chars)
+---
+
+Done. Committed as `06e7c74`.
+
+**What was built:**
+
+**`my-claw/tools/senseweave/synthdef_registry.py`** — Single authoritative registry for all 12 voices:
+
+- **6 synthesis methods covered**: subtractive (pluck, breath), additive (choir), FM (kotekan, gong, bell), wavetable (pad, metal), physical_model (bowed, tabla_tin, tabla_ge), granular (grain)
+- **Per-voice metadata**: `SynthDefEntry` with timbral tags, safe role mappings, `RegisterRange` (min/max Hz + octave span), `MacroControl` tuples (freq/amp/attack/release + voice-specific extras like mod_index, grain_size, pressure), `SpectralProfile` (fundamental weight, harmonic rolloff dB/oct, noise floor, bandwidth)
+- **Quarantine enforcement**: 5 voices quarantined (gong, bell — node leaks; metal, grain, tabla_ge — no deployed SynthDef) with safe substitutes that agree with `voice_aliases.py`
+- **Lookup functions**: `get_entry()`, `resolve_voice()` (never returns quarantined), `entries_by_method()`, `live_voices()`, `quarantined_voices()`, `voices_for_role()`
+
+**`tests/test_synthdef_registry.py`** — 35 tests across 7 test classes verifying:
+- Registry completeness (all 6 methods, 12 entries)
+- Every entry has timbral tags, safe roles, register range, macro controls, spectral profile
+- Register range math and ordering
+- Quarantine: all quarantined have reasons + non-quarantined substitutes, `resolve_voice()` never returns quarantined
+- Role queries exclude quarantined voices
+- Consistency with `sound_palette_lab.VOICE_STUDIES` (synthesis methods, timbral tags match)

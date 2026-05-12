@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3127 chars)
+---
+
+**Verdict: PASS**
+
+T-030 is clean. Key findings:
+
+- `GenerationClient(Protocol)` with `@runtime_checkable` and the correct `generate(request: GenerationRequest) -> GenerationResult` signature — correct.
+- `GenerationResult` is a frozen dataclass with all 7 fields in the specified order — correct.
+- Both `FakeClient` and `ReplicateClient` satisfy the Protocol at runtime (`isinstance` checks pass).
+- `ReplicateClient.generate` uses `@overload` to expose the typed signature while preserving a legacy dict path — mypy sees this as Protocol-conformant.
+- 4/4 T-030 tests pass; 3751 total tests pass; mypy reports 0 issues.
+
+The candidate hardening items about `bootstrap_identity` are template carry-forwards unrelated to this task's scope — that call already exists in `sample_capture_daemon.py`.

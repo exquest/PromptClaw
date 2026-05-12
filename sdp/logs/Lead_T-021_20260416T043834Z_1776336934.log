@@ -1,0 +1,34 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (3770 chars)
+---
+
+T-021 is complete. Here's the summary:
+
+## T-021@20260416T043834Z — Complete
+
+### What was built
+
+**New module: `my-claw/tools/senseweave/self_critique.py`** — pre-performance self-critique with bounded revision passes.
+
+### Architecture
+
+Three functions forming a pipeline:
+
+1. **`preview_score(score)`** — converts a `Score` to frequency events offline (no audio playback) and runs them through the ear engine to produce the full metrics dict (interval variety, hook clarity, development score, feedback scores, etc.)
+
+2. **`critique_score(score, thresholds)`** — wraps `preview_score()` and gates against configurable thresholds. Default thresholds: `underdeveloped_score > 0.7`, `static_score > 0.7`, `development_score < 0.25`, `hook_clarity < 0.2`. Returns a `CritiqueReport` with pass/fail and which metrics failed.
+
+3. **`revise_score(mood, **kwargs)`** — generates an initial score via `score_from_mood()`, critiques it. If it passes, returns immediately. If it fails, generates ONE rewrite with an incremented variation seed. Accepts the revision only if: (a) identity is preserved (same key, mood, tempo), and (b) at least one failed metric improved. Returns a `RevisionResult` with `.final_score` accessor.
+
+### Commits
+
+- `2c4c9f2` — spec
+- `19ad944` — failing tests (Red phase, 22 tests)
+- `697e24e` — implementation (all 22 green)
+- `222abef` — CHANGELOG + progress updates
+
+### Validation
+
+- **2168 tests passed**, 0 failed
+- **ruff clean** — no lint issues
+- **No new dependencies** — stdlib only

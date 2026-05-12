@@ -1,0 +1,17 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3551 chars)
+---
+
+T-021@20260425T183959Zd done.
+
+- **Spec**: `specs/t-021@20260425t183959zd-spec.md` — four ACs, one per state.
+- **Tests**: `tests/test_operator_diagnostics_sample_status.py` — drives `collect_operator_diagnostics` through `DiagnosticPaths`+tmp_path JSON fixtures and pins:
+  - sampling-only → `currently sampling …`, no playback fragment
+  - playing-only → `playing sample …`, no `currently sampling`/`holding`
+  - both → both phrases joined by ` · `
+  - neither → degrades to `unavailable`
+- **Validation**: `pytest tests/ -x` green (3456 passed), `ruff check src/ tests/` clean, `mypy src/` clean.
+- **Docs**: CHANGELOG and progress.md updated.
+- **Commit**: `9af2980 test(operator-diagnostics): cover sampler-line states [T-021@20260425T183959Zd]`.
+
+Note: spec documents that this is additive regression coverage rather than a TDD red-then-green driver — the four states are already produced by the existing `_sample_source_status` helper landed in T-021@20260425T183959Za, and the task brief asked for "unit tests covering" the existing states.

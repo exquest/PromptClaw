@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1356 chars)
+---
+
+Done. T-018@20260425T183959Zc is committed (4532481).
+
+**Changes:**
+- `my-claw/tools/senseweave/phrase_capture.py:36-66` — added `SAMPLE_METADATA_SCHEMA`, `validate_sample_metadata`, `DEFAULT_SAMPLE_PROVENANCE`.
+- `phrase_capture.py:104-121` — `PhraseCaptureWriter.__init__` accepts a `metadata` mapping; new `set_metadata(...)` method rejects derived/unknown keys.
+- `phrase_capture.py:_write` writes a `<sample>.json` sidecar via `_compose_metadata` (timestamp + duration derived from the phrase boundary).
+- `tests/test_phrase_capture.py` — 13 new tests covering tag completeness, schema validation (missing/extra/wrong-type), defaults for both sources, user tag passthrough, `set_metadata` updates between phrases, derived-field guard, ISO-UTC timestamp, duration accuracy, sidecar/audio path pairing, no-sidecar on sub-threshold bursts.
+
+**Validation:** `pytest tests/` 3395 passed; `ruff check` clean; `mypy` clean.

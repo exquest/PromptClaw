@@ -1,0 +1,18 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high -p -
+Prompt delivered via: stdin (3014 chars)
+---
+
+Verification complete. Report committed at `sdp/verification/t-018@20260416t043834z-verify.md`.
+
+**Verdict: PASS WITH NOTES**
+
+Full test suite: 1893 passed, 0 failures.
+
+**What passed:**
+- `HarmonicPlan` produces `section_progressions` and `section_chord_degrees` per scene — criteria met at the API level
+- All four lanes (melody, bass, counter, color) receive voice-leading metadata with per-role leap limits, guide-tone degrees, and interval tracking
+- Cadence types flow from `score_tree.SectionNode` → score metadata → `TrackerScene.metadata`; tests in `test_tracker_compiler.py` assert full propagation
+- Leap bounding is verified by step-pair iteration; cadence resolution asserts final scale degree = 1 for authentic; modulation continuity asserts root distance ≤ 7
+- Bootstrap hardening: `bootstrap_identity()` is already wired before `FirstBootAnnouncer` in `daemon.py`, with `TestStartupIdentityPersistence` covering both modes
+
+**One minor note:** `HarmonicPlan.section_chord_degrees` is computed but not written to score metadata in `duet_composer.py` — it's tested in isolation but not surfaced in tracker output. Recommended follow-on: add a `section_chord_degrees` JSON entry to the score metadata alongside `section_functions`/`section_cadences`.

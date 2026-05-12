@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1597 chars)
+---
+
+Done — committed as `f41776c`.
+
+**Acceptance criteria satisfied:**
+- Loads settings + DB path from env (`CYPHERCLAW_DATA_DIR`, `CYPHERCLAW_GENERATION_QUEUE_DB`, `CYPHERCLAW_GENERATION_CACHE_ROOT`, `CYPHERCLAW_SAMPLES_ROOT`, `CYPHERCLAW_GENERATION_BUDGET_STATE`, `REPLICATE_API_TOKEN`) — `my-claw/tools/generation_worker.py:38-69`
+- Constructs `ReplicateClient`, `GenerationCache`, `GenerationBudget`, `SampleLibrary`, `GenerationStorage`, `GenerationQueue` — `generation_worker.py:51-66`
+- Runs `await queue.run_worker()` under `asyncio.run` — `generation_worker.py:96, 124`
+- Handles SIGTERM/SIGINT via `loop.add_signal_handler` (with `signal.signal` fallback for non-Unix); current item completes, then exits clean — `generation_worker.py:84-93, 99-114`
+- Subprocess + signal tests in `tests/test_generation_worker.py` (SIGTERM rc=0, SIGINT rc=0, data layout created)
+
+**Validation:** `ruff check src/ tests/` clean, `mypy src/` clean, full pytest suite 3795 passed / 3 skipped.

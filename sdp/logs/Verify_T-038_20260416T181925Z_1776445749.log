@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3011 chars)
+---
+
+Verification complete. **Verdict: PASS WITH NOTES**
+
+Key findings:
+- All 6 acceptance criteria met; 14 new tests pass; 3013-test suite clean with no regressions
+- Integration in `recursive_composer.py:237–242` correctly wires `envelope_for_beat(beat_from_directive(...))` for every section
+- Edge cases handled: `None` directive, unknown phase, unknown section function all fall back gracefully
+- Two pre-existing minor issues confirmed from prior codex verify pass: `NarrativeBeat.tension_target` is informational only (not consumed by `envelope_for_beat`), and `curiosity` is accepted by `tone_from_narrative` but unused — both are natural extension points for the future NE-009 ToneController
+- Startup hardening items correctly scoped out in ESCALATIONS.md

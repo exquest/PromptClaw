@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1382 chars)
+---
+
+Done. Created `my-claw/systemd/cypherclaw-narrative-api.service` (commit `7df1251`).
+
+Key choices:
+- **Source location:** `my-claw/systemd/` matches the existing convention (sibling to `cypherclaw-image-api.service`); deploy-side install path `~/.config/systemd/user/cypherclaw-narrative-api.service` is documented in the unit file's header comment along with the `daemon-reload` / `enable --now` / `enable-linger` steps.
+- **User-mode systemd:** `WantedBy=default.target`, `%h`-relative paths, no `User=`/`Group=` (PRD §"Why systemd user service?"), unlike the system-mode image-api unit.
+- **Restart=on-failure** with 5s delay and 10/300s burst limit (per task spec; image-api uses `always` but the task explicitly called for `on-failure`).
+- **Journal logging** explicit via `StandardOutput=journal` / `StandardError=journal` + `SyslogIdentifier=cypherclaw-narrative-api`.
+- **ExecStart** mirrors image-api: `python3 -m cypherclaw.narrative_api` (the `__main__.py` is T-008's deliverable; this unit is intentionally ready for it).
+- **Validation skipped:** the file is pure systemd config — pytest/ruff/mypy don't apply, and `systemd-analyze verify` isn't available on the Darwin dev box. The acceptance test (`systemctl --user status` after reboot) runs on cypherclaw, not here.

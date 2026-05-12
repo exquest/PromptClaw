@@ -1,0 +1,23 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (4617 chars)
+---
+
+## T-005@20260425T183959Zd — Already complete
+
+This subtask was finished by a prior Lead-agent run (the SDP log shows two Lead invocations for Zd; the first completed the work). All ADP phases are landed:
+
+**Already-committed artifacts (4 commits on this branch):**
+- `fc4145b` — `tests/test_master_smooth_scd.py` pins SCD stub + boot-script seeding (Phase 2)
+- `4c7c0c4` — `my-claw/tools/senseweave/synthesis/master_smooth.scd` declares `sw_master_smooth` with `sampler_amp=1.0` and `sampler_bypass_comp=1.0` alongside the existing `amp/drive/warmth/reverb/room` surface (Phase 3)
+- `2f1a7e7` — `start_audio.sh` and `restart_composer.sh` now seed via `master_bus_s_new_args()` instead of hardcoded literals (Phase 3)
+- `5109a55` — CHANGELOG entry (Phase 4)
+
+**Spec:** `specs/t-005@20260425t183959zd-spec.md` exists with all 4 acceptance criteria + VERIFY commands.
+
+**Test results:** `pytest tests/ -q` → **3174 passed**, 0 failed (incl. all 9 master-bus tests and the 3 SCD-stub tests).
+
+**On the task wording** — "callers/automation lanes referenced by sampler_dispatch.py": `sampler_dispatch.py` itself only sends `/s_new sw_sampler` (per-grain synth), not master-bus controls. The new `sampler_amp`/`sampler_bypass_comp` controls reach the master node through `master_bus.master_bus_n_set_args()`/`apply_master_bus_scene()`, which already include them (`master_bus.py:117-120`). No `sampler_dispatch.py` change is needed and the spec documents this explicitly.
+
+**Out-of-scope state I did not touch:** the working tree has unstaged edits in `cast_planner.py`, `groove_engine.py`, `music_tracker.py` and 5 test files — these are from adjacent subtasks (not Zd) and per the "Stay in scope" pitfall, they belong to whoever owns them. Left untouched.
+
+Next step is a Verify-agent run to write `sdp/verification/t-005@20260425t183959zd-verify.md` — that's a separate agent role per the established pattern, not part of the Lead task.

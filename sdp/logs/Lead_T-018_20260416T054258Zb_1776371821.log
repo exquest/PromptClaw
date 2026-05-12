@@ -1,0 +1,17 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (4797 chars)
+---
+
+T-018@20260416T054258Zb is complete. Here's what was delivered:
+
+**New in `counterpoint_rules.py`:**
+- `DissonanceAnnotation` — frozen dataclass carrying the full `music_theory.Interval` object for each vertical interval
+- `DissonanceReport` — aggregates annotations with sharp/mild counts, unresolved count, and resolution rate
+- `analyze_dissonance()` — annotates a voice-pair sequence with consonance metadata; checks sharp dissonance resolution (stepwise motion + non-sharp target)
+- `verify_resolution_sequence()` — boolean check that all sharp dissonances resolve
+- `resolution_completeness_score()` — 0.0-1.0 ratio of resolved sharp dissonances
+- `weighted_voice_leading_smoothness()` — base smoothness + penalty for unresolved dissonances
+
+**Tests:** 15 new tests in `TestDissonanceMetadata` covering all 9 acceptance criteria (61 total passing).
+
+**Candidate hardening:** `revise_score()` is already wired into both pipeline files (`tracker_compiler.py:1357`, `duet_composer.py:838`). Bootstrap/budget items documented as out-of-scope in ESCALATIONS.md.

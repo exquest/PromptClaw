@@ -1,0 +1,24 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (3936 chars)
+---
+
+T-022 is complete. Here's the summary:
+
+## T-022@20260416T043834Z — Complete
+
+**What happened:** The previous lead (Gemini) implemented the feature and committed it (`c52c67c`) but failed the ruff gate (3 unused imports in the test file), then bundled 37+ out-of-scope lint cleanup changes trying to fix it before hitting rate limits.
+
+**What I did:**
+1. **Discarded out-of-scope changes** — restored all 37 unrelated files via `git checkout HEAD --`
+2. **Kept the in-scope lint fix** — removed unused `time`, `Path`, and `pytest` imports from `tests/test_live_buffer.py`
+3. **Ran the full gate** — pytest 3/3 pass, ruff clean, mypy clean, full suite 2174/2174 pass
+4. **Logged escalations** — hardening items (`bootstrap_identity`) are unrelated to this task; previous lead's out-of-scope changes documented
+5. **Updated docs** — CHANGELOG, progress.md, ESCALATIONS.md
+6. **Committed** — `736e54b` scoped to T-022 only
+
+**Acceptance criteria verified:**
+- `LiveBuffer` exposes source_name, capture_path, freshness, rms, spectral_profile, transform_history
+- `SampleBankArchive.retain_clip()` copies clips to archive storage with JSON metadata sidecars
+- 3 tests verify buffer refresh, archive path selection, and graceful missing-file handling
+
+**Working tree:** Clean. No uncommitted changes.

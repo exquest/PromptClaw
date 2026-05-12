@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3781 chars)
+---
+
+frac-0094 complete. Committed as `026047e`.
+
+Summary:
+- **Spec**: `specs/frac-0094-spec.md` — deepen `tests/test_narrative_api_health.py` from depth 1 to depth 2
+- **Red phase**: Added `tests/test_test_narrative_api_health_depth.py` depth gate; confirmed it failed before adding the class
+- **Green phase**: Added `NarrativeApiHealthEndToEndTests` driving cold healthy probe → warm healthy probe (monotonic uptime, second `list_events` call) → degraded probe (broken store + ollama false) → JSON-safe diagnostic round trip; no production code changed
+- **Validation**: `pytest tests/ -x` → 4582 passed, 3 skipped; ruff clean; mypy clean; startup identity hardening anchors green
+- **Docs**: CHANGELOG.md and progress.md updated with frac-0094 entries

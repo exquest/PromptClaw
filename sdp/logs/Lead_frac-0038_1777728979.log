@@ -1,0 +1,21 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3445 chars)
+---
+
+Implemented frac-0038 in four scoped commits:
+
+- `ac52426` spec at `specs/frac-0038-spec.md`
+- `7a820e6` red-phase depth tests at `tests/test_trust_depth.py`
+- `1a75443` `TrustEventPlan` + `trust_event_plans()` + `apply_event` routing + `apply_event_by_name`/`restricted_agents`/`summarize_agent`/`fleet_summary` in `promptclaw/coherence/trust.py`
+- `2a3d8f6` CHANGELOG / progress updates
+
+`TrustManager.apply_hard_violation`, `apply_soft_violation`, and `apply_compliant_action` now all route through `apply_event` with the canonical plans, preserving the existing penalty/reward, clamping, restriction-threshold, and multi-agent isolation behavior asserted by `tests/test_trust.py`.
+
+Validation:
+
+```
+pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/
+# 4162 passed, 3 skipped; ruff clean; mypy clean
+```
+
+Fractal depth for `promptclaw/coherence/trust.py` now reports `polished (190 lines, 92% docstrings, tests 0.68x)` (depth 4, well above the depth-2 acceptance bar). Pre-existing `progress.md` / `sdp/` / log drift from prior runs remains uncommitted and is outside the frac-0038 scope.

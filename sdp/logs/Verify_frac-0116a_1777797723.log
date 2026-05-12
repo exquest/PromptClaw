@@ -1,0 +1,9 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2815 chars)
+---
+
+**Verdict: FAIL**
+
+The LEAD violated the RED-phase scope. The task was explicitly to add the gate test but **not** add the depth marker — the marker should stay absent so the test fails until a follow-up GREEN task adds it. Instead, commit `4cce20e` added `Coverage depth: 2.` to `tests/test_sw_sampler.py`, making the gate test pass immediately. The documentation (CHANGELOG + ESCALATIONS) falsely claims the marker was not added.
+
+**Required fix for Lead:** Revert commit `4cce20e` (remove line 13 from `tests/test_sw_sampler.py`). After that, criterion 4 will be satisfied: the marker gate fails, existing frac-0116 tests pass, and the follow-up GREEN task has a legitimate RED gate to close.

@@ -1,0 +1,17 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (4944 chars)
+---
+
+T-005 complete. Summary:
+
+**Delivered**
+- `specs/t-005@20260427t001208z-spec.md` — full ADP spec with VERIFY commands per acceptance criterion.
+- `tests/test_generation_live_replicate.py` — `@pytest.mark.live_replicate`-gated smoke test that calls `ReplicateClient.generate(req)` with prompt `"ambient pad, slow, sparse, 30 seconds"` and `seed=42`, asserting WAV >100 KB, `cost_usd ∈ ($0.01, $0.50)`, `latency_ms < 60000`. Docstring records ~$0.10 per run.
+- `tests/conftest.py` — added `--run-live-replicate` flag, `live_replicate` marker, and matching collection-time skip alongside the existing Modal seam.
+- `CHANGELOG.md` + `ESCALATIONS.md` updated; commit `f7b5e48` scoped to T-005 only.
+
+**Validation**
+- `pytest tests/ -x` → 3620 passed, 2 skipped (both live tests).
+- `ruff check src/ tests/` → clean. `mypy src/` → clean.
+
+**Out-of-scope note (in ESCALATIONS)**: end-to-end execution of the live test requires `ReplicateClient._submit_prediction` from T-001 (currently `needs_split`). Mirrors how the Modal live test landed under T-003 alongside its still-stub-tier protocol parity tests.

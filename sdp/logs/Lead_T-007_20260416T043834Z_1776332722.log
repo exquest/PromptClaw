@@ -1,0 +1,27 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1558 chars)
+---
+
+Done. Here's what was implemented:
+
+**`dsp_scene_lab.py`** — Added `DSPGesture` dataclass and `gestures_from_frame()` function that derives parameterized DSP gestures from audio features:
+- **spectral_freeze**: intensity inversely tracks amplitude (quiet → more freeze), hold time scales with sparsity
+- **spectral_smear**: spread and intensity driven by brightness (spectral centroid)
+- **spectral_morph**: morph rate tracks onset density, intensity tracks amplitude
+- **convolution**: wet mix scales with brightness, IR scale inversely tracks density
+- **delay**: time shortens with density, feedback increases with density
+- **physical_model**: resonance tracks brightness, damping inversely
+
+Updated `glyph_features_from_audio()` to include serialized gesture data and enriched `mapping_hints` with `gesture_count` and `dominant_intensity`.
+
+**`self_listener.py`** — Propagates gestures through `build_glyph_audio_state()` to `/tmp/glyph_audio_features.json`.
+
+**`test_dsp_scene_lab.py`** — 13 new tests covering:
+- Core gesture block generation (6 blocks without scene, scene-specific blocks with scene)
+- Gesture structure validation
+- Intensity correlation with amplitude, brightness, density
+- Feature correlation: brightness↔centroid, density↔onset rate, texture↔flatness, salience↔amplitude+motion, motion↔onset+amplitude
+- Gesture inclusion in glyph features output
+- Mapping hints with scene context
+
+All 2087 tests pass, ruff and mypy clean.

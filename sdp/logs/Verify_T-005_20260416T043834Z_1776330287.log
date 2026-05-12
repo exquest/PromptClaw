@@ -1,0 +1,27 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high -p -
+Prompt delivered via: stdin (3051 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+Full suite: 2031 passed, 0 failed. T-005-specific tests: 70 passed, 0 failed.
+
+---
+
+**Summary of findings:**
+
+All four acceptance criteria are satisfied:
+
+1. **Source banks with freshness/fallback** — `room_mic` (Perform-VE condenser), `contact_mic`, `theramini_in`, and `self_bus` are all registered in `SAMPLE_SOURCES` with refresh intervals, fallback chains, and bank freshness rules. The `perform_ve_condenser` alias resolves correctly.
+
+2. **Transform set** — all six required transforms (`slice_rearrange`, `stretch`, `spectral_freeze`, `granular_cloud`, `reverse_accents`, `pitch_window`) are implemented and mapped per section function.
+
+3. **Score tree/tracker integration** — `compile_score_tree_to_tracker` injects `sample` lanes from `arrangement_plan["sample_gestures"]`; tested end-to-end with source, mode, voice, and step-count assertions.
+
+4. **Test coverage** — fallback resolution, trigger keys, render paths (grain cloud, freeze bed, lowpass wash, development grains), and bounded event density are all tested.
+
+**Two minor gaps flagged** for the Lead Agent:
+- `contact_mic` as a primary (not fallback) source has no direct-path test
+- `garden_mic`'s cadence gate (suppressed during sleep/wind_down) is not asserted
+
+Report committed to `sdp/verification/t-005@20260416t043834z-verify.md`.

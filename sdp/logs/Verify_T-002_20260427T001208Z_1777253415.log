@@ -1,0 +1,16 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3043 chars)
+---
+
+Verification complete. **Verdict: PASS**
+
+Independent review confirmed:
+
+- `generate()` → `_submit_with_retry()` wiring is correct
+- `_should_retry` restricts retries to 429 and 5xx only; other 4xx fail immediately
+- `BACKOFF_SCHEDULE = (5.0, 30.0, 300.0)` matches spec exactly
+- `Retry-After` honored only when larger than the scheduled slot
+- Budget cap: `MAX_RETRIES = 3` → 4 total attempts, then `GenerationError`
+- 24/24 T-002-specific tests pass; full suite 3616/3616 pass
+
+The auto-generated hardening anchors (`bootstrap_identity` startup wiring) are out of scope for T-002's retry/backoff surface and were addressed in prior task contexts. No blocking issues found.

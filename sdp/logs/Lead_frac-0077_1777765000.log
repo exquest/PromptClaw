@@ -1,0 +1,118 @@
+Command: gemini -p # Task frac-0077: Deepen test_generation_composer_hook from depth 1 to depth 2: Simple: one-path implementation, functions produce meaningful output, end-to-end works
+
+## Acceptance Criteria
+
+Simple: one-path implementation, functions produce meaningful output, end-to-end works
+
+Hint: Implement the simplest working version of each function. One algorithm path, no edge cases. The system should work end-to-end with this module.
+
+**Tier:** T2 — Standard (New feature / moderate refactoring)
+
+## Instructions
+
+Read the project's ADP documentation and understand existing patterns before making changes.
+
+**ADP Phases:** Explore → Specify → Test → Implement → Verify → Document
+
+### Phase 0: Explore
+- Read all files in the affected area of the codebase.
+- Identify existing patterns, naming conventions, and architectural decisions.
+- Review related tests to understand expected behavior.
+- Update progress.md with exploration findings.
+
+### Phase 1: Specify
+- Write a specification to `specs/frac-0077-spec.md`.
+- Include: problem statement, technical approach, edge cases, acceptance criteria.
+- Each acceptance criterion must have a VERIFY command.
+
+### Phase 2: Test Development
+- Write tests BEFORE implementation, derived from the specification.
+- Tests must FAIL before implementation (Red phase).
+- After this phase, test files are LOCKED — do not modify assertions.
+
+### Phase 3: Implement
+- Implement the minimum code needed to pass all tests.
+- One sub-task at a time, commit each logical unit.
+- Type hints on all function signatures.
+- Follow existing patterns.
+
+### Phase 4: Verify & Document
+- Run full test suite and quality checks.
+- Update CHANGELOG.md, progress.md.
+
+## Rules
+
+- No questions — document assumptions in ESCALATIONS.md.
+- Do not modify locked test assertions.
+- Log new dependencies to ESCALATIONS.md.
+- Commit per sub-task: `feat(scope): summary [frac-0077]`
+
+## Common Pitfalls (from recurring verify feedback)
+
+These are the top reasons tasks get PASS WITH NOTES instead of clean PASS.
+Avoid them on the first attempt:
+
+- **Always include a migration** when adding or modifying database columns.
+  A new model or column without a migration is a deployment gap.
+- **Commit all changes** before the verify phase begins. Uncommitted work
+  is flagged as blocking by the verifier.
+- **Stay in scope** — only commit work under this task's ID. Do not bundle
+  changes from adjacent subtasks or refactor unrelated code.
+- **Add indexes on new FK columns** in `__table_args__` when adding
+  foreign key relationships.
+- **Keep CHANGELOG entries consistent** with actual behavior. Do not copy
+  descriptions from other tasks or specs without verifying they match
+  the implemented code.
+
+## Validation
+
+Run before final commit:
+```bash
+pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/
+```
+
+All must pass.
+
+## Candidate Hardening (Auto-Generated)
+
+Use the recurring failure patterns below as mandatory hardening checks:
+- Address this recurring failure mode explicitly: Runtime does not invoke bootstrap_identity on startup, so the identity file is never guaranteed to be created automatically at first run. Severity: blocking.
+- Address this recurring failure mode explicitly: Add bootstrap_identity() invocation in startup flow (before FirstBootAnnouncer) so first boots mint and persist identity automatically..
+- Address this recurring failure mode explicitly: Ensure this path is used on both standalone and federated modes..
+- Enforce behavioral regression tests before completion: Add an integration test that exercises startup and verifies identity persistence between boots..
+- Enforce behavioral regression tests before completion: Re-run pip install -e '.[dev]' && pytest tests/ -x after wiring the startup path..
+ --output-format stream-json --approval-mode yolo --sandbox -m gemini-3.1-pro-preview
+Prompt delivered via: argv
+---
+
+{"type":"init","timestamp":"2026-05-02T23:36:44.572Z","session_id":"0304a267-6648-4f9f-bb3a-a49e6ed772da","model":"gemini-3.1-pro-preview"}
+{"type":"message","timestamp":"2026-05-02T23:36:44.572Z","role":"user","content":"# Task frac-0077: Deepen test_generation_composer_hook from depth 1 to depth 2: Simple: one-path implementation, functions produce meaningful output, end-to-end works\n\n## Acceptance Criteria\n\nSimple: one-path implementation, functions produce meaningful output, end-to-end works\n\nHint: Implement the simplest working version of each function. One algorithm path, no edge cases. The system should work end-to-end with this module.\n\n**Tier:** T2 — Standard (New feature / moderate refactoring)\n\n## Instructions\n\nRead the project's ADP documentation and understand existing patterns before making changes.\n\n**ADP Phases:** Explore → Specify → Test → Implement → Verify → Document\n\n### Phase 0: Explore\n- Read all files in the affected area of the codebase.\n- Identify existing patterns, naming conventions, and architectural decisions.\n- Review related tests to understand expected behavior.\n- Update progress.md with exploration findings.\n\n### Phase 1: Specify\n- Write a specification to `specs/frac-0077-spec.md`.\n- Include: problem statement, technical approach, edge cases, acceptance criteria.\n- Each acceptance criterion must have a VERIFY command.\n\n### Phase 2: Test Development\n- Write tests BEFORE implementation, derived from the specification.\n- Tests must FAIL before implementation (Red phase).\n- After this phase, test files are LOCKED — do not modify assertions.\n\n### Phase 3: Implement\n- Implement the minimum code needed to pass all tests.\n- One sub-task at a time, commit each logical unit.\n- Type hints on all function signatures.\n- Follow existing patterns.\n\n### Phase 4: Verify & Document\n- Run full test suite and quality checks.\n- Update CHANGELOG.md, progress.md.\n\n## Rules\n\n- No questions — document assumptions in ESCALATIONS.md.\n- Do not modify locked test assertions.\n- Log new dependencies to ESCALATIONS.md.\n- Commit per sub-task: `feat(scope): summary [frac-0077]`\n\n## Common Pitfalls (from recurring verify feedback)\n\nThese are the top reasons tasks get PASS WITH NOTES instead of clean PASS.\nAvoid them on the first attempt:\n\n- **Always include a migration** when adding or modifying database columns.\n  A new model or column without a migration is a deployment gap.\n- **Commit all changes** before the verify phase begins. Uncommitted work\n  is flagged as blocking by the verifier.\n- **Stay in scope** — only commit work under this task's ID. Do not bundle\n  changes from adjacent subtasks or refactor unrelated code.\n- **Add indexes on new FK columns** in `__table_args__` when adding\n  foreign key relationships.\n- **Keep CHANGELOG entries consistent** with actual behavior. Do not copy\n  descriptions from other tasks or specs without verifying they match\n  the implemented code.\n\n## Validation\n\nRun before final commit:\n```bash\npip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/\n```\n\nAll must pass.\n\n## Candidate Hardening (Auto-Generated)\n\nUse the recurring failure patterns below as mandatory hardening checks:\n- Address this recurring failure mode explicitly: Runtime does not invoke bootstrap_identity on startup, so the identity file is never guaranteed to be created automatically at first run. Severity: blocking.\n- Address this recurring failure mode explicitly: Add bootstrap_identity() invocation in startup flow (before FirstBootAnnouncer) so first boots mint and persist identity automatically..\n- Address this recurring failure mode explicitly: Ensure this path is used on both standalone and federated modes..\n- Enforce behavioral regression tests before completion: Add an integration test that exercises startup and verifies identity persistence between boots..\n- Enforce behavioral regression tests before completion: Re-run pip install -e '.[dev]' && pytest tests/ -x after wiring the startup path..\n"}
+{"type":"tool_use","timestamp":"2026-05-02T23:36:52.345Z","tool_name":"update_topic","tool_id":"update_topic_1777765012345_0","parameters":{"title":"Phase 0: Explore","strategic_intent":"Start Phase 0: Explore to locate test_generation_composer_hook and understand the current implementation.","summary":"I will use grep and glob to find where test_generation_composer_hook is implemented or used, and understand its current state. Then I will write the specification."}}
+{"type":"tool_use","timestamp":"2026-05-02T23:36:52.345Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1777765012345_1","parameters":{"command":"grep -rn \"test_generation_composer_hook\" .","description":"Search for test_generation_composer_hook in the codebase"}}
+{"type":"tool_result","timestamp":"2026-05-02T23:43:51.645Z","tool_id":"update_topic_1777765012345_0","status":"success","output":"## 📂 Topic: **Phase 0: Explore**\n\n**Summary:**\nI will use grep and glob to find where test_generation_composer_hook is implemented or used, and understand its current state. Then I will write the specification.\n\n> [!STRATEGY]\n> **Intent:** Start Phase 0: Explore to locate test_generation_composer_hook and understand the current implementation."}
+{"type":"tool_result","timestamp":"2026-05-02T23:43:51.646Z","tool_id":"run_shell_command_1777765012345_1","status":"success"}
+{"type":"result","timestamp":"2026-05-02T23:43:52.298Z","status":"error","error":{"type":"unknown","message":"[API Error: You have exhausted your capacity on this model. Your quota will reset after 14m17s.]"},"stats":{"total_tokens":11061,"input_tokens":10659,"output_tokens":108,"cached":0,"input":10659,"duration_ms":0,"tool_calls":2,"models":{"gemini-3.1-pro-preview":{"total_tokens":11061,"input_tokens":10659,"output_tokens":108,"cached":0,"input":10659}}}}
+
+--- STDERR ---
+YOLO mode is enabled. All tool calls will be automatically approved.
+YOLO mode is enabled. All tool calls will be automatically approved.
+Ripgrep is not available. Falling back to GrepTool.
+Error when talking to Gemini API Full report available at: /var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/gemini-client-error-Turn.run-sendMessageStream-2026-05-02T23-43-52-296Z.json TerminalQuotaError: You have exhausted your capacity on this model. Your quota will reset after 14m17s.
+    at classifyGoogleError (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:269776:18)
+    at retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:270380:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:292973:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:292811:29)
+    at async Turn.run (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:293304:24)
+    at async GeminiClient.processTurn (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:303598:22)
+    at async GeminiClient.sendMessageStream (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:303711:14)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/gemini-3OZCG3O2.js:10923:26
+    at async main (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/gemini-3OZCG3O2.js:15980:5) {
+  cause: {
+    code: 429,
+    message: 'You have exhausted your capacity on this model. Your quota will reset after 14m17s.',
+    details: [ [Object], [Object] ]
+  },
+  retryDelayMs: 857632.508078,
+  reason: 'QUOTA_EXHAUSTED'
+}

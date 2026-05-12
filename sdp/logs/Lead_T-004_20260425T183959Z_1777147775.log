@@ -1,0 +1,10 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1795 chars)
+---
+
+T-004 complete and committed (`31e5a2e`).
+
+**Summary**
+- `sampler_dispatch.py`: added `play_sampler(record, duration_sec, ...)` (fire-and-forget; schedules `handle.release()` via injectable scheduler), `start_sampler` / `stop_sampler` (sustained lifecycle wrapping `dispatch_sample`). Default scheduler is a `threading.Timer` wrapper.
+- `test_sampler_dispatch.py`: 8 new tests covering both lifecycles, fx-preset forwarding, duration validation, and concurrent execution with distinct node ids and shared buffer id.
+- All 3168 tests pass, ruff clean. Two pre-existing mypy errors on `dispatch_sample` are unchanged by this commit.

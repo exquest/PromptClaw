@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1773 chars)
+---
+
+T-009 complete. Changes in commit `078875a`:
+
+- `save_capture` peak-normalizes captures to -1 dBFS, preserving raw when peak < -30 dBFS, returning the applied `gain_db` on `SavedCapture`.
+- New `_peak_normalize` helper in `my-claw/tools/sample_capture_daemon.py:823` with `PEAK_NORMALIZE_TARGET_DBFS = -1.0` / `PEAK_NORMALIZE_FLOOR_DBFS = -30.0` constants.
+- `samples` table gains a `gain_db REAL` column; INSERT writes the adjustment.
+- 4 new regression tests cover loud→normalized, below-floor→raw, silence→0 dB, and DB row contains `gain_db`.
+- Full suite: 3213 passed, ruff clean. Pre-existing mypy stub warnings (jack, image_api) untouched.

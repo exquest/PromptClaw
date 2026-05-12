@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2718 chars)
+---
+
+Verification complete. **PASS** — report committed at `sdp/verification/t-002@20260425t183959zc-verify.md`.
+
+Key findings:
+
+- **Correctness:** The `fzAmt > 0.0` gate derivation is the right fix — `PV_Freeze` expects binary, not continuous. Dual-use (gate for UGen, continuous for `SelectX` wet/dry) is semantically precise.
+- **Completeness:** All spec requirements met. Minor gap: no test for toggling freeze back off, but the off-baseline run in the RMS comparison implicitly covers it.
+- **Tests:** 3126 pass, 0 failures. Both new Python static tests and the refactored SC-side runtime test are solid.
+- **Candidate hardening (`bootstrap_identity`):** Inapplicable to this task — that pattern belongs to the daemon/identity domain, not the SuperCollider SynthDef domain.

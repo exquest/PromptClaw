@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3767 chars)
+---
+
+frac-0108 complete with verdict PASS.
+
+**Summary**
+- `specs/frac-0108-spec.md` — depth-2 spec with 6 acceptance criteria + identity-hardening regression anchors.
+- `tests/test_test_router_depth.py` — depth gate requiring `RouterEndToEndTests.test_route_lifecycle_renders_markdown_and_round_trips_decision` and `classify_depth >= 2`. Confirmed red before implementation.
+- `tests/test_router.py` — appended `RouterEndToEndTests` driving `agent_catalog_markdown`, `heuristic_route` (code lead/verifier path, trust-score shift, ambiguous path), `route_markdown` (both branches), `parse_route_decision` round-trip, and JSON-safe diagnostic round-trip. Existing locked assertions untouched.
+- Validation: `pytest tests/ -x` 4653 passed / 3 skipped, ruff clean, mypy clean, identity-hardening anchors 11 passed.
+- Five commits per sub-task: spec → depth gate → E2E tests → docs → verify.

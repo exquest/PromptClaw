@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2918 chars)
+---
+
+Done. Committed as `b27fba5`.
+
+Changes addressing all three blocking verifier issues:
+- `scripts/smoke_narrative.py:25` — `ENDPOINTS` now `("/healthz", "/readyz")`
+- `scripts/smoke_narrative.py:35` — token sent as `Authorization: Bearer <token>` instead of `X-Narrative-Auth`
+- `tests/test_smoke_narrative_script.py` — tests now assert both endpoints are hit, plus new test for bearer header format and one confirming no Authorization header when token omitted
+
+All 6 tests pass; ruff and mypy clean.
+
+Note: the actual `cypherclaw.narrative_api` (in `src/cypherclaw/narrative_api/app.py:132`) currently exposes `/health` with `X-Narrative-Auth` — so this CLI now matches the task spec but will 404 against the live API until that side is updated. Worth flagging to the orchestrator if a follow-up task is needed to add `/healthz`/`/readyz` + bearer auth on the server.

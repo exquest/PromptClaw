@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1370 chars)
+---
+
+Committed as `816f731`.
+
+Summary:
+- `src/cypherclaw/narrative_api/__main__.py`: `main()` now constructs `NarrativeSettings()` and passes `bind_host`, `bind_port`, and `auth_token` from it to `uvicorn.run`/`create_app` instead of reading `os.environ` directly. `_resolve_host`/`_resolve_port` accept an optional settings instance for back-compat with existing tests.
+- `pyproject.toml`: added `narrative-api = "cypherclaw.narrative_api.__main__:main"` console script.
+- `tests/test_narrative_api_main.py`: new `test_main_reads_settings_object` asserting settings-driven values flow into uvicorn/create_app. Existing `/health` smoke test via `TestClient(main.app)` already in place and green.
+- Validation: 3910 pytest passed, ruff clean, mypy clean.
+
+Out of scope (still open from prior verify): `main.py` lifespan hook for `bootstrap_identity` and `log_config.py` test coverage — left for follow-up tasks per T1 scope discipline.

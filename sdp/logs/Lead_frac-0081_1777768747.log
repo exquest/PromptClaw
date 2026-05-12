@@ -1,0 +1,410 @@
+Command: gemini -p Task frac-0081: Deepen test_governor_integration from depth 1 to depth 2: Simple: one-path implementation, functions produce meaningful output, end-to-end works
+Your previous attempt left uncommitted changes.
+Commit all required work and ensure git status is clean before exiting.
+
+## Acceptance Criteria
+
+Simple: one-path implementation, functions produce meaningful output, end-to-end works
+
+Hint: Implement the simplest working version of each function. One algorithm path, no edge cases. The system should work end-to-end with this module.
+ --output-format stream-json --approval-mode yolo --sandbox -m gemini-3.1-pro-preview
+Prompt delivered via: argv
+---
+
+{"type":"init","timestamp":"2026-05-03T00:39:12.088Z","session_id":"99b193b9-f3ca-417b-875c-72a934380529","model":"gemini-3.1-pro-preview"}
+{"type":"message","timestamp":"2026-05-03T00:39:12.089Z","role":"user","content":"Task frac-0081: Deepen test_governor_integration from depth 1 to depth 2: Simple: one-path implementation, functions produce meaningful output, end-to-end works\nYour previous attempt left uncommitted changes.\nCommit all required work and ensure git status is clean before exiting.\n\n## Acceptance Criteria\n\nSimple: one-path implementation, functions produce meaningful output, end-to-end works\n\nHint: Implement the simplest working version of each function. One algorithm path, no edge cases. The system should work end-to-end with this module.\n"}
+{"type":"tool_use","timestamp":"2026-05-03T00:39:26.756Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1777768766756_0","parameters":{"description":"Check git status and diff","command":"git status && git diff HEAD"}}
+{"type":"tool_use","timestamp":"2026-05-03T00:39:26.762Z","tool_name":"glob","tool_id":"glob_1777768766762_1","parameters":{"pattern":"**/test_governor_integration*"}}
+{"type":"tool_use","timestamp":"2026-05-03T00:39:26.801Z","tool_name":"read_file","tool_id":"read_file_1777768766801_2","parameters":{"file_path":"specs/frac-0081-spec.md"}}
+{"type":"tool_result","timestamp":"2026-05-03T00:39:27.057Z","tool_id":"run_shell_command_1777768766756_0","status":"success"}
+{"type":"tool_result","timestamp":"2026-05-03T00:39:27.057Z","tool_id":"glob_1777768766762_1","status":"success","output":"Found 2 matching file(s)"}
+{"type":"tool_result","timestamp":"2026-05-03T00:39:27.057Z","tool_id":"read_file_1777768766801_2","status":"success","output":""}
+{"type":"tool_use","timestamp":"2026-05-03T00:39:47.687Z","tool_name":"update_topic","tool_id":"update_topic_1777768787686_0","parameters":{"title":"Verify and commit frac-0081","summary":"I am continuing task frac-0081, which was left with uncommitted changes by the previous agent. I have reviewed the git status, noting that `tests/test_governor_integration.py` was modified and `tests/test_governor_integration_depth.py` was added. I will now run tests to verify these changes satisfy the requirements.","strategic_intent":"Verify tests to finalize the task and commit changes."}}
+{"type":"tool_use","timestamp":"2026-05-03T00:39:47.735Z","tool_name":"read_file","tool_id":"read_file_1777768787734_1","parameters":{"file_path":"tests/test_governor_integration_depth.py"}}
+{"type":"tool_result","timestamp":"2026-05-03T00:39:47.791Z","tool_id":"update_topic_1777768787686_0","status":"success","output":"## 📂 Topic: **Verify and commit frac-0081**\n\n**Summary:**\nI am continuing task frac-0081, which was left with uncommitted changes by the previous agent. I have reviewed the git status, noting that `tests/test_governor_integration.py` was modified and `tests/test_governor_integration_depth.py` was added. I will now run tests to verify these changes satisfy the requirements.\n\n> [!STRATEGY]\n> **Intent:** Verify tests to finalize the task and commit changes."}
+{"type":"tool_result","timestamp":"2026-05-03T00:39:47.791Z","tool_id":"read_file_1777768787734_1","status":"success","output":""}
+{"type":"tool_use","timestamp":"2026-05-03T00:39:51.617Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1777768791617_0","parameters":{"description":"Run governor integration tests","command":"pytest tests/test_governor_integration_depth.py -v && pytest tests/test_governor_integration.py -v"}}
+{"type":"tool_result","timestamp":"2026-05-03T00:39:53.469Z","tool_id":"run_shell_command_1777768791617_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-03T00:40:02.693Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1777768802692_0","parameters":{"description":"Run full validation suite","command":"pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/"}}
+{"type":"tool_result","timestamp":"2026-05-03T00:40:05.625Z","tool_id":"run_shell_command_1777768802692_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-03T00:40:30.174Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1777768830174_0","parameters":{"command":"pytest tests/ -x -q && ruff check src/ tests/ && mypy src/","description":"Run validation commands directly"}}
+{"type":"tool_result","timestamp":"2026-05-03T00:40:32.871Z","tool_id":"run_shell_command_1777768830174_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-03T00:40:46.022Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1777768846022_0","parameters":{"command":"grep -n 'PROMPTCLAW_HOME' my-claw/tools/tamagotchi.py || true","description":"Check for PROMPTCLAW_HOME usage"}}
+{"type":"tool_result","timestamp":"2026-05-03T00:40:46.118Z","tool_id":"run_shell_command_1777768846022_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-03T00:40:49.678Z","tool_name":"grep_search","tool_id":"grep_search_1777768849678_0","parameters":{"pattern":"\\.promptclaw","dir_path":"my-claw/tools/"}}
+{"type":"tool_result","timestamp":"2026-05-03T00:40:49.765Z","tool_id":"grep_search_1777768849678_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-03T00:41:00.169Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1777768860168_0","parameters":{"description":"Run full test suite with PROMPTCLAW_PETS_FILE overriden","command":"PROMPTCLAW_PETS_FILE=/tmp/pets.json pytest tests/ -x -q && ruff check src/ tests/ && mypy src/"}}
+{"type":"tool_result","timestamp":"2026-05-03T00:41:02.935Z","tool_id":"run_shell_command_1777768860168_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-03T00:41:13.949Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1777768873949_0","parameters":{"description":"Run full test suite with PROMPTCLAW_PETS_FILE overriden to permitted temp dir","command":"PROMPTCLAW_PETS_FILE=/Users/anthony/.gemini/tmp/promptclaw/pets.json pytest tests/ -x -q && ruff check src/ tests/ && mypy src/"}}
+{"type":"tool_result","timestamp":"2026-05-03T00:41:22.081Z","tool_id":"run_shell_command_1777768873949_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-03T00:41:27.169Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1777768887168_0","parameters":{"command":"ruff check src/ tests/ && mypy src/","description":"Run ruff and mypy"}}
+{"type":"tool_result","timestamp":"2026-05-03T00:41:27.284Z","tool_id":"run_shell_command_1777768887168_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-03T00:41:31.456Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1777768891456_0","parameters":{"command":"ruff check --fix src/ tests/ && mypy src/","description":"Fix lint errors and run mypy"}}
+{"type":"tool_result","timestamp":"2026-05-03T00:41:31.987Z","tool_id":"run_shell_command_1777768891456_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-03T00:41:36.835Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1777768896835_0","parameters":{"command":"git branch -a && git log -n 5 --oneline","description":"Check branches and recent commits"}}
+{"type":"tool_result","timestamp":"2026-05-03T00:41:37.019Z","tool_id":"run_shell_command_1777768896835_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-03T00:41:43.470Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1777768903469_0","parameters":{"command":"git add . && git status","description":"Stage all changes for commit"}}
+{"type":"tool_result","timestamp":"2026-05-03T00:41:43.736Z","tool_id":"run_shell_command_1777768903469_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-03T00:41:48.162Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1777768908161_0","parameters":{"description":"Commit frac-0081 changes","command":"git commit -m \"feat(governor): add depth-2 end-to-end tests [frac-0081]\n\nImplements depth-2 end-to-end test coverage for the resource governor, adding TestGovernorIntegrationEndToEnd in test_governor_integration.py and test_governor_integration_depth.py.\nIncludes test updates, spec, and documentation changes for frac-0081.\""}}
+{"type":"tool_result","timestamp":"2026-05-03T00:41:48.275Z","tool_id":"run_shell_command_1777768908161_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-03T00:41:51.656Z","tool_name":"update_topic","tool_id":"update_topic_1777768911656_0","parameters":{"strategic_intent":"Conclude the task.","title":"Task Complete","summary":"I have verified the test files left by the previous agent, ensured they pass locally, checked them with `ruff` and `mypy`, and finally committed the changes. The git status is now clean."}}
+{"type":"tool_result","timestamp":"2026-05-03T00:41:51.711Z","tool_id":"update_topic_1777768911656_0","status":"success","output":"## 📂 Topic: **Task Complete**\n\n**Summary:**\nI have verified the test files left by the previous agent, ensured they pass locally, checked them with `ruff` and `mypy`, and finally committed the changes. The git status is now clean.\n\n> [!STRATEGY]\n> **Intent:** Conclude the task."}
+{"type":"message","timestamp":"2026-05-03T00:41:54.752Z","role":"assistant","content":"I have verified the test suite","delta":true}
+{"type":"message","timestamp":"2026-05-03T00:41:54.771Z","role":"assistant","content":" runs correctly with the changes from the previous attempt (`test_governor_integration.py` and `test_governor_","delta":true}
+{"type":"message","timestamp":"2026-05-03T00:41:54.787Z","role":"assistant","content":"integration_depth.py`), fixed a minor linting issue (unused `os` import in `test_governor_integration_depth.","delta":true}
+{"type":"message","timestamp":"2026-05-03T00:41:54.805Z","role":"assistant","content":"py`), ran `ruff` and `mypy` locally to ensure there are no lingering errors, and then committed all","delta":true}
+{"type":"message","timestamp":"2026-05-03T00:41:54.899Z","role":"assistant","content":" the staged work. \n\nThe git status is now clean and the work for `frac-0081","delta":true}
+{"type":"message","timestamp":"2026-05-03T00:41:54.946Z","role":"assistant","content":"` has been fully committed to the repository.","delta":true}
+{"type":"result","timestamp":"2026-05-03T00:41:55.003Z","status":"success","stats":{"total_tokens":481248,"input_tokens":476794,"output_tokens":923,"cached":348931,"input":127863,"duration_ms":162915,"tool_calls":18,"models":{"gemini-3.1-pro-preview":{"total_tokens":481248,"input_tokens":476794,"output_tokens":923,"cached":348931,"input":127863}}}}
+
+--- STDERR ---
+YOLO mode is enabled. All tool calls will be automatically approved.
+YOLO mode is enabled. All tool calls will be automatically approved.
+Ripgrep is not available. Falling back to GrepTool.
+Attempt 1 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:8805:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:10768:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:272609:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:272409:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:273256:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:250163:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:270357:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:292973:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:292811:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.40.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/25.9.0'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Sun, 03 May 2026 00:39:19 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=7082',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': 'b161db2830b7eed2',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  Symbol(gaxios-gaxios-error): '6.7.1'
+}
+Attempt 1 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:8805:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:10768:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:272609:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:272409:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:273256:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:250163:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:270357:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:292973:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:292811:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.40.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/25.9.0'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Sun, 03 May 2026 00:39:33 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=6459',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': '61f3f62c8abf20a0',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  Symbol(gaxios-gaxios-error): '6.7.1'
+}
+Attempt 1 failed with status 429. Retrying with backoff... _GaxiosError: [{
+  "error": {
+    "code": 429,
+    "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+    "errors": [
+      {
+        "message": "No capacity available for model gemini-3.1-pro-preview on the server",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ],
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "MODEL_CAPACITY_EXHAUSTED",
+        "domain": "cloudcode-pa.googleapis.com",
+        "metadata": {
+          "model": "gemini-3.1-pro-preview"
+        }
+      }
+    ]
+  }
+}
+]
+    at Gaxios._request (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:8805:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async _OAuth2Client.requestAsync (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:10768:16)
+    at async CodeAssistServer.requestStreamingPost (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:272609:17)
+    at async CodeAssistServer.generateContentStream (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:272409:23)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:273256:19
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:250163:23
+    at async retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:270357:23)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:292973:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.40.1/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-UN6XCVMJ.js:292811:29) {
+  config: {
+    url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+    method: 'POST',
+    params: { alt: 'sse' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'GeminiCLI/0.40.1/gemini-3.1-pro-preview (darwin; arm64; terminal) google-api-nodejs-client/9.15.1',
+      Authorization: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      'x-goog-api-client': 'gl-node/25.9.0'
+    },
+    responseType: 'stream',
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    signal: AbortSignal { aborted: false },
+    retry: false,
+    paramsSerializer: [Function: paramsSerializer],
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      url: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse',
+      method: 'POST',
+      params: [Object],
+      headers: [Object],
+      responseType: 'stream',
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      signal: [AbortSignal],
+      retry: false,
+      paramsSerializer: [Function: paramsSerializer],
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: '[{\n' +
+      '  "error": {\n' +
+      '    "code": 429,\n' +
+      '    "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '    "errors": [\n' +
+      '      {\n' +
+      '        "message": "No capacity available for model gemini-3.1-pro-preview on the server",\n' +
+      '        "domain": "global",\n' +
+      '        "reason": "rateLimitExceeded"\n' +
+      '      }\n' +
+      '    ],\n' +
+      '    "status": "RESOURCE_EXHAUSTED",\n' +
+      '    "details": [\n' +
+      '      {\n' +
+      '        "@type": "type.googleapis.com/google.rpc.ErrorInfo",\n' +
+      '        "reason": "MODEL_CAPACITY_EXHAUSTED",\n' +
+      '        "domain": "cloudcode-pa.googleapis.com",\n' +
+      '        "metadata": {\n' +
+      '          "model": "gemini-3.1-pro-preview"\n' +
+      '        }\n' +
+      '      }\n' +
+      '    ]\n' +
+      '  }\n' +
+      '}\n' +
+      ']',
+    headers: {
+      'alt-svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000',
+      'content-length': '630',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Sun, 03 May 2026 00:40:12 GMT',
+      server: 'ESF',
+      'server-timing': 'gfet4t7; dur=7004',
+      vary: 'Origin, X-Origin, Referer',
+      'x-cloudaicompanion-trace-id': 'feccf8b9028a5db9',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 429,
+    statusText: 'Too Many Requests',
+    request: {
+      responseURL: 'https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse'
+    }
+  },
+  error: undefined,
+  status: 429,
+  Symbol(gaxios-gaxios-error): '6.7.1'
+}
+(node:21286) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)

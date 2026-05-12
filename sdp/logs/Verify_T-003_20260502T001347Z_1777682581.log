@@ -1,0 +1,17 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2887 chars)
+---
+
+## Verdict: PASS
+
+All acceptance criteria met and all checks clean:
+
+- `POST /events` returns 201 with normalized `EventRecord` ✅
+- Appended event readable via `GET /events` ✅
+- Omitted `domain` defaults to `shared` ✅
+- Whitespace-only `type` → 422, store never called ✅
+- Downstream store failure → 502 ✅
+- Full suite: **3834 passed, 3 skipped** | ruff clean | mypy clean
+- Hardening anchors: **65 passed**
+
+One minor non-blocking gap noted: no explicit POST-side 503 test for store construction failure (the code path exists and is symmetric with GET). Report committed to `sdp/verification/t-003@20260502t001347z-verify.md`.

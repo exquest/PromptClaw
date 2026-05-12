@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3774 chars)
+---
+
+frac-0008 complete and committed (`b6c5114`).
+
+**Summary:**
+- Spec: `specs/frac-0008-spec.md` (7 acceptance criteria, all with VERIFY commands)
+- Implementation: `my-claw/tools/senseweave/commission_context.py` — added `CommissionInputs` dataclass, `attention_pressure_from_world`, `commission_inputs_from_tracker_plan`, `summarize_commission_context`; rewrote `commission_context_from_tracker_plan` body to use a candidate-source walk while preserving the existing `(day_phase, weekly_phase)` contract.
+- Tests: `tests/test_commission_context_depth.py` (6 new tests, all green; existing `tests/test_commission_context.py` still passes)
+- Fractal depth: was depth 1 (`1/1 trivial, 0 real`) → now depth 3 (`112 lines, 4 real functions`), exceeding the depth ≥ 2 requirement
+- Validation: `pytest tests/ -x` → 3968 passed, 3 skipped; `ruff check src/ tests/` clean; `mypy src/` clean; startup-identity regression anchors (`TestStartupIdentityPersistence`, `TestStartupIdentityWiring`) pass

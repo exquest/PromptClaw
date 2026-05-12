@@ -1,11 +1,19 @@
 """TTY renderer for GlyphWeave art — writes ANSI escape sequences to a Linux TTY console."""
 
+import fcntl
+import os
+import struct
+import termios
 import time
 from pathlib import Path
+from typing import Final
 
 
 class TTYRenderer:
     """Renders GlyphWeave text art on a Linux TTY console using ANSI escape codes."""
+
+    DEFAULT_WIDTH: Final[int] = 160
+    DEFAULT_HEIGHT: Final[int] = 64
 
     # ANSI escape sequences
     ESC_CLEAR = "\033[2J"
@@ -16,8 +24,32 @@ class TTYRenderer:
 
     def __init__(self, tty_path: str = "/dev/tty1"):
         self.tty_path = tty_path
-        self.width = 160   # chars at 8x16 font on 1280px
-        self.height = 64   # rows at 8x16 font on 1024px
+        self.width, self.height = self._detect_terminal_size()
+
+    def _detect_terminal_size(self) -> tuple[int, int]:
+        """Read terminal columns/rows from the target TTY, falling back to legacy defaults."""
+        tty = Path(self.tty_path)
+        if not tty.exists():
+            return self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT
+
+        try:
+            fd = os.open(self.tty_path, os.O_RDONLY | os.O_NONBLOCK)
+        except OSError:
+            return self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT
+
+        try:
+            rows, cols, _, _ = struct.unpack(
+                "HHHH",
+                fcntl.ioctl(fd, termios.TIOCGWINSZ, struct.pack("HHHH", 0, 0, 0, 0)),
+            )
+        except OSError:
+            return self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT
+        finally:
+            os.close(fd)
+
+        if rows <= 0 or cols <= 0:
+            return self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT
+        return cols, rows
 
     def _write(self, data: str) -> None:
         """Write raw string data to the TTY device."""

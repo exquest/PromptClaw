@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1347 chars)
+---
+
+Done.
+
+`record_scheduled_sample_event` now derives `source_kind` from event metadata via a new `_derive_source_kind` helper:
+
+- Explicit `sample_origin` (in `metadata`, then `scene_metadata`) wins as-is
+- `generated_by` → `"generated"`
+- `library_path` → `"library"`
+- Default → `"gesture"` (matches the existing gesture-driven sample defaults)
+
+Six new unit tests in `tests/test_usage_journal.py` cover each branch plus the priority order. `pytest tests/test_usage_journal.py tests/test_usage_journal_integration.py` passes (22 tests); `ruff check` clean. The single `mypy` error at `usage_journal.py:48` is pre-existing in `_int_value` and unrelated. Committed as `a8379e4`.

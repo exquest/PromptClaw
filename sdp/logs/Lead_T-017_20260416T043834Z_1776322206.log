@@ -1,0 +1,19 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1589 chars)
+---
+
+Done. Here's a summary of what was implemented:
+
+**Files changed:**
+- `my-claw/tools/senseweave/score_tree.py` -- Added `MOTIF_LIFECYCLE_STATES` tuple (7 states) and `lifecycle_state` field to `MotifNode` (default `"statement"`)
+- `my-claw/tools/senseweave/motif_lifecycle.py` -- **New module** with:
+  - Guarded state transitions (`_TRANSITIONS` dict, `valid_next_states()`, `advance()`)
+  - 6 transformation functions: `transform_variation` (inner degree shift + rhythm swap), `transform_contrast` (contour inversion + rhythm reversal + degree swap), `transform_recall` (center-pull perturbation, accepts external shape), `transform_answer` (resolve last degree + swap degrees), `transform_liquidation` (halve material), `transform_residue` (opening interval only)
+  - `LeitmotifEntry` dataclass tracking origin + current state + history
+  - `MotifLifecycleManager` class with `register()`, `advance()`, `recall_from_repertoire()` -- ensures recall never produces an exact copy
+  - `recall_shape_from_summary()` helper for extracting contours from stored repertoire data
+- `my-claw/tools/senseweave/recursive_composer.py` -- Primary motif tagged `"statement"`, contrast motif tagged `"contrast"`
+- `my-claw/tools/senseweave/repertoire_memory.py` -- `store_song()` now extracts `motif_contours` into score_tree_summary; added `recall_motif_shape()` method
+- `tests/test_motif_lifecycle.py` -- **28 tests** covering all transitions, transformations, the full lifecycle path, the manager, shape recall, and repertoire integration
+
+**Validation:** 1890/1891 tests pass (1 pre-existing failure in `test_score_tree.py`). Ruff and mypy clean on all new/changed files.

@@ -1,0 +1,17 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (4739 chars)
+---
+
+T-038 complete. Here's what was delivered:
+
+**New module: `src/cypherclaw/render/narrative_envelope.py`**
+- `ToneVector` — 4-dimension musical tone (darkness, energy, warmth, density)
+- `NarrativeBeat` — captures arc phase, section function, tension target, and tone
+- `envelope_for_beat()` — maps a beat to a SectionEnvelope with phase-shaped tension trajectory breakpoints, tone-derived brightness/dynamic planes, and arc-driven density
+- `tone_from_narrative()` / `beat_from_directive()` — convenience factories bridging ArcDirective to the envelope system
+
+**Integration in `recursive_composer.py`**
+- `_production_arc_for_sections()` now returns per-section ArcDirectives alongside metadata
+- `compose_score_tree()` uses `envelope_for_beat(beat_from_directive(...))` instead of `SectionEnvelope()` so every section node gets a narrative-driven envelope
+
+**Validation**: 3013 tests pass, ruff clean, mypy clean, 14 new tests covering all acceptance criteria.

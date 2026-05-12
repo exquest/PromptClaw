@@ -1,0 +1,26 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1622 chars)
+---
+
+Done. Here's what was implemented:
+
+**`my-claw/tools/senseweave/repertoire_memory.py`**:
+- Added `audio_render_ref` and `source_samples` parameters to `store_song()` — stored conditionally (omitted when empty)
+- Added `promote_to_house()` method — promotes pieces with `hook_clarity >= 0.8` or `cadence_strength >= 0.85` into a persistent house repertoire JSON file
+  - Uses `archive_root` parameter to target the 10TB volume; falls back to the repertoire file's parent directory
+  - Skips exact duplicate titles/hooks when alternative candidates exist
+  - Each promoted entry carries score tree summary, ear metrics, render ref, source samples, form class, ending, and a `promoted_at` timestamp
+- Added `house_repertoire()` to read the house repertoire back
+- Added module-level helpers `_resolve_house_path()`, `_load_house()`, `_save_house()`
+
+**`tests/test_repertoire_memory.py`** — 13 new tests covering:
+- `audio_render_ref` and `source_samples` storage/omission
+- Promotion to archive root vs. local fallback
+- Promotion threshold rules (only strong pieces qualify)
+- Duplicate title/hook deduplication when alternatives exist
+- Sole-candidate behavior
+- Round-trip read-back of house repertoire
+- Full-record promotion with score tree + render refs
+- Archive path resolution (house file lands in archive root, not local state dir)
+
+All 2144 tests pass, ruff clean, mypy clean on changed files.

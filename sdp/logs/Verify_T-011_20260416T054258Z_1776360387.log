@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high -p -
+Prompt delivered via: stdin (3929 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+All 2346 tests pass. The gate correctly rejects all 7 AC conditions and accepts sparse/micro pieces with valid sparse intent.
+
+Key notes for lead:
+1. **Minor**: Failure messages deduplicate across sections — a 4-section piece missing `mix_role` appends it 4×. Add a `seen` set guard.
+2. **Minor**: No test asserting a non-micro piece with `intent: sparse` does NOT bypass checks. Add one boundary case.
+3. **Pre-existing (out of scope)**: `tg_send(startup_banner)` fires before `bootstrap_identity()` in the daemon — tracked as open hardening item.
+4. **Pre-existing (out of scope)**: Critique/revision integration test still outstanding from prior hardening checklist.

@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1344 chars)
+---
+
+Task T-002@20260425T183959Zd complete and committed (3d32c94).
+
+**Changes:**
+- `sampler_effects.scd:31-32,57-59,99-103` — added `comb_decay` (clipped 0.05–10 s, drives `CombC` decaytime) and `comb_damping` (clipped 0–1, drives post-comb LPF cutoff)
+- `test_sampler_effects.scd` — runtime test now sets `\comb_decay`/`\comb_damping` so the full chain is exercised end-to-end
+- `tests/test_sampler_effects.py` — new defaults/clip/wiring tests + `TestFullChainIntegration` class asserting all four stages and the comb→sig→Out path
+
+**Validation:** 3137 tests pass (was 3126), `ruff check` and `mypy` both clean.

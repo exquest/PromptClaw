@@ -1,0 +1,18 @@
+[Unit]
+Description=CypherClaw Weekly IDyOM LTM KL-Divergence Audit (T-031)
+ConditionPathExists=/home/user/cypherclaw
+ConditionPathExists=/home/user/cypherclaw/tools/senseweave/generation/idyom_kl_audit_config.json
+
+[Service]
+Type=oneshot
+User=user
+Group=user
+WorkingDirectory=/home/user/cypherclaw
+Environment=HOME=/home/user
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=/home/user/cypherclaw/tools
+Environment=IDYOM_KL_AUDIT_CONFIG=/home/user/cypherclaw/tools/senseweave/generation/idyom_kl_audit_config.json
+ExecStart=/home/user/cypherclaw/.venv/bin/python3 -m senseweave.generation.health
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cypherclaw-idyom-kl-audit

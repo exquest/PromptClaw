@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1534 chars)
+---
+
+Done. Here's what changed:
+
+- **`src/cypherclaw/render/events.py`**: Added `IntentTag` enum with 6 values (build, settle, question, answer, withhold, punctuate)
+- **`my-claw/tools/senseweave/score_tree.py`**: Added `intent_tag: str` field to `PhraseNode` + `from_dict` parsing
+- **`my-claw/tools/senseweave/recursive_composer.py`**: Maps section functions to intent tags when composing phrases
+- **`my-claw/tools/senseweave/composition_gate.py`**: Rejects phrases missing or invalid intent_tag on non-micro pieces; micro pieces default to `punctuate`
+- **Tests**: Enum completeness (6 values, correct names), gate rejection for missing and invalid intent_tags
+
+All 2966 tests pass, ruff and mypy clean.

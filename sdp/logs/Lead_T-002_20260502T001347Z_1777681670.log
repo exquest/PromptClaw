@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1343 chars)
+---
+
+T-002 complete. Committed as `6901ffc`.
+
+**Summary**
+- Added `GET /events?since_event_id=…&domain=…&limit=…` endpoint to the narrative API (CN-011).
+- Mirrors the `/memory/search` lazy-import + mock-injection pattern: new `events.py` resolves a deploy-side `cypherclaw.narrative.events.NarrativeEventStore` (or test-injected store) and normalizes mapping/dataclass/object event shapes into a Pydantic `EventRecord`.
+- Tailing from a checkpoint returns only newer events; the checkpoint itself is filtered out server-side as a defensive guard. Domain accepts a single value or repeated `?domain=` params.
+- 8 new tests in `tests/test_narrative_api_events.py`; full suite (3830 tests) green, `ruff` and `mypy` clean.

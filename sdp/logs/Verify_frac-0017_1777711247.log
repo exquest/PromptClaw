@@ -1,0 +1,17 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2976 chars)
+---
+
+**Verdict: PASS**
+
+All 4023 tests pass (8 new depth-2 tests + 11 existing metric-accent/rule tests + 7 startup hardening anchors). The implementation is clean:
+
+- `LaneMetricAccentStat` and `MetricAccentReport` are correctly frozen dataclasses
+- `lane_metric_accent_stat` computes `shaped_step_count`, `mean_multiplier`, and `strongest_row` accurately
+- `analyze_metric_accent` dispatches correctly for scene/song/pattern/unsupported
+- `summarize_metric_accent_report` returns a fully JSON-safe dict
+- All edge cases from the spec are covered (non-melodic, grid-locked, no-positive-velocity, song flattening, unsupported)
+- Startup hardening anchors (`bootstrap_identity` ordering, standalone/federated persistence) confirmed passing
+- No new dependencies, no security issues, consistent with `lung_capacity` patterns
+
+Report committed at `sdp/verification/frac-0017-verify.md`.

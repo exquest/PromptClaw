@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2744 chars)
+---
+
+**Verdict: PASS**
+
+All 3171 tests pass. The Lead's work correctly covers all three task requirements:
+
+- `sampler_amp` peak-normalized behavior tested in both `context=None` and real-context paths
+- `sampler_bypass_comp` default (1.0) and automation override (0.0) tested in both paths via the new `test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation`
+- s_new and n_set arg ordering explicitly verified with slice notation, including `sampler_bypass_comp` in correct position
+
+One minor gap noted: the n_set ordering test only exercises `context=None`; the ordering is structural so it's not blocking, but flagged for future hardening. Candidate hardening items (bootstrap_identity) are out of scope for this audio task.

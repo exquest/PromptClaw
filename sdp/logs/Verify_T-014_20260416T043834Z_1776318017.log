@@ -1,0 +1,1483 @@
+Command: codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-5.3-codex-spark -c model_reasoning_effort=xhigh -
+Prompt delivered via: stdin (2697 chars)
+---
+
+Verification report written and committed at the required path:
+
+- `sdp/verification/t-014@20260416t043834z-verify.md`
+- Commit: `f35ccfe`
+
+Outcome:
+- `PASS WITH NOTES`
+  - Task commit `90d3b7d` validates against all three acceptance criteria via code inspection + tests.
+  - New tests in `tests/test_fractal_form.py` passed (`12 passed`).
+  - Targeted integration tests also passed:
+    - `tests/test_score_tree.py`
+    - `tests/test_score_tree_composer.py`
+    - `tests/test_score_tree_pipeline.py`
+
+Notes:
+- Repo has pre-existing large unrelated dirty/untracked state outside this task scope, which is non-blocking for this verification scope.
+
+--- STDERR ---
+OpenAI Codex v0.120.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.3-codex-spark
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019d94cd-f0c9-7d83-acb5-fae2eec3795b
+--------
+user
+<!--
+  sdp-cli agent-specific template for codex
+  Edit this file to tune how codex handles verify.md.
+  The shipped default lives at src/sdp/prompts/templates/verify.md.
+  Delete this file to revert to the default.
+-->
+# Verification: Task T-014@20260416T043834Z
+
+**Task:** Implement a fractal form expansion layer from macro piece shape to section functions, phrase families, motif transforms, and note cells.
+**Tier:** T1
+
+Verify by executing the change and checking outcomes. Do not write a deep design review.
+
+## Acceptance Criteria
+
+- each `song`, `extended`, and `suite` tree includes nested phrase-family metadata, not just section names<br/>- section bodies derive from reusable seed material through transformation operations<br/>- tests verify macro/section/phrase/motif relationships and prevent literal looping across long sections
+
+## Review Checklist
+
+1. Check `git status --short`, but make the dirty-worktree decision task-scoped.
+   Uncommitted changes introduced by the lead for this task are blocking.
+   Pre-existing unrelated dirty or untracked files are notes only; do not ask the
+   lead to clean, revert, or commit unrelated workspace state.
+2. Review the task commit(s) and changed files only.
+3. Run the smallest relevant test command first. If scope is broad or unclear, run the full validation below.
+4. Compare observed behavior against the acceptance criteria and changed code paths.
+5. Report only reproducible issues, missing behavior, regressions, or real risks.
+
+## Blocking vs Notes
+
+- `FAIL`: failing checks, missing required behavior, regressions, or uncommitted task-scoped tracked work.
+- `PASS WITH NOTES`: behavior is correct but minor cleanup or follow-up remains.
+- `PASS WITH NOTES`: also use this when acceptance passes but the repository has
+  unrelated pre-existing dirty state outside the task scope.
+- `PASS`: acceptance criteria are met and no blocking issues remain.
+
+## Output
+
+Write your verification report and all findings to this exact path:
+`sdp/verification/t-014@20260416t043834z-verify.md`
+Do not use a different filename or directory.
+
+If you need a full validation pass, run:
+```bash
+pip install -e '.[dev]'
+pytest tests/ -x --tb=short
+ruff check src/ tests/
+mypy src/
+```
+
+Use this format:
+
+```markdown
+# Verification Report — T-014@20260416T043834Z
+
+**Verify Agent:** [your agent name]
+**Date:** [today]
+**Artifacts Reviewed:** [files and commits]
+**Commands Run:** [commands]
+
+## Acceptance Criteria Check
+[met / not met, with evidence]
+
+## Issues Found
+- [ ] [blocking/minor] [issue]
+- [ ] None
+
+## Verdict: PASS | PASS WITH NOTES | FAIL
+
+## Notes for Lead Agent
+[actionable next steps only]
+```
+
+Commit the verification report.
+
+codex
+I’ll verify only task-relevant scope: identify the uncommitted/task commit changes, run focused tests around section/motif generation, and then write the required report at the exact path. I’ll keep the check minimal but sufficient to judge the three acceptance criteria.
+exec
+/bin/zsh -lc 'ls -1' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+AGENTS.md
+CHANGELOG.md
+ESCALATIONS.md
+README.md
+TEST_REPORT.md
+agent-loop.sh
+agent-startup-base.md
+agent_monitor.py
+claude-agent-prompt.md
+codex-agent-prompt.md
+codex-graceful-degradation-prompt.md
+deploy
+docs
+examples
+gemini-agent-prompt.md
+generate_goldendoodle.py
+generate_goldendoodle_final.py
+generate_goldendoodle_v2.py
+generate_goldendoodle_v3.py
+generate_image_script.py
+goldendoodle.png
+goldendoodle.svg
+my-claw
+progress.md
+promptclaw
+promptclaw.egg-info
+pyproject.toml
+sdp
+specs
+src
+temp_prompt.txt
+test_genai.py
+tests
+verification_reports
+~
+
+exec
+/bin/zsh -lc 'git log --oneline --decorate --max-count=10' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+90d3b7d (HEAD -> feat/graceful-degradation) feat(fractal-form): add phrase-family expansion layer for score trees [T-014@20260416T043834Z]
+675e591 docs(verification): add T-013@20260416t043834z verify report
+83dae4f feat(composition-gate): enforce song-quality metrics [T-013@20260416T043834Z]
+7df9dea docs(verification): refine T-001 report formatting
+bedeacb docs(verification): add T-001@20260416t043834z report
+4418c59 fix(lint): remove unused imports in test files [T-001@20260416T043834Z]
+c114b8f feat(automation): row-level performance automation across tracker, master bus, sampler, face [T-001@20260416T043834Z]
+f6ef029 (origin/feat/graceful-degradation) docs: sdp-cli bug report — Gemini task ran 7 hours past timeout
+10897e0 feat(prompts): install tuned codex prompt overrides
+6d3fcbd feat(prompts): install tuned gemini prompt overrides
+
+ succeeded in 0ms:
+ M CHANGELOG.md
+ M docs/architecture.md
+ M docs/command-reference.md
+ M docs/handoff-protocol.md
+ M docs/startup-wizard.md
+ M my-claw/scripts/cypherclaw_boot.sh
+ M my-claw/scripts/restart_composer.sh
+ M my-claw/scripts/start_audio.sh
+ M my-claw/scripts/start_displays.sh
+ M my-claw/scripts/xorg-dual.conf
+ M my-claw/systemd/cypherclaw-sdp-runner.service
+ M my-claw/tools/archive_daemon.py
+ M my-claw/tools/audio_analysis.py
+ M my-claw/tools/contact_listener.py
+ M my-claw/tools/context_pulse.py
+ M my-claw/tools/dashboard_generator.py
+ M my-claw/tools/duet_composer.py
+ M my-claw/tools/gallery/fb_renderer.py
+ M my-claw/tools/gallery/gallery_display.py
+ M my-claw/tools/gallery/gallery_x11.py
+ M my-claw/tools/glyphweave/pet_sprites.py
+ M my-claw/tools/init_workdir.sh
+ M my-claw/tools/inner_life/world_model.py
+ M my-claw/tools/midi_keyboard_listener.py
+ M my-claw/tools/observer_vision.py
+ M my-claw/tools/preflight.py
+ M my-claw/tools/researcher.py
+ M my-claw/tools/room_listener.py
+ M my-claw/tools/safe_reboot.sh
+ M my-claw/tools/sdp_runner_launcher.sh
+ M my-claw/tools/senseweave/generative_scores.py
+ M my-claw/tools/senseweave/keyboard_chat.py
+ M my-claw/tools/senseweave/midi_state.py
+ M my-claw/tools/senseweave/synthesis/continuous_learner.py
+ M my-claw/tools/senseweave/synthesis/melodic_mind.py
+ M my-claw/tools/server_health.py
+ M my-claw/tools/tamagotchi.py
+ M my-claw/tools/telegram.py
+ M my-claw/tools/theramini_listener.py
+ M progress.md
+ M pyproject.toml
+ M sdp/templates/codex/lead_t1.md
+ M sdp/templates/codex/lead_t2.md
+ M sdp/templates/codex/verify.md
+ M sdp/templates/gemini/lead_t1.md
+ M sdp/templates/gemini/lead_t2.md
+ M sdp/templates/gemini/verify.md
+ M tests/test_audio_analysis.py
+ M tests/test_continuous_learner.py
+ M tests/test_daemon_fallback.py
+ M tests/test_gallery.py
+ M tests/test_generative_scores.py
+ M tests/test_glyphweave_runtime.py
+ M tests/test_inner_life.py
+ M tests/test_keyboard_chat.py
+ M tests/test_melodic_mind.py
+ M tests/test_preflight.py
+ M tests/test_resilience_runtime_scripts.py
+ M tests/test_room_listener_runtime.py
+ M tests/test_server_health.py
+ M tests/test_tamagotchi_runtime.py
+ M tests/test_telegram_runtime.py
+?? docs/20260402-cypherclaw-embodiment-prd.md
+?? docs/20260402-cypherclaw-embodiment-research-brief.md
+?? docs/codex-audio-investigation-brief.md
+?? docs/contact-mic-calibration-protocol.md
+?? docs/cypherclaw-emsd-roadmap.md
+?? docs/cypherclaw-musicianship-roadmap.md
+?? docs/cypherclaw-presence-cadence-spec.md
+?? docs/cypherclaw-score-tree-composition-spec.md
+?? docs/cypherclaw-tracker-framework.md
+?? docs/cypherclaw-upgrade-checklist.md
+?? my-claw/curriculum/
+?? my-claw/scripts/cypherclaw_av_boot.sh
+?? my-claw/sdp/prd-music-production-course.md
+?? my-claw/sdp/prd-r750-ollama-integration.md
+?? my-claw/sdp/prd-songwriter-emsd-completion.md
+?? my-claw/systemd/cypherclaw-av-stack.service
+?? my-claw/systemd/cypherclaw-observer-ollama.service
+?? my-claw/tools/archive_paths.py
+?? my-claw/tools/capture_alias.py
+?? my-claw/tools/contact_mic_calibration.py
+?? my-claw/tools/gallery_x11.py
+?? my-claw/tools/room_presence_daemon.py
+?? my-claw/tools/runtime_paths.py
+?? my-claw/tools/sample_playback_engine.py
+?? my-claw/tools/senseweave/arrangement_engine.py
+?? my-claw/tools/senseweave/artistic_identity.py
+?? my-claw/tools/senseweave/cadence_engine.py
+?? my-claw/tools/senseweave/capstone_engine.py
+?? my-claw/tools/senseweave/cast_planner.py
+?? my-claw/tools/senseweave/commission_context.py
+?? my-claw/tools/senseweave/dsp_scene_lab.py
+?? my-claw/tools/senseweave/ear_engine.py
+?? my-claw/tools/senseweave/emsd_performance.py
+?? my-claw/tools/senseweave/emsd_runtime.py
+?? my-claw/tools/senseweave/harmonic_planner.py
+?? my-claw/tools/senseweave/hook_engine.py
+?? my-claw/tools/senseweave/instrument_patches.py
+?? my-claw/tools/senseweave/master_bus.py
+?? my-claw/tools/senseweave/mix_engine.py
+?? my-claw/tools/senseweave/music_tracker.py
+?? my-claw/tools/senseweave/piece_brief.py
+?? my-claw/tools/senseweave/piece_commission.py
+?? my-claw/tools/senseweave/piece_queue.py
+?? my-claw/tools/senseweave/practice_curriculum.py
+?? my-claw/tools/senseweave/presence_engine.py
+?? my-claw/tools/senseweave/procedural_arc.py
+?? my-claw/tools/senseweave/prosody_engine.py
+?? my-claw/tools/senseweave/reharmonizer.py
+?? my-claw/tools/senseweave/repertoire_memory.py
+?? my-claw/tools/senseweave/sample_event_renderer.py
+?? my-claw/tools/senseweave/sample_lab.py
+?? my-claw/tools/senseweave/sample_status.py
+?? my-claw/tools/senseweave/sound_palette_lab.py
+?? my-claw/tools/senseweave/tracker_cadence.py
+?? my-claw/tools/senseweave/tracker_compiler.py
+?? my-claw/tools/senseweave/tracker_variation.py
+?? my-claw/tools/senseweave/voice_aliases.py
+?? my-claw/tools/senseweave/voice_shaping.py
+?? promptclaw/glyphweave_cli.py
+?? sdp/assumption-log.md
+?? sdp/clarification-register.md
+?? sdp/domain-model.md
+?? sdp/implementation-plan.md
+?? sdp/logs/
+?? sdp/notifications.log
+?? sdp/prd-snapshot.md
+?? sdp/requirements-register.md
+?? sdp/run-log.md
+?? sdp/self-improvement/
+?? sdp/state.db.legacy-20260416T045403Z
+?? sdp/task-graph.md
+?? sdp/telemetry/
+?? sdp/templates/candidates/
+?? sdp/templates/claude/
+?? sdp/verification/t-001@20260416t043834z-manual-verify.md
+?? sdp/verification/t-010@20260408t223256zb-verify.md
+?? sdp/verification/t-012@20260416t043834z-manual-verify.md
+?? tests/test_archive_paths.py
+?? tests/test_arrangement_engine.py
+?? tests/test_artistic_identity.py
+?? tests/test_cadence_engine.py
+?? tests/test_capstone_engine.py
+?? tests/test_capture_alias.py
+?? tests/test_cast_planner.py
+?? tests/test_commission_context.py
+?? tests/test_contact_mic_calibration_runtime.py
+?? tests/test_cypherclaw_audio_runtime.py
+?? tests/test_cypherclaw_av_stack_service.py
+?? tests/test_cypherclaw_boot_runtime.py
+?? tests/test_dsp_scene_lab.py
+?? tests/test_ear_engine.py
+?? tests/test_emsd_curriculum.py
+?? tests/test_emsd_performance.py
+?? tests/test_emsd_runtime.py
+?? tests/test_form_grammar.py
+?? tests/test_gallery_x11_runtime.py
+?? tests/test_glyphweave_cli.py
+?? tests/test_harmonic_planner.py
+?? tests/test_hook_engine.py
+?? tests/test_instrument_patches.py
+?? tests/test_master_bus.py
+?? tests/test_midi_keyboard_listener_runtime.py
+?? tests/test_mix_engine.py
+?? tests/test_music_tracker.py
+?? tests/test_music_tracker_runtime.py
+?? tests/test_musical_integration_runtime.py
+?? tests/test_observer_vision_runtime.py
+?? tests/test_piece_brief.py
+?? tests/test_piece_commission.py
+?? tests/test_piece_queue.py
+?? tests/test_practice_curriculum.py
+?? tests/test_presence_engine.py
+?? tests/test_procedural_arc.py
+?? tests/test_prosody_engine.py
+?? tests/test_reharmonizer.py
+?? tests/test_repertoire_memory.py
+?? tests/test_repertoire_memory_score_tree.py
+?? tests/test_room_presence_daemon.py
+?? tests/test_runtime_paths.py
+?? tests/test_sample_dsp_activity.py
+?? tests/test_sample_event_renderer.py
+?? tests/test_sample_lab.py
+?? tests/test_sample_status.py
+?? tests/test_score_tree.py
+?? tests/test_score_tree_pipeline.py
+?? tests/test_self_listener_tracker_runtime.py
+?? tests/test_sound_palette_lab.py
+?? tests/test_tracker_cadence.py
+?? tests/test_tracker_compiler.py
+?? tests/test_tracker_variation.py
+?? tests/test_voice_aliases.py
+?? tests/test_voice_shaping.py
+?? verification_reports/
+
+codex
+I found the working tree is heavily modified, so I’ll isolate this task to its commit (`90d3b7d`) and verify only its changed files and tests before running test commands.
+exec
+/bin/zsh -lc 'git show --name-only --stat --oneline HEAD' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+90d3b7d feat(fractal-form): add phrase-family expansion layer for score trees [T-014@20260416T043834Z]
+my-claw/tools/senseweave/form_grammar.py
+my-claw/tools/senseweave/recursive_composer.py
+my-claw/tools/senseweave/score_tree.py
+tests/test_fractal_form.py
+
+exec
+/bin/zsh -lc 'git status --short | rg -n "form_grammar.py|recursive_composer.py|score_tree.py|test_fractal_form.py|verify.md|docs|sdp/verification/t-014"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+2: M docs/architecture.md
+3: M docs/command-reference.md
+4: M docs/handoff-protocol.md
+5: M docs/startup-wizard.md
+44: M sdp/templates/codex/verify.md
+47: M sdp/templates/gemini/verify.md
+63:?? docs/20260402-cypherclaw-embodiment-prd.md
+64:?? docs/20260402-cypherclaw-embodiment-research-brief.md
+65:?? docs/codex-audio-investigation-brief.md
+66:?? docs/contact-mic-calibration-protocol.md
+67:?? docs/cypherclaw-emsd-roadmap.md
+68:?? docs/cypherclaw-musicianship-roadmap.md
+69:?? docs/cypherclaw-presence-cadence-spec.md
+70:?? docs/cypherclaw-score-tree-composition-spec.md
+71:?? docs/cypherclaw-tracker-framework.md
+72:?? docs/cypherclaw-upgrade-checklist.md
+137:?? sdp/verification/t-001@20260416t043834z-manual-verify.md
+138:?? sdp/verification/t-010@20260408t223256zb-verify.md
+139:?? sdp/verification/t-012@20260416t043834z-manual-verify.md
+157:?? tests/test_form_grammar.py
+179:?? tests/test_repertoire_memory_score_tree.py
+186:?? tests/test_score_tree.py
+
+exec
+/bin/zsh -lc 'git show --unified=200 90d3b7d -- my-claw/tools/senseweave/form_grammar.py my-claw/tools/senseweave/recursive_composer.py my-claw/tools/senseweave/score_tree.py tests/test_fractal_form.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+commit 90d3b7d974cd9492f554a0419d01dd4bf425a361
+Author: Anthony Ainsworth <anthony@cascadiantech.com>
+Date:   Wed Apr 15 22:39:45 2026 -0700
+
+    feat(fractal-form): add phrase-family expansion layer for score trees [T-014@20260416T043834Z]
+    
+    Introduce a fractal form expansion grammar that assigns distinct phrase
+    families (seed/variant/development/response/liquidation) to each phrase
+    within a section, with seed-derivation tracking and unique transform ops
+    per phrase to prevent literal looping in long-form compositions.
+    
+    Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+diff --git a/my-claw/tools/senseweave/form_grammar.py b/my-claw/tools/senseweave/form_grammar.py
+new file mode 100644
+index 0000000..c681a0b
+--- /dev/null
++++ b/my-claw/tools/senseweave/form_grammar.py
+@@ -0,0 +1,270 @@
++"""Section-function grammar and form planning for score-tree composition."""
++from __future__ import annotations
++
++from dataclasses import dataclass
++from typing import Literal
++
++from .piece_brief import PieceBrief
++from .piece_commission import PieceCommission
++
++SectionFunction = Literal[
++    "invocation",
++    "statement",
++    "lift",
++    "arrival",
++    "refrain",
++    "turn",
++    "development",
++    "breakdown",
++    "instrumental_response",
++    "recap",
++    "coda",
++    "residue",
++]
++
++
++@dataclass(frozen=True)
++class PlannedSection:
++    scene_name: str
++    function: SectionFunction
++    target_duration_s: float
++    return_from: str | None = None
++    transform_strength: str = "none"
++    harmonic_role: str = "tonic"
++
++
++@dataclass(frozen=True)
++class FormPlan:
++    form_family: str
++    form_class: str
++    composition_mode: str
++    sections: tuple[PlannedSection, ...]
++    ending_family: str
++
++    @property
++    def section_functions(self) -> tuple[str, ...]:
++        return tuple(section.function for section in self.sections)
++
++
++PhraseFamily = Literal[
++    "seed",
++    "variant",
++    "development",
++    "response",
++    "liquidation",
++]
++
++
++@dataclass(frozen=True)
++class PhraseFamilySlot:
++    """Blueprint for one phrase within a section's fractal expansion."""
++
++    family: PhraseFamily
++    transform_ops: tuple[str, ...]
++    is_seed: bool = False
++
++
++# Maps (section_function) → ordered phrase-family slots.
++# The first slot is always the seed; subsequent slots derive from it.
++_PHRASE_FAMILY_TEMPLATES: dict[SectionFunction, tuple[PhraseFamilySlot, ...]] = {
++    "invocation": (
++        PhraseFamilySlot("seed", (), is_seed=True),
++        PhraseFamilySlot("variant", ("thin",)),
++    ),
++    "statement": (
++        PhraseFamilySlot("seed", (), is_seed=True),
++        PhraseFamilySlot("variant", ("reharmonize",)),
++    ),
++    "lift": (
++        PhraseFamilySlot("seed", (), is_seed=True),
++        PhraseFamilySlot("variant", ("expand",)),
++    ),
++    "arrival": (
++        PhraseFamilySlot("seed", (), is_seed=True),
++        PhraseFamilySlot("response", ("answer",)),
++    ),
++    "refrain": (
++        PhraseFamilySlot("seed", (), is_seed=True),
++        PhraseFamilySlot("variant", ("reharmonize",)),
++    ),
++    "turn": (
++        PhraseFamilySlot("seed", ("expand",), is_seed=True),
++        PhraseFamilySlot("development", ("expand", "invert")),
++        PhraseFamilySlot("response", ("answer", "rotate")),
++    ),
++    "development": (
++        PhraseFamilySlot("seed", ("expand",), is_seed=True),
++        PhraseFamilySlot("development", ("expand", "rotate")),
++        PhraseFamilySlot("liquidation", ("thin", "answer")),
++    ),
++    "breakdown": (
++        PhraseFamilySlot("seed", (), is_seed=True),
++        PhraseFamilySlot("liquidation", ("thin",)),
++    ),
++    "instrumental_response": (
++        PhraseFamilySlot("seed", (), is_seed=True),
++        PhraseFamilySlot("response", ("answer", "expand")),
++    ),
++    "recap": (
++        PhraseFamilySlot("seed", ("answer",), is_seed=True),
++        PhraseFamilySlot("variant", ("reharmonize", "answer", "rotate")),
++    ),
++    "coda": (
++        PhraseFamilySlot("seed", ("answer",), is_seed=True),
++        PhraseFamilySlot("liquidation", ("thin", "answer")),
++    ),
++    "residue": (
++        PhraseFamilySlot("seed", ("answer",), is_seed=True),
++        PhraseFamilySlot("liquidation", ("thin",)),
++    ),
++}
++
++
++def phrase_family_slots(
++    function: SectionFunction,
++    phrase_count: int,
++) -> tuple[PhraseFamilySlot, ...]:
++    """Return *phrase_count* family slots for the given section function.
++
++    The template is truncated or padded (with alternating variant/development)
++    so the caller always gets exactly *phrase_count* entries.
++    """
++    template = _PHRASE_FAMILY_TEMPLATES.get(function, (PhraseFamilySlot("seed", (), is_seed=True),))
++    if phrase_count <= 0:
++        return ()
++    if phrase_count <= len(template):
++        return template[:phrase_count]
++    # Pad with alternating variant / development derived from the seed.
++    padded = list(template)
++    alternates = (
++        PhraseFamilySlot("variant", ("reharmonize", "rotate")),
++        PhraseFamilySlot("development", ("expand", "invert")),
++    )
++    while len(padded) < phrase_count:
++        padded.append(alternates[len(padded) % len(alternates)])
++    return tuple(padded)
++
++
++_MIN_FUNCTION_COUNTS = {
++    "micro": 2,
++    "song": 3,
++    "extended": 4,
++    "suite": 5,
++}
++
++
++def minimum_function_count(form_class: str) -> int:
++    return _MIN_FUNCTION_COUNTS.get(form_class, 3)
++
++
++def _weights_for_sections(count: int, *, mode: str, form_class: str) -> list[float]:
++    if form_class == "micro":
++        return [1.0] * count
++    if mode == "hook_led":
++        return [0.8, 1.0, 0.8, 1.15, 0.9, 1.1, 0.75][:count]
++    if mode == "hybrid":
++        return [0.85, 0.95, 1.05, 1.1, 1.0, 0.95, 0.8, 0.7][:count]
++    return [0.8, 0.95, 1.0, 1.1, 0.95, 1.05, 0.9, 0.8, 0.75][:count]
++
++
++def _base_sections(form_class: str, mode: str) -> tuple[str, list[tuple[str, SectionFunction, str | None, str, str]]]:
++    if form_class == "micro":
++        return (
++            "mini_refrain",
++            [
++                ("Emergence", "invocation", None, "light", "tonic"),
++                ("Arrival", "arrival", None, "none", "dominant"),
++                ("Afterglow", "residue", "Arrival", "moderate", "plagal"),
++            ],
++        )
++    if form_class == "song" and mode == "hook_led":
++        return (
++            "verse_chorus_bridge",
++            [
++                ("Emergence", "invocation", None, "light", "tonic"),
++                ("Theme", "statement", None, "none", "tonic"),
++                # Hook-led songs should reveal their first real arrival early,
++                # then reopen the body for lift/contrast before the return.
++                ("Arrival", "arrival", "Theme", "moderate", "dominant"),
++                ("Lift", "lift", "Arrival", "light", "predominant"),
++                ("Bridge", "turn", None, "strong", "borrowed"),
++                ("Release", "recap", "Arrival", "moderate", "authentic"),
++                ("Afterglow", "residue", "Theme", "light", "plagal"),
++            ],
++        )
++    if form_class == "song":
++        return (
++            "hybrid_return",
++            [
++                ("Emergence", "invocation", None, "light", "tonic"),
++                ("Theme", "statement", None, "none", "tonic"),
++                ("Development", "development", "Theme", "moderate", "predominant"),
++                ("Arrival", "arrival", "Theme", "moderate", "dominant"),
++                ("Bridge", "turn", None, "strong", "borrowed"),
++                ("Resolution", "recap", "Arrival", "moderate", "authentic"),
++                ("Afterglow", "residue", "Theme", "light", "plagal"),
++            ],
++        )
++    if form_class == "extended":
++        return (
++            "extended_hybrid",
++            [
++                ("Emergence", "invocation", None, "light", "tonic"),
++                ("Theme", "statement", None, "none", "tonic"),
++                ("Lift", "lift", None, "light", "predominant"),
++                ("Arrival", "arrival", "Theme", "moderate", "dominant"),
++                ("Development", "development", "Theme", "moderate", "predominant"),
++                ("Bridge", "turn", None, "strong", "borrowed"),
++                ("Recap", "recap", "Arrival", "moderate", "authentic"),
++                ("Release", "coda", "Theme", "strong", "authentic"),
++                ("Afterglow", "residue", "Release", "light", "plagal"),
++            ],
++        )
++    return (
++        "suite_arc",
++        [
++            ("Emergence", "invocation", None, "light", "tonic"),
++            ("Theme", "statement", None, "none", "tonic"),
++            ("Development", "development", "Theme", "moderate", "predominant"),
++            ("Bridge", "turn", None, "strong", "borrowed"),
++            ("Arrival", "arrival", "Theme", "moderate", "dominant"),
++            ("Recap", "recap", "Arrival", "moderate", "authentic"),
++            ("Release", "coda", "Theme", "strong", "authentic"),
++            ("Resolution", "coda", "Release", "moderate", "authentic"),
++            ("Afterglow", "residue", "Resolution", "light", "plagal"),
++        ],
++    )
++
++
++def plan_form(
++    *,
++    commission: PieceCommission,
++    brief: PieceBrief,
++    family: str,
++) -> FormPlan:
++    form_family, raw_sections = _base_sections(commission.form_class, commission.composition_mode)
++    weights = _weights_for_sections(
++        len(raw_sections),
++        mode=commission.composition_mode,
++        form_class=commission.form_class,
++    )
++    total_weight = sum(weights) or 1.0
++    sections: list[PlannedSection] = []
++    for (scene_name, function, return_from, transform_strength, harmonic_role), weight in zip(raw_sections, weights):
++        sections.append(
++            PlannedSection(
++                scene_name=scene_name,
++                function=function,
++                target_duration_s=round((commission.duration_target_s * weight) / total_weight, 1),
++                return_from=return_from,
++                transform_strength=transform_strength,
++                harmonic_role=harmonic_role,
++            )
++        )
++    return FormPlan(
++        form_family=form_family if family == "default" else f"{family}_{form_family}",
++        form_class=commission.form_class,
++        composition_mode=commission.composition_mode,
++        sections=tuple(sections),
++        ending_family=commission.ending_family,
++    )
+diff --git a/my-claw/tools/senseweave/recursive_composer.py b/my-claw/tools/senseweave/recursive_composer.py
+new file mode 100644
+index 0000000..786db9e
+--- /dev/null
++++ b/my-claw/tools/senseweave/recursive_composer.py
+@@ -0,0 +1,188 @@
++"""Recursive score-tree composition above the tracker runtime."""
++from __future__ import annotations
++
++import hashlib
++from dataclasses import replace
++from typing import Mapping
++
++from .form_grammar import FormPlan, PlannedSection, phrase_family_slots
++from .hook_engine import build_hook_profile
++from .piece_brief import PieceBrief
++from .piece_commission import PieceCommission
++from .score_tree import MotifNode, PhraseNode, ScoreTree, SectionNode
++
++
++_HOOK_CONTOURS = {
++    "contour": (1, 3, 5, 3),
++    "rhythmic": (1, 1, 5, 3),
++    "lyric": (1, 2, 3, 5),
++    "interval": (1, 5, 3, 6),
++}
++
++_RHYTHM_BY_GROOVE = {
++    "drift": (1.5, 1.0, 1.5, 0.75),
++    "procession": (1.0, 1.0, 0.5, 1.5),
++    "dance": (0.5, 0.5, 1.0, 1.5),
++    "broken": (0.75, 0.75, 1.0, 1.5),
++    "ritual_ostinato": (1.0, 1.0, 1.0, 1.0),
++    "pulse": (1.0, 0.5, 1.0, 1.5),
++}
++
++_CADENCE_BY_ROLE = {
++    "tonic": "suspended",
++    "predominant": "half",
++    "dominant": "authentic",
++    "borrowed": "deceptive",
++    "plagal": "plagal",
++    "authentic": "authentic",
++}
++
++
++def _seed_id(*parts: object) -> str:
++    payload = "|".join(str(part) for part in parts)
++    return hashlib.sha1(payload.encode("utf-8")).hexdigest()[:12]
++
++
++def _section_phrase_count(section: PlannedSection, *, commission: PieceCommission) -> int:
++    if commission.form_class == "micro":
++        return 1
++    if section.function in {"development", "turn"} and commission.form_class in {"extended", "suite"}:
++        return 3
++    if section.function in {"arrival", "recap", "coda"}:
++        return 2
++    return 2 if commission.form_class in {"song", "extended", "suite"} else 1
++
++
++def compose_score_tree(
++    *,
++    commission: PieceCommission,
++    brief: PieceBrief,
++    form: FormPlan,
++    family: str,
++    cadence_state: str,
++    progression_profile: str,
++    song_num: int,
++    mood: Mapping[str, float],
++    repertoire_hint: Mapping[str, object] | None = None,
++) -> ScoreTree:
++    hook = build_hook_profile(
++        family=family,
++        progression_profile=progression_profile,
++        cadence_state=cadence_state,
++        song_num=song_num or 1,
++        mood=mood,
++        repertoire_hint=repertoire_hint,
++    )
++    primary_motif = MotifNode(
++        motif_id=_seed_id(hook.title, "primary"),
++        hook_type=hook.hook_type,
++        contour=_HOOK_CONTOURS.get(hook.hook_type, hook.anchor_degrees),
++        rhythm_cell=_RHYTHM_BY_GROOVE.get(commission.groove_identity, (1.0, 1.0, 1.0, 1.0)),
++        anchor_degrees=hook.anchor_degrees,
++        answer_degrees=hook.answer_degrees,
++        text_hook=hook.text_hook,
++    )
++    contrast_motifs: list[MotifNode] = []
++    if commission.composition_mode != "hook_led" or commission.form_class in {"extended", "suite"}:
++        contrast_motifs.append(
++            MotifNode(
++                motif_id=_seed_id(hook.title, "contrast"),
++                hook_type=hook.hook_type,
++                contour=tuple(reversed(primary_motif.contour)),
++                rhythm_cell=tuple(reversed(primary_motif.rhythm_cell)),
++                anchor_degrees=hook.answer_degrees or hook.anchor_degrees,
++                answer_degrees=hook.anchor_degrees,
++                text_hook=hook.text_hook,
++            )
++        )
++
++    sections: list[SectionNode] = []
++    section_functions: dict[str, str] = {}
++    section_cadences: dict[str, str] = {}
++    narrative_map: dict[str, str] = {}
++    for index, section in enumerate(form.sections):
++        motif_refs = [primary_motif.motif_id]
++        if contrast_motifs and section.function in {"development", "turn", "coda"}:
++            motif_refs.append(contrast_motifs[0].motif_id)
++        phrase_count = _section_phrase_count(section, commission=commission)
++        slots = phrase_family_slots(section.function, phrase_count)
++        # Section-level harmonic ops that apply on top of family-specific ops.
++        section_ops: list[str] = [
++            op
++            for op in (
++                "reharmonize" if section.harmonic_role in {"borrowed", "authentic"} else "",
++                "answer" if section.scene_name in {"Recap", "Release", "Resolution", "Afterglow"} else "",
++            )
++            if op
++        ]
++        seed_phrase_id: str | None = None
++        phrases: list[PhraseNode] = []
++        for phrase_index, slot in enumerate(slots):
++            pid = _seed_id(section.scene_name, index, phrase_index)
++            if slot.is_seed:
++                seed_phrase_id = pid
++            # Merge family transform ops with section-level ops, deduplicating.
++            merged_ops = tuple(dict.fromkeys((*slot.transform_ops, *section_ops)))
++            phrases.append(
++                PhraseNode(
++                    phrase_id=pid,
++                    function=section.function,
++                    motif_refs=tuple(motif_refs),
++                    target_duration_s=round(section.target_duration_s / phrase_count, 2),
++                    transform_ops=merged_ops,
++                    phrase_family=slot.family,
++                    seed_phrase_id=None if slot.is_seed else seed_phrase_id,
++                ),
++            )
++        cadence_type = _CADENCE_BY_ROLE.get(section.harmonic_role, "authentic")
++        section_functions[section.scene_name] = section.function
++        section_cadences[section.scene_name] = cadence_type
++        beat_index = min(index, len(brief.section_beats) - 1)
++        if beat_index >= 0:
++            narrative_map[section.scene_name] = brief.section_beats[beat_index]
++        sections.append(
++            SectionNode(
++                section_id=_seed_id("section", section.scene_name, index),
++                scene_name=section.scene_name,
++                function=section.function,
++                target_duration_s=section.target_duration_s,
++                phrases=phrases,
++                harmonic_role=section.harmonic_role,
++                cadence_type=cadence_type,
++                groove_state=commission.groove_identity,
++                return_from=section.return_from,
++                transform_strength=section.transform_strength,
++            )
++        )
++
++    planned_duration_s = round(sum(section.target_duration_s for section in sections), 2)
++    return ScoreTree(
++        piece_id=_seed_id(family, cadence_state, progression_profile, song_num, hook.title),
++        title=hook.title,
++        commission=commission,
++        brief=brief,
++        form=form,
++        motifs=[primary_motif, *contrast_motifs],
++        sections=sections,
++        harmonic_plan={
++            "progression_profile": progression_profile,
++            "section_functions": section_functions,
++            "section_cadences": section_cadences,
++        },
++        arrangement_plan={
++            "groove_identity": commission.groove_identity,
++            "sonic_world_count": commission.sonic_world_count,
++        },
++        ending_family=commission.ending_family,
++        narrative_map=narrative_map,
++        metadata={
++            "family": family,
++            "cadence_state": cadence_state,
++            "progression_profile": progression_profile,
++            "hook_type": hook.hook_type,
++            "text_hook": hook.text_hook,
++            "song_num": str(song_num),
++        },
++        planned_duration_s=planned_duration_s,
++        primary_hook_text=hook.text_hook,
++    )
+diff --git a/my-claw/tools/senseweave/score_tree.py b/my-claw/tools/senseweave/score_tree.py
+new file mode 100644
+index 0000000..86d4b32
+--- /dev/null
++++ b/my-claw/tools/senseweave/score_tree.py
+@@ -0,0 +1,190 @@
++"""Canonical score-tree data model for CypherClaw composition."""
++from __future__ import annotations
++
++from dataclasses import asdict, dataclass, field
++import json
++from typing import Any, Mapping
++
++from .form_grammar import FormPlan, PlannedSection
++from .piece_brief import PieceBrief
++from .piece_commission import PieceCommission
++
++
++@dataclass
++class MotifNode:
++    motif_id: str
++    hook_type: str
++    contour: tuple[int, ...]
++    rhythm_cell: tuple[float, ...]
++    anchor_degrees: tuple[int, ...]
++    answer_degrees: tuple[int, ...]
++    text_hook: str
++
++
++@dataclass
++class PhraseNode:
++    phrase_id: str
++    function: str
++    motif_refs: tuple[str, ...]
++    target_duration_s: float
++    transform_ops: tuple[str, ...]
++    phrase_family: str = "seed"
++    seed_phrase_id: str | None = None
++
++
++@dataclass
++class SectionNode:
++    section_id: str
++    scene_name: str
++    function: str
++    target_duration_s: float
++    phrases: list[PhraseNode]
++    harmonic_role: str
++    cadence_type: str
++    groove_state: str
++    return_from: str | None = None
++    transform_strength: str = "none"
++
++
++@dataclass
++class ScoreTree:
++    piece_id: str
++    title: str
++    commission: PieceCommission
++    brief: PieceBrief
++    form: FormPlan
++    motifs: list[MotifNode]
++    sections: list[SectionNode]
++    harmonic_plan: dict[str, Any]
++    arrangement_plan: dict[str, Any]
++    ending_family: str
++    narrative_map: dict[str, str]
++    metadata: dict[str, str] = field(default_factory=dict)
++    planned_duration_s: float = 0.0
++    primary_hook_text: str = ""
++
++    def to_dict(self) -> dict[str, Any]:
++        return asdict(self)
++
++    def to_json(self) -> str:
++        return json.dumps(self.to_dict(), indent=2)
++
++    @classmethod
++    def from_dict(cls, data: Mapping[str, Any]) -> "ScoreTree":
++        commission_dict = dict(data.get("commission", {}))
++        if "reason_tags" in commission_dict:
++            commission_dict["reason_tags"] = tuple(commission_dict["reason_tags"])
++        commission = PieceCommission(**commission_dict)
++        brief_dict = dict(data.get("brief", {}))
++        if "image_field" in brief_dict:
++            brief_dict["image_field"] = tuple(brief_dict["image_field"])
++        if "section_beats" in brief_dict:
++            brief_dict["section_beats"] = tuple(brief_dict["section_beats"])
++        brief = PieceBrief(**brief_dict)
++        form_dict = dict(data.get("form", {}))
++        sections_form = tuple(PlannedSection(**item) for item in form_dict.get("sections", ()))
++        form = FormPlan(
++            form_family=str(form_dict.get("form_family", "default")),
++            form_class=str(form_dict.get("form_class", commission.form_class)),
++            composition_mode=str(form_dict.get("composition_mode", commission.composition_mode)),
++            sections=sections_form,
++            ending_family=str(form_dict.get("ending_family", commission.ending_family)),
++        )
++        motifs = [
++            MotifNode(
++                motif_id=str(item.get("motif_id", "")),
++                hook_type=str(item.get("hook_type", "")),
++                contour=tuple(item.get("contour", ())),
++                rhythm_cell=tuple(item.get("rhythm_cell", ())),
++                anchor_degrees=tuple(item.get("anchor_degrees", ())),
++                answer_degrees=tuple(item.get("answer_degrees", ())),
++                text_hook=str(item.get("text_hook", "")),
++            )
++            for item in data.get("motifs", ())
++        ]
++        sections = [
++            SectionNode(
++                section_id=str(item.get("section_id", "")),
++                scene_name=str(item.get("scene_name", "")),
++                function=str(item.get("function", "")),
++                target_duration_s=float(item.get("target_duration_s", 0.0) or 0.0),
++                phrases=[
++                    PhraseNode(
++                        phrase_id=str(phrase.get("phrase_id", "")),
++                        function=str(phrase.get("function", "")),
++                        motif_refs=tuple(phrase.get("motif_refs", ())),
++                        target_duration_s=float(phrase.get("target_duration_s", 0.0) or 0.0),
++                        transform_ops=tuple(phrase.get("transform_ops", ())),
++                        phrase_family=str(phrase.get("phrase_family", "seed")),
++                        seed_phrase_id=str(phrase["seed_phrase_id"]) if phrase.get("seed_phrase_id") is not None else None,
++                    )
++                    for phrase in item.get("phrases", ())
++                ],
++                harmonic_role=str(item.get("harmonic_role", "tonic")),
++                cadence_type=str(item.get("cadence_type", "authentic")),
++                groove_state=str(item.get("groove_state", "")),
++                return_from=str(item["return_from"]) if item.get("return_from") is not None else None,
++                transform_strength=str(item.get("transform_strength", "none")),
++            )
++            for item in data.get("sections", ())
++        ]
++        return cls(
++            piece_id=str(data.get("piece_id", "")),
++            title=str(data.get("title", "")),
++            commission=commission,
++            brief=brief,
++            form=form,
++            motifs=motifs,
++            sections=sections,
++            harmonic_plan=dict(data.get("harmonic_plan", {})),
++            arrangement_plan=dict(data.get("arrangement_plan", {})),
++            ending_family=str(data.get("ending_family", commission.ending_family)),
++            narrative_map={str(k): str(v) for k, v in dict(data.get("narrative_map", {})).items()},
++            metadata={str(k): str(v) for k, v in dict(data.get("metadata", {})).items()},
++            planned_duration_s=float(data.get("planned_duration_s", 0.0) or 0.0),
++            primary_hook_text=str(data.get("primary_hook_text", "")),
++        )
++
++    @classmethod
++    def minimal(
++        cls,
++        *,
++        piece_id: str,
++        title: str,
++        commission: PieceCommission,
++    ) -> "ScoreTree":
++        brief = PieceBrief(
++            image_field=("room", "line"),
++            dramatic_premise="room holds while the line changes",
++            conflict="the room is trying to stay open",
++            desired_payoff="let the room resolve without closing",
++            residue="leave the line open",
++            ending_feeling=commission.ending_family,
++            motion_character=commission.groove_identity,
++            hook_pressure=commission.hook_pressure,
++            through_composed_pressure=0.25,
++            section_beats=("opening image", "arrival", "residue"),
++            narrative_scale=commission.narrative_scale,
++        )
++        form = FormPlan(
++            form_family="minimal",
++            form_class=commission.form_class,
++            composition_mode=commission.composition_mode,
++            sections=(),
++            ending_family=commission.ending_family,
++        )
++        return cls(
++            piece_id=piece_id,
++            title=title,
++            commission=commission,
++            brief=brief,
++            form=form,
++            motifs=[],
++            sections=[],
++            harmonic_plan={},
++            arrangement_plan={},
++            ending_family=commission.ending_family,
++            narrative_map={},
++            planned_duration_s=commission.duration_target_s,
++            primary_hook_text="",
++        )
+diff --git a/tests/test_fractal_form.py b/tests/test_fractal_form.py
+new file mode 100644
+index 0000000..fafb1ca
+--- /dev/null
++++ b/tests/test_fractal_form.py
+@@ -0,0 +1,196 @@
++"""Tests for fractal form expansion: phrase families, seed derivation, anti-looping."""
++from __future__ import annotations
++
++import os
++import sys
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
++
++from inner_life.world_model import WorldModel
++from senseweave.form_grammar import phrase_family_slots, plan_form
++from senseweave.piece_brief import build_piece_brief
++from senseweave.piece_commission import commission_piece
++from senseweave.recursive_composer import compose_score_tree
++
++
++def _build_tree(*, form_class: str):
++    """Build a score tree for a given form class."""
++    # Pick parameters that reliably produce the target form class.
++    params = {
++        "song": dict(cadence_state="occupied_day", hour=14, narrative_pressure=0.35),
++        "extended": dict(cadence_state="wind_down", hour=23, narrative_pressure=0.85),
++        "suite": dict(cadence_state="wind_down", hour=23, narrative_pressure=0.95),
++    }
++    cfg = params[form_class]
++    commission = commission_piece(
++        cadence_state=cfg["cadence_state"],
++        day_phase="day" if cfg["hour"] < 18 else "late_evening",
++        weekly_phase="weekend" if form_class == "suite" else "midweek",
++        attention_score=0.15 if form_class == "suite" else 0.48,
++        narrative_pressure=cfg["narrative_pressure"],
++        song_num=5,
++        hour=cfg["hour"],
++    )
++    world = WorldModel(
++        observer_description="quiet room, lamp, long hallway",
++        cadence_state=cfg["cadence_state"],
++        day_phase="day" if cfg["hour"] < 18 else "late_evening",
++        time_of_day="day" if cfg["hour"] < 18 else "night",
++        occupancy_state="occupied_quiet",
++    )
++    brief = build_piece_brief(
++        world=world,
++        commission=commission,
++        family="drift",
++        cadence_state=cfg["cadence_state"],
++        progression_profile="settling",
++    )
++    form = plan_form(commission=commission, brief=brief, family="drift")
++    tree = compose_score_tree(
++        commission=commission,
++        brief=brief,
++        form=form,
++        family="drift",
++        cadence_state=cfg["cadence_state"],
++        progression_profile="settling",
++        song_num=5,
++        mood={"energy": 0.3, "valence": 0.4, "arousal": 0.25},
++    )
++    return tree
++
++
++# --- phrase_family_slots grammar tests ---
++
++
++def test_phrase_family_slots_returns_exact_count() -> None:
++    for count in (1, 2, 3, 4):
++        slots = phrase_family_slots("development", count)
++        assert len(slots) == count
++
++
++def test_phrase_family_slots_first_is_seed() -> None:
++    for function in ("statement", "development", "turn", "arrival", "coda"):
++        slots = phrase_family_slots(function, 2)
++        assert slots[0].is_seed is True
++        assert slots[0].family == "seed"
++
++
++def test_phrase_family_slots_non_seed_differ_from_seed() -> None:
++    """Non-seed slots must have different transform_ops or family than the seed."""
++    for function in ("development", "turn", "arrival"):
++        slots = phrase_family_slots(function, 3)
++        seed = slots[0]
++        for slot in slots[1:]:
++            differs = (
++                slot.family != seed.family
++                or slot.transform_ops != seed.transform_ops
++            )
++            assert differs, f"{function}: non-seed slot is identical to seed"
++
++
++def test_phrase_family_slots_padded_beyond_template() -> None:
++    slots = phrase_family_slots("statement", 5)
++    assert len(slots) == 5
++    assert slots[0].is_seed is True
++    # Padded slots should not all be identical.
++    padded_families = {s.family for s in slots[2:]}
++    assert len(padded_families) >= 1
++
++
++# --- Score-tree integration tests ---
++
++
++def test_song_tree_has_phrase_family_metadata() -> None:
++    tree = _build_tree(form_class="song")
++    for section in tree.sections:
++        for phrase in section.phrases:
++            assert phrase.phrase_family in {
++                "seed", "variant", "development", "response", "liquidation",
++            }, f"unexpected phrase_family: {phrase.phrase_family}"
++
++
++def test_extended_tree_has_phrase_family_metadata() -> None:
++    tree = _build_tree(form_class="extended")
++    for section in tree.sections:
++        for phrase in section.phrases:
++            assert phrase.phrase_family in {
++                "seed", "variant", "development", "response", "liquidation",
++            }
++
++
++def test_suite_tree_has_phrase_family_metadata() -> None:
++    tree = _build_tree(form_class="suite")
++    for section in tree.sections:
++        for phrase in section.phrases:
++            assert phrase.phrase_family in {
++                "seed", "variant", "development", "response", "liquidation",
++            }
++
++
++def test_non_seed_phrases_reference_seed() -> None:
++    """Every non-seed phrase must have seed_phrase_id pointing to the section's seed."""
++    tree = _build_tree(form_class="extended")
++    for section in tree.sections:
++        seed_ids = [p.phrase_id for p in section.phrases if p.phrase_family == "seed"]
++        for phrase in section.phrases:
++            if phrase.phrase_family != "seed":
++                assert phrase.seed_phrase_id is not None
++                assert phrase.seed_phrase_id in seed_ids, (
++                    f"phrase {phrase.phrase_id} references unknown seed {phrase.seed_phrase_id}"
++                )
++            else:
++                assert phrase.seed_phrase_id is None
++
++
++def test_multi_phrase_sections_have_distinct_transform_ops() -> None:
++    """Sections with >1 phrase must not have all phrases sharing identical transform_ops."""
++    tree = _build_tree(form_class="extended")
++    for section in tree.sections:
++        if len(section.phrases) <= 1:
++            continue
++        ops_sets = [frozenset(p.transform_ops) for p in section.phrases]
++        assert len(set(ops_sets)) > 1, (
++            f"section {section.scene_name}: all {len(section.phrases)} phrases "
++            f"share identical transform_ops {ops_sets[0]}"
++        )
++
++
++def test_long_development_sections_prevent_literal_looping() -> None:
++    """Development/turn sections must have >=2 distinct phrase families."""
++    tree = _build_tree(form_class="suite")
++    for section in tree.sections:
++        if section.function not in {"development", "turn"}:
++            continue
++        families = {p.phrase_family for p in section.phrases}
++        assert len(families) >= 2, (
++            f"section {section.scene_name} ({section.function}) has only one "
++            f"phrase family: {families}"
++        )
++
++
++def test_macro_section_phrase_motif_hierarchy() -> None:
++    """Verify the full fractal hierarchy: tree → sections → phrases → motif_refs."""
++    tree = _build_tree(form_class="suite")
++    motif_ids = {m.motif_id for m in tree.motifs}
++    assert len(tree.sections) >= 5, "suite should have >=5 sections"
++    for section in tree.sections:
++        assert len(section.phrases) >= 1
++        for phrase in section.phrases:
++            assert phrase.motif_refs, f"phrase {phrase.phrase_id} has no motif_refs"
++            for ref in phrase.motif_refs:
++                assert ref in motif_ids, f"phrase references unknown motif {ref}"
++
++
++def test_score_tree_round_trips_phrase_family_fields() -> None:
++    """phrase_family and seed_phrase_id survive JSON round-trip."""
++    import json
++    from senseweave.score_tree import ScoreTree
++
++    tree = _build_tree(form_class="song")
++    serialized = tree.to_json()
++    restored = ScoreTree.from_dict(json.loads(serialized))
++    for orig_section, rest_section in zip(tree.sections, restored.sections):
++        for orig_phrase, rest_phrase in zip(orig_section.phrases, rest_section.phrases):
++            assert rest_phrase.phrase_family == orig_phrase.phrase_family
++            assert rest_phrase.seed_phrase_id == orig_phrase.seed_phrase_id
+
+codex
+I’ve captured the task commit scope and tests introduced. Next I’m running the smallest relevant validation command (`tests/test_fractal_form.py`) to check acceptance criteria directly.
+exec
+/bin/zsh -lc 'pytest tests/test_fractal_form.py -x --tb=short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 1099ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 12 items
+
+tests/test_fractal_form.py ............                                  [100%]
+
+============================== 12 passed in 0.13s ==============================
+
+exec
+/bin/zsh -lc "rg \"compose_score_tree|from \\.score_tree import|phrase_family_slots|FormPlan\\(|PlannedSection|PhraseNode\\(\" my-claw/tools/senseweave tests src" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_score_tree.py:from senseweave.form_grammar import FormPlan, PlannedSection
+tests/test_score_tree.py:    form = FormPlan(
+tests/test_score_tree.py:            PlannedSection(
+tests/test_score_tree.py:        PhraseNode(
+tests/test_score_tree_composer.py:from senseweave.recursive_composer import compose_score_tree
+tests/test_score_tree_composer.py:    return compose_score_tree(
+tests/test_tracker_compiler.py:from senseweave.recursive_composer import compose_score_tree
+tests/test_tracker_compiler.py:    tree = compose_score_tree(
+tests/test_tracker_compiler.py:    tree = compose_score_tree(
+tests/test_tracker_compiler.py:    tree = compose_score_tree(
+tests/test_tracker_compiler.py:    tree = compose_score_tree(
+tests/test_tracker_compiler.py:    tree = compose_score_tree(
+tests/test_tracker_compiler.py:    tree = compose_score_tree(
+tests/test_tracker_compiler.py:    tree = compose_score_tree(
+tests/test_tracker_compiler.py:    tree = compose_score_tree(
+tests/test_tracker_compiler.py:    tree = compose_score_tree(
+tests/test_tracker_compiler.py:    tree = compose_score_tree(
+tests/test_tracker_compiler.py:    tree = compose_score_tree(
+tests/test_tracker_compiler.py:    tree = compose_score_tree(
+tests/test_score_tree_pipeline.py:from senseweave.recursive_composer import compose_score_tree
+tests/test_score_tree_pipeline.py:    tree = compose_score_tree(
+my-claw/tools/senseweave/piece_queue.py:from .score_tree import ScoreTree
+my-claw/tools/senseweave/tracker_compiler.py:from .score_tree import MotifNode, ScoreTree
+my-claw/tools/senseweave/form_grammar.py:class PlannedSection:
+my-claw/tools/senseweave/form_grammar.py:    sections: tuple[PlannedSection, ...]
+my-claw/tools/senseweave/form_grammar.py:def phrase_family_slots(
+my-claw/tools/senseweave/form_grammar.py:    sections: list[PlannedSection] = []
+my-claw/tools/senseweave/form_grammar.py:            PlannedSection(
+my-claw/tools/senseweave/form_grammar.py:    return FormPlan(
+my-claw/tools/senseweave/score_tree.py:from .form_grammar import FormPlan, PlannedSection
+my-claw/tools/senseweave/score_tree.py:        sections_form = tuple(PlannedSection(**item) for item in form_dict.get("sections", ()))
+my-claw/tools/senseweave/score_tree.py:        form = FormPlan(
+my-claw/tools/senseweave/score_tree.py:                    PhraseNode(
+my-claw/tools/senseweave/score_tree.py:        form = FormPlan(
+my-claw/tools/senseweave/recursive_composer.py:from .form_grammar import FormPlan, PlannedSection, phrase_family_slots
+my-claw/tools/senseweave/recursive_composer.py:from .score_tree import MotifNode, PhraseNode, ScoreTree, SectionNode
+my-claw/tools/senseweave/recursive_composer.py:def _section_phrase_count(section: PlannedSection, *, commission: PieceCommission) -> int:
+my-claw/tools/senseweave/recursive_composer.py:def compose_score_tree(
+my-claw/tools/senseweave/recursive_composer.py:        slots = phrase_family_slots(section.function, phrase_count)
+my-claw/tools/senseweave/recursive_composer.py:                PhraseNode(
+tests/test_fractal_form.py:from senseweave.form_grammar import phrase_family_slots, plan_form
+tests/test_fractal_form.py:from senseweave.recursive_composer import compose_score_tree
+tests/test_fractal_form.py:    tree = compose_score_tree(
+tests/test_fractal_form.py:# --- phrase_family_slots grammar tests ---
+tests/test_fractal_form.py:def test_phrase_family_slots_returns_exact_count() -> None:
+tests/test_fractal_form.py:        slots = phrase_family_slots("development", count)
+tests/test_fractal_form.py:def test_phrase_family_slots_first_is_seed() -> None:
+tests/test_fractal_form.py:        slots = phrase_family_slots(function, 2)
+tests/test_fractal_form.py:def test_phrase_family_slots_non_seed_differ_from_seed() -> None:
+tests/test_fractal_form.py:        slots = phrase_family_slots(function, 3)
+tests/test_fractal_form.py:def test_phrase_family_slots_padded_beyond_template() -> None:
+tests/test_fractal_form.py:    slots = phrase_family_slots("statement", 5)
+my-claw/tools/senseweave/composition_gate.py:from .score_tree import ScoreTree, SectionNode
+
+codex
+The new `test_fractal_form.py` passes. I’ll run a couple of nearby score-tree composition tests to ensure the new dataclasses and composition output remain compatible where they’re consumed.
+exec
+/bin/zsh -lc 'pytest tests/test_score_tree.py -x --tb=short' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'pytest tests/test_score_tree_composer.py -x --tb=short' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'pytest tests/test_score_tree_pipeline.py -x --tb=short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 1156ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1 item
+
+tests/test_score_tree.py .                                               [100%]
+
+============================== 1 passed in 0.14s ===============================
+
+ succeeded in 1153ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 12 items
+
+tests/test_score_tree_composer.py ............                           [100%]
+
+============================== 12 passed in 0.14s ==============================
+
+ succeeded in 1248ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1 item
+
+tests/test_score_tree_pipeline.py .                                      [100%]
+
+============================== 1 passed in 0.16s ===============================
+
+codex
+I confirmed task-relevant tests and integration tests pass. I’ll now write the report at the required path and then commit just that report file so the result is auditable.
+exec
+/bin/zsh -lc "cat <<'EOF' > sdp/verification/t-014@20260416t043834z-verify.md
+# Verification Report — T-014@20260416T043834Z
+
+**Verify Agent:** Codex
+**Date:** 2026-04-16
+**Artifacts Reviewed:** Commit "'`90d3b7d` (`feat(fractal-form): add phrase-family expansion layer for score trees [T-014@20260416T043834Z]`); `my-claw/tools/senseweave/form_grammar.py`; `my-claw/tools/senseweave/recursive_composer.py`; `my-claw/tools/senseweave/score_tree.py`; `tests/test_fractal_form.py`.
+**Commands Run:** `git status --short`; `git log --oneline --decorate --max-count=10`; `git show --name-only --stat --oneline HEAD`; `git show --unified=200 90d3b7d -- my-claw/tools/senseweave/form_grammar.py my-claw/tools/senseweave/recursive_composer.py my-claw/tools/senseweave/score_tree.py tests/test_fractal_form.py`; `pytest tests/test_fractal_form.py -x --tb=short`; `pytest tests/test_score_tree.py -x --tb=short`; `pytest tests/test_score_tree_composer.py -x --tb=short`; `pytest tests/test_score_tree_pipeline.py -x --tb=short`.
+
+## Acceptance Criteria Check
+- [x] each `song`, `extended`, and `suite` tree includes nested phrase-family metadata, not just section names.
+  - Verified by `tests/test_fractal_form.py::test_song_tree_has_phrase_family_metadata`, `test_extended_tree_has_phrase_family_metadata`, `test_suite_tree_has_phrase_family_metadata`.
+- [x] section bodies derive from reusable seed material through transformation operations.
+  - Verified by `compose_score_tree` producing section phrases from shared motif references (`motif_refs`) and per-phrase `transform_ops` built from `phrase_family_slots(...).transform_ops` plus section-level ops; `seed_phrase_id` preserves seed lineage.
+- [x] tests verify macro/section/phrase/motif relationships and prevent literal looping across long sections.
+  - Verified by `test_score_tree_round_trips_phrase_family_fields`, `test_macro_section_phrase_motif_hierarchy`, `test_non_seed_phrases_reference_seed`, `test_multi_phrase_sections_have_distinct_transform_ops`, and `test_long_development_sections_prevent_literal_looping`.
+
+## Issues Found
+- [x] [note] Large repository working tree is dirty with task-unrelated/uncommitted changes and many untracked files outside this task scope.
+- [ ] None
+
+## Verdict: PASS WITH NOTES
+
+## Notes for Lead Agent
+- If you need strict clean-state verification, run the repository-level suite indicated in the provided template in a cleaner workspace.
+EOF' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+codex
+I’ve written the required report. I’ll commit only this verification artifact next so it’s captured in the task history.
+exec
+/bin/zsh -lc 'git add sdp/verification/t-014@20260416t043834z-verify.md && git commit -m "docs(verification): add T-014@20260416T043834Z verify report"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+[feat/graceful-degradation f35ccfe] docs(verification): add T-014@20260416T043834Z verify report
+ 1 file changed, 23 insertions(+)
+ create mode 100644 sdp/verification/t-014@20260416t043834z-verify.md
+
+codex
+Verification report written and committed at the required path:
+
+- `sdp/verification/t-014@20260416t043834z-verify.md`
+- Commit: `f35ccfe`
+
+Outcome:
+- `PASS WITH NOTES`
+  - Task commit `90d3b7d` validates against all three acceptance criteria via code inspection + tests.
+  - New tests in `tests/test_fractal_form.py` passed (`12 passed`).
+  - Targeted integration tests also passed:
+    - `tests/test_score_tree.py`
+    - `tests/test_score_tree_composer.py`
+    - `tests/test_score_tree_pipeline.py`
+
+Notes:
+- Repo has pre-existing large unrelated dirty/untracked state outside this task scope, which is non-blocking for this verification scope.
+tokens used
+41,925

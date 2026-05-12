@@ -1,0 +1,20 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3451 chars)
+---
+
+frac-0049 complete. Deepened `src/cypherclaw/image_api/s3_uploader.py` from depth 1 to depth 2.
+
+**Changes**
+- `specs/frac-0049-spec.md` — task spec with 11 acceptance criteria + VERIFY commands
+- `src/cypherclaw/image_api/s3_uploader.py` — added `DEFAULT_CACHE_CONTROL`, `DEFAULT_CONTENT_TYPE`, `CONTENT_TYPE_BY_EXTENSION`, `UploadReport`, `guess_content_type`, `categorize_upload_size`, `build_upload_report`, `summarize_upload`, `summarize_upload_report`. `upload_image` signature/behavior preserved (cache header now sourced from constant)
+- `tests/test_image_api_s3_uploader_depth.py` — 7 test functions covering MIME classification, batch aggregation, empty-iterable, size bands, JSON-safety, cache-header contract, and fractal depth ≥ 2
+- `CHANGELOG.md` — Unreleased entry
+
+**Validation**
+- `pytest tests/` → 4222 passed, 3 skipped
+- `ruff check src/ tests/` → clean
+- `mypy src/` → clean (34 files)
+- Startup identity tests + narrative smoke (`/healthz`+`/readyz`+bearer) → 16 passed
+- `sdp.fractal.classify_depth` → depth 2 (4 trivial / 4 real, 145 lines)
+
+Committed as `3e62c03`.

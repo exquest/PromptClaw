@@ -1,0 +1,17 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1604 chars)
+---
+
+Done. Here's what was implemented:
+
+**`groove_engine.py`** — 3 new functions + 1 modified field + 2 updated functions:
+- `friberg_swing_ratio(tempo_bpm)` — computes swing ratio from tempo: 3.5:1 at slow, declining to 1:1 at fast, holding short-note near 100ms
+- `friberg_short_note_ms()` — utility to verify the short-note duration
+- `tempo_swing_ratio(tempo_bpm, role=)` — wraps Friberg with role overrides (ride/cymbal get wider ratio, melody/solo/lead clamped to Benadon BUR 1.2–1.7)
+- `GrooveProfile.tempo_dependent_swing` — opt-in flag
+- `apply_groove_to_ioi()` — uses Friberg curve when flag is set, accepts `role` param
+- `groove_metadata_for_step()` — reports effective tempo-dependent ratio + `groove_tempo_swing` marker
+
+**`test_groove_engine.py`** — 21 new tests across 4 classes covering curve shape, short-note invariance, role overrides, and integration with `apply_groove_to_ioi`.
+
+All 2936 tests pass, ruff clean, mypy clean.

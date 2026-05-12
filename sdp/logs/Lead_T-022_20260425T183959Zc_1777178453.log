@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1303 chars)
+---
+
+T-022@20260425T183959Zc committed as `0345b29`.
+
+**What changed**
+- `my-claw/tools/senseweave/usage_journal.py` — added `derive_arc_payoff_summary(arc_payoff_score, sample_count)` (banded text: weak/moderate/strong with score and play count) and `post_piece_hook(tracker, arc_payoff_score, journal_path)` which reads the active tracker, derives the summary, calls `finish_piece(...)` to fold plays into a `JournalEntry`, and appends it via `append_to_journal`.
+- `tests/test_usage_journal.py` — 4 new tests: band thresholds, single-piece hook (verifies tracker reset, returned entry, and on-disk read-back), multi-piece append, and no-active-piece RuntimeError with no file written.
+
+**Validation**: 13/13 usage-journal tests pass; full suite 3475/3475 pass; `ruff check src/ tests/` clean; `mypy src/` clean. Pre-existing untyped-list warning in `usage_journal.py:48` (from Za) is out of scope.

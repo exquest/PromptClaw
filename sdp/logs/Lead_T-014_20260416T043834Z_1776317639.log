@@ -1,0 +1,30 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1610 chars)
+---
+
+Done. Here's what was implemented:
+
+**`score_tree.py`** — Added `phrase_family` (str, default `"seed"`) and `seed_phrase_id` (str | None) fields to `PhraseNode`, with JSON round-trip support.
+
+**`form_grammar.py`** — Added a `PhraseFamilySlot` dataclass and `_PHRASE_FAMILY_TEMPLATES` mapping that defines the fractal expansion grammar for all 12 section functions. Each template specifies:
+- Which phrase is the seed (initial material presentation)
+- What family each subsequent phrase belongs to (variant/development/response/liquidation)
+- What transform ops each family slot carries
+
+The `phrase_family_slots()` function returns exactly the requested number of slots, truncating or padding as needed.
+
+**`recursive_composer.py`** — Updated `compose_score_tree` to use `phrase_family_slots()` when building phrases. Each phrase now gets:
+- A distinct `phrase_family` label
+- Family-specific `transform_ops` merged (deduplicated) with section-level harmonic ops
+- A `seed_phrase_id` back-reference (non-seed phrases point to the section's seed)
+
+**`tests/test_fractal_form.py`** — 12 tests covering:
+- Phrase-family slot grammar (count, seed-first, distinctness, padding)
+- Phrase-family metadata presence for song/extended/suite trees
+- Seed-derivation tracking (non-seed phrases reference the seed)
+- Anti-looping (multi-phrase sections have distinct transform ops)
+- Development/turn sections require >=2 distinct families
+- Full macro→section→phrase→motif hierarchy verification
+- JSON round-trip of new fields
+
+All 1853 tests pass, ruff clean, mypy clean.

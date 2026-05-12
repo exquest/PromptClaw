@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3714 chars)
+---
+
+T-005 complete and committed (`6028224`).
+
+**Summary**
+- Spec: `specs/t-005@20260502t001347z-spec.md`
+- Added `auth_token` kwarg to `create_app(...)` — when set, all three endpoints require matching `X-Narrative-Auth` header (401 on miss); empty/unset keeps existing behavior. T-010 still owns the env-var pull and startup warning log.
+- Tests: each endpoint now has the four required scenarios — success, auth-fail-when-enabled, bad-input validation, downstream-engine error — plus 503 lazy-import fallback and an append-returns-None branch for the normalizer.
+- Coverage on `cypherclaw.narrative_api`: **84%** (≥80% floor met).
+- Full validation green: `pytest tests/ -x` (3850 passed), `ruff check src/ tests/`, `mypy src/`.

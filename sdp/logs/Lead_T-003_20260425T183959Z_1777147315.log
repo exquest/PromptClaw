@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1863 chars)
+---
+
+T-003 done. Committed as `ad258ff`.
+
+**What landed:**
+- `my-claw/tools/senseweave/sampler_dispatch.py` — `SamplerDispatcher.dispatch_sample(record, intent, *, position, position_rate, grain_size_ms, density, pitch_transpose, amp, fx_send, mode=None, fx_node_id=None)` acquires/touches the buffer through `BufferLoader`, optionally pushes a per-mode preset to the FX synth via `/n_set`, then sends `/s_new sw_sampler` with all grain controls. Returns a `SamplerHandle.release()` that sends `/n_set gate 0` (idempotent).
+- `tests/test_sampler_dispatch.py` — 11 tests covering bundle ordering (`/b_alloc` → `/b_allocRead` → optional `/n_set` preset → `/s_new`), `gain_db`→`amp` correlation, buffer reuse, unique node-id allocation, gate-release lifecycle, and per-mode preset application/skip paths.
+
+`FX_PRESETS_BY_MODE` ships with `working_ambience` and `evening_reflection` as a seed; the full 5-mode table is T-020 / CCS-026's scope. Full suite: 3163 passed, ruff clean.

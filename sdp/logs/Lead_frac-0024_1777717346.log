@@ -1,0 +1,24 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3450 chars)
+---
+
+## Summary — frac-0024 complete
+
+**Result:** `my-claw/tools/senseweave/score_tree.py` deepened from depth 1 → depth 3 (target ≥ 2).
+
+**Delivered (commit `5b0ccf9`):**
+- `specs/frac-0024-spec.md` — 11 acceptance criteria, each with VERIFY command
+- `tests/test_score_tree_depth.py` — 8 locked tests (red→green)
+- `my-claw/tools/senseweave/score_tree.py` — 6 new helpers + 2 frozen report dataclasses
+- `CHANGELOG.md` — Unreleased entry under frac-0024
+
+**Public surface added:**
+- Frozen `ScoreTreeSectionReport`, `ScoreTreeReport`
+- `motif_lifecycle_band(state)` → `introduction|development|resolution|unclassified`
+- `section_phrase_load_band(count)` → `spare|compact|developed|saturated`
+- `count_motif_lifecycle_states(tree)`
+- `build_score_tree_section_report(section)`
+- `build_score_tree_report(tree)` — populates every `MOTIF_LIFECYCLE_STATES` entry (zeros included), reports unreferenced motif ids in declaration order
+- `summarize_score_tree_report(report)` — JSON-safe
+
+**Validation gauntlet:** 4078 passed / 3 skipped, ruff clean, mypy clean. Existing `test_score_tree.py` round-trip + `test_smoke_narrative_script.py` (narrative HTTP `/healthz`+`/readyz`+bearer-token hardening anchor) still green.

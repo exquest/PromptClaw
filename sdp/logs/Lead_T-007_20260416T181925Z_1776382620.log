@@ -1,0 +1,4514 @@
+Command: codex exec --dangerously-bypass-approvals-and-sandbox -c model_reasoning_effort=xhigh -m gpt-5.4 -
+Prompt delivered via: stdin (1606 chars)
+---
+
+Implemented and committed `feat(render): add cadential final ritardando [T-007@20260416T181925Z]` as `2992762`.
+
+Changed:
+- Added [final_rit.py](/Users/anthony/Programming/PromptClaw/src/cypherclaw/render/rules/final_rit.py) with `FinalRitRule`, default `alpha=0.35`, default onset `0.75`, and the Friberg-Sundberg square-root tempo multiplier for cadential phrase events only.
+- Added phrase context to [events.py](/Users/anthony/Programming/PromptClaw/src/cypherclaw/render/events.py).
+- Added regression coverage in [test_final_rit.py](/Users/anthony/Programming/PromptClaw/tests/test_final_rit.py) for curve shape, onset behavior, and non-cadential no-op behavior.
+
+Validation passed:
+- `pip install -e '.[dev]'`
+- `pytest tests/ -x --tb=short` -> `2721 passed`
+- `ruff check src/ tests/`
+- `mypy src/`
+
+The remaining dirty workspace entries are the pre-existing unrelated `sdp/`, `progress.md`, and `test_proto.py` changes; I left them untouched.
+
+--- STDERR ---
+OpenAI Codex v0.120.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019d98a7-b6c9-7ae1-8c93-d0cc1cab30c5
+--------
+user
+<!--
+  sdp-cli agent-specific template for codex
+  Edit this file to tune how codex handles lead_t1.md.
+  The shipped default lives at src/sdp/prompts/templates/lead_t1.md.
+  Delete this file to revert to the default.
+-->
+# Task T-007@20260416T181925Z: Implement R5 Final Ritardando: Friberg–Sundberg square-root tempo curve over last 20–30% of cadential phrases.
+
+## Acceptance Criteria
+
+- `render/rules/final_rit.py` applies tempo(x) = v₀·√(1 - α·(x-x_start)/(x_end-x_start)) for cadential phrases only<br/>- α default 0.35, onset position default 0.75 of phrase length<br/>- triggered only when is_cadential=True on phrase<br/>- tests verify curve shape, onset position, and non-application on non-cadential phrases
+
+**Tier:** T1
+
+## Instructions
+
+Handle this directly. Skip broad discovery and do not write a spec.
+
+1. Read only the file(s) you expect to change and the closest relevant tests.
+2. Make the smallest change that satisfies the task.
+3. Add or update a regression test when behavior changes.
+4. Run focused validation, then broader checks if needed.
+5. Commit as soon as the change works: `<type>(scope): summary [T-007@20260416T181925Z]`
+
+## Rules
+
+- Stay in scope; no unrelated cleanup.
+- Follow existing patterns and type hints.
+- Record blocking assumptions in `ESCALATIONS.md`.
+- Do not finish with uncommitted changes you introduced for this task.
+- Do not clean, revert, commit, or otherwise normalize unrelated pre-existing
+  workspace changes.
+
+## Validation
+
+Run before committing:
+```bash
+pip install -e '.[dev]'
+pytest tests/ -x --tb=short
+ruff check src/ tests/
+mypy src/
+```
+
+codex
+I’ll make the focused rule and regression-test change, first reading the target module and nearby tests so the implementation matches the existing style. Then I’ll run the requested validation and commit only the files I touch.
+exec
+/bin/zsh -lc "rg --files src tests | rg 'final_rit|ritard|rit'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_self_critique.py
+tests/test_course_critique.py
+tests/test_observatory_authority.py
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/logs/Lead_T-022_20260416T054258Z_1776373994.log
+ M sdp/logs/Verify_T-022_20260416T054258Z_1776374519.log
+ M sdp/notifications.log
+ M sdp/run-log.md
+?? sdp/logs/Lead_T-001_20260416T181925Za_1776377101.log
+?? sdp/logs/Lead_T-001_20260416T181925Za_1776377701.log
+?? sdp/logs/Lead_T-001_20260416T181925Za_1776378511.log
+?? sdp/logs/Lead_T-001_20260416T181925Zb_1776379250.log
+?? sdp/logs/Lead_T-001_20260416T181925Zc_1776379719.log
+?? sdp/logs/Lead_T-002_20260416T181925Z_1776380304.log
+?? sdp/logs/Lead_T-003_20260416T181925Z_1776380719.log
+?? sdp/logs/Lead_T-004_20260416T181925Z_1776381418.log
+?? sdp/logs/Lead_T-005_20260416T181925Z_1776381768.log
+?? sdp/logs/Lead_T-006_20260416T181925Z_1776382290.log
+?? sdp/logs/Lead_T-007_20260416T181925Z_1776382620.log
+?? sdp/logs/Lead_T-023_20260416T054258Z_1776374627.log
+?? sdp/logs/Lead_T-024_20260416T054258Z_1776375459.log
+?? sdp/logs/Lead_T-025_20260416T054258Z_1776376215.log
+?? sdp/logs/Verify_T-001_20260416T181925Za_1776379067.log
+?? sdp/logs/Verify_T-001_20260416T181925Zb_1776379600.log
+?? sdp/logs/Verify_T-001_20260416T181925Zc_1776380200.log
+?? sdp/logs/Verify_T-002_20260416T181925Z_1776380625.log
+?? sdp/logs/Verify_T-003_20260416T181925Z_1776381265.log
+?? sdp/logs/Verify_T-004_20260416T181925Z_1776381593.log
+?? sdp/logs/Verify_T-005_20260416T181925Z_1776382151.log
+?? sdp/logs/Verify_T-006_20260416T181925Z_1776382525.log
+?? sdp/logs/Verify_T-023_20260416T054258Z_1776375343.log
+?? sdp/logs/Verify_T-024_20260416T054258Z_1776376060.log
+?? sdp/logs/Verify_T-025_20260416T054258Z_1776376973.log
+?? sdp/logs/claude_1776378476.log
+?? test_proto.py
+
+codex
+The workspace already has unrelated modified and untracked files under `sdp/`, `progress.md`, and `test_proto.py`; I’ll leave those alone. I didn’t find an existing final-rit file by name, so I’m narrowing the search to render/rule paths and tempo-related tests.
+exec
+/bin/zsh -lc "rg --files src | rg 'render|rules|tempo|phrase'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+src/cypherclaw/render/rules/phrase_arch.py
+src/cypherclaw/render/events.py
+
+exec
+/bin/zsh -lc "rg --files tests | rg 'render|rules|tempo|phrase|cadence|music|midi|rubato|rit'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_voice_interpretation_rules.py
+tests/test_observatory_authority.py
+tests/test_render_pass.py
+tests/test_cadence_engine.py
+tests/test_render_ablation.py
+tests/test_phrase_arch.py
+tests/test_music_tracker_runtime.py
+tests/test_musical_integration_runtime.py
+tests/test_sample_event_renderer.py
+tests/test_counterpoint_rules.py
+tests/test_course_critique.py
+tests/test_musical_marathon_integration.py
+tests/test_render_debugger.py
+tests/test_music_tracker.py
+tests/test_midi_state.py
+tests/test_tracker_cadence.py
+tests/test_render_diff.py
+tests/test_midi_keyboard_listener_runtime.py
+tests/test_music_theory.py
+tests/test_self_critique.py
+
+exec
+/bin/zsh -lc "sed -n '1,220p' src/cypherclaw/render/rules/phrase_arch.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+import math
+from dataclasses import dataclass
+from cypherclaw.render.events import Event
+
+@dataclass
+class PhraseArchRule:
+    tempo_deviation_pct: float = 4.0
+    amp_deviation_pct: float = 4.0
+    peak: float = 0.6
+    k: float = 1.0
+    arc_shape: str = "parabolic"
+
+    def _get_base_arch(self, x: float) -> float:
+        if self.arc_shape == "parabolic":
+            return -4 * (x - self.peak)**2 + 1
+        elif self.arc_shape == "cosine":
+            return math.cos((x - self.peak) * math.pi)
+        elif self.arc_shape == "flat":
+            return 0.0
+        elif self.arc_shape == "inverted":
+            return 4 * (x - self.peak)**2 - 1
+        elif self.arc_shape == "asymmetric-Bezier":
+            # Simple asymmetric curve peaking at self.peak
+            if x <= self.peak and self.peak > 0:
+                t = x / self.peak
+                return 1.0 - (1.0 - t)**2
+            elif self.peak < 1:
+                t = (x - self.peak) / (1.0 - self.peak)
+                return 1.0 - t**2
+            return 0.0
+        return -4 * (x - self.peak)**2 + 1
+
+    def apply(self, event: Event) -> None:
+        x = event.normalized_phrase_position
+        arch_val = self._get_base_arch(x)
+        
+        tempo_arch_mult = 1.0 + self.k * arch_val * (self.tempo_deviation_pct / 100.0)
+        amp_arch_mult = 1.0 + self.k * arch_val * (self.amp_deviation_pct / 100.0)
+        
+        # Compose multiplicatively with SectionEnvelope.tempo_base
+        section_tempo_base = 1.0
+        if event.section_envelope is not None:
+            section_tempo_base = event.section_envelope.tempo_base
+            
+        event.tempo_mult *= (tempo_arch_mult * section_tempo_base)
+        event.amp_mult *= amp_arch_mult
+
+exec
+/bin/zsh -lc "sed -n '1,260p' tests/test_phrase_arch.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+import math
+from cypherclaw.render.events import Event, SectionEnvelope
+from cypherclaw.render.rules.phrase_arch import PhraseArchRule
+
+def test_phrase_arch_parabolic():
+    rule = PhraseArchRule(arc_shape="parabolic", peak=0.6, k=1.0, tempo_deviation_pct=4.0)
+    
+    # At peak, base_arch should be 1.0
+    event = Event(normalized_phrase_position=0.6)
+    rule.apply(event)
+    assert event.tempo_mult == 1.04
+    assert event.amp_mult == 1.04
+
+    # At x=0, base_arch = -4*(0-0.6)**2 + 1 = 1 - 4*(0.36) = 1 - 1.44 = -0.44
+    # tempo_mult = 1.0 + 1.0 * (-0.44) * 0.04 = 1.0 - 0.0176 = 0.9824
+    event2 = Event(normalized_phrase_position=0.0)
+    rule.apply(event2)
+    assert math.isclose(event2.tempo_mult, 0.9824)
+
+def test_phrase_arch_cosine():
+    rule = PhraseArchRule(arc_shape="cosine", peak=0.5, k=1.0, tempo_deviation_pct=4.0)
+    event = Event(normalized_phrase_position=0.5)
+    rule.apply(event)
+    assert event.tempo_mult == 1.04
+
+    event2 = Event(normalized_phrase_position=0.0)
+    rule.apply(event2)
+    # cos((0-0.5)*pi) = cos(-pi/2) = 0
+    assert math.isclose(event2.tempo_mult, 1.0)
+
+def test_phrase_arch_multiplicative_composition():
+    rule = PhraseArchRule(arc_shape="parabolic", peak=0.6, k=1.0, tempo_deviation_pct=4.0)
+    env = SectionEnvelope(tempo_base=1.1)
+    
+    event = Event(normalized_phrase_position=0.6, section_envelope=env, tempo_mult=2.0)
+    rule.apply(event)
+    
+    # previous_tempo_mult = 2.0
+    # tempo_arch_mult = 1.04
+    # section_tempo_base = 1.1
+    # expected: 2.0 * 1.04 * 1.1 = 2.288
+    assert math.isclose(event.tempo_mult, 2.288)
+
+def test_phrase_arch_variants():
+    # Just verify they don't crash and return reasonable values at peak
+    shapes = ["parabolic", "cosine", "flat", "inverted", "asymmetric-Bezier"]
+    for shape in shapes:
+        rule = PhraseArchRule(arc_shape=shape, peak=0.6, k=1.0)
+        event = Event(normalized_phrase_position=0.6)
+        rule.apply(event)
+        if shape == "flat":
+            assert event.tempo_mult == 1.0
+        elif shape == "inverted":
+            assert event.tempo_mult < 1.0
+        else:
+            assert event.tempo_mult > 1.0
+
+exec
+/bin/zsh -lc "sed -n '1,260p' tests/test_render_pass.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Tests for the SenseWeave render pass framework."""
+from __future__ import annotations
+
+import os
+import sys
+from dataclasses import dataclass
+from typing import Any, Mapping
+
+import pytest
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+
+from senseweave.render.pass_ import RULE_ORDER, PerformedPart, RenderPass
+
+
+@dataclass(frozen=True)
+class StubRule:
+    rule_id: str
+
+    def apply(
+        self,
+        score: Any,
+        *,
+        k: float,
+        seeds: Mapping[str, int] | None,
+        roles: frozenset[str] | None,
+    ) -> Any:
+        entry = {"rule_id": self.rule_id, "k": k, "roles": roles}
+        if isinstance(score, dict) and "trace" in score:
+            return {**score, "trace": [*score["trace"], entry]}
+        return {"trace": [entry], "original": score}
+
+
+class TestRuleOrder:
+    def test_canonical_order_is_preserved(self) -> None:
+        rules = [StubRule(f"R{i}") for i in (5, 1, 12, 3)]
+        rp = RenderPass(rules)
+        assert rp.rule_order == ("R1", "R3", "R5", "R12")
+
+    def test_full_stack_follows_documented_order(self) -> None:
+        rules = [StubRule(rid) for rid in reversed(RULE_ORDER)]
+        rp = RenderPass(rules)
+        assert rp.rule_order == RULE_ORDER
+
+    def test_non_canonical_rules_appended_in_registration_order(self) -> None:
+        rules = [StubRule("custom_b"), StubRule("R2"), StubRule("custom_a")]
+        rp = RenderPass(rules)
+        assert rp.rule_order == ("R2", "custom_b", "custom_a")
+
+    def test_duplicate_rule_id_raises(self) -> None:
+        with pytest.raises(ValueError, match="duplicate rule id"):
+            RenderPass([StubRule("R1"), StubRule("R1")])
+
+    def test_apply_trace_matches_canonical_order(self) -> None:
+        rules = [StubRule(f"R{i}") for i in (3, 1, 2)]
+        rp = RenderPass(rules)
+        result = rp.apply("tree")
+        trace_ids = [e["rule_id"] for e in result.score["trace"]]
+        assert trace_ids == ["R1", "R2", "R3"]
+
+
+class TestQuantityK:
+    def test_default_k_is_one(self) -> None:
+        rp = RenderPass([StubRule("R1")])
+        assert rp.effective_k("R1") == 1.0
+
+    def test_k_zero_equals_rule_disabled(self) -> None:
+        rp = RenderPass(
+            [StubRule("R1"), StubRule("R2")],
+            quantities={"R1": 0.0},
+        )
+        result = rp.apply("input")
+        assert "R1" not in result.applied_rules
+        assert "R2" in result.applied_rules
+        assert result.quantities["R1"] == 0.0
+
+    def test_k_one_equals_calibrated_default(self) -> None:
+        rp = RenderPass([StubRule("R1")])
+        result = rp.apply("input")
+        assert result.applied_rules == ("R1",)
+        assert result.score["trace"][0]["k"] == 1.0
+
+    def test_enabled_flag_false_sets_effective_k_to_zero(self) -> None:
+        rp = RenderPass(
+            [StubRule("R1"), StubRule("R2")],
+            enabled_flags={"R1": False},
+        )
+        assert rp.effective_k("R1") == 0.0
+        assert rp.effective_k("R2") == 1.0
+        result = rp.apply("input")
+        assert "R1" not in result.applied_rules
+
+    def test_custom_quantity_forwarded_to_rule(self) -> None:
+        rp = RenderPass(
+            [StubRule("R1")],
+            quantities={"R1": 0.75},
+        )
+        result = rp.apply("input")
+        assert result.score["trace"][0]["k"] == 0.75
+
+    def test_quantity_override_at_apply_time(self) -> None:
+        rp = RenderPass(
+            [StubRule("R1"), StubRule("R2")],
+            quantities={"R1": 0.5},
+        )
+        result = rp.apply("input", quantity_overrides={"R1": 0.0, "R2": 0.75})
+        assert "R1" not in result.applied_rules
+        assert "R2" in result.applied_rules
+        assert result.quantities["R1"] == 0.0
+        assert result.quantities["R2"] == 0.75
+
+    def test_enabled_false_overridden_by_quantity_override(self) -> None:
+        rp = RenderPass(
+            [StubRule("R1")],
+            enabled_flags={"R1": False},
+        )
+        result = rp.apply("input", quantity_overrides={"R1": 0.5})
+        assert "R1" in result.applied_rules
+        assert result.score["trace"][0]["k"] == 0.5
+
+
+class TestRoleGating:
+    def test_role_gate_passed_to_rule(self) -> None:
+        gate = frozenset({"melody", "bass"})
+        rp = RenderPass(
+            [StubRule("R1")],
+            role_gates={"R1": gate},
+        )
+        result = rp.apply("input")
+        assert result.score["trace"][0]["roles"] == gate
+
+    def test_ungated_rule_receives_none(self) -> None:
+        rp = RenderPass([StubRule("R1")])
+        result = rp.apply("input")
+        assert result.score["trace"][0]["roles"] is None
+
+
+class TestApply:
+    def test_returns_performed_part(self) -> None:
+        rp = RenderPass([StubRule("R1")])
+        result = rp.apply("tree", {"seed": 42})
+        assert isinstance(result, PerformedPart)
+        assert result.applied_rules == ("R1",)
+
+    def test_empty_pass_returns_input_unchanged(self) -> None:
+        rp = RenderPass([])
+        result = rp.apply("raw_tree")
+        assert result.score == "raw_tree"
+        assert result.applied_rules == ()
+        assert result.quantities == {}
+
+    def test_seeds_forwarded_to_rules(self) -> None:
+        captured: list[dict[str, int] | None] = []
+
+        @dataclass(frozen=True)
+        class SeedCapture:
+            rule_id: str = "R1"
+
+            def apply(
+                self, score: Any, *, k: float, seeds: Any, roles: Any,
+            ) -> Any:
+                captured.append(dict(seeds) if seeds else None)
+                return score
+
+        rp = RenderPass([SeedCapture()])
+        rp.apply("tree", {"comp": 7})
+        assert captured == [{"comp": 7}]
+
+    def test_metadata_defaults_to_empty(self) -> None:
+        rp = RenderPass([])
+        result = rp.apply("tree")
+        assert result.metadata == {}
+
+exec
+/bin/zsh -lc "sed -n '1,260p' src/cypherclaw/render/events.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+from dataclasses import dataclass
+from typing import Optional
+
+@dataclass
+class SectionEnvelope:
+    tempo_base: float = 1.0
+
+@dataclass
+class Event:
+    normalized_phrase_position: float = 0.0
+    section_envelope: Optional[SectionEnvelope] = None
+    tempo_mult: float = 1.0
+    amp_mult: float = 1.0
+
+exec
+/bin/zsh -lc 'ls -la src/cypherclaw/render/rules' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+total 8
+drwxr-xr-x  4 anthony  staff   128 Apr 16 16:19 .
+drwxr-xr-x  5 anthony  staff   160 Apr 16 16:19 ..
+drwxr-xr-x  3 anthony  staff    96 Apr 16 16:19 __pycache__
+-rw-r--r--  1 anthony  staff  1732 Apr 16 16:18 phrase_arch.py
+
+exec
+/bin/zsh -lc "find src/cypherclaw/render -maxdepth 2 -type f -name '__init__.py' -print -exec sed -n '1,120p' {} \\;" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+codex
+`Event` is very small here and there is no existing `final_rit` module. I’m checking the existing cadential flag usage now so the new rule can fit the data model without widening the change.
+exec
+/bin/zsh -lc "sed -n '1,260p' tests/test_tracker_cadence.py" in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc "sed -n '1,260p' tests/test_cadence_engine.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Tests for tracker cadence planning and family shaping."""
+from __future__ import annotations
+
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
+
+from inner_life.world_model import WorldModel
+from senseweave.generative_scores import Note, Phrase, Score
+from senseweave.tracker_cadence import (
+    constrain_score_to_cadence,
+    apply_tracker_plan_to_mood,
+    resolve_tracker_plan,
+    shape_score_for_family,
+)
+
+
+def _sample_score() -> Score:
+    return Score(
+        phrases=[
+            Phrase(
+                notes=[Note(1, 1.0, False), Note(3, 1.0, True), Note(5, 2.0, False)],
+                voice="pluck",
+                dynamic="mf",
+                role="melody",
+            ),
+            Phrase(
+                notes=[Note(1, 2.0, True), Note(5, 2.0, False)],
+                voice="gong",
+                dynamic="mp",
+                role="bass",
+            ),
+        ],
+        key="C",
+        tempo_bpm=84.0,
+        mood="calm",
+        created_at=0.0,
+    )
+
+
+def test_resolve_tracker_plan_prefers_pulse_for_active_occupied_day() -> None:
+    world = WorldModel(
+        someone_here=True,
+        room_activity="active",
+        recent_transient=True,
+        time_of_day="afternoon",
+        stale_sources=[],
+    )
+
+    plan = resolve_tracker_plan(world, song_num=3, hour=14)
+
+    assert plan.occupancy_state == "occupied_active"
+    assert plan.cadence_state == "occupied_day"
+    assert plan.family == "pulse"
+
+
+def test_resolve_tracker_plan_prefers_forge_when_away() -> None:
+    world = WorldModel(
+        someone_here=False,
+        room_activity="quiet",
+        recent_transient=False,
+        time_of_day="afternoon",
+        stale_sources=[],
+    )
+
+    plan = resolve_tracker_plan(world, song_num=4, hour=14)
+
+    assert plan.occupancy_state == "likely_away"
+    assert plan.cadence_state == "away_practice"
+    assert plan.family == "forge"
+
+
+def test_resolve_tracker_plan_uses_wake_ramp_for_morning_presence() -> None:
+    world = WorldModel(
+        someone_here=True,
+        room_activity="moderate",
+        time_of_day="morning",
+        stale_sources=[],
+    )
+
+    plan = resolve_tracker_plan(world, song_num=1, hour=7)
+
+    assert plan.cadence_state == "wake_ramp"
+    assert plan.family == "ember"
+
+
+def test_resolve_tracker_plan_prefers_canonical_cadence_when_present() -> None:
+    world = WorldModel(
+        occupancy_state="occupied_quiet",
+        cadence_state="wind_down",
+        day_phase="pre_sleep",
+        weekly_phase="sunday_settle",
+        stale_sources=[],
+    )
+
+    plan = resolve_tracker_plan(world, song_num=1, hour=15)
+
+    assert plan.cadence_state == "wind_down"
+    assert plan.occupancy_state == "occupied_quiet"
+    assert plan.family == "drift"
+    assert plan.source == "cadence"
+    assert plan.progression_profile == "settling"
+
+
+def test_resolve_tracker_plan_varies_occupied_day_families_across_songs() -> None:
+    world = WorldModel(
+        occupancy_state="occupied_quiet",
+        cadence_state="occupied_day",
+        day_phase="mid_morning",
+        weekly_phase="core_weekday",
+        stale_sources=[],
+    )
+
+    families = {
+        resolve_tracker_plan(world, song_num=song_num, hour=10).family
+        for song_num in range(1, 7)
+    }
+
+    assert len(families) >= 3
+    assert {"ember", "bloom", "pulse"}.intersection(families)
+
+
+def test_resolve_tracker_plan_weekly_phase_changes_family_bias() -> None:
+    friday_world = WorldModel(
+        occupancy_state="occupied_quiet",
+        cadence_state="occupied_day",
+        day_phase="late_afternoon",
+        weekly_phase="friday_lift",
+        stale_sources=[],
+    )
+    sunday_world = WorldModel(
+        occupancy_state="occupied_quiet",
+        cadence_state="occupied_day",
+        day_phase="evening_settling",
+        weekly_phase="sunday_settle",
+        stale_sources=[],
+    )
+
+    friday = resolve_tracker_plan(friday_world, song_num=2, hour=17)
+    sunday = resolve_tracker_plan(sunday_world, song_num=2, hour=17)
+
+    assert friday.family in {"pulse", "bloom"}
+    assert friday.progression_profile == "lift"
+    assert sunday.family in {"drift", "ember", "nocturne"}
+    assert sunday.progression_profile == "settling"
+
+
+def test_apply_tracker_plan_to_mood_pushes_daytime_energy_up() -> None:
+    world = WorldModel(
+        someone_here=True,
+        room_activity="active",
+        recent_transient=True,
+        time_of_day="afternoon",
+        stale_sources=[],
+    )
+    plan = resolve_tracker_plan(world, song_num=2, hour=15)
+
+    mood = apply_tracker_plan_to_mood(
+        {"energy": 0.35, "valence": 0.48, "arousal": 0.3},
+        plan,
+    )
+
+    assert mood["energy"] > 0.35
+    assert mood["arousal"] > 0.3
+
+
+def test_shape_score_for_family_pulse_adds_motion() -> None:
+    shaped = shape_score_for_family(
+        _sample_score(),
+        family="pulse",
+        cadence_state="occupied_day",
+        song_num=2,
+    )
+
+    assert shaped.tempo_bpm > 84.0
+    assert any(note.accent for phrase in shaped.phrases for note in phrase.notes)
+    assert min(note.duration_beats for phrase in shaped.phrases for note in phrase.notes) < 1.0
+
+
+def test_shape_score_for_family_nocturne_softens_and_slows() -> None:
+    shaped = shape_score_for_family(
+        _sample_score(),
+        family="nocturne",
+        cadence_state="sleep",
+        song_num=1,
+    )
+
+    assert shaped.tempo_bpm < 84.0
+    assert all(phrase.dynamic in {"pp", "p", "mp"} for phrase in shaped.phrases)
+    assert max(note.duration_beats for phrase in shaped.phrases for note in phrase.notes) > 2.0
+
+
+def test_shape_score_for_family_preserves_patch_metadata() -> None:
+    score = _sample_score()
+    score.metadata["patch_name"] = "house_monastery"
+
+    shaped = shape_score_for_family(
+        score,
+        family="nocturne",
+        cadence_state="sleep",
+        song_num=1,
+    )
+
+    assert shaped.metadata["patch_name"] == "house_monastery"
+
+
+def test_constrain_score_to_cadence_clamps_tempo_band() -> None:
+    world = WorldModel(
+        cadence_state="sleep",
+        bpm_target=54.0,
+        bpm_range=(50.0, 58.0),
+    )
+
+    constrained = constrain_score_to_cadence(_sample_score(), world)
+
+    assert 50.0 <= constrained.tempo_bpm <= 58.0
+
+
+def test_constrain_score_to_cadence_preserves_patch_metadata() -> None:
+    score = _sample_score()
+    score.metadata["patch_name"] = "house_procession"
+    world = WorldModel(
+        cadence_state="occupied_day",
+        bpm_target=122.0,
+        bpm_range=(118.0, 128.0),
+    )
+
+    constrained = constrain_score_to_cadence(score, world)
+
+    assert constrained.metadata["patch_name"] == "house_procession"
+
+ succeeded in 0ms:
+"""Tests for the canonical cadence engine."""
+
+from __future__ import annotations
+
+import json
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
+
+from cadence_engine import build_cadence_state, run_cadence_loop
+
+
+def _presence_state(occupancy_state: str = "occupied_quiet", *, confidence: float = 0.8) -> dict:
+    return {
+        "timestamp": 1_000.0,
+        "occupancy_state": occupancy_state,
+        "confidence": confidence,
+        "attention_state": "ambient",
+        "attention_score": 0.15,
+        "identity_hint": "unknown",
+        "identity_confidence": 0.0,
+        "last_reliable_presence_at": 950.0,
+        "last_direct_interaction_at": 900.0,
+        "signals": {
+            "speech": False,
+            "room_motion": occupancy_state.startswith("occupied"),
+            "observer_motion": False,
+            "room_activity": "quiet",
+            "instrument_active": False,
+            "direct_interaction": False,
+        },
+        "reasons": [],
+    }
+
+
+def test_monday_morning_is_gentler_than_midweek() -> None:
+    presence = _presence_state("occupied_active")
+    previous = {"cadence_state": "sleep", "wake_ramp_started_at": None}
+
+    monday = build_cadence_state(
+        presence,
+        previous_state=previous,
+        now_dt=datetime(2026, 4, 13, 7, 30),
+    )
+    wednesday = build_cadence_state(
+        presence,
+        previous_state=previous,
+        now_dt=datetime(2026, 4, 15, 7, 30),
+    )
+
+    assert monday["weekly_phase"] == "monday_gentle"
+    assert monday["cadence_state"] == "wake_ramp"
+    assert monday["bpm_target"] < wednesday["bpm_target"]
+    assert monday["spectral_centroid_hz"] < wednesday["spectral_centroid_hz"]
+
+
+def test_weekend_cycle_shifts_later_than_workday() -> None:
+    presence = _presence_state("occupied_quiet")
+
+    weekday = build_cadence_state(
+        presence,
+        now_dt=datetime(2026, 4, 15, 8, 0),
+    )
+    saturday = build_cadence_state(
+        presence,
+        now_dt=datetime(2026, 4, 18, 8, 0),
+    )
+
+    assert weekday["day_phase"] == "morning_activation"
+    assert saturday["weekly_phase"] == "weekend_late"
+    assert saturday["bpm_target"] < weekday["bpm_target"]
+
+
+def test_sunday_evening_settles_earlier_than_friday() -> None:
+    presence = _presence_state("occupied_quiet")
+
+    friday = build_cadence_state(
+        presence,
+        now_dt=datetime(2026, 4, 17, 18, 30),
+    )
+    sunday = build_cadence_state(
+        presence,
+        now_dt=datetime(2026, 4, 19, 18, 30),
+    )
+
+    assert friday["weekly_phase"] == "friday_lift"
+    assert sunday["weekly_phase"] == "sunday_settle"
+    assert sunday["bpm_target"] < friday["bpm_target"]
+    assert sunday["pulse_clarity"] < friday["pulse_clarity"]
+
+
+def test_likely_asleep_publishes_sleep_parameters_and_silence_budget() -> None:
+    cadence = build_cadence_state(
+        _presence_state("likely_asleep"),
+        now_dt=datetime(2026, 4, 14, 1, 15),
+    )
+
+    assert cadence["cadence_state"] == "sleep"
+    assert cadence["bpm_target"] <= 60.0
+    assert cadence["silence_budget_s_per_hour"] >= 1_800
+    assert cadence["voice_cap"] == 2
+
+
+def test_stay_lively_override_holds_wind_down_off_until_midnight() -> None:
+    presence = _presence_state("occupied_active")
+    cadence = build_cadence_state(
+        presence,
+        now_dt=datetime(2026, 4, 17, 22, 30),
+        overrides={"stay_lively_until": "2026-04-18T00:00:00"},
+    )
+
+    assert cadence["cadence_state"] == "occupied_day"
+    assert cadence["risk_level"] == "medium"
+
+
+def test_away_presence_enters_practice_mode() -> None:
+    cadence = build_cadence_state(
+        _presence_state("likely_away"),
+        now_dt=datetime(2026, 4, 15, 14, 0),
+    )
+
+    assert cadence["cadence_state"] == "away_practice"
+    assert cadence["experimentation_bias"] > 0.7
+
+
+def test_run_cadence_loop_writes_cadence_state(monkeypatch, tmp_path: Path) -> None:
+    presence = tmp_path / "presence_state.json"
+    presence.write_text(json.dumps(_presence_state("occupied_quiet")))
+    output = tmp_path / "cadence_state.json"
+
+    monkeypatch.setattr("cadence_engine.PRESENCE_STATE", str(presence))
+    monkeypatch.setattr("cadence_engine.DEFAULT_OUTPUT", str(output))
+    monkeypatch.setattr("cadence_engine.OVERRIDE_STATE", str(tmp_path / "override.json"))
+
+    run_cadence_loop(interval=0.0, max_iterations=1, now_dt=datetime(2026, 4, 15, 10, 0))
+
+    written = json.loads(output.read_text())
+    assert written["cadence_state"] == "occupied_day"
+    assert written["day_phase"] == "mid_morning"
+
+exec
+/bin/zsh -lc 'rg "is_cadential|cadential|normalized_phrase_position|Phrase" src/cypherclaw tests/test_*.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 200ms:
+tests/test_counterpoint_pipeline.py:from senseweave.generative_scores import Note, Phrase, Score
+tests/test_counterpoint_pipeline.py:    melody = Phrase(
+tests/test_counterpoint_pipeline.py:    bass = Phrase(
+tests/test_counterpoint_pipeline.py:    counter = Phrase(
+tests/test_counterpoint_pipeline.py:    color = Phrase(
+tests/test_counterpoint_pipeline.py:            phrases=[Phrase(
+src/cypherclaw/render/rules/phrase_arch.py:class PhraseArchRule:
+src/cypherclaw/render/rules/phrase_arch.py:        x = event.normalized_phrase_position
+tests/test_course_critique.py:        from senseweave.score_tree import ScoreTree, SectionNode, MotifNode, PhraseNode
+tests/test_course_critique.py:                PhraseNode(
+src/cypherclaw/render/events.py:    normalized_phrase_position: float = 0.0
+tests/test_generative_scores.py:    Phrase,
+tests/test_generative_scores.py:# === Phrase dataclass ===
+tests/test_generative_scores.py:class TestPhrase:
+tests/test_generative_scores.py:        p = Phrase(notes=notes, voice="pluck", dynamic="mf", role="melody")
+tests/test_generative_scores.py:        p = Phrase(notes=[], voice="pad", dynamic="pp", role="color")
+tests/test_generative_scores.py:        p = Phrase(notes=[], voice="pad", dynamic="pp", role="bass")
+tests/test_generative_scores.py:        p = Phrase(notes=[], voice="pad", dynamic="pp", role="bass")
+tests/test_generative_scores.py:        assert isinstance(p, Phrase)
+tests/test_generative_scores.py:            assert isinstance(p, Phrase)
+tests/test_generative_scores.py:        def average_leap(phrase: Phrase) -> float:
+tests/test_generative_scores.py:        assert isinstance(p, Phrase)
+tests/test_generative_scores.py:        assert isinstance(counter, Phrase)
+tests/test_generative_scores.py:            phrases=[Phrase(
+tests/test_generative_scores.py:            phrases=[Phrase(
+tests/test_generative_scores.py:            phrases=[Phrase(
+tests/test_generative_scores.py:            phrases=[Phrase(
+tests/test_generative_scores.py:        mel_phrase = Phrase(
+tests/test_generative_scores.py:        bass_phrase = Phrase(
+tests/test_generative_scores.py:                Phrase(notes=[Note(1, 1.0, False)], voice="pluck", dynamic="mf", role="melody"),
+tests/test_generative_scores.py:                Phrase(notes=[Note(1, 1.0, False)], voice="pluck", dynamic="mf", role="bass"),
+tests/test_generative_scores.py:                Phrase(notes=[Note(3, 1.0, False)], voice="pluck", dynamic="mf", role="counter"),
+tests/test_generative_scores.py:                Phrase(notes=[Note(1, 1.0, False)], voice="pad", dynamic="pp", role="color"),
+tests/test_generative_scores.py:            Phrase(notes=[Note(1, 1.0, False)], voice="pluck", dynamic="mf", role="melody"),
+tests/test_generative_scores.py:            Phrase(notes=[Note(1, 1.0, False)], voice="pluck", dynamic="mf", role="bass"),
+tests/test_generative_scores.py:            Phrase(notes=[Note(3, 1.0, False)], voice="pluck", dynamic="mf", role="counter"),
+tests/test_generative_scores.py:            Phrase(notes=[Note(1, 1.0, False)], voice="pad", dynamic="pp", role="color"),
+tests/test_melodic_mind.py:# Lewis Rhythm Concepts — Antecedent-Consequent Phrase Pairs
+tests/test_melodic_mind.py:class TestPhrasePair:
+tests/test_melodic_mind.py:        assert "T:CypherClaw Phrase" in result
+tests/test_melodic_mind.py:        assert "T:CypherClaw Phrase" in result
+tests/test_melodic_mind.py:        abc = "X:1\nT:CypherClaw Phrase\nM:3/4\nK:Cmaj\nC E G |"
+tests/test_melodic_mind.py:        abc = "X:1\nT:CypherClaw Phrase\nM:3/4\nK:Cmaj\nC F G |"
+tests/test_mix_verify.py:        from senseweave.generative_scores import Note, Phrase, Score
+tests/test_mix_verify.py:                Phrase(notes=[Note(1, 1.0, True)], voice="pluck", dynamic="mf", role="melody"),
+tests/test_mix_verify.py:                Phrase(notes=[Note(1, 1.0, True)], voice="gong", dynamic="mp", role="bass"),
+tests/test_master_bus.py:from senseweave.generative_scores import Note, Phrase, Score
+tests/test_master_bus.py:            Phrase(notes=[Note(1, 1.0, True), Note(3, 1.0, False)], voice="pluck", dynamic="mf", role="melody"),
+tests/test_master_bus.py:            Phrase(notes=[Note(1, 1.0, True), Note(5, 1.0, False)], voice="gong", dynamic="mp", role="bass"),
+tests/test_phrase_arch.py:from cypherclaw.render.rules.phrase_arch import PhraseArchRule
+tests/test_phrase_arch.py:    rule = PhraseArchRule(arc_shape="parabolic", peak=0.6, k=1.0, tempo_deviation_pct=4.0)
+tests/test_phrase_arch.py:    event = Event(normalized_phrase_position=0.6)
+tests/test_phrase_arch.py:    event2 = Event(normalized_phrase_position=0.0)
+tests/test_phrase_arch.py:    rule = PhraseArchRule(arc_shape="cosine", peak=0.5, k=1.0, tempo_deviation_pct=4.0)
+tests/test_phrase_arch.py:    event = Event(normalized_phrase_position=0.5)
+tests/test_phrase_arch.py:    event2 = Event(normalized_phrase_position=0.0)
+tests/test_phrase_arch.py:    rule = PhraseArchRule(arc_shape="parabolic", peak=0.6, k=1.0, tempo_deviation_pct=4.0)
+tests/test_phrase_arch.py:    event = Event(normalized_phrase_position=0.6, section_envelope=env, tempo_mult=2.0)
+tests/test_phrase_arch.py:        rule = PhraseArchRule(arc_shape=shape, peak=0.6, k=1.0)
+tests/test_phrase_arch.py:        event = Event(normalized_phrase_position=0.6)
+tests/test_groove_engine.py:        from senseweave.generative_scores import Note, Phrase, Score
+tests/test_groove_engine.py:                Phrase(
+tests/test_music_tracker.py:from senseweave.generative_scores import Note, Phrase, Score
+tests/test_music_tracker.py:    melody = Phrase(
+tests/test_music_tracker.py:    bass = Phrase(
+tests/test_music_tracker.py:    counter = Phrase(
+tests/test_music_tracker.py:    color = Phrase(
+tests/test_music_tracker.py:    melody = Phrase(
+tests/test_music_tracker.py:                Phrase(
+tests/test_music_tracker.py:                Phrase(
+tests/test_music_tracker.py:                Phrase(
+tests/test_music_tracker.py:                Phrase(
+tests/test_music_tracker_runtime.py:from senseweave.generative_scores import Note, Phrase, Score
+tests/test_music_tracker_runtime.py:            Phrase(
+tests/test_music_tracker_runtime.py:            Phrase(
+tests/test_music_tracker_runtime.py:            Phrase(
+tests/test_render_diff.py:from senseweave.generative_scores import Note, Phrase, Score
+tests/test_render_diff.py:) -> Phrase:
+tests/test_render_diff.py:    return Phrase(notes=notes, voice=voice, dynamic=dynamic, role=role)
+tests/test_render_diff.py:    phrases: list[Phrase],
+tests/test_render_diff.py:class TestPhraseChanges:
+tests/test_render_diff.py:class TestPhraseCountMismatch:
+tests/test_render_debugger.py:from senseweave.generative_scores import Note, Phrase, Score
+tests/test_render_debugger.py:            Phrase(
+tests/test_render_debugger.py:            Phrase(
+tests/test_render_debugger.py:            Phrase(
+tests/test_render_debugger.py:            Phrase(
+tests/test_render_debugger.py:                "from senseweave.generative_scores import Note, Phrase, Score",
+tests/test_render_debugger.py:                "        Phrase(",
+tests/test_render_debugger.py:                "        Phrase(",
+tests/test_row_automation.py:from senseweave.generative_scores import Note, Phrase, Score
+tests/test_row_automation.py:            Phrase(notes=[Note(1, 1.0, False), Note(3, 0.5, True), Note(5, 1.5, False)],
+tests/test_row_automation.py:            Phrase(notes=[Note(1, 1.0, True), Note(5, 1.0, False), Note(1, 1.0, False)],
+tests/test_tracker_cadence.py:from senseweave.generative_scores import Note, Phrase, Score
+tests/test_tracker_cadence.py:            Phrase(
+tests/test_tracker_cadence.py:            Phrase(
+tests/test_theramini_duet.py:class TestSuggestResponsePhrase:
+tests/test_score_tree.py:from senseweave.score_tree import MotifNode, PhraseNode, SectionNode, ScoreTree
+tests/test_score_tree.py:        PhraseNode(
+tests/test_tracker_compiler.py:from senseweave.score_tree import PRODUCTION_COURSE_KEYS, PhraseNode, SectionNode
+tests/test_tracker_compiler.py:                PhraseNode(
+tests/test_self_critique.py:    Phrase,
+tests/test_self_critique.py:                Phrase(
+tests/test_self_critique.py:        from senseweave.score_tree import ScoreTree, SectionNode, MotifNode, PhraseNode
+tests/test_self_critique.py:                PhraseNode(
+
+exec
+/bin/zsh -lc "sed -n '1,220p' pyproject.toml" in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc "rg \"class Phrase|@dataclass\\s*\\nclass Phrase|is_cadential\" src my-claw/tools tests/test_generative_scores.py tests/test_counterpoint_pipeline.py" in /Users/anthony/Programming/PromptClaw
+ exited 2 in 0ms:
+rg: the literal "\n" is not allowed in a regex
+
+Consider enabling multiline mode with the --multiline flag (or -U for short).
+When multiline mode is enabled, new line characters can be matched.
+
+ succeeded in 0ms:
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "promptclaw"
+version = "3.0.0"
+description = "An orchestrated multi-agent prompt scaffold with artifact-based handoffs."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+coherence-pg = ["psycopg2-binary>=2.9", "pgvector>=0.2", "redis>=5.0"]
+coherence-full = ["psycopg2-binary>=2.9", "pgvector>=0.2", "redis>=5.0", "pyyaml>=6.0"]
+dev = ["mypy>=1.10", "pytest>=8.0", "ruff>=0.9"]
+
+[project.scripts]
+promptclaw = "promptclaw.cli:main"
+glyphweave = "promptclaw.glyphweave_cli:main"
+
+[tool.setuptools.packages.find]
+where = [".", "src"]
+include = ["promptclaw*", "cypherclaw*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+codex
+The installed package exposes `cypherclaw*` under `src`, and the existing render rule pattern is event-level mutation. I’m checking the score phrase type once, because the acceptance criterion names a phrase flag.
+exec
+/bin/zsh -lc "sed -n '1,220p' tests/test_generative_scores.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Tests for generative_scores.py -- musical score generation from mood and narrative."""
+from __future__ import annotations
+
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
+
+from senseweave.generative_scores import (
+    _scale_degree_to_freq,
+    Note,
+    Phrase,
+    Score,
+    generate_bass_line,
+    generate_countermelody,
+    generate_melody,
+    score_from_mood,
+    score_from_narrative_event,
+    score_to_frequencies,
+)
+
+
+# === Note dataclass ===
+
+
+class TestNote:
+    def test_fields(self):
+        n = Note(scale_degree=1, duration_beats=1.0, accent=False)
+        assert n.scale_degree == 1
+        assert n.duration_beats == 1.0
+        assert n.accent is False
+
+    def test_accent_default(self):
+        n = Note(scale_degree=5, duration_beats=0.5, accent=True)
+        assert n.accent is True
+
+    def test_is_dataclass(self):
+        n = Note(scale_degree=3, duration_beats=2.0, accent=False)
+        assert hasattr(n, "__dataclass_fields__")
+
+
+# === Phrase dataclass ===
+
+
+class TestPhrase:
+    def test_fields(self):
+        notes = [Note(1, 1.0, False), Note(3, 1.0, True)]
+        p = Phrase(notes=notes, voice="pluck", dynamic="mf", role="melody")
+        assert p.notes == notes
+        assert p.voice == "pluck"
+        assert p.dynamic == "mf"
+        assert p.role == "melody"
+
+    def test_empty_notes(self):
+        p = Phrase(notes=[], voice="pad", dynamic="pp", role="color")
+        assert p.notes == []
+
+    def test_is_dataclass(self):
+        p = Phrase(notes=[], voice="pad", dynamic="pp", role="bass")
+        assert hasattr(p, "__dataclass_fields__")
+
+
+# === Score dataclass ===
+
+
+class TestScore:
+    def test_fields(self):
+        p = Phrase(notes=[], voice="pad", dynamic="pp", role="bass")
+        s = Score(phrases=[p], key="C", tempo_bpm=120.0, mood="calm", created_at=0.0)
+        assert s.phrases == [p]
+        assert s.key == "C"
+        assert s.tempo_bpm == 120.0
+        assert s.mood == "calm"
+        assert s.created_at == 0.0
+
+    def test_is_dataclass(self):
+        s = Score(phrases=[], key="G", tempo_bpm=80.0, mood="happy", created_at=1.0)
+        assert hasattr(s, "__dataclass_fields__")
+
+
+# === generate_melody ===
+
+
+class TestGenerateMelody:
+    def test_returns_phrase(self):
+        p = generate_melody("C")
+        assert isinstance(p, Phrase)
+
+    def test_default_length_8(self):
+        p = generate_melody("C")
+        assert len(p.notes) == 8
+
+    def test_custom_length(self):
+        p = generate_melody("C", length=4)
+        assert len(p.notes) == 4
+
+    def test_role_is_melody(self):
+        p = generate_melody("C")
+        assert p.role == "melody"
+
+    def test_scale_degrees_in_range(self):
+        p = generate_melody("C", length=16)
+        for note in p.notes:
+            assert 1 <= note.scale_degree <= 8, f"degree {note.scale_degree} out of range"
+
+    def test_durations_positive(self):
+        p = generate_melody("C")
+        for note in p.notes:
+            assert note.duration_beats > 0
+
+    def test_arch_contour_rises_then_falls(self):
+        """Arch contour: first half trends up, second half trends down."""
+        # Run multiple times to smooth randomness
+        up_count = 0
+        trials = 50
+        for _ in range(trials):
+            p = generate_melody("C", length=8, contour="arch")
+            degrees = [n.scale_degree for n in p.notes]
+            mid = len(degrees) // 2
+            first_half_trend = degrees[mid] - degrees[0]
+            second_half_trend = degrees[-1] - degrees[mid]
+            if first_half_trend >= 0 and second_half_trend <= 0:
+                up_count += 1
+        # At least half the trials should show arch shape
+        assert up_count >= trials * 0.4, f"only {up_count}/{trials} showed arch"
+
+    def test_descent_contour_trends_down(self):
+        down_count = 0
+        trials = 50
+        for _ in range(trials):
+            p = generate_melody("C", length=8, contour="descent")
+            degrees = [n.scale_degree for n in p.notes]
+            if degrees[-1] <= degrees[0]:
+                down_count += 1
+        assert down_count >= trials * 0.5, f"only {down_count}/{trials} descended"
+
+    def test_ascent_contour_trends_up(self):
+        up_count = 0
+        trials = 50
+        for _ in range(trials):
+            p = generate_melody("C", length=8, contour="ascent")
+            degrees = [n.scale_degree for n in p.notes]
+            if degrees[-1] >= degrees[0]:
+                up_count += 1
+        assert up_count >= trials * 0.5, f"only {up_count}/{trials} ascended"
+
+    def test_wave_contour_produces_notes(self):
+        p = generate_melody("C", length=8, contour="wave")
+        assert len(p.notes) == 8
+
+    def test_stepwise_motion_predominates(self):
+        """Most intervals should be 1-2 steps (stepwise), not large leaps."""
+        p = generate_melody("C", length=32)
+        intervals = []
+        for i in range(1, len(p.notes)):
+            intervals.append(abs(p.notes[i].scale_degree - p.notes[i - 1].scale_degree))
+        stepwise = sum(1 for iv in intervals if iv <= 2)
+        assert stepwise / len(intervals) >= 0.5, "too many leaps"
+
+    def test_different_keys_accepted(self):
+        for k in ["C", "D", "E", "F", "G", "A", "B"]:
+            p = generate_melody(k)
+            assert isinstance(p, Phrase)
+            assert len(p.notes) == 8
+
+    def test_same_variation_seed_is_reproducible(self):
+        first = generate_melody(
+            "C",
+            length=8,
+            contour="arch",
+            family="ember",
+            cadence_state="wake_ramp",
+            variation_seed=17,
+        )
+        second = generate_melody(
+            "C",
+            length=8,
+            contour="arch",
+            family="ember",
+            cadence_state="wake_ramp",
+            variation_seed=17,
+        )
+
+        assert [(n.scale_degree, n.duration_beats, n.accent) for n in first.notes] == [
+            (n.scale_degree, n.duration_beats, n.accent) for n in second.notes
+        ]
+
+    def test_variation_seed_changes_melodic_material(self):
+        first = generate_melody(
+            "C",
+            length=8,
+            contour="arch",
+            family="ember",
+            cadence_state="wake_ramp",
+            variation_seed=17,
+        )
+        second = generate_melody(
+            "C",
+            length=8,
+            contour="arch",
+            family="ember",
+            cadence_state="wake_ramp",
+            variation_seed=18,
+        )
+
+        assert [(n.scale_degree, n.duration_beats) for n in first.notes] != [
+            (n.scale_degree, n.duration_beats) for n in second.notes
+        ]
+
+    def test_sleep_cadence_prefers_smaller_leaps_than_away_practice(self):
+        sleep = generate_melody(
+            "C",
+            length=12,
+            contour="descent",
+            family="nocturne",
+            cadence_state="sleep",
+            variation_seed=31,
+        )
+        practice = generate_melody(
+
+exec
+/bin/zsh -lc 'rg "class Phrase|is_cadential" src my-claw/tools tests/test_generative_scores.py tests/test_counterpoint_pipeline.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+src/cypherclaw/render/rules/phrase_arch.py:class PhraseArchRule:
+my-claw/tools/senseweave/score_tree.py:class PhraseNode:
+my-claw/tools/senseweave/generative_scores.py:class Phrase:
+my-claw/tools/senseweave/form_grammar.py:class PhraseFamilySlot:
+my-claw/tools/senseweave/render/diff.py:class PhraseDelta:
+
+exec
+/bin/zsh -lc "sed -n '1,140p' my-claw/tools/senseweave/score_tree.py" in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc "sed -n '1,120p' my-claw/tools/senseweave/generative_scores.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Canonical score-tree data model for CypherClaw composition."""
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass, field
+import json
+from typing import Any, Mapping
+
+from .form_grammar import FormPlan, PlannedSection
+from .piece_brief import PieceBrief
+from .piece_commission import PieceCommission
+from .production_course import REQUIRED_CHAPTER_IDS
+
+
+MOTIF_LIFECYCLE_STATES: tuple[str, ...] = (
+    "statement",
+    "variation",
+    "contrast",
+    "recall",
+    "answer",
+    "liquidation",
+    "residue",
+)
+
+
+@dataclass
+class MotifNode:
+    motif_id: str
+    hook_class: str
+    contour: tuple[int, ...]
+    rhythm: tuple[float, ...]
+    anchor_degrees: tuple[int, ...]
+    answer_degrees: tuple[int, ...]
+    text_hook: str
+    timbral_tags: tuple[str, ...] = ()
+    lifecycle_state: str = "statement"
+
+
+@dataclass
+class PhraseNode:
+    phrase_id: str
+    function: str
+    motif_refs: tuple[str, ...]
+    target_duration_s: float
+    transform_ops: tuple[str, ...]
+    phrase_family: str = "seed"
+    seed_phrase_id: str | None = None
+
+
+PRODUCTION_COURSE_KEYS: tuple[str, ...] = REQUIRED_CHAPTER_IDS
+
+
+@dataclass
+class SectionNode:
+    section_id: str
+    scene_name: str
+    function: str
+    target_duration_s: float
+    phrases: list[PhraseNode]
+    harmonic_role: str
+    cadence_type: str
+    groove_state: str
+    return_from: str | None = None
+    transform_strength: str = "none"
+    production_course: dict[str, str] = field(default_factory=dict)
+    harmonic_function: str = "tonic"
+    transition_intent: str = "maintain"
+
+
+@dataclass
+class ScoreTree:
+    piece_id: str
+    title: str
+    commission: PieceCommission
+    brief: PieceBrief
+    form: FormPlan
+    motifs: list[MotifNode]
+    sections: list[SectionNode]
+    harmonic_plan: dict[str, Any]
+    arrangement_plan: dict[str, Any]
+    ending_family: str
+    narrative_map: dict[str, str]
+    metadata: dict[str, str] = field(default_factory=dict)
+    planned_duration_s: float = 0.0
+    primary_hook_text: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), indent=2)
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "ScoreTree":
+        commission_dict = dict(data.get("commission", {}))
+        if "reason_tags" in commission_dict:
+            commission_dict["reason_tags"] = tuple(commission_dict["reason_tags"])
+        commission = PieceCommission(**commission_dict)
+        brief_dict = dict(data.get("brief", {}))
+        if "image_field" in brief_dict:
+            brief_dict["image_field"] = tuple(brief_dict["image_field"])
+        if "section_beats" in brief_dict:
+            brief_dict["section_beats"] = tuple(brief_dict["section_beats"])
+        brief = PieceBrief(**brief_dict)
+        form_dict = dict(data.get("form", {}))
+        sections_form = tuple(PlannedSection(**item) for item in form_dict.get("sections", ()))
+        form = FormPlan(
+            form_family=str(form_dict.get("form_family", "default")),
+            form_class=str(form_dict.get("form_class", commission.form_class)),
+            composition_mode=str(form_dict.get("composition_mode", commission.composition_mode)),
+            sections=sections_form,
+            ending_family=str(form_dict.get("ending_family", commission.ending_family)),
+        )
+        motifs = [
+            MotifNode(
+                motif_id=str(item.get("motif_id", "")),
+                hook_class=str(item.get("hook_class", "")),
+                contour=tuple(item.get("contour", ())),
+                rhythm=tuple(item.get("rhythm", ())),
+                anchor_degrees=tuple(item.get("anchor_degrees", ())),
+                answer_degrees=tuple(item.get("answer_degrees", ())),
+                text_hook=str(item.get("text_hook", "")),
+                timbral_tags=tuple(item.get("timbral_tags", ())),
+                lifecycle_state=str(item.get("lifecycle_state", "statement")),
+            )
+            for item in data.get("motifs", ())
+        ]
+        sections = [
+            SectionNode(
+                section_id=str(item.get("section_id", "")),
+                scene_name=str(item.get("scene_name", "")),
+                function=str(item.get("function", "")),
+                target_duration_s=float(item.get("target_duration_s", 0.0) or 0.0),
+                phrases=[
+                    PhraseNode(
+                        phrase_id=str(phrase.get("phrase_id", "")),
+                        function=str(phrase.get("function", "")),
+                        motif_refs=tuple(phrase.get("motif_refs", ())),
+                        target_duration_s=float(phrase.get("target_duration_s", 0.0) or 0.0),
+                        transform_ops=tuple(phrase.get("transform_ops", ())),
+                        phrase_family=str(phrase.get("phrase_family", "seed")),
+
+ succeeded in 0ms:
+"""Generative Scores -- musical score generation from narrative events and mood.
+
+Bridges the narrative engine (B&P stories, arc tracking) and sensor fusion
+(mood, presence, weather) to the music composer. Generates sequences of notes
+as Score objects that the composer converts to frequencies and plays.
+
+Stdlib only -- no numpy.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import math
+import random
+import time
+from dataclasses import dataclass, field
+from typing import Mapping, Sequence
+
+from .harmonic_planner import scale_semitones_for_key
+from .hook_engine import build_hook_profile
+
+# ---------------------------------------------------------------------------
+# Scale / frequency constants
+# ---------------------------------------------------------------------------
+
+_NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+_FLAT_EQUIVALENTS = {
+    "Bb": "A#",
+    "Eb": "D#",
+    "Ab": "G#",
+    "Db": "C#",
+    "Gb": "F#",
+}
+
+_MAJOR_SCALE_SEMITONES = [0, 2, 4, 5, 7, 9, 11]
+
+# A4 = 440 Hz reference
+_A4_HZ = 440.0
+
+# Major keys: root name -> root frequency in octave 4
+_KEY_ROOTS: dict[str, float] = {}
+for _i, _name in enumerate(_NOTE_NAMES):
+    # MIDI note number for this note in octave 4: C4=60, A4=69
+    _midi = 60 + _i
+    _KEY_ROOTS[_name] = _A4_HZ * (2.0 ** ((_midi - 69) / 12.0))
+for _flat, _sharp in _FLAT_EQUIVALENTS.items():
+    _KEY_ROOTS[_flat] = _KEY_ROOTS[_sharp]
+
+
+def _clamp(v: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, v))
+
+
+def _scale_degree_to_freq(key: str, degree: int, octave_shift: int = 0) -> float:
+    """Convert a 1-based scale degree in a given key to frequency in Hz.
+
+    Degree 1 = root in octave 4. Modal keys are supported in the form
+    ``"D:dorian"`` or ``"C:lydian"`` alongside legacy major/minor spellings.
+    """
+    is_minor = key.endswith("m") and ":" not in key
+    root_name = key.rstrip("m") if is_minor else key.split(":", 1)[0]
+    if root_name not in _KEY_ROOTS:
+        root_name = "C"
+
+    root_freq = _KEY_ROOTS[root_name]
+    semitones = scale_semitones_for_key(key)
+
+    deg_zero = degree - 1  # 0-based
+    octave_offset = deg_zero // len(semitones)
+    scale_idx = deg_zero % len(semitones)
+
+    semi = semitones[scale_idx] + 12 * octave_offset + 12 * octave_shift
+    return root_freq * (2.0 ** (semi / 12.0))
+
+
+# ---------------------------------------------------------------------------
+# Data classes
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class Note:
+    """A single note in a phrase."""
+    scale_degree: int       # 1-8 within the key
+    duration_beats: float   # in beats
+    accent: bool            # accented note
+
+
+@dataclass
+class Phrase:
+    """A sequence of notes with performance metadata."""
+    notes: list[Note]
+    voice: str              # which synth (e.g. "pluck", "pad", "gong")
+    dynamic: str            # "pp", "p", "mp", "mf", "f", "ff"
+    role: str               # "melody", "bass", "counter", "color"
+    metadata: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class Score:
+    """A complete musical score: multiple phrases with global parameters."""
+    phrases: list[Phrase]
+    key: str                # e.g. "C", "Am"
+    tempo_bpm: float
+    mood: str               # descriptive mood string
+    created_at: float       # unix timestamp
+    metadata: dict[str, str] = field(default_factory=dict)
+
+
+# ---------------------------------------------------------------------------
+# Contour generators (return target degrees for each position)
+# ---------------------------------------------------------------------------
+
+
+def _contour_arch(length: int) -> list[float]:
+    """Arch: starts low, rises to midpoint, falls back."""
+    targets = []
+    mid = (length - 1) / 2.0
+    for i in range(length):
+        # Normalized position on arch: 0 at ends, 1 at peak
+
+codex
+The closest render code mutates `Event` instances with normalized phrase position and tempo multiplier. I’m going to add a small `phrase` context field to `Event`, a new `FinalRitRule`, and tests that use a minimal phrase stub with `is_cadential`.
+apply patch
+patch: completed
+/Users/anthony/Programming/PromptClaw/src/cypherclaw/render/events.py
+/Users/anthony/Programming/PromptClaw/src/cypherclaw/render/rules/final_rit.py
+/Users/anthony/Programming/PromptClaw/tests/test_final_rit.py
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+codex
+The implementation and regression tests are in place. I’m running the focused final-rit test first, then I’ll run the full validation commands the task requires before committing.
+exec
+/bin/zsh -lc 'pytest tests/test_final_rit.py -q' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'ruff check src/cypherclaw/render/events.py src/cypherclaw/render/rules/final_rit.py tests/test_final_rit.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 392ms:
+All checks passed!
+
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+ succeeded in 4656ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+...                                                                      [100%]
+3 passed in 0.33s
+
+codex
+Focused tests and targeted Ruff pass. I’m moving to the required validation sequence now, starting with installing the dev extras in editable mode.
+exec
+/bin/zsh -lc "pip install -e '.[dev]'" in /Users/anthony/Programming/PromptClaw
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+ succeeded in 21731ms:
+Obtaining file:///Users/anthony/Programming/PromptClaw
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: mypy>=1.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.19.1)
+Requirement already satisfied: pytest>=8.0 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (8.3.5)
+Requirement already satisfied: ruff>=0.9 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.9.2)
+Requirement already satisfied: typing_extensions>=4.6.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (4.15.0)
+Requirement already satisfied: mypy_extensions>=1.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: pathspec>=0.9.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.10.3)
+Requirement already satisfied: librt>=0.6.2 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.8.1)
+Requirement already satisfied: iniconfig in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.1.1)
+Requirement already satisfied: packaging in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (23.2)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.5.0)
+Building wheels for collected packages: promptclaw
+  Building editable for promptclaw (pyproject.toml): started
+  Building editable for promptclaw (pyproject.toml): finished with status 'done'
+  Created wheel for promptclaw: filename=promptclaw-3.0.0-0.editable-py3-none-any.whl size=5869 sha256=663102cfa8579028705491f7b22c5c6b27d74fd9008afaf3c0d60b6b1406ab20
+  Stored in directory: /private/var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/pip-ephem-wheel-cache-4nynkxa8/wheels/ab/f4/89/0cacd29874f6252d7c6bef0fca4c14839da91ab6a8d842965e
+Successfully built promptclaw
+Installing collected packages: promptclaw
+  Attempting uninstall: promptclaw
+    Found existing installation: promptclaw 3.0.0
+    Uninstalling promptclaw-3.0.0:
+      Successfully uninstalled promptclaw-3.0.0
+Successfully installed promptclaw-3.0.0
+
+codex
+Editable dev install completed. I’m running the full test suite with `-x --tb=short`; if it stops on an unrelated pre-existing failure, I’ll report it and keep my task changes isolated.
+exec
+/bin/zsh -lc 'pytest tests/ -x --tb=short' in /Users/anthony/Programming/PromptClaw
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+codex
+The full suite is past the new final-rit tests and still running cleanly. I’m letting it finish before moving on to full Ruff and mypy.
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+ succeeded in 24448ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 2721 items
+
+tests/test_accompaniment.py ...........................                  [  0%]
+tests/test_acoustic_ecology.py .................................         [  2%]
+tests/test_agent_runtime.py ..                                           [  2%]
+tests/test_agent_selector_defaults.py .                                  [  2%]
+tests/test_agent_selector_quota.py ........                              [  2%]
+tests/test_agogic_rule.py ...                                            [  2%]
+tests/test_antenna_to_skin.py .................................          [  3%]
+tests/test_archive_daemon_runtime.py .                                   [  3%]
+tests/test_archive_paths.py .....                                        [  4%]
+tests/test_arrangement_engine.py ....................................... [  5%]
+                                                                         [  5%]
+tests/test_art_engine_runtime.py ....                                    [  5%]
+tests/test_artistic_identity.py .                                        [  5%]
+tests/test_audio_analysis.py .....................................       [  7%]
+tests/test_bootstrap.py ..                                               [  7%]
+tests/test_breath_to_filter.py .............................             [  8%]
+tests/test_cadence_engine.py .......                                     [  8%]
+tests/test_capstone_engine.py ...                                        [  8%]
+tests/test_capture_alias.py ..                                           [  8%]
+tests/test_cast_planner.py ...                                           [  8%]
+tests/test_check_status_runtime.py ..                                    [  8%]
+tests/test_coherence_engine.py ..............                            [  9%]
+tests/test_coherence_integration.py ............                         [  9%]
+tests/test_collaborative_canvas.py ......................                [ 10%]
+tests/test_commission_context.py ..                                      [ 10%]
+tests/test_config.py ..                                                  [ 10%]
+tests/test_constitution.py .......................                       [ 11%]
+tests/test_contact_listener_runtime.py ....                              [ 11%]
+tests/test_contact_mic_calibration_runtime.py ....                       [ 11%]
+tests/test_context_pulse_runtime.py .                                    [ 11%]
+tests/test_continuous_learner.py ......................                  [ 12%]
+tests/test_counterpoint_pipeline.py ...........................          [ 13%]
+tests/test_counterpoint_rules.py ....................................... [ 15%]
+......................                                                   [ 16%]
+tests/test_course_critique.py ...............................            [ 17%]
+tests/test_cypherclaw_audio_runtime.py .....                             [ 17%]
+tests/test_cypherclaw_av_stack_service.py ...                            [ 17%]
+tests/test_cypherclaw_boot_runtime.py ....                               [ 17%]
+tests/test_cypherclaw_runtime.py .....                                   [ 17%]
+tests/test_daemon_concurrency_compat.py ...                              [ 17%]
+tests/test_daemon_fallback.py ...............                            [ 18%]
+tests/test_daemon_scheduler.py ..                                        [ 18%]
+tests/test_daemon_status_ollama.py .......                               [ 18%]
+tests/test_dashboard_generator.py ...................................... [ 20%]
+.......                                                                  [ 20%]
+tests/test_dashboard_generator_runtime.py ...                            [ 20%]
+tests/test_decision_store.py .........                                   [ 20%]
+tests/test_doctor.py ...                                                 [ 20%]
+tests/test_dsp_scene_lab.py ................                             [ 21%]
+tests/test_duration_contrast_rule.py .......                             [ 21%]
+tests/test_ear_engine.py ............                                    [ 22%]
+tests/test_emsd_curriculum.py ...............                            [ 22%]
+tests/test_emsd_performance.py ....                                      [ 22%]
+tests/test_emsd_runtime.py ...                                           [ 23%]
+tests/test_event_store.py .......                                        [ 23%]
+tests/test_executable_curriculum.py ...                                  [ 23%]
+tests/test_federation_discovery.py ........                              [ 23%]
+tests/test_final_rit.py ...                                              [ 23%]
+tests/test_first_boot.py .................................               [ 25%]
+tests/test_form_grammar.py ..                                            [ 25%]
+tests/test_fractal_form.py ...............                               [ 25%]
+tests/test_functional_harmony.py ...............................         [ 26%]
+tests/test_gallery.py ..........................                         [ 27%]
+tests/test_gallery_x11_runtime.py ...                                    [ 27%]
+tests/test_garden_watcher.py ........................................... [ 29%]
+.                                                                        [ 29%]
+tests/test_gemini_image_runtime.py ...                                   [ 29%]
+tests/test_generative_scores.py ........................................ [ 31%]
+.............................................                            [ 32%]
+tests/test_genre_literacy.py ............                                [ 33%]
+tests/test_glyphweave_cli.py ....                                        [ 33%]
+tests/test_glyphweave_runtime.py ....                                    [ 33%]
+tests/test_governor_integration.py ..............                        [ 33%]
+tests/test_graduation.py ......................                          [ 34%]
+tests/test_groove_engine.py ............................................ [ 36%]
+...............                                                          [ 36%]
+tests/test_harmonic_planner.py .........                                 [ 37%]
+tests/test_healer_runtime.py .....                                       [ 37%]
+tests/test_healthcheck_script_runtime.py ...                             [ 37%]
+tests/test_hook_engine.py .................                              [ 38%]
+tests/test_inner_life.py ...................................             [ 39%]
+tests/test_instrument_patches.py ........                                [ 39%]
+tests/test_keyboard_chat.py ..............................               [ 40%]
+tests/test_lifeimprover_bridge_runtime.py .....                          [ 41%]
+tests/test_live_buffer.py ...                                            [ 41%]
+tests/test_local_command_runtime.py ....                                 [ 41%]
+tests/test_macbook_codex_monitor.py ....                                 [ 41%]
+tests/test_maintenance_mode.py .....                                     [ 41%]
+tests/test_master_bus.py ...                                             [ 41%]
+tests/test_melodic_mind.py ............................................. [ 43%]
+..........................................................               [ 45%]
+tests/test_metric_accent_rule.py ....                                    [ 45%]
+tests/test_midi_keyboard_listener_runtime.py ...                         [ 45%]
+tests/test_midi_state.py .......................................         [ 47%]
+tests/test_mix_engine.py ..............................                  [ 48%]
+tests/test_mix_verify.py ............................................... [ 50%]
+                                                                         [ 50%]
+tests/test_mood_mirror.py .....................................          [ 51%]
+tests/test_motif_lifecycle.py ............................               [ 52%]
+tests/test_music_theory.py ............................................. [ 54%]
+........................................                                 [ 55%]
+tests/test_music_tracker.py ..........................................   [ 57%]
+tests/test_music_tracker_runtime.py ................                     [ 57%]
+tests/test_musical_integration_runtime.py .                              [ 57%]
+tests/test_musical_marathon_integration.py ..                            [ 57%]
+tests/test_observatory_authority.py .....                                [ 58%]
+tests/test_observatory_runtime.py ..                                     [ 58%]
+tests/test_observatory_verification.py ..                                [ 58%]
+tests/test_observer_vision_runtime.py ..............                     [ 58%]
+tests/test_ollama_daemon_health.py ...                                   [ 58%]
+tests/test_ollama_health.py ......                                       [ 59%]
+tests/test_ollama_invoke.py ...                                          [ 59%]
+tests/test_ollama_routing.py ...................                         [ 59%]
+tests/test_ollama_run_agent.py .......                                   [ 60%]
+tests/test_operator_diagnostics.py ..........                            [ 60%]
+tests/test_ops_helpers_runtime.py ....                                   [ 60%]
+tests/test_orchestral_form.py ...............................            [ 61%]
+tests/test_orchestrator.py ...                                           [ 61%]
+tests/test_pareidolia_art_engine.py .......                              [ 62%]
+tests/test_pareidolia_characters.py .................................    [ 63%]
+tests/test_pareidolia_color.py ......................................... [ 64%]
+........................................................................ [ 67%]
+....                                                                     [ 67%]
+tests/test_pedals_to_key.py ............................                 [ 68%]
+tests/test_phrase_arch.py ....                                           [ 68%]
+tests/test_piece_brief.py ........                                       [ 69%]
+tests/test_piece_commission.py ....                                      [ 69%]
+tests/test_piece_queue.py ..                                             [ 69%]
+tests/test_porch_eye.py ..................................               [ 70%]
+tests/test_portfolio_report.py .........................                 [ 71%]
+tests/test_practice_curriculum.py ..                                     [ 71%]
+tests/test_preflight.py ......                                           [ 71%]
+tests/test_presence_engine.py ............                               [ 72%]
+tests/test_procedural_arc.py .....                                       [ 72%]
+tests/test_production_course_integration.py ..........                   [ 72%]
+tests/test_production_course_knowledge_base.py ...                       [ 72%]
+tests/test_project_scanner_runtime.py ....                               [ 73%]
+tests/test_prosody_engine.py ........                                    [ 73%]
+tests/test_quota_monitor.py .....................                        [ 74%]
+tests/test_reharmonizer.py ...                                           [ 74%]
+tests/test_render_ablation.py ....                                       [ 74%]
+tests/test_render_debugger.py ..                                         [ 74%]
+tests/test_render_diff.py ................                               [ 75%]
+tests/test_render_pass.py ..................                             [ 75%]
+tests/test_repertoire_memory.py .................                        [ 76%]
+tests/test_repertoire_memory_score_tree.py .                             [ 76%]
+tests/test_research_runtime.py .....                                     [ 76%]
+tests/test_resilience_runtime_scripts.py ..............                  [ 77%]
+tests/test_resource_governor.py ..........................               [ 77%]
+tests/test_reviewer_runtime.py ...                                       [ 78%]
+tests/test_room_listener_runtime.py ..................                   [ 78%]
+tests/test_room_presence_daemon.py ......                                [ 78%]
+tests/test_router.py .....                                               [ 79%]
+tests/test_row_automation.py ...........                                 [ 79%]
+tests/test_runtime_checkpoint.py ...                                     [ 79%]
+tests/test_runtime_paths.py ..                                           [ 79%]
+tests/test_sample_dsp_activity.py ...........                            [ 80%]
+tests/test_sample_event_renderer.py .....                                [ 80%]
+tests/test_sample_lab.py ....                                            [ 80%]
+tests/test_sample_playback_engine.py .......                             [ 80%]
+tests/test_sample_status.py ....                                         [ 80%]
+tests/test_scene_composer.py ......................................      [ 82%]
+tests/test_score_tree.py .                                               [ 82%]
+tests/test_score_tree_composer.py ....................                   [ 83%]
+tests/test_score_tree_pipeline.py .                                      [ 83%]
+tests/test_self_critique.py .........................                    [ 84%]
+tests/test_self_listener_tracker_runtime.py ...............              [ 84%]
+tests/test_senseweave_rollout_controls.py .....                          [ 84%]
+tests/test_senseweave_voice.py ..........................                [ 85%]
+tests/test_sensor_fusion.py ...............................              [ 86%]
+tests/test_sensory_journal.py ............................               [ 87%]
+tests/test_server_health.py ...                                          [ 87%]
+tests/test_sound_palette_lab.py ..                                       [ 88%]
+tests/test_startle.py ................................                   [ 89%]
+tests/test_supercollider_recipes.py ...                                  [ 89%]
+tests/test_synthdef_registry.py ...................................      [ 90%]
+tests/test_synthesis_architecture_registry.py .......................... [ 91%]
+.......                                                                  [ 91%]
+tests/test_tamagotchi_runtime.py ......                                  [ 92%]
+tests/test_telegram_runtime.py ......                                    [ 92%]
+tests/test_theramini_duet.py ........................................... [ 93%]
+.........                                                                [ 94%]
+tests/test_theramini_listener_runtime.py .........                       [ 94%]
+tests/test_tracker_cadence.py ............                               [ 94%]
+tests/test_tracker_compiler.py ................                          [ 95%]
+tests/test_tracker_variation.py .....                                    [ 95%]
+tests/test_trust.py ................                                     [ 96%]
+tests/test_voice_aliases.py .......                                      [ 96%]
+tests/test_voice_interpretation_rules.py ............................... [ 97%]
+..                                                                       [ 97%]
+tests/test_voice_manager_v2.py ......................................... [ 99%]
+............                                                             [ 99%]
+tests/test_voice_shaping.py ....                                         [ 99%]
+tests/test_wizard.py ...                                                 [100%]
+
+=============================== warnings summary ===============================
+../../../../opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25
+  /opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    from pkg_resources import resource_stream, resource_exists
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google.cloud')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(parent)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('ruamel')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('zope')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+  /Users/anthony/Programming/PromptClaw/tests/test_gallery.py:108: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(result.getdata()), list(canvas.getdata()))
+
+tests/test_pareidolia_characters.py: 189 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:85: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pixels = list(img.getdata())
+
+tests/test_pareidolia_characters.py: 21 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:254: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    rendered[name] = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:310: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:314: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:316: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:339: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_low = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:343: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_high = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:326: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:352: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:331: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:333: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:361: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:376: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:366: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:368: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_add_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:429: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:451: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_with_palette
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:443: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:434: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:436: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:481: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_curious_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:554: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_happy_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:542: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_neutral_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:536: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sad_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:548: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sleeping_eyes_no_highlights
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:560: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:571: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_bush
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:621: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:615: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:609: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:585: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_without_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:591: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:597: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:603: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:642: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:661: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:674: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    basalt_pixels = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:678: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pebble_pixels = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:870: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+===================== 2721 passed, 278 warnings in 20.75s ======================
+
+codex
+All 2,721 tests passed. I’m running the remaining requested static checks in parallel now: full Ruff over `src/ tests/` and mypy over `src/`.
+exec
+/bin/zsh -lc 'ruff check src/ tests/' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+All checks passed!
+
+exec
+/bin/zsh -lc 'mypy src/' in /Users/anthony/Programming/PromptClaw
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+ succeeded in 702ms:
+Success: no issues found in 5 source files
+
+codex
+Validation is clean. I’m reviewing the exact diff and staging only the files introduced for this task so the pre-existing workspace changes stay untouched.
+exec
+/bin/zsh -lc 'git diff -- src/cypherclaw/render/events.py src/cypherclaw/render/rules/final_rit.py tests/test_final_rit.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f..9ca566f 100644
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@ class Event:
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/logs/Lead_T-022_20260416T054258Z_1776373994.log
+ M sdp/logs/Verify_T-022_20260416T054258Z_1776374519.log
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M src/cypherclaw/render/events.py
+?? sdp/logs/Lead_T-001_20260416T181925Za_1776377101.log
+?? sdp/logs/Lead_T-001_20260416T181925Za_1776377701.log
+?? sdp/logs/Lead_T-001_20260416T181925Za_1776378511.log
+?? sdp/logs/Lead_T-001_20260416T181925Zb_1776379250.log
+?? sdp/logs/Lead_T-001_20260416T181925Zc_1776379719.log
+?? sdp/logs/Lead_T-002_20260416T181925Z_1776380304.log
+?? sdp/logs/Lead_T-003_20260416T181925Z_1776380719.log
+?? sdp/logs/Lead_T-004_20260416T181925Z_1776381418.log
+?? sdp/logs/Lead_T-005_20260416T181925Z_1776381768.log
+?? sdp/logs/Lead_T-006_20260416T181925Z_1776382290.log
+?? sdp/logs/Lead_T-007_20260416T181925Z_1776382620.log
+?? sdp/logs/Lead_T-023_20260416T054258Z_1776374627.log
+?? sdp/logs/Lead_T-024_20260416T054258Z_1776375459.log
+?? sdp/logs/Lead_T-025_20260416T054258Z_1776376215.log
+?? sdp/logs/Verify_T-001_20260416T181925Za_1776379067.log
+?? sdp/logs/Verify_T-001_20260416T181925Zb_1776379600.log
+?? sdp/logs/Verify_T-001_20260416T181925Zc_1776380200.log
+?? sdp/logs/Verify_T-002_20260416T181925Z_1776380625.log
+?? sdp/logs/Verify_T-003_20260416T181925Z_1776381265.log
+?? sdp/logs/Verify_T-004_20260416T181925Z_1776381593.log
+?? sdp/logs/Verify_T-005_20260416T181925Z_1776382151.log
+?? sdp/logs/Verify_T-006_20260416T181925Z_1776382525.log
+?? sdp/logs/Verify_T-023_20260416T054258Z_1776375343.log
+?? sdp/logs/Verify_T-024_20260416T054258Z_1776376060.log
+?? sdp/logs/Verify_T-025_20260416T054258Z_1776376973.log
+?? sdp/logs/claude_1776378476.log
+?? src/cypherclaw/render/rules/final_rit.py
+?? test_proto.py
+?? tests/test_final_rit.py
+
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+exec
+/bin/zsh -lc "sed -n '1,220p' src/cypherclaw/render/rules/final_rit.py" in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc "sed -n '1,220p' tests/test_final_rit.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+import math
+from dataclasses import dataclass
+
+from cypherclaw.render.events import Event
+
+
+@dataclass
+class FinalRitRule:
+    alpha: float = 0.35
+    onset_position: float = 0.75
+
+    def apply(self, event: Event) -> None:
+        phrase = event.phrase
+        if getattr(phrase, "is_cadential", False) is not True:
+            return
+
+        x_start = self.onset_position
+        x_end = 1.0
+        x = event.normalized_phrase_position
+        if x < x_start or x_start >= x_end:
+            return
+
+        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
+        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+
+ succeeded in 0ms:
+import math
+from dataclasses import dataclass
+
+from cypherclaw.render.events import Event
+from cypherclaw.render.rules.final_rit import FinalRitRule
+
+
+@dataclass(frozen=True)
+class Phrase:
+    is_cadential: bool
+
+
+def test_final_rit_curve_shape() -> None:
+    rule = FinalRitRule()
+    phrase = Phrase(is_cadential=True)
+    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
+    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
+
+    rule.apply(mid_event)
+    rule.apply(end_event)
+
+    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
+    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
+    assert end_event.tempo_mult < mid_event.tempo_mult
+
+
+def test_final_rit_default_onset_position() -> None:
+    rule = FinalRitRule()
+    phrase = Phrase(is_cadential=True)
+    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
+    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
+
+    rule.apply(before_onset)
+    rule.apply(at_onset)
+
+    assert before_onset.tempo_mult == 1.25
+    assert at_onset.tempo_mult == 1.25
+
+
+def test_final_rit_ignores_non_cadential_phrase() -> None:
+    rule = FinalRitRule()
+    event = Event(
+        normalized_phrase_position=1.0,
+        tempo_mult=1.25,
+        phrase=Phrase(is_cadential=False),
+    )
+
+    rule.apply(event)
+
+    assert event.tempo_mult == 1.25
+
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+exec
+/bin/zsh -lc "sed -n '1,80p' my-claw/tools/senseweave/render/pass_.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Ordered render-pass framework for the SenseWeave render layer.
+
+Rule execution order is fixed and canonical:
+R1 → R2 → R3 → R4 → R5 → R6 → R7 → R8 → R9 → R10 → R11 → R12
+
+Rules not in RULE_ORDER are appended after R12 in registration order.
+"""
+from __future__ import annotations
+
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
+from typing import Any, Protocol, runtime_checkable
+
+RULE_ORDER: tuple[str, ...] = (
+    "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "R11", "R12",
+)
+
+_RULE_ORDER_INDEX: dict[str, int] = {rid: i for i, rid in enumerate(RULE_ORDER)}
+
+
+@runtime_checkable
+class RenderRule(Protocol):
+    @property
+    def rule_id(self) -> str: ...
+
+    def apply(
+        self,
+        score: Any,
+        *,
+        k: float,
+        seeds: Mapping[str, int] | None,
+        roles: frozenset[str] | None,
+    ) -> Any: ...
+
+
+@dataclass(frozen=True)
+class PerformedPart:
+    score: Any
+    applied_rules: tuple[str, ...]
+    quantities: dict[str, float]
+    metadata: dict[str, str] = field(default_factory=dict)
+
+
+def _rule_id(rule: object) -> str:
+    for attr in ("rule_id", "id"):
+        value = getattr(rule, attr, None)
+        if isinstance(value, str) and value:
+            return value
+    raise TypeError("render rule must define a non-empty string rule_id or id")
+
+
+class RenderPass:
+    """Ordered rule stack with per-rule enable flags, quantities, and role gating."""
+
+    __slots__ = ("_rules", "_enabled", "_quantities", "_role_gates")
+
+    def __init__(
+        self,
+        rules: Sequence[Any],
+        enabled_flags: Mapping[str, bool] | None = None,
+        quantities: Mapping[str, float] | None = None,
+        *,
+        role_gates: Mapping[str, frozenset[str]] | None = None,
+    ) -> None:
+        enabled = dict(enabled_flags or {})
+        quants = dict(quantities or {})
+        gates = dict(role_gates or {})
+
+        by_id: dict[str, Any] = {}
+        insertion: list[tuple[str, Any]] = []
+        for rule in rules:
+            rid = _rule_id(rule)
+            if rid in by_id:
+                raise ValueError(f"duplicate rule id: {rid}")
+            by_id[rid] = rule
+            insertion.append((rid, rule))
+
+        ordered: list[tuple[str, Any]] = []
+        canonical = set(RULE_ORDER)
+        for slot in RULE_ORDER:
+
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+exec
+/bin/zsh -lc 'git add src/cypherclaw/render/events.py src/cypherclaw/render/rules/final_rit.py tests/test_final_rit.py && git diff --cached --stat' in /Users/anthony/Programming/PromptClaw
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+ succeeded in 194ms:
+ src/cypherclaw/render/events.py          |  1 +
+ src/cypherclaw/render/rules/final_rit.py | 24 +++++++++++++++
+ tests/test_final_rit.py                  | 50 ++++++++++++++++++++++++++++++++
+ 3 files changed, 75 insertions(+)
+
+exec
+/bin/zsh -lc 'git diff --cached -- src/cypherclaw/render/events.py src/cypherclaw/render/rules/final_rit.py tests/test_final_rit.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f..9ca566f 100644
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@ class Event:
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000..f3b4fe5
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000..39cdbd6
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+codex
+The staged diff contains only the event phrase context, the new final-rit rule, and its tests. I’m committing with the requested task-tagged message now.
+exec
+/bin/zsh -lc 'git commit -m "feat(render): add cadential final ritardando [T-007@20260416T181925Z]"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+[feat/graceful-degradation 2992762] feat(render): add cadential final ritardando [T-007@20260416T181925Z]
+ 3 files changed, 75 insertions(+)
+ create mode 100644 src/cypherclaw/render/rules/final_rit.py
+ create mode 100644 tests/test_final_rit.py
+
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/logs/Lead_T-022_20260416T054258Z_1776373994.log
+ M sdp/logs/Verify_T-022_20260416T054258Z_1776374519.log
+ M sdp/notifications.log
+ M sdp/run-log.md
+?? sdp/logs/Lead_T-001_20260416T181925Za_1776377101.log
+?? sdp/logs/Lead_T-001_20260416T181925Za_1776377701.log
+?? sdp/logs/Lead_T-001_20260416T181925Za_1776378511.log
+?? sdp/logs/Lead_T-001_20260416T181925Zb_1776379250.log
+?? sdp/logs/Lead_T-001_20260416T181925Zc_1776379719.log
+?? sdp/logs/Lead_T-002_20260416T181925Z_1776380304.log
+?? sdp/logs/Lead_T-003_20260416T181925Z_1776380719.log
+?? sdp/logs/Lead_T-004_20260416T181925Z_1776381418.log
+?? sdp/logs/Lead_T-005_20260416T181925Z_1776381768.log
+?? sdp/logs/Lead_T-006_20260416T181925Z_1776382290.log
+?? sdp/logs/Lead_T-007_20260416T181925Z_1776382620.log
+?? sdp/logs/Lead_T-023_20260416T054258Z_1776374627.log
+?? sdp/logs/Lead_T-024_20260416T054258Z_1776375459.log
+?? sdp/logs/Lead_T-025_20260416T054258Z_1776376215.log
+?? sdp/logs/Verify_T-001_20260416T181925Za_1776379067.log
+?? sdp/logs/Verify_T-001_20260416T181925Zb_1776379600.log
+?? sdp/logs/Verify_T-001_20260416T181925Zc_1776380200.log
+?? sdp/logs/Verify_T-002_20260416T181925Z_1776380625.log
+?? sdp/logs/Verify_T-003_20260416T181925Z_1776381265.log
+?? sdp/logs/Verify_T-004_20260416T181925Z_1776381593.log
+?? sdp/logs/Verify_T-005_20260416T181925Z_1776382151.log
+?? sdp/logs/Verify_T-006_20260416T181925Z_1776382525.log
+?? sdp/logs/Verify_T-023_20260416T054258Z_1776375343.log
+?? sdp/logs/Verify_T-024_20260416T054258Z_1776376060.log
+?? sdp/logs/Verify_T-025_20260416T054258Z_1776376973.log
+?? sdp/logs/claude_1776378476.log
+?? test_proto.py
+
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+codex
+Implemented and committed `feat(render): add cadential final ritardando [T-007@20260416T181925Z]` as `2992762`.
+
+Changed:
+- Added [final_rit.py](/Users/anthony/Programming/PromptClaw/src/cypherclaw/render/rules/final_rit.py) with `FinalRitRule`, default `alpha=0.35`, default onset `0.75`, and the Friberg-Sundberg square-root tempo multiplier for cadential phrase events only.
+- Added phrase context to [events.py](/Users/anthony/Programming/PromptClaw/src/cypherclaw/render/events.py).
+- Added regression coverage in [test_final_rit.py](/Users/anthony/Programming/PromptClaw/tests/test_final_rit.py) for curve shape, onset behavior, and non-cadential no-op behavior.
+
+Validation passed:
+- `pip install -e '.[dev]'`
+- `pytest tests/ -x --tb=short` -> `2721 passed`
+- `ruff check src/ tests/`
+- `mypy src/`
+
+The remaining dirty workspace entries are the pre-existing unrelated `sdp/`, `progress.md`, and `test_proto.py` changes; I left them untouched.
+diff --git a/src/cypherclaw/render/events.py b/src/cypherclaw/render/events.py
+index f19ed8f5491ae68cf32868577fe9162c7c6da3b0..9ca566f82f847a6274f0bd9dd5419fc464671547
+--- a/src/cypherclaw/render/events.py
++++ b/src/cypherclaw/render/events.py
+@@ -11,3 +11,4 @@
+     section_envelope: Optional[SectionEnvelope] = None
+     tempo_mult: float = 1.0
+     amp_mult: float = 1.0
++    phrase: object | None = None
+diff --git a/src/cypherclaw/render/rules/final_rit.py b/src/cypherclaw/render/rules/final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f3b4fe5a6d331b597c36ca1311a3380d82b9d4ac
+--- /dev/null
++++ b/src/cypherclaw/render/rules/final_rit.py
+@@ -0,0 +1,24 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++
++
++@dataclass
++class FinalRitRule:
++    alpha: float = 0.35
++    onset_position: float = 0.75
++
++    def apply(self, event: Event) -> None:
++        phrase = event.phrase
++        if getattr(phrase, "is_cadential", False) is not True:
++            return
++
++        x_start = self.onset_position
++        x_end = 1.0
++        x = event.normalized_phrase_position
++        if x < x_start or x_start >= x_end:
++            return
++
++        progress = min(1.0, max(0.0, (x - x_start) / (x_end - x_start)))
++        event.tempo_mult *= math.sqrt(max(0.0, 1.0 - self.alpha * progress))
+diff --git a/tests/test_final_rit.py b/tests/test_final_rit.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..39cdbd63a13707fde9140f7427d2c198bd220729
+--- /dev/null
++++ b/tests/test_final_rit.py
+@@ -0,0 +1,50 @@
++import math
++from dataclasses import dataclass
++
++from cypherclaw.render.events import Event
++from cypherclaw.render.rules.final_rit import FinalRitRule
++
++
++@dataclass(frozen=True)
++class Phrase:
++    is_cadential: bool
++
++
++def test_final_rit_curve_shape() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    mid_event = Event(normalized_phrase_position=0.875, tempo_mult=1.2, phrase=phrase)
++    end_event = Event(normalized_phrase_position=1.0, tempo_mult=1.2, phrase=phrase)
++
++    rule.apply(mid_event)
++    rule.apply(end_event)
++
++    assert math.isclose(mid_event.tempo_mult, 1.2 * math.sqrt(0.825))
++    assert math.isclose(end_event.tempo_mult, 1.2 * math.sqrt(0.65))
++    assert end_event.tempo_mult < mid_event.tempo_mult
++
++
++def test_final_rit_default_onset_position() -> None:
++    rule = FinalRitRule()
++    phrase = Phrase(is_cadential=True)
++    before_onset = Event(normalized_phrase_position=0.74, tempo_mult=1.25, phrase=phrase)
++    at_onset = Event(normalized_phrase_position=0.75, tempo_mult=1.25, phrase=phrase)
++
++    rule.apply(before_onset)
++    rule.apply(at_onset)
++
++    assert before_onset.tempo_mult == 1.25
++    assert at_onset.tempo_mult == 1.25
++
++
++def test_final_rit_ignores_non_cadential_phrase() -> None:
++    rule = FinalRitRule()
++    event = Event(
++        normalized_phrase_position=1.0,
++        tempo_mult=1.25,
++        phrase=Phrase(is_cadential=False),
++    )
++
++    rule.apply(event)
++
++    assert event.tempo_mult == 1.25
+
+tokens used
+53,207

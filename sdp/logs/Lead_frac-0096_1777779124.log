@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3774 chars)
+---
+
+frac-0096 complete. Deepened `tests/test_ollama_health.py` to depth 2:
+
+- **Spec**: `specs/frac-0096-spec.md`
+- **Depth gate**: `tests/test_test_ollama_health_depth.py` (RED → GREEN confirmed)
+- **End-to-end class**: `OllamaHealthEndToEndTests` drives healthy `/api/ps` probe (URL `http://localhost:11434/api/ps`, `DEFAULT_TIMEOUT_S=5`, malformed-entry skip in `check_models`), degraded URLError probe (both helpers fall back to `False`/`[]`), and a JSON-safe `{healthy, degraded}` diagnostic round trip
+- **Production code**: unchanged — `ollama_health.py` already produced meaningful one-path output
+- **Validation gate**: `4586 passed, 3 skipped`, ruff clean, mypy clean
+- **Commit**: `f49e16b feat(tests): deepen ollama health helper coverage [frac-0096]`

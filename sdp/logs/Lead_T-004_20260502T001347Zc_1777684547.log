@@ -1,0 +1,20 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1320 chars)
+---
+
+Done. Committed as `194ecc4`.
+
+**Result:** The cypherclaw-narrative-api service is **not active**. Verified live against the cypherclaw Linux host over SSH:
+
+- `systemctl --user status cypherclaw-narrative-api.service` → "Unit ... could not be found"
+- `is-active` → `inactive`, `is-enabled` → `not-found`
+- `journalctl --user -u cypherclaw-narrative-api.service` → `-- No entries --`
+- No matching `LISTEN` row in `ss -ltn`
+- `Linger=no` for the service user
+- `cypherclaw.narrative_api` package not deployed under `~/cypherclaw/src/cypherclaw/`
+
+**Evidence:** `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md` (full captured output + the 6-step deploy runbook to clear the blocker).
+
+**Escalation:** Added a T-004@Zc entry to `ESCALATIONS.md` recording that the upstream deploy (sync the `narrative_api/` tree and the unit file to cypherclaw, then run the daemon-reload/enable/linger commands documented in the unit header) must complete before this verification can return PASS.
+
+The unit file from Za and the activation runbook from Zb are both correct — the only gap is a deploy step. Skipped pytest/ruff/mypy since this commit is doc-only (verification evidence + ESCALATIONS), matching the Za precedent.

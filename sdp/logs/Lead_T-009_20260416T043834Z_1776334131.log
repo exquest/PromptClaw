@@ -1,0 +1,33 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1540 chars)
+---
+
+Done. Here's what was delivered:
+
+**New file: `my-claw/tools/senseweave/resource_governor.py`**
+- `HealthSnapshot` — captures 6 signals: CPU pressure, SC node count, sampler load, capture freshness, self-listener RMS, master bus health
+- `compute_pressure()` — collapses all signals into a single 0.0–1.0 composite score with weighted contributions
+- `compute_budget()` — maps pressure to a `ResourceBudget` with degradation rules:
+  - **0.30**: shed color/texture voices
+  - **0.35**: start reducing grain density
+  - **0.40**: reduce DSP effect blocks
+  - **0.45**: shed counter-melody
+  - **0.50**: suppress LLM advisor calls
+  - **0.60**: reduce overall note density
+  - **0.80**: emergency — 2 voices, 0 DSP, bare minimum
+- `take_snapshot()` — reads live state files with full override support for testing
+
+**Modified: `my-claw/tools/duet_composer.py`**
+- Takes a health snapshot alongside the existing `cpu_pressure` reading in `tracker_solo_song`
+- Constrains cast size and sheds color/counter roles based on the budget
+- Logs the resource budget in the console output
+
+**New file: `tests/test_resource_governor.py`** — 26 tests covering:
+- Nominal healthy operation (full budget)
+- CPU pressure degradation (color shed, counter shed, LLM suppression, grain reduction)
+- Stale capture degradation
+- Dead master bus scenarios
+- Combined emergency (all signals degraded)
+- Degradation order verification (optional voices shed before primary form)
+- Snapshot override mechanics
+- Frozen dataclass immutability

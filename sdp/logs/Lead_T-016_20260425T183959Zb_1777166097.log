@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1465 chars)
+---
+
+T-016@20260425T183959Zb done. Committed as `74baab6`.
+
+**Change summary**
+- `my-claw/tools/senseweave/cast_planner.py`: added optional `sample_selector`, `sample_select_kwargs`, and `cast_metadata` kwargs to `select_cast_ids`. After cast IDs are chosen, if any chosen character's `voice.synth == "sw_sampler"` and both selector and metadata mapping are provided, calls `selector.select(**kwargs)` and stores a minimal summary (`id`, `path`, `source`, `duration_sec`) under `cast_metadata["sampler_sample"]`. Casts without `sw_sampler` or callers omitting the optional args leave metadata untouched. Return contract (`list[str]`) is preserved.
+- `tests/test_cast_planner.py`: 4 regression tests covering sampler-in-cast attach, no-sampler no-op, selector returning None, and the no-opt-in path.
+
+**Validation**: 3341 tests pass; `ruff check` clean; `mypy` shows only the 2 pre-existing `voice.get` errors on lines 87/99 (present on `HEAD~1`, not introduced here).
+
+**Notes**
+- `SampleSelector` itself is owned by T-028 and is not yet implemented — the wiring is duck-typed against any object with a `.select(...)` method, so it's a no-op until T-028 lands and a caller (e.g. `_get_cast` in `duet_composer.py:382`) opts in by passing both args.
+- Pre-existing workspace changes (`progress.md`, sdp logs/run-log) were not touched per task rules.

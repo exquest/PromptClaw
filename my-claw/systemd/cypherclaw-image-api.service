@@ -1,0 +1,44 @@
+[Unit]
+Description=CypherClaw Image API — REST surface for CT Marketing image jobs
+Documentation=file:///home/user/cypherclaw/specs/external/cypherclaw-image-contract.md
+After=network-online.target cypherclaw-jack.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=user
+Group=user
+
+# AWS credentials (cypherclaw-uploader IAM user) and GEMINI_API_KEY live here.
+# Chmod 600 the file so other users can't read the keys.
+EnvironmentFile=/home/user/cypherclaw/.env
+
+# Defaults match cypherclaw-image-contract.md; override in .env if needed.
+Environment=CYPHERCLAW_IMAGE_S3_BUCKET=ctmarketing-cypherclaw-images
+Environment=CYPHERCLAW_IMAGE_S3_REGION=us-west-2
+Environment=CYPHERCLAW_IMAGE_S3_PREFIX=jobs
+Environment=CYPHERCLAW_IMAGE_MODEL=gemini-3-pro-image-preview
+Environment=CYPHERCLAW_IMAGE_LISTEN_HOST=0.0.0.0
+Environment=CYPHERCLAW_IMAGE_LISTEN_PORT=9000
+Environment=CYPHERCLAW_IMAGE_JOBS_DB=/home/user/cypherclaw-data/image_jobs.db
+Environment=PYTHONUNBUFFERED=1
+
+WorkingDirectory=/home/user/cypherclaw
+ExecStart=/home/user/cypherclaw/.venv/bin/python3 -m cypherclaw.image_api
+
+# Restart policy: keep the API alive across crashes, but back off so a
+# misconfig doesn't hammer Gemini / S3 in a tight loop.
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/user/cypherclaw-data
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

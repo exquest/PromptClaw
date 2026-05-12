@@ -1,0 +1,19 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1557 chars)
+---
+
+Done. Here's what was delivered:
+
+**`mix_engine.py`** — added `DynamicsProfile`, `DeferenceRule`, and `build_dynamics_profile()`:
+- Per-phase dynamic range targets (18 dB for Divination, 10 dB for Conversation, 16 dB for Crystallization)
+- Phase-tuned compression (1.2:1 ratio / 80ms attack in Divination vs 2.0:1 / 15ms in Conversation)
+- Transient policy per phase (`"preserve"` for sparse phases, `"shape"` for Conversation)
+- Deference rules: Theramini onset ducking (up to 5 dB in Conversation), silence_request → full silence, environmental onset → duck/thin
+- Sleep/wind_down cadences widen dynamic range and soften compression further
+- `MixProfile` gained an optional `dynamics` field; `build_mix_profile()` accepts `phase_name`
+
+**`capstone_engine.py`** — passes `phase_name` to `build_mix_profile()` so every `CapstonePhasePlan` carries dynamics
+
+**`emsd_runtime.py`** — `composer_emsd_extras()` exposes `mix_dynamic_range_db`, `mix_comp_ratio_phase`, `mix_transient_policy`, and `mix_deference_rules` list
+
+**15 new tests** covering: dynamic targets per phase, no over-compression in Divination/Crystallization, sidechain metadata shape, silence_request rules, environmental deference, and EMSD extras exposure. Full suite: 2252 passed, ruff clean, mypy clean.

@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2052 chars)
+---
+
+T-032 complete. Committed as `b11e9cd`.
+
+**Delivered:**
+- `my-claw/tools/senseweave/synthesis/sw_sampler.scd` — `\sw_sampler` SynthDef with all 13 acceptance args (`bufnum`, `amp=0.5`, `grain_size_ms=80`, `density=12`, `position=0`, `position_rate`, `pitch_transpose_semitones=0`, `pitch_jitter_semitones=0.1`, `attack_sec=0.05`, `release_sec=0.2`, `gate=1`, `out_bus=0`, `fx_send=0.4`). `GrainBuf` cloud, `Env.asr` with `doneAction:2`, parallel send to fx bus 16, `.writeDefFile("synthdefs/")`.
+- `my-claw/supercollider/test_sw_sampler.scd` — sclang runtime test on cypherclaw: allocates a 440 Hz sine buffer, renders 2 s, asserts non-silence + FFT peak near 440 Hz, then closes the gate mid-render and asserts the post-release RMS decays to <25% of in-flight.
+- `tests/test_sw_sampler.py` — 39 static checks on the SCD source (mirrors the `test_sampler_effects.py` pattern since this dev box has no sclang).
+
+**Validation:** `pytest tests/ -x` → 3517 passed. `ruff check src/ tests/` → clean. `mypy src/` → clean.
+
+Note: the compiled `sw_sampler.scsyndef` binary is produced by `.writeDefFile` when sclang loads the source on cypherclaw — same convention as `sw_sampler_fx` (no committed `.scsyndef`).

@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1955 chars)
+---
+
+T-010@20260425T183959Z committed as f1f17d4.
+
+**Implementation summary:**
+- `sample_capture_daemon.py`: added `self` JACK source (SuperCollider:out_1→in_self), `peak_offset_seconds` on ring buffer + daemon, `mode` and `extra_tags` fields on `SampleTags`, `mode`/`extra_tags` kwargs on `save_capture`, and the gated `self_quote(score_summary)` function.
+- `duet_composer.py`: added `_post_song_self_quote` helper and wired calls at the end of `solo_song` and the completed branch of `tracker_solo_song`.
+- `tests/test_sample_capture_daemon.py`: 3 new regression tests cover the trigger gate, peak-centered capture window, and tag propagation through the SQLite index.
+
+**Validation:** 3267 tests pass; ruff/mypy issue counts match baseline (no new findings from this change).

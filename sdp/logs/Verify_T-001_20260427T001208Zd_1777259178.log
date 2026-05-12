@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2726 chars)
+---
+
+**Verdict: PASS**
+
+All 49 tests pass (0 failures, 0 regressions). Summary of findings:
+
+- All 4 required cases present and correct: happy path, polling timeout, terminal failure, and download error
+- The production fix (`_fetch_bytes` wrapping `OSError` → `GenerationError`) is minimal and precisely tested — including `__cause__` chain verification
+- New tests reuse the pre-existing `_FakePredictions`/`_patch_replicate`/`_PollingPrediction` shim infrastructure consistently
+- One minor gap: list-output + download-failure path not tested, but existing `_download_output` unit tests cover that indirectly
+- The auto-generated `bootstrap_identity` hardening checks are not applicable to this task (wrong failure domain)
+
+Report committed as `sdp/verification/t-001@20260427t001208zd-verify.md`.

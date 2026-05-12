@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high -p -
+Prompt delivered via: stdin (1878 chars)
+---
+
+**Verdict: PASS**
+
+All three acceptance criteria are met and 1424 tests pass. Two minor notes logged in the report:
+
+1. The "healthy instance with no loaded models" edge case is not explicitly tested (code handles it correctly via `check_models` returning `[]`, just no test for it).
+2. Each healthy instance makes two separate HTTP requests to `/api/ps` — one for `check_health`, one for `check_models`. Latency only covers the first call. Not a correctness issue, but worth a future refactor to share the single `_read_ps` response.
+
+Report committed at `sdp/verification/t-010@20260408t223256za-verify.md`.

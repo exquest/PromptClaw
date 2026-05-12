@@ -1,0 +1,39 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1051 chars)
+---
+
+Committed. The remaining unstaged files are all pre-existing changes on this branch, not related to T-001.
+
+Here's a summary of what was done:
+
+### Changes for T-001: Row-Level Performance Automation
+
+**1. Tracker runtime** (`music_tracker_runtime.py`)
+- Added public `interpolate_automation_at_row(scene, row)` API exposing per-row interpolated automation values
+- Added `total_rows` to the runtime state dict so downstream consumers can calculate row position
+
+**2. Master bus / Composer** (`duet_composer.py`)
+- `_on_tracker_row` now writes `master_bus`, `section_curve`, and `automation_values` into composer state at every stride tick — not just at scene starts
+- `_on_scene_start` now also emits `section_curve` and `automation_values` from the start
+
+**3. Sampler** (`sample_dsp_activity.py`)
+- Added `_row_bucket(self_state)` — divides scenes into early/mid/late thirds based on `tracker_row` / `tracker_total_rows`
+- `_scene_profile` now varies by row bucket: Recap late → afterglow_residue, Theme late → emergence_motion
+- Fixed a falsy-zero bug where `tracker_row=0` was coerced to `-1` via `or -1`
+
+**4. Self-listener** (`self_listener.py`)
+- Added `tracker_total_rows` to self-listener state output
+
+**5. Face display** (`face_display.py`)
+- Renders section curve name and automation value bars from composer state
+
+**6. Tests** (`test_row_automation.py`) — 11 new tests:
+- `interpolate_automation_at_row` correctness
+- Runtime state includes `total_rows`
+- Automation updates fire beyond scene starts
+- Master bus output shifts with automation values
+- Row bucket early/mid/late classification
+- Scene profile shifts for Recap, Theme, Development across buckets
+- Automation curve in runtime state
+
+**Validation**: 1831 tests pass, ruff clean on changed files, mypy clean.

@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high -p -
+Prompt delivered via: stdin (3874 chars)
+---
+
+**Verdict: PASS.** All 13 tests pass. The `production_course.py` knowledge base correctly delivers:
+- All 10 required chapter IDs as typed `ProductionCourseChapter` frozen dataclasses with stable IDs
+- All 5 arc-phase profiles (Divination → Crystallization) sourced directly from `procedural_arc.ARC_PHASES`
+- Clean delegation from `recursive_composer.py` via `course_for_section()`
+- `PRODUCTION_COURSE_KEYS` aliased to `REQUIRED_CHAPTER_IDS` (no duplication)
+
+Hardening items were investigated: `revise_score()` is already wired in `tracker_compiler.py`, and `bootstrap_identity()` is called in both daemon entry points — no gaps found in scope. Report committed at `sdp/verification/t-013@20260416t054258z-verify.md`.

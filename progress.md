@@ -1,0 +1,435 @@
+# Progress
+
+Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
+
+ETC: ~28m remaining (3 tasks, low confidence, calibrating)
+Expected completion: 3:45 AM today.
+Progress: [██████████████████████████████████████] 99%  389 / 392 tasks complete
+  completed: 389, pending: 0, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
+
+- **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-003@20260408T223256Z**: complete — Completed with verdict PASS.
+- **T-004@20260408T223256Z**: complete — Completed with verdict PASS.
+- **T-005@20260408T223256Z**: complete — Completed with verdict PASS.
+- **T-006@20260408T223256Z**: complete — Completed with verdict PASS.
+- **T-007@20260408T223256Z**: complete — Completed with verdict PASS.
+- **T-008@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-009@20260408T223256Z**: complete — Completed with verdict PASS.
+- **T-010@20260408T223256Z**: split — Split into subtasks.
+- **T-010@20260408T223256Za**: complete — Completed with verdict PASS.
+- **T-010@20260408T223256Zb**: complete — Completed with verdict PASS WITH NOTES.
+- **T-010@20260408T223256Zc**: complete — Completed with verdict PASS WITH NOTES.
+- **T-011@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-012@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-001@20260416T043834Z**: complete — Completed with verdict PASS.
+- **T-002@20260416T043834Z**: complete — Completed with verdict PASS.
+- **T-003@20260416T043834Z**: complete — Completed with verdict PASS.
+- **T-004@20260416T043834Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-005@20260416T043834Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-006@20260416T043834Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-007@20260416T043834Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-008@20260416T043834Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-009@20260416T043834Z**: complete — Completed with verdict PASS.
+- **T-010@20260416T043834Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-011@20260416T043834Z**: complete — Completed with verdict PASS.
+- **T-012@20260416T043834Z**: complete — Completed with verdict PASS.
+- **T-013@20260416T043834Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-014@20260416T043834Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-015@20260416T043834Z**: complete — Completed with verdict PASS.
+- **T-016@20260416T043834Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-017@20260416T043834Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-018@20260416T043834Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-019@20260416T043834Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-020@20260416T043834Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-021@20260416T043834Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-022@20260416T043834Z**: complete — Completed with verdict PASS.
+- **T-023@20260416T043834Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-024@20260416T043834Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-025@20260416T043834Z**: complete — Completed with verdict PASS.
+- **T-001@20260416T054258Z**: complete — Completed with verdict PASS.
+- **T-002@20260416T054258Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-003@20260416T054258Z**: complete — Completed with verdict PASS.
+- **T-004@20260416T054258Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-005@20260416T054258Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-006@20260416T054258Z**: complete — Completed with verdict PASS.
+- **T-007@20260416T054258Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-008@20260416T054258Z**: complete — Completed with verdict PASS.
+- **T-009@20260416T054258Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-010@20260416T054258Z**: complete — Completed with verdict PASS.
+- **T-011@20260416T054258Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-012@20260416T054258Z**: complete — Completed with verdict PASS.
+- **T-013@20260416T054258Z**: complete — Completed with verdict PASS.
+- **T-014@20260416T054258Z**: complete — Completed with verdict PASS.
+- **T-015@20260416T054258Z**: complete — Completed with verdict PASS.
+- **T-016@20260416T054258Z**: complete — Completed with verdict PASS.
+- **T-017@20260416T054258Z**: complete — Completed with verdict PASS.
+- **T-018@20260416T054258Z**: split — Split into subtasks.
+- **T-018@20260416T054258Za**: complete — Completed with verdict PASS.
+- **T-019@20260416T054258Z**: complete — Completed with verdict PASS.
+- **T-018@20260416T054258Zb**: complete — Completed with verdict PASS.
+- **T-020@20260416T054258Z**: complete — Completed with verdict PASS.
+- **T-018@20260416T054258Zc**: complete — Completed with verdict PASS.
+- **T-021@20260416T054258Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-018@20260416T054258Zd**: complete — Completed with verdict PASS.
+- **T-022@20260416T054258Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-023@20260416T054258Z**: complete — Completed with verdict PASS.
+- **T-024@20260416T054258Z**: complete — Completed with verdict PASS.
+- **T-025@20260416T054258Z**: complete — Completed with verdict PASS.
+- **T-001@20260416T181925Z**: split — Split into subtasks.
+- **T-001@20260416T181925Za**: complete — Completed with verdict PASS.
+- **T-001@20260416T181925Zb**: complete — Completed with verdict PASS.
+- **T-001@20260416T181925Zc**: complete — Completed with verdict PASS.
+- **T-002@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-003@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-004@20260416T181925Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-005@20260416T181925Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-006@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-007@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-008@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-009@20260416T181925Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-010@20260416T181925Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-011@20260416T181925Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-012@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-013@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-014@20260416T181925Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-015@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-016@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-017@20260416T181925Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-018@20260416T181925Z**: split — Split into subtasks.
+- **T-018@20260416T181925Za**: complete — Completed with verdict PASS.
+- **T-018@20260416T181925Zb**: complete — Completed with verdict PASS WITH NOTES.
+- **T-018@20260416T181925Zc**: complete — Completed with verdict PASS.
+- **T-018@20260416T181925Zd**: complete — Completed with verdict PASS.
+- **T-019@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-020@20260416T181925Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-021@20260416T181925Z**: split — Split into subtasks.
+- **T-021@20260416T181925Za**: complete — Completed with verdict PASS WITH NOTES.
+- **T-021@20260416T181925Zb**: complete — Completed with verdict PASS.
+- **T-021@20260416T181925Zc**: complete — Completed with verdict PASS.
+- **T-022@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-023@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-024@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-025@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-026@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-027@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-028@20260416T181925Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-029@20260416T181925Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-030@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-031@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-032@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-033@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-034@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-035@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-036@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-037@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-038@20260416T181925Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-039@20260416T181925Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-040@20260416T181925Z**: complete — Completed with verdict PASS.
+- **T-001@20260425T183959Z**: split — Split into subtasks.
+- **T-001@20260425T183959Za**: complete — Completed with verdict PASS WITH NOTES.
+- **T-001@20260425T183959Zb**: complete — Completed with verdict PASS.
+- **T-002@20260425T183959Z**: split — Split into subtasks.
+- **T-001@20260425T183959Zc**: complete — Completed with verdict PASS WITH NOTES.
+- **T-002@20260425T183959Za**: complete — Completed with verdict PASS WITH NOTES.
+- **T-002@20260425T183959Zb**: complete — Completed with verdict PASS.
+- **T-001@20260425T183959Zd**: complete — Completed with verdict PASS.
+- **T-002@20260425T183959Zc**: complete — Completed with verdict PASS.
+- **T-002@20260425T183959Zd**: complete — Completed with verdict PASS.
+- **T-003@20260425T183959Z**: complete — Completed with verdict PASS.
+- **T-004@20260425T183959Z**: complete — Completed with verdict PASS.
+- **T-005@20260425T183959Z**: split — Split into subtasks.
+- **T-005@20260425T183959Za**: complete — Completed with verdict PASS.
+- **T-005@20260425T183959Zb**: complete — Completed with verdict PASS.
+- **T-005@20260425T183959Zc**: complete — Completed with verdict PASS.
+- **T-005@20260425T183959Zd**: complete — Completed with verdict PASS.
+- **T-006@20260425T183959Z**: complete — Completed with verdict PASS.
+- **T-007@20260425T183959Z**: complete — Completed with verdict PASS.
+- **T-008@20260425T183959Z**: split — Split into subtasks.
+- **T-008@20260425T183959Za**: complete — Completed with verdict PASS.
+- **T-008@20260425T183959Zb**: complete — Completed with verdict PASS.
+- **T-008@20260425T183959Zc**: complete — Completed with verdict PASS.
+- **T-008@20260425T183959Zd**: complete — Completed with verdict PASS.
+- **T-009@20260425T183959Z**: complete — Completed with verdict PASS.
+- **T-010@20260425T183959Z**: complete — Completed with verdict PASS.
+- **T-011@20260425T183959Z**: complete — Completed with verdict PASS.
+- **T-012@20260425T183959Z**: split — Split into subtasks.
+- **T-013@20260425T183959Z**: split — Split into subtasks.
+- **T-012@20260425T183959Za**: complete — Completed with verdict PASS.
+- **T-013@20260425T183959Za**: complete — Completed with verdict PASS.
+- **T-013@20260425T183959Zb**: complete — Completed with verdict PASS.
+- **T-013@20260425T183959Zc**: complete — Completed with verdict PASS.
+- **T-014@20260425T183959Z**: split — Split into subtasks.
+- **T-012@20260425T183959Zb**: complete — Completed with verdict PASS WITH NOTES.
+- **T-014@20260425T183959Za**: complete — Completed with verdict PASS.
+- **T-015@20260425T183959Z**: split — Split into subtasks.
+- **T-014@20260425T183959Zb**: complete — Completed with verdict PASS.
+- **T-012@20260425T183959Zc**: complete — Completed with verdict PASS.
+- **T-014@20260425T183959Zc**: complete — Completed with verdict PASS.
+- **T-015@20260425T183959Za**: complete — Completed with verdict PASS.
+- **T-016@20260425T183959Z**: split — Split into subtasks.
+- **T-012@20260425T183959Zd**: complete — Completed with verdict PASS.
+- **T-015@20260425T183959Zb**: complete — Completed with verdict PASS.
+- **T-017@20260425T183959Z**: complete — Completed with verdict PASS.
+- **T-015@20260425T183959Zc**: complete — Completed with verdict PASS.
+- **T-016@20260425T183959Za**: complete — Completed with verdict PASS.
+- **T-018@20260425T183959Z**: split — Split into subtasks.
+- **T-015@20260425T183959Zd**: complete — Completed with verdict PASS.
+- **T-016@20260425T183959Zb**: complete — Completed with verdict PASS.
+- **T-019@20260425T183959Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-018@20260425T183959Za**: complete — Completed with verdict PASS.
+- **T-020@20260425T183959Z**: split — Split into subtasks.
+- **T-016@20260425T183959Zc**: complete — Completed with verdict PASS.
+- **T-018@20260425T183959Zb**: complete — Completed with verdict PASS.
+- **T-021@20260425T183959Z**: split — Split into subtasks.
+- **T-020@20260425T183959Za**: complete — Completed with verdict PASS.
+- **T-016@20260425T183959Zd**: complete — Completed with verdict PASS.
+- **T-022@20260425T183959Z**: split — Split into subtasks.
+- **T-018@20260425T183959Zc**: complete — Completed with verdict PASS WITH NOTES.
+- **T-023@20260425T183959Z**: complete — Completed with verdict PASS.
+- **T-020@20260425T183959Zb**: complete — Completed with verdict PASS.
+- **T-021@20260425T183959Za**: complete — Completed with verdict PASS.
+- **T-018@20260425T183959Zd**: complete — Completed with verdict PASS.
+- **T-024@20260425T183959Z**: split — Split into subtasks.
+- **T-022@20260425T183959Za**: complete — Completed with verdict PASS WITH NOTES.
+- **T-020@20260425T183959Zc**: complete — Completed with verdict PASS.
+- **T-025@20260425T183959Z**: complete — Completed with verdict PASS.
+- **T-021@20260425T183959Zb**: complete — Completed with verdict PASS.
+- **T-024@20260425T183959Za**: complete — Completed with verdict PASS.
+- **T-026@20260425T183959Z**: complete — Completed with verdict PASS.
+- **T-022@20260425T183959Zb**: complete — Completed with verdict PASS.
+- **T-027@20260425T183959Z**: split — Split into subtasks.
+- **T-027@20260425T183959Za**: complete — Completed with verdict PASS.
+- **T-027@20260425T183959Zb**: complete — Completed with verdict PASS.
+- **T-027@20260425T183959Zc**: complete — Completed with verdict PASS WITH NOTES.
+- **T-027@20260425T183959Zd**: complete — Completed with verdict PASS.
+- **T-021@20260425T183959Zc**: complete — Completed with verdict PASS.
+- **T-024@20260425T183959Zb**: complete — Completed with verdict PASS.
+- **T-028@20260425T183959Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-022@20260425T183959Zc**: complete — Completed with verdict PASS.
+- **T-029@20260425T183959Z**: split — Split into subtasks.
+- **T-029@20260425T183959Za**: complete — Completed with verdict PASS.
+- **T-029@20260425T183959Zb**: complete — Completed with verdict PASS.
+- **T-029@20260425T183959Zc**: complete — Completed with verdict PASS.
+- **T-021@20260425T183959Zd**: complete — Completed with verdict PASS.
+- **T-024@20260425T183959Zc**: complete — Completed with verdict PASS.
+- **T-030@20260425T183959Z**: split — Split into subtasks.
+- **T-030@20260425T183959Za**: complete — Completed with verdict PASS.
+- **T-030@20260425T183959Zb**: complete — Completed with verdict PASS.
+- **T-030@20260425T183959Zc**: complete — Completed with verdict PASS.
+- **T-022@20260425T183959Zd**: complete — Completed with verdict PASS WITH NOTES.
+- **T-031@20260425T183959Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-024@20260425T183959Zd**: complete — Completed with verdict PASS.
+- **T-032@20260425T183959Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-033@20260425T183959Z**: complete — Completed with verdict PASS.
+- **T-001@20260427T001208Z**: split — Split into subtasks.
+- **T-002@20260427T001208Z**: complete — Completed with verdict PASS.
+- **T-001@20260427T001208Za**: complete — Completed with verdict PASS.
+- **T-003@20260427T001208Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-001@20260427T001208Zb**: complete — Completed with verdict PASS WITH NOTES.
+- **T-004@20260427T001208Z**: complete — Completed with verdict PASS.
+- **T-001@20260427T001208Zc**: complete — Completed with verdict PASS.
+- **T-005@20260427T001208Z**: complete — Completed with verdict PASS.
+- **T-001@20260427T001208Zd**: complete — Completed with verdict PASS.
+- **T-006@20260427T001208Z**: complete — Completed with verdict PASS.
+- **T-007@20260427T001208Z**: complete — Completed with verdict PASS.
+- **T-008@20260427T001208Z**: split — Split into subtasks.
+- **T-008@20260427T001208Za**: complete — Completed with verdict PASS.
+- **T-008@20260427T001208Zb**: complete — Completed with verdict PASS.
+- **T-008@20260427T001208Zc**: complete — Completed with verdict PASS.
+- **T-008@20260427T001208Zd**: complete — Completed with verdict PASS WITH NOTES.
+- **T-009@20260427T001208Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-010@20260427T001208Z**: complete — Completed with verdict PASS.
+- **T-011@20260427T001208Z**: complete — Completed with verdict PASS.
+- **T-012@20260427T001208Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-013@20260427T001208Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-014@20260427T001208Z**: complete — Completed with verdict PASS.
+- **T-015@20260427T001208Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-016@20260427T001208Z**: complete — Completed with verdict PASS.
+- **T-017@20260427T001208Z**: complete — Completed with verdict PASS.
+- **T-018@20260427T001208Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-019@20260427T001208Z**: split — Split into subtasks.
+- **T-019@20260427T001208Za**: complete — Completed with verdict PASS WITH NOTES.
+- **T-019@20260427T001208Zb**: complete — Completed with verdict PASS.
+- **T-019@20260427T001208Zc**: complete — Completed with verdict PASS WITH NOTES.
+- **T-019@20260427T001208Zd**: complete — Completed with verdict PASS.
+- **T-020@20260427T001208Z**: complete — Completed with verdict PASS.
+- **T-021@20260427T001208Z**: complete — Completed with verdict PASS.
+- **T-022@20260427T001208Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-023@20260427T001208Z**: split — Split into subtasks.
+- **T-023@20260427T001208Za**: complete — Completed with verdict PASS.
+- **T-024@20260427T001208Z**: complete — Completed with verdict PASS.
+- **T-023@20260427T001208Zb**: complete — Completed with verdict PASS.
+- **T-025@20260427T001208Z**: complete — Completed with verdict PASS.
+- **T-023@20260427T001208Zc**: complete — Completed with verdict PASS.
+- **T-026@20260427T001208Z**: complete — Completed with verdict PASS.
+- **T-027@20260427T001208Z**: complete — Completed with verdict PASS.
+- **T-028@20260427T001208Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-029@20260427T001208Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-030@20260427T001208Z**: complete — Completed with verdict PASS.
+- **T-031@20260427T001208Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-032@20260427T001208Z**: split — Split into subtasks.
+- **T-032@20260427T001208Za**: complete — Completed with verdict PASS.
+- **T-032@20260427T001208Zb**: complete — Completed with verdict PASS.
+- **T-032@20260427T001208Zc**: complete — Completed with verdict PASS.
+- **T-001@20260502T001347Z**: complete — Completed with verdict PASS.
+- **T-002@20260502T001347Z**: complete — Completed with verdict PASS.
+- **T-003@20260502T001347Z**: complete — Completed with verdict PASS.
+- **T-004@20260502T001347Z**: split — Split into subtasks.
+- **T-005@20260502T001347Z**: complete — Completed with verdict PASS.
+- **T-004@20260502T001347Za**: complete — Completed with verdict PASS WITH NOTES.
+- **T-006@20260502T001347Z**: split — Split into subtasks.
+- **T-004@20260502T001347Zb**: complete — Completed with verdict PASS WITH NOTES.
+- **T-007@20260502T001347Z**: split — Split into subtasks.
+- **T-006@20260502T001347Za**: complete — Completed with verdict PASS.
+- **T-008@20260502T001347Z**: split — Split into subtasks.
+- **T-004@20260502T001347Zc**: complete — Completed with verdict PASS.
+- **T-007@20260502T001347Za**: complete — Completed with verdict PASS.
+- **T-009@20260502T001347Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-006@20260502T001347Zb**: complete — Completed with verdict PASS.
+- **T-010@20260502T001347Z**: complete — Completed with verdict PASS.
+- **T-006@20260502T001347Zc**: complete — Completed with verdict PASS.
+- **T-007@20260502T001347Zb**: complete — Completed with verdict PASS.
+- **T-011@20260502T001347Z**: complete — Completed with verdict PASS.
+- **T-012@20260502T001347Z**: complete — Completed with verdict PASS.
+- **T-007@20260502T001347Zc**: complete — Completed with verdict PASS.
+- **T-013@20260502T001347Z**: complete — Completed with verdict PASS.
+- **T-014@20260502T001347Z**: complete — Completed with verdict PASS.
+- **T-015@20260502T001347Z**: complete — Completed with verdict PASS.
+- **T-016@20260502T001347Z**: split — Split into subtasks.
+- **T-008@20260502T001347Za**: complete — Completed with verdict PASS.
+- **T-016@20260502T001347Za**: complete — Completed with verdict PASS WITH NOTES.
+- **T-008@20260502T001347Zb**: complete — Completed with verdict PASS WITH NOTES.
+- **T-016@20260502T001347Zb**: complete — Completed with verdict PASS WITH NOTES.
+- **T-008@20260502T001347Zc**: complete — Completed with verdict PASS WITH NOTES.
+- **T-016@20260502T001347Zc**: complete — Completed with verdict PASS.
+- **T-008@20260502T001347Zd**: complete — Completed with verdict PASS.
+- **T-016@20260502T001347Zd**: complete — Completed with verdict PASS.
+- **frac-0001**: complete — Completed with verdict PASS.
+- **frac-0002**: complete — Completed with verdict PASS.
+- **frac-0003**: complete — Completed with verdict PASS.
+- **frac-0004**: complete — Completed with verdict PASS.
+- **frac-0005**: complete — Completed with verdict PASS.
+- **frac-0006**: complete — Completed with verdict PASS.
+- **frac-0007**: complete — Completed with verdict PASS.
+- **frac-0008**: complete — Completed with verdict PASS.
+- **frac-0009**: complete — Completed with verdict PASS.
+- **frac-0010**: complete — Completed with verdict PASS.
+- **frac-0011**: complete — Completed with verdict PASS.
+- **frac-0012**: complete — Completed with verdict PASS.
+- **frac-0013**: complete — Completed with verdict PASS.
+- **frac-0014**: complete — Completed with verdict PASS.
+- **frac-0015**: complete — Completed with verdict PASS.
+- **frac-0016**: complete — Completed with verdict PASS.
+- **frac-0017**: complete — Completed with verdict PASS.
+- **frac-0018**: complete — Completed with verdict PASS.
+- **frac-0019**: complete — Completed with verdict PASS.
+- **frac-0020**: complete — Completed with verdict PASS.
+- **frac-0021**: complete — Completed with verdict PASS.
+- **frac-0022**: complete — Completed with verdict PASS.
+- **frac-0023**: complete — Completed with verdict PASS.
+- **frac-0024**: complete — Completed with verdict PASS.
+- **frac-0025**: complete — Completed with verdict PASS.
+- **frac-0026**: complete — Completed with verdict PASS.
+- **frac-0027**: complete — Completed with verdict PASS.
+- **frac-0028**: complete — Completed with verdict PASS.
+- **frac-0029**: complete — Completed with verdict PASS.
+- **frac-0030**: complete — Completed with verdict PASS.
+- **frac-0031**: complete — Completed with verdict PASS.
+- **frac-0032**: complete — Completed with verdict PASS.
+- **frac-0033**: complete — Completed with verdict PASS.
+- **frac-0034**: complete — Completed with verdict PASS.
+- **frac-0035**: complete — Completed with verdict PASS.
+- **frac-0036**: complete — Completed with verdict PASS.
+- **frac-0037**: complete — Completed with verdict PASS.
+- **frac-0038**: complete — Completed with verdict PASS.
+- **frac-0039**: complete — Completed with verdict PASS.
+- **frac-0040**: complete — Completed with verdict PASS.
+- **frac-0041**: complete — Completed with verdict PASS.
+- **frac-0042**: complete — Completed with verdict PASS.
+- **frac-0043**: complete — Completed with verdict PASS.
+- **frac-0044**: complete — Completed with verdict PASS.
+- **frac-0045**: complete — Completed with verdict PASS.
+- **frac-0046**: complete — Completed with verdict PASS.
+- **frac-0048**: complete — Completed with verdict PASS.
+- **frac-0049**: complete — Completed with verdict PASS.
+- **frac-0050**: complete — Completed with verdict PASS.
+- **frac-0051**: complete — Completed with verdict PASS WITH NOTES.
+- **frac-0052**: complete — Completed with verdict PASS.
+- **frac-0053**: complete — Completed with verdict PASS.
+- **frac-0054**: complete — Completed with verdict PASS.
+- **frac-0055**: complete — Completed with verdict PASS.
+- **frac-0056**: complete — Completed with verdict PASS.
+- **frac-0057**: complete — Completed with verdict PASS.
+- **frac-0058**: complete — Completed with verdict PASS.
+- **frac-0059**: complete — Completed with verdict PASS.
+- **frac-0060**: complete — Completed with verdict PASS.
+- **frac-0061**: complete — Completed with verdict PASS.
+- **frac-0062**: complete — Completed with verdict PASS.
+- **frac-0063**: complete — Completed with verdict PASS.
+- **frac-0064**: complete — Completed with verdict PASS.
+- **frac-0065**: complete — Completed with verdict PASS.
+- **frac-0066**: complete — Completed with verdict PASS.
+- **frac-0067**: complete — Completed with verdict PASS.
+- **frac-0068**: complete — Completed with verdict PASS.
+- **frac-0069**: complete — Completed with verdict PASS.
+- **frac-0070**: complete — Completed with verdict PASS.
+- **frac-0071**: complete — Completed with verdict PASS.
+- **frac-0072**: complete — Completed with verdict PASS.
+- **frac-0073**: needs_review — Awaiting manual review; run sdp-cli merge --task frac-0073.
+- **frac-0074**: needs_review — Awaiting manual review; run sdp-cli merge --task frac-0074.
+- **frac-0075**: complete — Completed with verdict PASS.
+- **frac-0076**: complete — Completed with verdict PASS.
+- **frac-0077**: complete — Completed with verdict PASS.
+- **frac-0078**: complete — Completed with verdict PASS.
+- **frac-0079**: complete — Completed with verdict PASS WITH NOTES.
+- **frac-0080**: complete — Completed with verdict PASS.
+- **frac-0081**: complete — Completed with verdict PASS.
+- **frac-0082**: complete — Completed with verdict PASS.
+- **frac-0083**: complete — Completed with verdict PASS.
+- **frac-0084**: complete — Completed with verdict PASS.
+- **frac-0085**: complete — Completed with verdict PASS.
+- **frac-0086**: complete — Completed with verdict PASS.
+- **frac-0087**: complete — Completed with verdict PASS.
+- **frac-0088**: complete — Completed with verdict PASS.
+- **frac-0089**: complete — Completed with verdict PASS.
+- **frac-0090**: complete — Completed with verdict PASS.
+- **frac-0091**: complete — Completed with verdict PASS.
+- **frac-0092**: complete — Completed with verdict PASS.
+- **frac-0093**: complete — Completed with verdict PASS.
+- **frac-0094**: complete — Completed with verdict PASS.
+- **frac-0095**: complete — Completed with verdict PASS.
+- **frac-0096**: complete — Completed with verdict PASS.
+- **frac-0097**: complete — Completed with verdict PASS.
+- **frac-0098**: complete — Completed with verdict PASS.
+- **frac-0099**: complete — Completed with verdict PASS.
+- **frac-0100**: complete — Completed with verdict PASS.
+- **frac-0101**: complete — Completed with verdict PASS.
+- **frac-0102**: split — Split into subtasks.
+- **frac-0102a**: complete — Completed with verdict PASS.
+- **frac-0102b**: complete — Completed with verdict PASS.
+- **frac-0102c**: complete — Completed with verdict PASS.
+- **frac-0102d**: complete — Completed with verdict PASS.
+- **frac-0103**: complete — Completed with verdict PASS.
+- **frac-0104**: complete — Completed with verdict PASS.
+- **frac-0105**: complete — Completed with verdict PASS.
+- **frac-0106**: complete — Completed with verdict PASS.
+- **frac-0107**: complete — Completed with verdict PASS.
+- **frac-0108**: complete — Completed with verdict PASS.
+- **frac-0109**: complete — Completed with verdict PASS.
+- **frac-0110**: complete — Completed with verdict PASS.
+- **frac-0111**: complete — Completed with verdict PASS WITH NOTES.
+- **frac-0112**: complete — Completed with verdict PASS.
+- **frac-0113**: complete — Completed with verdict PASS.
+- **frac-0114**: complete — Completed with verdict PASS.
+- **frac-0115**: complete — Completed with verdict PASS.
+- **frac-0116**: split — Split into subtasks.
+- **frac-0116a**: needs_split — Timed out; run sdp-cli tasks split frac-0116a to break it down.
+- **frac-0116b**: complete — Completed with verdict PASS.
+- **frac-0116c**: complete — Completed with verdict PASS WITH NOTES.
+- **frac-0116d**: complete — Completed with verdict PASS.
+- **frac-0117**: complete — Completed with verdict PASS.
+- **frac-0118**: complete — Completed with verdict PASS.
+- **frac-0119**: complete — Completed with verdict PASS.
+- **frac-0120**: complete — Completed with verdict PASS.
+- **frac-0121**: complete — Completed with verdict PASS.

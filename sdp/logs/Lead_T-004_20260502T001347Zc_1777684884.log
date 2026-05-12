@@ -1,0 +1,23 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2199 chars)
+---
+
+T-004@20260502T001347Zc is done. Service is active, listening on `100.74.35.114:8765`, journaling, enabled for boot, and linger is on.
+
+**What changed (committed `fdb2b1f`):**
+- `src/cypherclaw/narrative_api/__main__.py` — minimal entry point so the systemd `ExecStart=python3 -m cypherclaw.narrative_api` resolves (reads `NARRATIVE_BIND_HOST` / `NARRATIVE_BIND_PORT` / `NARRATIVE_AUTH_TOKEN`, calls `create_app`, runs uvicorn). This was the gap causing prior verification fails.
+- `tests/test_narrative_api_main.py` — regression coverage for env resolution and uvicorn invocation.
+- `my-claw/systemd/cypherclaw-narrative-api.service` — moved `StartLimitIntervalSec`/`StartLimitBurst` to `[Unit]` (modern systemd location), eliminating the `Unknown key name` warning.
+- `sdp/verification/evidence/t-004@20260502t001347zc-narrative-api-status.md` — fresh evidence capture.
+
+**Deploy steps performed on cypherclaw:**
+1. Synced narrative_api source to `~/cypherclaw/src/cypherclaw/narrative_api/`
+2. Appended `NARRATIVE_BIND_HOST=100.74.35.114` / `NARRATIVE_BIND_PORT=8765` to `~/cypherclaw/.env` (backup saved)
+3. Installed unit at `~/.config/systemd/user/cypherclaw-narrative-api.service`
+4. `sudo loginctl enable-linger user` → `Linger=yes`
+5. `systemctl --user enable --now` → active, listening, `/health` returns 200
+
+**Notes:**
+- `/health` reports `degraded` because `world_db_reachable=false` — that's T-007's domain-column migration, unrelated to T-004 scope.
+- The minimal `__main__.py` shipped here belongs to T-008's residual scope (Pydantic settings / structlog / `bootstrap_identity()` are still pending). T-008 needs a follow-up to layer those on top.
+- Validation: 38 narrative_api tests pass, ruff + mypy clean on new files. `pip install -e '.[dev]'` not re-run locally (still blocked by macOS Seatbelt per prior verifier note).

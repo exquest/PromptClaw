@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3788 chars)
+---
+
+Done. frac-0092 deepens `tests/test_musical_integration_runtime.py` to depth 2 following the established pattern from frac-0090/frac-0091:
+
+- **Spec** at `specs/frac-0092-spec.md` with six VERIFY-able acceptance criteria.
+- **Depth gate** at `tests/test_test_musical_integration_runtime_depth.py` (TDD red phase confirmed before implementation — failed because the class did not yet exist).
+- **End-to-end class** `MusicalIntegrationRuntimeEndToEndTests` (with `__test__ = True` to opt into pytest collection) drives one room-mic scene through `build_sample_dsp_activity` → `maybe_launch_event` (hermetic via `STATE_PATH`/`OUTPUT_DIR`/`launch_pw_play` patches) → on-disk playback state → `build_glyph_audio_state` → `sample_status_text`, then round-trips a JSON-safe `{activity, playback_state, glyph, face_text}` diagnostic payload.
+- **Validation**: `pytest tests/ -x` → `4578 passed, 3 skipped`; `ruff check src/ tests/` clean; `mypy src/` clean.
+- **Identity hardening anchors**: 9/9 still passing.
+- **Two commits** scoped to `[frac-0092]`: spec + depth gate; then implementation + CHANGELOG.

@@ -1,0 +1,70 @@
+Command: gemini -p # Task T-005@20260408T223256Z: Add local infinite-quota short-circuit to `quota_monitor.py` so provider `"local"` always returns 1.0 headroom and is never rate-limited.
+
+## Acceptance Criteria
+
+- `get_agent_headroom("ollama")` returns 1.0<br/>- Ollama is never excluded from selection due to quota<br/>- Tests verify infinite headroom for local provider
+
+**Tier:** T1 — Light (Bug fix / config change / minor update)
+
+## Instructions
+
+Read the project's ADP documentation and understand existing patterns before making changes.
+
+**ADP Phases:** Implement → Verify → Commit
+
+1. Implement the fix or change described above.
+2. Ensure all existing tests pass.
+3. Add a regression test if the bug was not previously caught.
+4. Commit with a descriptive message: `fix(scope): short summary [T-005@20260408T223256Z]`
+
+## Rules
+
+- No spec required. Task description + commit message is sufficient.
+- Existing tests MUST pass after your change.
+- Follow existing code patterns and conventions.
+- Do not modify files outside the scope of this task.
+- Log any concerns to ESCALATIONS.md.
+
+## Validation
+
+Run before committing:
+```bash
+pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/
+```
+
+All must pass.
+ --output-format stream-json --approval-mode yolo --sandbox -m gemini-3.1-pro-preview
+Prompt delivered via: argv
+---
+
+{"type":"init","timestamp":"2026-04-08T23:14:40.373Z","session_id":"0f2a5a1e-e96a-4b0d-b20b-acaf3e3e4992","model":"gemini-3.1-pro-preview"}
+{"type":"message","timestamp":"2026-04-08T23:14:40.445Z","role":"user","content":"# Task T-005@20260408T223256Z: Add local infinite-quota short-circuit to `quota_monitor.py` so provider `\"local\"` always returns 1.0 headroom and is never rate-limited.\n\n## Acceptance Criteria\n\n- `get_agent_headroom(\"ollama\")` returns 1.0<br/>- Ollama is never excluded from selection due to quota<br/>- Tests verify infinite headroom for local provider\n\n**Tier:** T1 — Light (Bug fix / config change / minor update)\n\n## Instructions\n\nRead the project's ADP documentation and understand existing patterns before making changes.\n\n**ADP Phases:** Implement → Verify → Commit\n\n1. Implement the fix or change described above.\n2. Ensure all existing tests pass.\n3. Add a regression test if the bug was not previously caught.\n4. Commit with a descriptive message: `fix(scope): short summary [T-005@20260408T223256Z]`\n\n## Rules\n\n- No spec required. Task description + commit message is sufficient.\n- Existing tests MUST pass after your change.\n- Follow existing code patterns and conventions.\n- Do not modify files outside the scope of this task.\n- Log any concerns to ESCALATIONS.md.\n\n## Validation\n\nRun before committing:\n```bash\npip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/\n```\n\nAll must pass.\n"}
+{"type":"result","timestamp":"2026-04-08T23:14:40.667Z","status":"error","error":{"type":"Error","message":"[API Error: You have exhausted your capacity on this model. Your quota will reset after 6h6m11s.]"},"stats":{"total_tokens":0,"input_tokens":0,"output_tokens":0,"cached":0,"input":0,"duration_ms":0,"tool_calls":0,"models":{"gemini-3.1-pro-preview":{"total_tokens":0,"input_tokens":0,"output_tokens":0,"cached":0,"input":0}}}}
+
+--- STDERR ---
+YOLO mode is enabled. All tool calls will be automatically approved.
+Keychain initialization encountered an error: Cannot find module '../build/Release/keytar.node'
+Require stack:
+- /opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/node_modules/keytar/lib/keytar.js
+Using FileKeychain fallback for secure storage.
+Loaded cached credentials.
+YOLO mode is enabled. All tool calls will be automatically approved.
+Error when talking to Gemini API Full report available at: /var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/gemini-client-error-Turn.run-sendMessageStream-2026-04-08T23-14-40-646Z.json TerminalQuotaError: You have exhausted your capacity on this model. Your quota will reset after 6h6m11s.
+    at classifyGoogleError (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:273011:18)
+    at retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:273607:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:308672:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:308515:29)
+    at async Turn.run (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:309002:24)
+    at async GeminiClient.processTurn (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:312720:22)
+    at async GeminiClient.sendMessageStream (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:312833:14)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/gemini.js:9681:26
+    at async main (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/gemini.js:14349:5) {
+  cause: {
+    code: 429,
+    message: 'You have exhausted your capacity on this model. Your quota will reset after 6h6m11s.',
+    details: [ [Object], [Object] ]
+  },
+  retryDelayMs: 21971311.693897,
+  reason: 'QUOTA_EXHAUSTED'
+}

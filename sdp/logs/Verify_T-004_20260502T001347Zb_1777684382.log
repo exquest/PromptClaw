@@ -1,0 +1,18 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2725 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+The LEAD agent correctly diagnosed that `systemctl`/`loginctl` cannot run on this Darwin host and escalated it cleanly rather than fabricating success. Key findings:
+
+- All 3853 tests pass, no regressions.
+- The escalation entry in `ESCALATIONS.md` is accurate and actionable.
+- The unit file (from Za) already embeds the verbatim activation commands in its header comments.
+
+Three minor notes carried forward:
+1. A deploy script (`scripts/activate-narrative-api.sh`) would reduce transcription risk for the Linux-side ops steps.
+2. `loginctl enable-linger user` should be verified against the actual Linux username before execution.
+3. `bootstrap_identity()` startup wiring remains deferred to T-008.
+
+Report committed as `sdp/verification/t-004@20260502t001347zb-verify.md`.

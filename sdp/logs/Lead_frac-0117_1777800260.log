@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3781 chars)
+---
+
+Task frac-0117 complete. Summary:
+
+**ADP phases:**
+- **Explore**: Confirmed `tests/test_syncopation_features.py` already had depth-1 helper coverage (25 passing tests) for the syncopation + polyrhythmic-cross surface in `groove_engine.py` / `music_tracker.py`. Studied the recent `frac-0115` / `frac-0116` depth-2 lifecycle pattern.
+- **Specify**: Wrote `specs/frac-0117-spec.md` mirroring the depth-2 lifecycle template — one realistic end-to-end path through profile lookup, CSV/tuple offset parsing, `syncopate_phrase` role-scaled rest insertion, `_quantize_phrase_to_lane` bass-anchor exemption, and a JSON-safe diagnostic round-trip.
+- **Test (RED)**: Added `tests/test_test_syncopation_features_depth.py` — gate failed as expected (no e2e class, no marker).
+- **Implement (GREEN)**: Added `depth: 2` marker to the docstring and `SyncopationFeaturesEndToEndTests.test_syncopation_features_groove_lifecycle_round_trips_json_diagnostic` driving the full lifecycle and JSON round-trip. Production code untouched.
+- **Verify**: `pytest tests/test_syncopation_features.py tests/test_test_syncopation_features_depth.py` → 28 passed; full suite `4673 passed, 3 skipped`; `ruff check` clean; `mypy src/` clean; startup identity anchors `11 passed`.
+- **Document**: CHANGELOG entry added; committed `1b1a6f1`.
+
+Pre-existing harness modifications (`progress.md`, `sdp/run-log.md`, `sdp/notifications.log`, `sdp/logs/Verify_frac-0116d_*.log`, untracked `sdp/logs/Lead_frac-0117_*.log`) were left unstaged — they are frac-0116d / harness state, out of scope for frac-0117.

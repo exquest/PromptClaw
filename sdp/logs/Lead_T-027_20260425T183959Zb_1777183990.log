@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1334 chars)
+---
+
+Done. T-027@20260425T183959Zb implemented:
+
+- Added `SAMPLE_SUBDIRS`, `SampleLibraryLayout` (frozen dataclass with `base` + 6 subdir Paths, plus `as_dict()`), and `create_sample_library_layout(base_path)` to `my-claw/tools/senseweave/sample_library.py:27`. Idempotent (`mkdir(parents=True, exist_ok=True)`); rejects pre-existing files at any target path.
+- 7 new tests in `tests/test_sample_library.py` covering creation, str-base coercion, idempotency (preserves existing files), nested-parent creation, and file-collision errors.
+- Full suite: 3573 passed; ruff + mypy clean.
+- Committed as `187eddf`.
+
+Note: `self` cannot be a dataclass field name (collides with the implicit method `self`), so the on-disk `self/` dir is exposed as the `self_` attribute, with `as_dict()` providing the literal-name mapping.

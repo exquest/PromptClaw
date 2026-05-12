@@ -1,0 +1,13 @@
+task=T-016@20260502T001347Zd
+scenario=server-down
+base_url=http://127.0.0.1:8877
+command=NARRATIVE_BASE_URL=http://127.0.0.1:8877 python3 scripts/smoke_narrative.py --verbose
+smoke_narrative: base_url=http://127.0.0.1:8877
+GET /health -> ERROR <urlopen error [Errno 61] Connection refused>
+POST /memory/search -> ERROR <urlopen error [Errno 61] Connection refused>
+POST /beats/next -> ERROR <urlopen error [Errno 61] Connection refused>
+GET /world/entities?limit=1 -> ERROR <urlopen error [Errno 61] Connection refused>
+GET /world/entities/{entity_id} -> SKIP no entity id returned
+GET /events?limit=1 -> ERROR <urlopen error [Errno 61] Connection refused>
+exit_code=1
+expected_nonzero=true

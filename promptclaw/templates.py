@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 
 from .config import default_project_config
 
@@ -150,8 +151,33 @@ SAMPLE_TASK = """Create a development plan for adding an artifact-based handoff 
 
 AMBIGUOUS_TASK = """Make something good for this project somehow."""
 
+_REQUIRED_STARTUP_PROMPT_PATHS = (
+    "prompts/00-project-vision.md",
+    "prompts/01-agent-roles.md",
+    "prompts/02-routing-rules.md",
+)
 
-def project_scaffold(project_name: str) -> dict[str, str]:
+
+@dataclass(frozen=True)
+class ScaffoldTemplateEntry:
+    path: str
+    category: str
+    content: str
+    size_bytes: int
+
+
+@dataclass(frozen=True)
+class ScaffoldTemplateReport:
+    project_name: str
+    file_count: int
+    total_size_bytes: int
+    categories: dict[str, int]
+    required_prompt_paths: tuple[str, ...]
+    missing_required_prompt_paths: tuple[str, ...]
+    entries: tuple[ScaffoldTemplateEntry, ...]
+
+
+def _scaffold_contents(project_name: str) -> dict[str, str]:
     config = default_project_config(project_name)
     return {
         "promptclaw.json": json.dumps({
@@ -200,3 +226,90 @@ def project_scaffold(project_name: str) -> dict[str, str]:
         "examples/tasks/sample-task.md": SAMPLE_TASK + "\n",
         "examples/tasks/ambiguous-task.md": AMBIGUOUS_TASK + "\n",
     }
+
+
+def template_category(path: str) -> str:
+    normalized = path.replace("\\", "/")
+    if normalized == "promptclaw.json":
+        return "config"
+    if normalized.startswith("docs/"):
+        return "docs"
+    if normalized.startswith("prompts/control/"):
+        return "control_prompt"
+    if normalized.startswith("prompts/agents/"):
+        return "agent_prompt"
+    if normalized in _REQUIRED_STARTUP_PROMPT_PATHS:
+        return "startup_prompt"
+    if normalized.startswith(".promptclaw/memory/"):
+        return "memory"
+    if normalized.startswith("examples/"):
+        return "example"
+    return "other"
+
+
+def required_startup_prompt_paths() -> tuple[str, ...]:
+    return _REQUIRED_STARTUP_PROMPT_PATHS
+
+
+def scaffold_template_entries(project_name: str) -> tuple[ScaffoldTemplateEntry, ...]:
+    entries: list[ScaffoldTemplateEntry] = []
+    for path, content in _scaffold_contents(project_name).items():
+        entries.append(
+            ScaffoldTemplateEntry(
+                path=path,
+                category=template_category(path),
+                content=content,
+                size_bytes=len(content.encode("utf-8")),
+            )
+        )
+    return tuple(entries)
+
+
+def scaffold_template_report(project_name: str) -> ScaffoldTemplateReport:
+    entries = scaffold_template_entries(project_name)
+    category_counts: dict[str, int] = {}
+    entry_paths: set[str] = set()
+    total_size_bytes = 0
+    for entry in entries:
+        category_counts[entry.category] = category_counts.get(entry.category, 0) + 1
+        entry_paths.add(entry.path)
+        total_size_bytes += entry.size_bytes
+
+    missing_required: list[str] = []
+    for path in required_startup_prompt_paths():
+        if path not in entry_paths:
+            missing_required.append(path)
+
+    return ScaffoldTemplateReport(
+        project_name=project_name,
+        file_count=len(entries),
+        total_size_bytes=total_size_bytes,
+        categories={name: category_counts[name] for name in sorted(category_counts)},
+        required_prompt_paths=required_startup_prompt_paths(),
+        missing_required_prompt_paths=tuple(missing_required),
+        entries=entries,
+    )
+
+
+def summarize_scaffold_templates(project_name: str) -> dict[str, object]:
+    report = scaffold_template_report(project_name)
+    entries: list[dict[str, object]] = []
+    for entry in report.entries:
+        entries.append({
+            "path": entry.path,
+            "category": entry.category,
+            "size_bytes": entry.size_bytes,
+        })
+    return {
+        "project_name": report.project_name,
+        "file_count": report.file_count,
+        "total_size_bytes": report.total_size_bytes,
+        "categories": dict(report.categories),
+        "required_prompt_paths": list(report.required_prompt_paths),
+        "missing_required_prompt_paths": list(report.missing_required_prompt_paths),
+        "entries": entries,
+    }
+
+
+def project_scaffold(project_name: str) -> dict[str, str]:
+    return _scaffold_contents(project_name)

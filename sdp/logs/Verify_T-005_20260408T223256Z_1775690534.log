@@ -1,0 +1,114 @@
+Command: gemini -p # Verification: Task T-005@20260408T223256Z
+
+**Task:** Add local infinite-quota short-circuit to `quota_monitor.py` so provider `"local"` always returns 1.0 headroom and is never rate-limited.
+**Tier:** T1
+
+You are the VERIFY agent for this task. The LEAD agent has completed their work.
+
+## Acceptance Criteria
+
+- `get_agent_headroom("ollama")` returns 1.0<br/>- Ollama is never excluded from selection due to quota<br/>- Tests verify infinite headroom for local provider
+
+## Review Checklist
+
+1. **Review recent commits:**
+   ```bash
+   git log --oneline -5
+   git diff HEAD~3 --stat
+   ```
+
+2. **Review code changes:**
+   ```bash
+   git diff HEAD~3
+   ```
+
+4. **Check ESCALATIONS.md** for any flagged issues.
+
+5. **Run the test suite:**
+   ```bash
+   pip install -e '.[dev]' && pytest tests/ -x
+   ```
+
+## Evaluation Criteria
+
+Evaluate the work against these five dimensions:
+
+1. **Correctness**: Does the output match the requirements/spec?
+2. **Completeness**: Are there gaps, missing edge cases, or unhandled scenarios?
+3. **Consistency**: Does the output follow established patterns and conventions?
+4. **Security**: Are there vulnerabilities, leaked secrets, or unsafe practices?
+5. **Quality**: Does the output meet the quality gates for this phase?
+
+## Output
+
+Write your verification report and all findings to this exact path:
+`sdp/verification/t-005@20260408t223256z-verify.md`
+Do not use a different filename or directory.
+
+Use this format:
+
+```markdown
+# Verification Report — T-005@20260408T223256Z
+
+**Verify Agent:** [your agent name]
+**Date:** [today]
+**Artifacts Reviewed:** [list files reviewed]
+
+## Correctness
+[assessment]
+
+## Completeness
+[assessment]
+
+## Consistency
+[assessment]
+
+## Security
+[assessment]
+
+## Quality
+[assessment]
+
+## Issues Found
+- [ ] [Issue — severity: blocking/minor]
+
+## Verdict: [PASS | PASS WITH NOTES | FAIL]
+
+## Notes for Lead Agent
+[specific items to address]
+```
+
+Commit the verification report.
+ --output-format stream-json --approval-mode yolo --sandbox -m gemini-3-flash-preview
+Prompt delivered via: argv
+---
+
+{"type":"init","timestamp":"2026-04-08T23:22:17.165Z","session_id":"44fea123-3238-4764-88ba-68a84bff31e9","model":"gemini-3-flash-preview"}
+{"type":"message","timestamp":"2026-04-08T23:22:17.270Z","role":"user","content":"# Verification: Task T-005@20260408T223256Z\n\n**Task:** Add local infinite-quota short-circuit to `quota_monitor.py` so provider `\"local\"` always returns 1.0 headroom and is never rate-limited.\n**Tier:** T1\n\nYou are the VERIFY agent for this task. The LEAD agent has completed their work.\n\n## Acceptance Criteria\n\n- `get_agent_headroom(\"ollama\")` returns 1.0<br/>- Ollama is never excluded from selection due to quota<br/>- Tests verify infinite headroom for local provider\n\n## Review Checklist\n\n1. **Review recent commits:**\n   ```bash\n   git log --oneline -5\n   git diff HEAD~3 --stat\n   ```\n\n2. **Review code changes:**\n   ```bash\n   git diff HEAD~3\n   ```\n\n4. **Check ESCALATIONS.md** for any flagged issues.\n\n5. **Run the test suite:**\n   ```bash\n   pip install -e '.[dev]' && pytest tests/ -x\n   ```\n\n## Evaluation Criteria\n\nEvaluate the work against these five dimensions:\n\n1. **Correctness**: Does the output match the requirements/spec?\n2. **Completeness**: Are there gaps, missing edge cases, or unhandled scenarios?\n3. **Consistency**: Does the output follow established patterns and conventions?\n4. **Security**: Are there vulnerabilities, leaked secrets, or unsafe practices?\n5. **Quality**: Does the output meet the quality gates for this phase?\n\n## Output\n\nWrite your verification report and all findings to this exact path:\n`sdp/verification/t-005@20260408t223256z-verify.md`\nDo not use a different filename or directory.\n\nUse this format:\n\n```markdown\n# Verification Report — T-005@20260408T223256Z\n\n**Verify Agent:** [your agent name]\n**Date:** [today]\n**Artifacts Reviewed:** [list files reviewed]\n\n## Correctness\n[assessment]\n\n## Completeness\n[assessment]\n\n## Consistency\n[assessment]\n\n## Security\n[assessment]\n\n## Quality\n[assessment]\n\n## Issues Found\n- [ ] [Issue — severity: blocking/minor]\n\n## Verdict: [PASS | PASS WITH NOTES | FAIL]\n\n## Notes for Lead Agent\n[specific items to address]\n```\n\nCommit the verification report.\n"}
+{"type":"message","timestamp":"2026-04-08T23:22:20.221Z","role":"assistant","content":"I will start by reviewing the recent commits and code changes to understand the","delta":true}
+{"type":"message","timestamp":"2026-04-08T23:22:20.309Z","role":"assistant","content":" implementation of the infinite-quota short-circuit for local providers.","delta":true}
+{"type":"tool_use","timestamp":"2026-04-08T23:22:20.310Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1775690540310_0","parameters":{"description":"Reviewing recent commits and changed files.","command":"git log --oneline -n 5 && git diff HEAD~1 --stat"}}
+{"type":"tool_result","timestamp":"2026-04-08T23:22:20.424Z","tool_id":"run_shell_command_1775690540310_0","status":"success","output":"9b4b1c1 (HEAD -> feat/graceful-degradation) fix(quota): local provider infinite-headroom short-circuit [T-005@20260408T223256Z]\n07b8a14 verify(T-004): PASS — ollama HTTP routing verified, 1425 tests green\ne8d44e3 chore(escalations): note doc scope constraint [T-004@20260408T223256Z]\nfc34d89 fix(daemon): route ollama run_agent via HTTP [T-004@20260408T223256Z]\n4cc78c5 verify(T-003): PASS — _invoke_ollama direct HTTP implementation verified\n CHANGELOG.md                                  |   18 +\n docs/architecture.md                          |   14 +-\n docs/command-reference.md                     |   52 +-\n docs/handoff-protocol.md                      |   13 +-\n docs/startup-wizard.md                        |    9 +-\n my-claw/systemd/cypherclaw-sdp-runner.service |   14 +-\n my-claw/tools/context_pulse.py                |   13 +-\n my-claw/tools/cypherclaw_daemon.py            | 1350 ++++++++++++++++++++++---\n my-claw/tools/dashboard_generator.py          |   11 +-\n my-claw/tools/gallery/fb_renderer.py          |   32 +-\n my-claw/tools/gallery/gallery_display.py      |   60 +-\n my-claw/tools/glyphweave/pet_sprites.py       |   30 +-\n my-claw/tools/init_workdir.sh                 |    2 +-\n my-claw/tools/preflight.py                    |   18 +\n my-claw/tools/quota_monitor.py                |   10 +\n my-claw/tools/researcher.py                   |   14 +-\n my-claw/tools/safe_reboot.sh                  |    5 +-\n my-claw/tools/sdp_runner_launcher.sh          |   38 +-\n my-claw/tools/server_health.py                |   16 +\n my-claw/tools/tamagotchi.py                   |    4 +-\n my-claw/tools/telegram.py                     |   50 +\n pyproject.toml                                |    1 +\n tests/test_daemon_fallback.py                 |  756 +++++++++++++-\n tests/test_gallery.py                         |   49 +-\n tests/test_glyphweave_runtime.py              |    2 +\n tests/test_preflight.py                       |   15 +\n tests/test_quota_monitor.py                   |  105 +-\n tests/test_resilience_runtime_scripts.py      |  267 ++++-\n tests/test_server_health.py                   |   10 +\n tests/test_tamagotchi_runtime.py              |    8 +\n tests/test_telegram_runtime.py                |   74 ++\n 31 files changed, 2829 insertions(+), 231 deletions(-)"}
+{"type":"message","timestamp":"2026-04-08T23:22:23.669Z","role":"assistant","content":"I will now examine the code changes in `my-claw/tools/quota_monitor.py` and `tests/test_quota_monitor.py` to verify the implementation of the infinite-quota short","delta":true}
+{"type":"message","timestamp":"2026-04-08T23:22:23.691Z","role":"assistant","content":"-circuit.","delta":true}
+{"type":"tool_use","timestamp":"2026-04-08T23:22:23.736Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1775690543736_0","parameters":{"description":"Examining the changes in quota_monitor.py and its corresponding tests.","command":"git diff HEAD~1 my-claw/tools/quota_monitor.py tests/test_quota_monitor.py"}}
+{"type":"tool_result","timestamp":"2026-04-08T23:22:23.833Z","tool_id":"run_shell_command_1775690543736_0","status":"success","output":"diff --git a/my-claw/tools/quota_monitor.py b/my-claw/tools/quota_monitor.py\nindex b20ff85..865058e 100644\n--- a/my-claw/tools/quota_monitor.py\n+++ b/my-claw/tools/quota_monitor.py\n@@ -16,8 +16,16 @@ AGENT_PROVIDERS = {\n     \"claude\": \"anthropic\",\n     \"codex\": \"openai\",\n     \"gemini\": \"google\",\n+    \"ollama\": \"local\",\n+    \"qwen3.5:9b\": \"local\",\n+    \"qwen3.5:4b\": \"local\",\n+    \"qwen3.5:27b\": \"local\",\n+    \"gemma3:4b\": \"local\",\n+    \"llama3.2:3b\": \"local\",\n }\n \n+LOCAL_PROVIDERS = frozenset({\"local\"})\n+\n PROVIDER_AGENTS = {provider: agent for agent, provider in AGENT_PROVIDERS.items()}\n \n HEALTHY_THRESHOLD = 0.30\n@@ -187,6 +195,8 @@ class QuotaMonitor:\n \n     def _load_provider_headroom(self, provider: str) -> tuple[float, str]:\n         \"\"\"Read provider headroom from sdp-cli, with defensive fallbacks.\"\"\"\n+        if provider in LOCAL_PROVIDERS:\n+            return (1.0, \"local\")\n         try:\n             module = importlib.import_module(\"sdp.state.db\")\n         except ImportError:\ndiff --git a/tests/test_quota_monitor.py b/tests/test_quota_monitor.py\nindex 9116117..3857487 100644\n--- a/tests/test_quota_monitor.py\n+++ b/tests/test_quota_monitor.py\n@@ -57,10 +57,17 @@ def _patch_headroom(\n     monkeypatch: pytest.MonkeyPatch,\n     values: dict[str, tuple[float, str]],\n ) -> None:\n+    original = quota_monitor.QuotaMonitor._load_provider_headroom\n+\n+    def _patched(self, provider):  # type: ignore[no-untyped-def]\n+        if provider in values:\n+            return values[provider]\n+        return original(self, provider)\n+\n     monkeypatch.setattr(\n         quota_monitor.QuotaMonitor,\n         \"_load_provider_headroom\",\n-        lambda self, provider: values[provider],\n+        _patched,\n     )\n \n \n@@ -135,7 +142,19 @@ class TestQuotaMonitor:\n         monitor.force_status(\"openai\", \"paused\", headroom=0.04, confidence=\"runtime\")\n         monitor.force_status(\"google\", \"paused\", headroom=0.02, confidence=\"runtime\")\n \n-        assert monitor.get_available_agents() == [\"codex\"]\n+        available = monitor.get_available_agents()\n+        assert available  # never empty\n+        # Local agents remain healthy, so they are returned\n+        assert \"ollama\" in available\n+\n+    def test_never_returns_empty_list_remote_only(self) -> None:\n+        \"\"\"When restricted to remote agents only, falls back to best headroom.\"\"\"\n+        monitor = _build_monitor()\n+        monitor.force_status(\"anthropic\", \"paused\", headroom=0.01, confidence=\"runtime\")\n+        monitor.force_status(\"openai\", \"paused\", headroom=0.04, confidence=\"runtime\")\n+        monitor.force_status(\"google\", \"paused\", headroom=0.02, confidence=\"runtime\")\n+\n+        assert monitor.get_available_agents([\"claude\", \"codex\", \"gemini\"]) == [\"codex\"]\n \n     def test_status_transition_triggers_alert(self, monkeypatch: pytest.MonkeyPatch) -> None:\n         alerts: list[str] = []\n@@ -169,13 +188,14 @@ class TestQuotaMonitor:\n         monitor.poll_once()\n         status = monitor.get_provider_status()\n \n-        assert monitor.provider_status == {\n-            \"anthropic\": \"healthy\",\n-            \"openai\": \"healthy\",\n-            \"google\": \"healthy\",\n-        }\n+        assert monitor.provider_status[\"anthropic\"] == \"healthy\"\n+        assert monitor.provider_status[\"openai\"] == \"healthy\"\n+        assert monitor.provider_status[\"google\"] == \"healthy\"\n+        assert monitor.provider_status[\"local\"] == \"healthy\"\n         assert status[\"anthropic\"][\"headroom\"] == pytest.approx(1.0)\n         assert status[\"anthropic\"][\"confidence\"] == \"unknown\"\n+        # Local provider uses its own short-circuit, not the SDP fallback\n+        assert status[\"local\"][\"confidence\"] == \"local\"\n \n     def test_cli_error_treated_as_error_status(self, monkeypatch: pytest.MonkeyPatch) -> None:\n         monitor = _build_monitor()\n@@ -229,6 +249,77 @@ class TestQuotaMonitor:\n         assert monitor._thread is not None\n         assert not monitor._thread.is_alive()\n \n+    def test_local_provider_always_healthy(self, monkeypatch: pytest.MonkeyPatch) -> None:\n+        monitor = quota_monitor.QuotaMonitor(poll_interval=0.01)\n+        _patch_headroom(\n+            monkeypatch,\n+            {\n+                \"anthropic\": (0.9, \"observed\"),\n+                \"openai\": (0.9, \"observed\"),\n+                \"google\": (0.9, \"observed\"),\n+            },\n+        )\n+\n+        monitor.poll_once()\n+\n+        assert monitor.provider_status[\"local\"] == \"healthy\"\n+        status = monitor.get_provider_status()\n+        assert status[\"local\"][\"headroom\"] == pytest.approx(1.0)\n+        assert status[\"local\"][\"confidence\"] == \"local\"\n+\n+    def test_get_agent_headroom_ollama_returns_one(self, monkeypatch: pytest.MonkeyPatch) -> None:\n+        monitor = quota_monitor.QuotaMonitor(poll_interval=0.01)\n+        _patch_headroom(\n+            monkeypatch,\n+            {\n+                \"anthropic\": (0.9, \"observed\"),\n+                \"openai\": (0.9, \"observed\"),\n+                \"google\": (0.9, \"observed\"),\n+            },\n+        )\n+\n+        monitor.poll_once()\n+\n+        assert monitor.get_agent_headroom(\"ollama\") == pytest.approx(1.0)\n+\n+    def test_ollama_never_excluded_from_selection(self, monkeypatch: pytest.MonkeyPatch) -> None:\n+        monitor = quota_monitor.QuotaMonitor(poll_interval=0.01)\n+        _patch_headroom(\n+            monkeypatch,\n+            {\n+                \"anthropic\": (0.9, \"observed\"),\n+                \"openai\": (0.9, \"observed\"),\n+                \"google\": (0.9, \"observed\"),\n+            },\n+        )\n+        monitor.poll_once()\n+\n+        # Pause all remote providers\n+        monitor.force_status(\"anthropic\", \"paused\", headroom=0.01, confidence=\"runtime\")\n+        monitor.force_status(\"openai\", \"paused\", headroom=0.01, confidence=\"runtime\")\n+        monitor.force_status(\"google\", \"paused\", headroom=0.01, confidence=\"runtime\")\n+\n+        available = monitor.get_available_agents([\"claude\", \"codex\", \"gemini\", \"ollama\"])\n+        assert \"ollama\" in available\n+\n+    def test_local_provider_skips_sdp_lookup(self, monkeypatch: pytest.MonkeyPatch) -> None:\n+        monitor = quota_monitor.QuotaMonitor(\n+            poll_interval=0.01,\n+            agent_providers={\"ollama\": \"local\"},\n+        )\n+\n+        # SDP import would blow up if called — proves short-circuit works\n+        monkeypatch.setattr(\n+            quota_monitor.importlib,\n+            \"import_module\",\n+            lambda name: (_ for _ in ()).throw(RuntimeError(\"should not be called\")),\n+        )\n+\n+        monitor.poll_once()\n+\n+        assert monitor.provider_status[\"local\"] == \"healthy\"\n+        assert monitor.get_agent_headroom(\"ollama\") == pytest.approx(1.0)\n+\n     def test_runtime_failure_detection(self) -> None:\n         assert quota_monitor.is_quota_error(\"HTTP 429 rate limit exceeded\")\n         assert quota_monitor.is_quota_error(\"insufficient balance for this request\")"}
+{"type":"message","timestamp":"2026-04-08T23:22:26.647Z","role":"assistant","content":"I will check `ESCALATIONS.md` for any issues or notes that might be relevant to the current task.","delta":true}
+{"type":"tool_use","timestamp":"2026-04-08T23:22:26.685Z","tool_name":"read_file","tool_id":"read_file_1775690546685_0","parameters":{"file_path":"ESCALATIONS.md"}}
+{"type":"tool_result","timestamp":"2026-04-08T23:22:26.765Z","tool_id":"read_file_1775690546685_0","status":"success","output":""}
+{"type":"message","timestamp":"2026-04-08T23:22:30.159Z","role":"assistant","content":"I will now run the tests for `quota","delta":true}
+{"type":"message","timestamp":"2026-04-08T23:22:30.180Z","role":"assistant","content":"_monitor.py` to ensure that the changes are working correctly and that there are no regressions.","delta":true}
+{"type":"tool_use","timestamp":"2026-04-08T23:22:30.267Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1775690550267_0","parameters":{"description":"Running tests for quota_monitor.py.","command":"pytest tests/test_quota_monitor.py"}}
+{"type":"tool_result","timestamp":"2026-04-08T23:22:31.389Z","tool_id":"run_shell_command_1775690550267_0","status":"success","output":"/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\"\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))\n============================= test session starts ==============================\nplatform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0\nsensitiveurl: .*\nrootdir: /Users/anthony/Programming/PromptClaw\nconfigfile: pyproject.toml\nplugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0\nasyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollected 21 items                                                             \n\ntests/test_quota_monitor.py .....................                        [100%]\n\n============================== 21 passed in 0.13s =============================="}
+{"type":"message","timestamp":"2026-04-08T23:22:34.133Z","role":"assistant","content":"I will run all the tests in the `tests/` directory to ensure that the","delta":true}
+{"type":"message","timestamp":"2026-04-08T23:22:34.159Z","role":"assistant","content":" changes didn't introduce any regressions elsewhere in the codebase.","delta":true}
+{"type":"tool_use","timestamp":"2026-04-08T23:22:34.201Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1775690554201_0","parameters":{"description":"Running all tests.","command":"pytest tests/ -x"}}
+
+--- STDERR ---
+YOLO mode is enabled. All tool calls will be automatically approved.
+Keychain initialization encountered an error: Cannot find module '../build/Release/keytar.node'
+Require stack:
+- /opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/node_modules/keytar/lib/keytar.js
+Using FileKeychain fallback for secure storage.
+Loaded cached credentials.
+YOLO mode is enabled. All tool calls will be automatically approved.

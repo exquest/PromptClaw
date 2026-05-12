@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1383 chars)
+---
+
+T-018 done. Committed as `224f53c`.
+
+**What changed**
+- `my-claw/tools/senseweave/phrase_tracker.py` — new `PhraseTracker` class. Watches an `is_playing` stream, emits `"phrase_started"` once a continuous play session crosses 5s, and `"phrase_ended"` when play stops after a phrase was active.
+- `my-claw/tools/midi_keyboard_listener.py` — `build_state` now accepts an optional `phrase_tracker`, and `run()` keeps one across ticks. State JSON gains `phrase_active`, `phrase_duration_seconds`, and `phrase_event` (only on boundary ticks).
+- `my-claw/tools/theramini_listener.py` — new `apply_phrase_tracker()` helper, called by `run_daemon` *after* the idle-tone override so phrase events reflect the final playing decision.
+- `tests/test_phrase_tracker.py` — 12 unit tests for the threshold logic (no event before 5s, single emission per session, restart on short bursts, custom thresholds, reset).
+- `tests/test_midi_keyboard_listener_runtime.py` & `tests/test_theramini_listener_runtime.py` — integration tests confirming the listeners surface the boundary events.
+
+**Validation**: full `pytest tests/` 3371 passed; `ruff check src/ tests/` clean; `mypy src/` clean. (Pre-existing mypy noise in `my-claw/tools/{audio_analysis,theramini_duet}.py` was left alone per the scope rule.)

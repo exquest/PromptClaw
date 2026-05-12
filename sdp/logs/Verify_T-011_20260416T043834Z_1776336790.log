@@ -1,0 +1,24 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high -p -
+Prompt delivered via: stdin (2948 chars)
+---
+
+**Verdict: PASS**
+
+Report written to `sdp/verification/t-011@20260416t043834z-verify.md` and committed.
+
+**Summary of findings:**
+
+| Dimension | Result |
+|---|---|
+| Correctness | All 3 acceptance criteria met: full lifecycle test, 5-min arc proxy + multi-piece queue, all 4 behavioral assertions present |
+| Completeness | No gaps vs. spec; recall path covered in existing `test_repertoire_memory.py` |
+| Consistency | Follows project conventions for offline integration tests and commit format |
+| Security | No secrets, uses `tmp_path`, atomic file writes, no subprocesses |
+| Quality | 2146/2146 tests pass in 12.59 s |
+
+**Hardening checks:**
+- `bootstrap_identity()` is called before `FirstBootAnnouncer` in both `daemon.py:2445` and `cypherclaw_daemon.py:3533` — wiring is correct.
+- Both standalone and federated modes covered by `test_first_boot.py` (33 tests, all green).
+- Identity persistence across reboots tested by `test_identity_persists_across_reboots`.
+
+**One minor issue** (non-blocking): `recall_hint` is not exercised in the multi-piece queue test, but is covered in the dedicated `test_repertoire_memory.py` suite.

@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2009 chars)
+---
+
+Committed `fce0b65`.
+
+**T-027 done.** Created `my-claw/tools/senseweave/generation/budget.py` with `BudgetState` dataclass and `GenerationBudget` class:
+- Daily/monthly USD caps (defaults 5/100), overridable via `CYPHERCLAW_GENERATION_DAILY_CAP_USD` / `CYPHERCLAW_GENERATION_MONTHLY_CAP_USD`
+- `allow(req) -> (bool, str)` estimates `PER_SECOND_USD[model] × duration × 1.5`
+- `record(result)` bumps `today_spent_usd` + `month_spent_usd` and atomically writes via tmp + `os.replace`
+- Auto date/month rollover on every read/check using injectable clock
+
+18 budget tests + full suite (3736 passed, 3 skipped) green; ruff and mypy clean. Pre-existing untracked `sdp/logs/*` and modified workspace files left alone per scope rules.

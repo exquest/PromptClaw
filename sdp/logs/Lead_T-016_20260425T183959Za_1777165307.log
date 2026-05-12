@@ -1,0 +1,22 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (383 chars)
+---
+
+Git is clean. The T-016 scout report is preserved in the committed log file.
+
+## T-016 scout summary
+
+**`cast_planner.select_cast_ids`** — `my-claw/tools/senseweave/cast_planner.py:27-91`
+- Signature takes `all_chars`, `cast_history`, kwargs `mood_energy`, `max_chars`, `preferred_synths`, `voice_count_target`
+- Returns flat `list[str]` of character IDs — no metadata
+- Helper `_ranked_character_ids` (lines 10-24) requires `voice.synth` to be set
+
+**`SampleSelector`** — does not exist yet. Owned by T-028 per `sdp/implementation-plan.md:66`. Architecture in `docs/cypherclaw-sampler-architecture.md:194` describes it as a mode/arc/mood-aware deterministic picker returning a `SampleRecord` from a `SampleLibrary`.
+
+**Cast metadata** — built at the call site, not the planner. `my-claw/tools/duet_composer.py:396`:
+```python
+cast = [{"id": cid, **all_chars[cid]["voice"], "char_name": cid} for cid in cast_ids]
+```
+Each entry carries: `id`, `char_name`, plus spread `voice` fields (`synth`, `role`, `register`, `params`).
+
+**Extension seam for T-016**: per-element dict at `duet_composer.py:396` is the natural place to attach a `sample` field for cast members where `synth == "sw_sampler"`. Two options — caller-side merge (preserves `list[str]` contract) vs. planner-side return-type change (breaks 5 tests in `tests/test_cast_planner.py`). Caller-side recommended; flagged ordering question vs. T-028 for ESCALATIONS.

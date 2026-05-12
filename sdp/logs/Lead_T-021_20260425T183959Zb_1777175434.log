@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3576 chars)
+---
+
+T-021@20260425T183959Zb complete and committed (f2080ec).
+
+**What changed:**
+- `senseweave/sample_status.py` — added thin `face_display_sample_status_text(...)` wrapper that opts into `combine_activity_and_playback=True`.
+- `face_display.py` — imports + calls the new helper at the existing sample-layer status block (line ~389), preserving the centered 24pt placement and degradation guards.
+- `tests/test_face_display_sample_status.py` — 4 new tests: combined wording, plan-only fallback, monitor-offline + empty-input degradation, and a source-level assertion that the renderer wires through the new helper.
+- `specs/t-021@20260425t183959zb-spec.md`, CHANGELOG entry.
+
+**Validation:** 24/24 tests pass across the new suite, `test_sample_status.py`, and `test_operator_diagnostics.py`. Ruff clean on changed files.
+
+**Out of scope (recorded in spec):** the auto-hardening items about `bootstrap_identity()` startup wiring and standalone/federated identity persistence belong to the identity workstream, not this diagnostics-formatting task — face_display.py has no identity-bootstrap surface to wire into.

@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2993 chars)
+---
+
+**Verdict: PASS**
+
+The `generated_content_dominance` detector passes all acceptance criteria:
+
+- Per-piece ratio check fires correctly at `> 0.3` (strict inequality confirmed by boundary test)
+- Rolling 7-consecutive-days check correctly windows to last 50 pieces and escalates to `severity="fail"`
+- All 26 antipattern tests pass; full suite (3814) is clean with no regressions
+
+Two minor (non-blocking) gaps noted: the `recent_pieces` fallback key is untested, and there's no near-miss boundary test for a 6-day streak. The candidate hardening bullets about `bootstrap_identity()` are out of scope for this pure-function detector.

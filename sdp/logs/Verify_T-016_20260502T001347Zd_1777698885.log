@@ -1,0 +1,16 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2880 chars)
+---
+
+**Verdict: PASS**
+
+Report written to `sdp/verification/t-016@20260502t001347zd-verify.md` and committed as `db4d508`.
+
+**Summary of findings:**
+
+- Healthy-server run: all 6 endpoints returned 200, `exit_code=0` — correct.
+- Server-down run: all connections refused, entity GET skipped gracefully, `exit_code=1` — correct.
+- No code changes to `scripts/smoke_narrative.py` — appropriate since no bugs were found.
+- `run-log.md` row present and points to both evidence files.
+- Test suite clean: 3920 passed, 3 skipped.
+- Candidate-hardening items (`bootstrap_identity` before `FirstBootAnnouncer`) are already implemented in all three startup paths; no action needed.

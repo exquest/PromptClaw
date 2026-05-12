@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2825 chars)
+---
+
+**Verdict: PASS**
+
+The Zd implementation is clean and correct:
+
+- `capacity < 1` now raises `ValueError` at construction time (fixes the Zc gap)
+- `_evict_lru()` private helper replaced by public `evict_lru()` that delegates fully to `on_sampler_free()` — no duplicated release logic
+- Integration test fills the default 64-buffer cap, loads a 65th, and verifies OSC order (`/b_free` → `/b_alloc` → `/b_allocRead`) plus the spy assertion that `on_sampler_free` was called with the correct record
+- 15/15 sampler tests pass; 3152/3152 full suite passes
+
+One minor carry-forward from Zc: double-loading an already-live record leaks the old bufnum. It's out of scope for this slice and not blocking.

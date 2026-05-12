@@ -1,0 +1,2732 @@
+Command: codex exec --dangerously-bypass-approvals-and-sandbox -c model_reasoning_effort=xhigh -m gpt-5.3-codex-spark -
+Prompt delivered via: stdin (2759 chars)
+---
+
+Verification completed.
+
+- Report written exactly at `sdp/verification/t-018@20260425t183959zc-verify.md`.
+- Committed as `c344da3` with message: `verify(T-018): verification report — PASS WITH NOTES [T-018@20260425T183959Zc]`.
+- Required commands executed:
+  - `git log --oneline -5`
+  - `git diff --stat HEAD~3`
+  - `git diff HEAD~3`
+  - `cat ESCALATIONS.md`
+  - `pip install -e '.[dev]' && pytest tests/ -x`
+- Test run result: `3395 passed` (full suite), with warnings only.
+
+Findings (from report):
+- Core requirement is satisfied: sidecar `.json` now includes all required tags and schema validation/tests were added.
+- Recurring bootstrap hardening checks are satisfied in existing startup/test coverage (`daemon.py`, `cypherclaw_daemon.py`, `tests/test_first_boot.py`, `tests/test_governor_integration.py`) but this task did not modify startup flow.
+- One minor non-blocking issue noted: `PhraseCaptureWriter` is currently validated at unit-test level and not yet wired into production capture listeners in this change set.
+
+--- STDERR ---
+OpenAI Codex v0.125.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.3-codex-spark
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019dc79a-b703-7313-9b69-4a5c858a0117
+--------
+user
+# Verification: Task T-018@20260425T183959Zc
+
+**Task:** Add full sample tagging metadata (instrument, song_id, key, tempo, timestamp, duration, source=human) written as a sidecar JSON next to each captured sample. Include tests verifying tag completeness and schema.
+**Tier:** T1
+
+You are the VERIFY agent for this task. The LEAD agent has completed their work.
+
+
+## Review Checklist
+
+1. **Review recent commits:**
+   ```bash
+   git log --oneline -5
+   git diff HEAD~3 --stat
+   ```
+
+2. **Review code changes:**
+   ```bash
+   git diff HEAD~3
+   ```
+
+4. **Check ESCALATIONS.md** for any flagged issues.
+
+5. **Run the test suite:**
+   ```bash
+   pip install -e '.[dev]' && pytest tests/ -x
+   ```
+
+## Evaluation Criteria
+
+Evaluate the work against these five dimensions:
+
+1. **Correctness**: Does the output match the requirements/spec?
+2. **Completeness**: Are there gaps, missing edge cases, or unhandled scenarios?
+3. **Consistency**: Does the output follow established patterns and conventions?
+4. **Security**: Are there vulnerabilities, leaked secrets, or unsafe practices?
+5. **Quality**: Does the output meet the quality gates for this phase?
+
+## Output
+
+Write your verification report and all findings to this exact path:
+`sdp/verification/t-018@20260425t183959zc-verify.md`
+Do not use a different filename or directory.
+
+Use this format:
+
+```markdown
+# Verification Report — T-018@20260425T183959Zc
+
+**Verify Agent:** [your agent name]
+**Date:** [today]
+**Artifacts Reviewed:** [list files reviewed]
+
+## Correctness
+[assessment]
+
+## Completeness
+[assessment]
+
+## Consistency
+[assessment]
+
+## Security
+[assessment]
+
+## Quality
+[assessment]
+
+## Issues Found
+- [ ] [Issue — severity: blocking/minor]
+
+## Verdict: [PASS | PASS WITH NOTES | FAIL]
+
+## Notes for Lead Agent
+[specific items to address]
+```
+
+Commit the verification report.
+
+## Candidate Hardening (Auto-Generated)
+
+Use the recurring failure patterns below as mandatory hardening checks:
+- Address this recurring failure mode explicitly: Runtime does not invoke bootstrap_identity on startup, so the identity file is never guaranteed to be created automatically at first run. Severity: blocking.
+- Address this recurring failure mode explicitly: Add bootstrap_identity() invocation in startup flow (before FirstBootAnnouncer) so first boots mint and persist identity automatically..
+- Address this recurring failure mode explicitly: Ensure this path is used on both standalone and federated modes..
+- Enforce behavioral regression tests before completion: Add an integration test that exercises startup and verifies identity persistence between boots..
+- Enforce behavioral regression tests before completion: Re-run pip install -e '.[dev]' && pytest tests/ -x after wiring the startup path..
+
+codex
+I’ll verify the lead’s implementation against the requested sample-tagging requirement and the mandatory recurring hardening checks. I’ll first inspect the last three commits and their full diff, then review `ESCALATIONS.md`, run the requested test command, and write/commit the report at the exact required path.
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && git log --oneline -5 && echo '---' && git diff --stat HEAD~3 -- ." in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+8405d84 chore(sdp): record run artifacts through T-018@20260425T183959Zc
+54f071f verify(T-018): verification report — PASS [T-018@20260425T183959Zc]
+4532481 feat(capture): write sample tagging metadata sidecar JSON [T-018@20260425T183959Zc]
+c2448cf verify(T-018): verification report — PASS [T-018@20260425T183959Zb]
+ceb4d5c feat(capture): write qualifying phrase to samples/<source>/ on phrase_ended [T-018@20260425T183959Zb]
+---
+ my-claw/tools/senseweave/phrase_capture.py         |    86 +-
+ progress.md                                        |    18 +-
+ .../Lead_T-016_20260425T183959Zb_1777166097.log    |    15 +
+ .../Lead_T-016_20260425T183959Zc_1777166490.log    |    95 +
+ .../Lead_T-016_20260425T183959Zd_1777166850.log    | 20200 +++++++++++++++++++
+ .../Lead_T-018_20260425T183959Za_1777168284.log    |    14 +
+ .../Lead_T-018_20260425T183959Zb_1777168931.log    |    12 +
+ .../Lead_T-018_20260425T183959Zc_1777169624.log    |    13 +
+ .../Lead_T-018_20260425T183959Zc_1777170222.log    |    10 +
+ .../Lead_T-018_20260425T183959Zc_1777170236.log    |     5 +
+ .../Lead_T-023_20260425T183959Z_1777167707.log     |    13 +
+ .../Verify_T-016_20260425T183959Zb_1777166373.log  |   189 +
+ .../Verify_T-016_20260425T183959Zc_1777166673.log  |    12 +
+ .../Verify_T-016_20260425T183959Zd_1777167536.log  |    12 +
+ .../Verify_T-018_20260425T183959Za_1777168754.log  |   273 +
+ .../Verify_T-018_20260425T183959Zb_1777169354.log  |   388 +
+ .../Verify_T-018_20260425T183959Zc_1777169871.log  |   197 +
+ .../Verify_T-023_20260425T183959Z_1777168165.log   |   171 +
+ sdp/logs/claude_1777168241.log                     |     5 +
+ sdp/notifications.log                              |     4 +
+ sdp/run-log.md                                     |     4 +
+ sdp/telemetry/prompt-review-2026-04-26.md          |    21 +
+ sdp/verification/t-016@20260425t183959zb-verify.md |   108 +
+ .../t-018 @20260425t183959zc-verify.md             |    31 +
+ tests/test_phrase_capture.py                       |   200 +-
+ 25 files changed, 22087 insertions(+), 9 deletions(-)
+
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && git diff HEAD~3 -- my-claw/tools/senseweave/phrase_capture.py tests/test_phrase_capture.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+diff --git a/my-claw/tools/senseweave/phrase_capture.py b/my-claw/tools/senseweave/phrase_capture.py
+index 6a1a1cb..c75fd17 100644
+--- a/my-claw/tools/senseweave/phrase_capture.py
++++ b/my-claw/tools/senseweave/phrase_capture.py
+@@ -10,14 +10,18 @@ Two sources are supported:
+   and are persisted as a Standard MIDI File (Type 0).
+ * ``"theramini"`` — buffer entries are float sample arrays and are
+   persisted as 16-bit PCM mono WAV.
++
++Each captured sample is paired with a sidecar ``.json`` metadata file
++containing instrument/song_id/key/tempo/timestamp/duration/source tags.
+ """
+ from __future__ import annotations
+ 
++import json
+ import uuid
+ import wave
+ from datetime import datetime, timezone
+ from pathlib import Path
+-from typing import Any, Iterable, Literal, Optional, Sequence
++from typing import Any, Iterable, Literal, Mapping, Optional, Sequence
+ 
+ import numpy as np
+ import numpy.typing as npt
+@@ -32,6 +36,37 @@ _MIDI_PPQ = 480
+ _MIDI_TEMPO_USEC_PER_QUARTER = 500_000  # 120 BPM
+ _MIDI_TICKS_PER_SECOND = _MIDI_PPQ * 1_000_000 // _MIDI_TEMPO_USEC_PER_QUARTER  # 960
+ 
++DEFAULT_SAMPLE_PROVENANCE = "human"
++
++# Sidecar metadata schema: required key -> tuple of allowed types.
++SAMPLE_METADATA_SCHEMA: dict[str, tuple[type, ...]] = {
++    "instrument": (str,),
++    "song_id": (str, type(None)),
++    "key": (str, type(None)),
++    "tempo": (int, float, type(None)),
++    "timestamp": (str,),
++    "duration": (int, float),
++    "source": (str,),
++}
++
++
++def validate_sample_metadata(meta: Mapping[str, Any]) -> None:
++    """Raise ``ValueError`` if ``meta`` does not match :data:`SAMPLE_METADATA_SCHEMA`."""
++    missing = sorted(set(SAMPLE_METADATA_SCHEMA) - set(meta))
++    if missing:
++        raise ValueError(f"sample metadata missing required keys: {missing}")
++    extra = sorted(set(meta) - set(SAMPLE_METADATA_SCHEMA))
++    if extra:
++        raise ValueError(f"sample metadata has unknown keys: {extra}")
++    for key, allowed in SAMPLE_METADATA_SCHEMA.items():
++        value = meta[key]
++        if not isinstance(value, allowed) or isinstance(value, bool):
++            allowed_names = ", ".join(t.__name__ for t in allowed)
++            raise ValueError(
++                f"sample metadata field {key!r} has type "
++                f"{type(value).__name__}, expected one of: {allowed_names}"
++            )
++
+ 
+ class PhraseCaptureWriter:
+     """Buffer input across a phrase and write to ``<root>/<source>/`` on phrase_ended.
+@@ -48,6 +83,12 @@ class PhraseCaptureWriter:
+     tracker:
+         Inject a custom :class:`PhraseTracker` (e.g., a non-default threshold
+         or a tracker shared with a listener). Defaults to a fresh tracker.
++    metadata:
++        Initial sidecar tags. Recognised keys: ``instrument``, ``song_id``,
++        ``key``, ``tempo``, ``source``. Unset keys are filled with defaults
++        (instrument=``source`` arg, source=``"human"``, others ``None``).
++        ``timestamp`` and ``duration`` are always derived per-phrase and
++        cannot be set here.
+     """
+ 
+     def __init__(
+@@ -57,6 +98,7 @@ class PhraseCaptureWriter:
+         *,
+         sample_rate: int = DEFAULT_AUDIO_SAMPLE_RATE,
+         tracker: PhraseTracker | None = None,
++        metadata: Mapping[str, Any] | None = None,
+     ) -> None:
+         if source not in _VALID_SOURCES:
+             raise ValueError(f"unknown capture source: {source!r}")
+@@ -66,6 +108,22 @@ class PhraseCaptureWriter:
+         self.tracker = tracker or PhraseTracker()
+         self._buffer: list[Any] = []
+         self._first_play_time: Optional[float] = None
++        self._metadata: dict[str, Any] = {}
++        if metadata is not None:
++            self.set_metadata(**dict(metadata))
++
++    _USER_METADATA_KEYS: frozenset[str] = frozenset(
++        {"instrument", "song_id", "key", "tempo", "source"}
++    )
++
++    def set_metadata(self, **fields: Any) -> None:
++        """Update sidecar metadata fields. Derived keys are rejected."""
++        bad = sorted(set(fields) - self._USER_METADATA_KEYS)
++        if bad:
++            raise ValueError(
++                f"cannot set derived or unknown metadata fields: {bad}"
++            )
++        self._metadata.update(fields)
+ 
+     @property
+     def buffered_chunks(self) -> int:
+@@ -131,8 +189,34 @@ class PhraseCaptureWriter:
+             _write_smf0_midi(path, self._buffer)
+         else:
+             _write_pcm16_wav(path, self._buffer, self.sample_rate)
++        self._write_sidecar(path, now)
+         return path
+ 
++    def _compose_metadata(self, now: float) -> dict[str, Any]:
++        start = self._first_play_time if self._first_play_time is not None else now
++        duration = max(0.0, now - start)
++        timestamp = (
++            datetime.fromtimestamp(now, tz=timezone.utc)
++            .isoformat()
++            .replace("+00:00", "Z")
++        )
++        meta: dict[str, Any] = {
++            "instrument": self._metadata.get("instrument", self.source),
++            "song_id": self._metadata.get("song_id"),
++            "key": self._metadata.get("key"),
++            "tempo": self._metadata.get("tempo"),
++            "timestamp": timestamp,
++            "duration": round(duration, 6),
++            "source": self._metadata.get("source", DEFAULT_SAMPLE_PROVENANCE),
++        }
++        validate_sample_metadata(meta)
++        return meta
++
++    def _write_sidecar(self, path: Path, now: float) -> None:
++        meta = self._compose_metadata(now)
++        sidecar = path.with_suffix(".json")
++        sidecar.write_text(json.dumps(meta, indent=2, sort_keys=True))
++
+ 
+ def _encode_varlen(value: int) -> bytes:
+     if value < 0:
+diff --git a/tests/test_phrase_capture.py b/tests/test_phrase_capture.py
+index af60659..9bd51c0 100644
+--- a/tests/test_phrase_capture.py
++++ b/tests/test_phrase_capture.py
+@@ -1,6 +1,7 @@
+ """Tests for PhraseCaptureWriter — buffered phrase persistence."""
+ from __future__ import annotations
+ 
++import json
+ import os
+ import sys
+ import wave
+@@ -12,7 +13,11 @@ import pytest
+ 
+ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+ 
+-from senseweave.phrase_capture import PhraseCaptureWriter
++from senseweave.phrase_capture import (
++    SAMPLE_METADATA_SCHEMA,
++    PhraseCaptureWriter,
++    validate_sample_metadata,
++)
+ from senseweave.phrase_tracker import PhraseTracker
+ 
+ 
+@@ -205,6 +210,199 @@ def test_smf_track_contains_tempo_and_end_meta(tmp_path: Path) -> None:
+     assert data.endswith(b"\xFF\x2F\x00")
+ 
+ 
++def _read_sidecar(audio_path: Path) -> dict:
++    sidecar = audio_path.with_suffix(".json")
++    assert sidecar.exists(), f"sidecar missing for {audio_path}"
++    return json.loads(sidecar.read_text())
++
++
++def test_sidecar_metadata_written_with_complete_schema(tmp_path: Path) -> None:
++    writer = PhraseCaptureWriter("keyboard", tmp_path)
++    written = _drive(writer, _qualifying_keyboard_stream())
++    meta = _read_sidecar(written[0])
++
++    # Tag completeness — every schema key is present and non-extra.
++    assert set(meta) == set(SAMPLE_METADATA_SCHEMA)
++    # Schema validation passes for the produced payload.
++    validate_sample_metadata(meta)
++
++
++def test_sidecar_defaults_keyboard(tmp_path: Path) -> None:
++    writer = PhraseCaptureWriter("keyboard", tmp_path)
++    written = _drive(writer, _qualifying_keyboard_stream())
++    meta = _read_sidecar(written[0])
++
++    assert meta["instrument"] == "keyboard"
++    assert meta["source"] == "human"
++    assert meta["song_id"] is None
++    assert meta["key"] is None
++    assert meta["tempo"] is None
++
++
++def test_sidecar_defaults_theramini(tmp_path: Path) -> None:
++    writer = PhraseCaptureWriter("theramini", tmp_path, sample_rate=8000)
++    sr = 8000
++    tone = np.zeros(sr, dtype=np.float32)
++    stream = [
++        (tone, True, 0.0),
++        (tone, True, 5.0),
++        (None, False, 6.0),
++    ]
++    written = _drive(writer, stream)
++    meta = _read_sidecar(written[0])
++
++    assert meta["instrument"] == "theramini"
++    assert meta["source"] == "human"
++
++
++def test_sidecar_carries_user_supplied_tags(tmp_path: Path) -> None:
++    writer = PhraseCaptureWriter(
++        "keyboard",
++        tmp_path,
++        metadata={
++            "instrument": "rhodes",
++            "song_id": "improv-42",
++            "key": "Dm",
++            "tempo": 96.0,
++        },
++    )
++    written = _drive(writer, _qualifying_keyboard_stream())
++    meta = _read_sidecar(written[0])
++
++    assert meta["instrument"] == "rhodes"
++    assert meta["song_id"] == "improv-42"
++    assert meta["key"] == "Dm"
++    assert meta["tempo"] == 96.0
++    assert meta["source"] == "human"
++
++
++def test_set_metadata_updates_between_phrases(tmp_path: Path) -> None:
++    writer = PhraseCaptureWriter("keyboard", tmp_path)
++    note = _midi_note_on(60)
++
++    first_stream = [(note, True, 0.0), (note, True, 5.0), (None, False, 6.0)]
++    written_first = _drive(writer, first_stream)
++    meta_first = _read_sidecar(written_first[0])
++    assert meta_first["key"] is None
++
++    writer.set_metadata(key="G", tempo=140)
++
++    second_stream = [(note, True, 100.0), (note, True, 105.0), (None, False, 106.0)]
++    written_second = _drive(writer, second_stream)
++    meta_second = _read_sidecar(written_second[0])
++    assert meta_second["key"] == "G"
++    assert meta_second["tempo"] == 140
++
++
++def test_set_metadata_rejects_derived_or_unknown_fields(tmp_path: Path) -> None:
++    writer = PhraseCaptureWriter("keyboard", tmp_path)
++    with pytest.raises(ValueError):
++        writer.set_metadata(timestamp="2026-04-25T18:39:59Z")
++    with pytest.raises(ValueError):
++        writer.set_metadata(duration=12.0)
++    with pytest.raises(ValueError):
++        writer.set_metadata(performer="anthony")
++
++
++def test_sidecar_timestamp_is_iso_utc(tmp_path: Path) -> None:
++    writer = PhraseCaptureWriter("keyboard", tmp_path)
++    end_unix = datetime(2026, 4, 25, 18, 39, 59, tzinfo=timezone.utc).timestamp()
++    stream = [
++        (_midi_note_on(60), True, end_unix - 6.0),
++        (_midi_note_on(60), True, end_unix - 1.0),
++        (None, False, end_unix),
++    ]
++    written = _drive(writer, stream)
++    meta = _read_sidecar(written[0])
++
++    parsed = datetime.fromisoformat(meta["timestamp"].replace("Z", "+00:00"))
++    assert parsed == datetime(2026, 4, 25, 18, 39, 59, tzinfo=timezone.utc)
++
++
++def test_sidecar_duration_matches_phrase_length(tmp_path: Path) -> None:
++    writer = PhraseCaptureWriter("keyboard", tmp_path)
++    note = _midi_note_on(60)
++    stream = [
++        (note, True, 100.0),
++        (note, True, 105.0),
++        (None, False, 107.5),
++    ]
++    written = _drive(writer, stream)
++    meta = _read_sidecar(written[0])
++    assert meta["duration"] == pytest.approx(7.5, abs=1e-6)
++
++
++def test_sidecar_path_pairs_with_audio(tmp_path: Path) -> None:
++    writer = PhraseCaptureWriter("theramini", tmp_path, sample_rate=8000)
++    sr = 8000
++    tone = np.zeros(sr, dtype=np.float32)
++    stream = [
++        (tone, True, 0.0),
++        (tone, True, 5.0),
++        (None, False, 6.0),
++    ]
++    written = _drive(writer, stream)
++    audio = written[0]
++    sidecar = audio.with_suffix(".json")
++
++    assert sidecar.parent == audio.parent
++    assert sidecar.stem == audio.stem
++    assert sidecar.suffix == ".json"
++
++
++def test_no_sidecar_when_subthreshold_burst_dropped(tmp_path: Path) -> None:
++    writer = PhraseCaptureWriter("keyboard", tmp_path)
++    stream = [
++        (_midi_note_on(60), True, 0.0),
++        (None, False, 2.0),
++    ]
++    _drive(writer, stream)
++    target = tmp_path / "keyboard"
++    if target.exists():
++        assert not any(p.suffix == ".json" for p in target.iterdir())
++
++
++def test_validator_rejects_missing_keys() -> None:
++    incomplete = {
++        "instrument": "keyboard",
++        "song_id": None,
++        "key": None,
++        "tempo": None,
++        "timestamp": "2026-04-25T18:39:59Z",
++        # duration missing
++        "source": "human",
++    }
++    with pytest.raises(ValueError, match="missing required keys"):
++        validate_sample_metadata(incomplete)
++
++
++def test_validator_rejects_unknown_keys() -> None:
++    payload = {k: _placeholder(k) for k in SAMPLE_METADATA_SCHEMA}
++    payload["mystery"] = "x"
++    with pytest.raises(ValueError, match="unknown keys"):
++        validate_sample_metadata(payload)
++
++
++def test_validator_rejects_wrong_types() -> None:
++    payload = {k: _placeholder(k) for k in SAMPLE_METADATA_SCHEMA}
++    payload["tempo"] = "fast"  # should be number-or-None
++    with pytest.raises(ValueError, match="tempo"):
++        validate_sample_metadata(payload)
++
++
++def _placeholder(key: str):
++    defaults = {
++        "instrument": "keyboard",
++        "song_id": None,
++        "key": None,
++        "tempo": None,
++        "timestamp": "2026-04-25T18:39:59Z",
++        "duration": 6.0,
++        "source": "human",
++    }
++    return defaults[key]
++
++
+ def test_chunks_can_carry_multiple_midi_messages(tmp_path: Path) -> None:
+     writer = PhraseCaptureWriter("keyboard", tmp_path)
+     composite = _midi_note_on(60) + _midi_note_on(64) + _midi_note_on(67)
+
+codex
+I’ve confirmed the core code and test diffs; next I’m checking `ESCALATIONS.md` and the specific runtime/bootstrap hardening items the user flagged so I can include any blocking items in the report.
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && cat ESCALATIONS.md' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+# Escalations
+
+Items requiring human review. Append-only per task.
+
+## T-001 (2026-04-01T18:55:24.984659+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-001 (2026-04-01T18:56:11.434931+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-001 (2026-04-01T18:56:41.692113+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-001 timed out twice. Run sdp-cli tasks split T-001 to break it down.
+
+## T-009@20260408T220341Z (2026-04-08T22:12:54.185469+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=85.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=85.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=85.0%
+
+## T-001@20260408T223256Z (2026-04-08T22:33:10.555043+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+
+## T-001@20260408T223256Z (2026-04-08T23:10:00+00:00)
+
+- **Reason:** Validation blocked by pre-existing repo issues
+- **Details:** `pytest tests/ -x` stopped during collection in `tests/test_first_boot.py` because `cypherclaw` is not importable from this checkout. `ruff check src/ tests/` and `mypy src/` also fail because the repo has no `src/` directory. `pip install -e '.[dev]'` completed but warned that `promptclaw 3.0.0` does not define a `dev` extra.
+
+## T-004@20260408T223256Z (2026-04-08T23:05:05.007269+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=84.0%
+
+## T-004@20260408T223256Z (2026-04-09T00:14:00+00:00)
+
+- **Reason:** Scope constraint on orchestration docs
+- **Details:** `AGENTS.md` asks for architecture/command/startup/changelog updates on orchestration changes, but this task also constrained edits to the bug-fix scope and those doc files already had unrelated local modifications. I limited the change set to the Ollama routing fix plus regression coverage and did not modify the product docs in this task.
+
+## T-007@20260408T223256Z (2026-04-08T23:29:49.940049+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=83.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=83.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=83.0%
+
+## T-007@20260408T223256Z (2026-04-08T23:37:23Z)
+
+- **Reason:** Shared local-provider health granularity
+- **Details:** The selector now excludes `ollama` when every configured Ollama route port is unhealthy and re-admits it when any configured port recovers. Health is tracked at the shared local-provider level, so a single-socket outage can still leave `ollama` eligible for categories routed to the down socket if another configured socket remains healthy.
+
+## T-010@20260408T223256Za (2026-04-09T00:02:48.014232+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=83.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=83.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=83.0%
+
+## T-010@20260408T223256Za (2026-04-09T00:24:00+00:00)
+
+- **Reason:** Scope and latency assumptions
+- **Details:** This split task only adds the daemon-side `ollama_health()` helper for dual sockets `11434` and `11435`; `/status` integration and Telegram `/local` formatting remain assigned to sibling subtasks `T-010@20260408T223256Zb` and `T-010@20260408T223256Zc`. Response latency is treated as daemon-side wall-clock time for the health probe; unreachable instances should return an unhealthy status, an empty model list, and `latency_ms` of `None` instead of raising.
+
+## T-010@20260408T223256Zc (2026-04-09T00:34:30+00:00)
+
+- **Reason:** Missing `/local` surface and status-endpoint assumption
+- **Details:** The current tree has no Telegram `/local` built-in and no separate daemon `/status` JSON endpoint. This task will add a shared in-process status snapshot consumed by both `/status` and the new `/local` command so `/local` can format Ollama health without duplicating probes. Scope is limited to the base `/local` status view; `/local bench` and `/local stats` remain out of scope for T-010c. No new dependencies are planned.
+
+## T-011@20260408T223256Z (2026-04-09T00:41:41.054077+00:00)
+
+- **Reason:** Ordered degradation policy
+- **Details:** step-1: reason=verify-first tier cascade: promoted verify-tier model as lead; original_pair=claude->codex; degraded_pair=codex->claude; remaining_headroom=82.0%
+step-2: reason=effort-first lead-tier downgrade applied (codex effort xhigh -> high) before family/version fallback; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=82.0%
+step-3: reason=same-provider verify fallback attempted but no same-provider verify candidate was available; original_pair=codex->claude; degraded_pair=codex->claude; remaining_headroom=82.0%
+
+## T-011@20260408T223256Z (2026-04-09T01:05:00+00:00)
+
+- **Reason:** LOCAL_ONLY scope assumption
+- **Details:** This task treats `LOCAL_ONLY` as a daemon-level LLM routing guard. When enabled, all daemon agent-execution paths that would otherwise target `claude`, `codex`, or `gemini` are coerced to `ollama`, including router fallback and explicit step payloads. Non-agent operational commands (for example Telegram delivery, shell built-ins, or health probes) remain unchanged. No new dependencies are planned.
+
+## T-012@20260408T223256Z (2026-04-09T01:30:00+00:00)
+
+- **Reason:** Transport and dependency scope assumptions
+- **Details:** This task uses stdlib-only HTTP probing (`urllib.request`) and `subprocess` for `tailscale status --json` — no new external dependencies. The identity endpoint is probed over plain HTTP on port 8443 (matching the federation PRD convention); TLS/signing verification is deferred to a future federation identity task (FD-001/FD-005). The module lives in `promptclaw/federation/discovery.py` following the PRD architecture layout. Peers are identified by `instance_id` for merge deduplication. Offline Tailscale peers are excluded from probing.
+
+## T-021@20260416T043834Z (2026-04-16T05:00:00+00:00)
+
+- **Reason:** Candidate hardening items are out of scope
+- **Details:** The auto-generated hardening checks reference `bootstrap_identity` and `FirstBootAnnouncer`, which belong to the federation/identity subsystem. This task (self-critique and revision passes for music composition) has no relation to the startup identity flow. No new dependencies required; stdlib only.
+
+## T-022@20260416T043834Z (2026-04-16T05:30:00+00:00)
+
+- **Reason:** Candidate hardening items are out of scope
+- **Details:** The auto-generated hardening checks reference `bootstrap_identity` and `FirstBootAnnouncer`, which belong to the federation/identity subsystem. This task (live-buffer and sample-bank abstractions) has no relation to the startup identity flow. No new dependencies required; stdlib only.
+
+## T-022@20260416T043834Z (2026-04-16T05:30:01+00:00)
+
+- **Reason:** Previous lead left out-of-scope changes
+- **Details:** The previous lead (gemini) bundled lint cleanup across 37+ unrelated files alongside the T-022 work. These out-of-scope changes were discarded via `git checkout HEAD --` to keep the commit scoped to T-022 only. The in-scope lint fix (removing 3 unused imports from `tests/test_live_buffer.py` flagged by ruff) was retained.
+
+## T-022@20260416T043834Z (2026-04-16T12:14:16.858992+00:00)
+
+- **Reason:** Verify model rejected by provider
+- **Details:** The verify model was rejected by the provider CLI. This is a configuration error, not a code issue. Fix the model ID and re-run. Error: OpenAI Codex v0.120.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.3-codex-spark
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effor...
+
+## T-022@20260416T043834Z (2026-04-16T12:19:34Z)
+
+- **Reason:** Manual verification state repair
+- **Details:** Local verification passed after the provider-model escalation, but `sdp-cli tasks manual-verify` could not record the result because an active `sdp-cli run` process (PID 69939) owns `.sdp/run.lock`. The lock was not removed. Candidate hardening was checked explicitly: both startup entrypoints call `bootstrap_identity()` before `FirstBootAnnouncer`, and `pytest tests/test_first_boot.py tests/test_governor_integration.py -q` passed. No new dependencies were added.
+
+## T-023@20260416T043834Z (2026-04-16T13:00:00+00:00)
+
+- **Reason:** Candidate hardening items are out of scope
+- **Details:** The auto-generated hardening checks reference `bootstrap_identity` and `FirstBootAnnouncer`, which belong to the federation/identity subsystem. This task (installation-aware acoustic ecology policies) has no relation to the startup identity flow. The new module `acoustic_ecology.py` is a pure-function policy layer with no I/O and no state files — it cannot affect startup sequencing. No new dependencies required; stdlib only.
+
+## T-024@20260416T043834Z (2026-04-16T14:00:00+00:00)
+
+- **Reason:** Candidate hardening items are out of scope
+- **Details:** The auto-generated hardening checks reference `bootstrap_identity` and `FirstBootAnnouncer`, which belong to the federation/identity subsystem. This task (artistic identity portfolio reporting) has no relation to the startup identity flow. The new module `portfolio_report.py` is a pure-function reporting layer with no I/O and no state files — it derives summaries from data passed to it and cannot affect startup sequencing. No new dependencies required; stdlib only.
+
+## T-025@20260416T043834Z (2026-04-16T14:45:00+00:00)
+
+- **Reason:** Rollout-control scope and startup hardening verification
+- **Details:** This task adds stdlib-only SenseWeave diagnostics and environment-backed feature flags; no new dependencies are required. The candidate startup hardening items remain covered by the existing startup flow: both daemon entrypoints call `bootstrap_identity()` before `FirstBootAnnouncer`, and `tests/test_first_boot.py::TestStartupIdentityPersistence` plus `tests/test_governor_integration.py::TestStartupIdentityWiring` were re-run as regression anchors.
+
+## T-017@20260416T054258Z (2026-04-16T18:20:59.864442+00:00)
+
+- **Reason:** Lead provider unavailable
+- **Details:** Lead provider/runtime failures were observed across available agents (claude, codex). Latest signal: [Errno 2] No such file or directory: 'codex'
+
+## T-017@20260416T054258Z (2026-04-16T18:21:16.577357+00:00)
+
+- **Reason:** Lead provider unavailable
+- **Details:** Lead provider/runtime failures were observed across available agents (claude, codex). Latest signal: env: claude: No such file or directory
+
+## T-018@20260416T054258Z (2026-04-16T18:54:48.048819+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-018@20260416T054258Z timed out twice. Run sdp-cli tasks split T-018@20260416T054258Z to break it down.
+
+## T-018@20260416T054258Zb (2026-04-16T20:00:00+00:00)
+
+- **Reason:** Candidate hardening items are out of scope
+- **Details:** The auto-generated hardening checks reference `bootstrap_identity`, `FirstBootAnnouncer` (federation/identity subsystem), and resource governor budget enforcement (resource_governor.py). This task adds dissonance/resolution metadata to `counterpoint_rules.py` — a pure-function analysis layer with no I/O, no state files, and no interaction with startup sequencing or resource budgets. The `revise_score()` pipeline integration hardening item is already addressed: `revise_score` is imported and called in both `tracker_compiler.py` (line 18/1357) and `duet_composer.py` (line 80/838). No new dependencies required; stdlib only.
+
+## T-024@20260416T054258Z (2026-04-16T22:35:00+00:00)
+
+- **Reason:** Startup hardening scope and dependency assumptions
+- **Details:** This task turns the production-course curriculum into executable exercise metadata and generated scaffolds. The auto-generated hardening checks for `bootstrap_identity` and `FirstBootAnnouncer` belong to the startup identity subsystem and are already addressed in the current tree: both `my-claw/tools/daemon.py` and `my-claw/tools/cypherclaw_daemon.py` call `bootstrap_identity()` before `FirstBootAnnouncer`, while `tests/test_first_boot.py` and `tests/test_governor_integration.py` cover persistence and wiring for standalone/federated startup paths. No new dependencies or migrations are required.
+
+## T-001@20260416T181925Za (2026-04-16T18:19:25Z)
+
+- **Reason:** Render-ablation scope and startup hardening assumption
+- **Details:** This split task implements the pure core ablation engine for the CypherClaw humanization render layer. The concrete `RenderPass`, `PerformedPart`, and R1-R12 rules are not present in this checkout yet and remain assigned to sibling/future tasks, so the ablation function will accept an injected active rule set and renderer. The auto-generated hardening checks for `bootstrap_identity` and `FirstBootAnnouncer` are unrelated to this render utility and are already addressed by existing startup tests; those tests will be re-run as verification anchors. No new dependencies or migrations are required.
+
+## T-021@20260416T181925Z (2026-04-17T02:52:12.828073+00:00)
+
+- **Reason:** Agent timeout
+- **Details:** T-021@20260416T181925Z timed out twice. Run sdp-cli tasks split T-021@20260416T181925Z to break it down.
+
+## T-038@20260416T181925Z (2026-04-17T00:00:00+00:00)
+
+- **Reason:** Candidate hardening items are out of scope
+- **Details:** The auto-generated hardening checks reference `bootstrap_identity`, `FirstBootAnnouncer` (startup identity subsystem), resource governor budget enforcement, and `revise_score` pipeline integration. This task couples the narrative engine (procedural arc) to SectionEnvelope selection — a pure-function mapping layer with no I/O, no state files, and no interaction with startup sequencing, resource budgets, or the self-critique pipeline. The `revise_score()` integration is already addressed in both `tracker_compiler.py` and `duet_composer.py`. No new dependencies or migrations are required.
+
+## T-039@20260416T181925Z (2026-04-17T00:00:00+00:00)
+
+- **Reason:** Dependency and startup hardening assumptions
+- **Details:** T-039 requires a real librosa analysis path for audio-rendered SSM and Foote novelty extraction, so `librosa>=0.10,<1` is being added as a project dependency. The auto-generated startup hardening checks are already wired in both daemon entrypoints (`bootstrap_identity()` runs before `FirstBootAnnouncer`), and this task will add a focused standalone/federated identity persistence regression test rather than modifying startup flow. No database migrations are required.
+
+## T-001@20260425T183959Zd (2026-04-25T00:00:00+00:00)
+
+- **Reason:** Sampler buffer cap scope and hardening assumptions
+- **Details:** This split task is limited to `my-claw/tools/senseweave/sampler_buffers.py` and `tests/test_sampler_buffers.py`. The implementation will keep the existing `BufferLoader` shape, route overflow eviction through the `on_sampler_free()` path, and add a full load/evict-cycle regression test at the default 64-buffer cap. The auto-generated hardening items referencing `bootstrap_identity()` and `FirstBootAnnouncer` belong to the startup identity subsystem and are out of scope for this sampler buffer utility; that startup wiring is already covered elsewhere in the tree. No new dependencies or migrations are required.
+
+## T-008@20260425T183959Zd (2026-04-25T18:39:59Z)
+
+- **Reason:** Capture write-path scope assumption
+- **Details:** Exploration confirmed that `my-claw/tools/sample_capture_daemon.py` currently contains the ring buffer, interesting-moment detector, and contextual/acoustic tag helpers, but no persistence API or detector loop that writes captured samples into an index. This task will treat the missing seam as the write-path itself: add a stdlib-only capture store/index layer that invokes `build_sample_tags()` during sample save and persists those tags into `index.sqlite`. No new dependencies or migrations are required. The generated startup-hardening checks were verified against the current tree rather than reimplemented here: `pytest tests/test_first_boot.py tests/test_governor_integration.py -q` passed, and the full validation command (`pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`) also passed after the capture-index work landed.
+
+## T-013@20260425T183959Za (2026-04-25T00:00:00+00:00)
+
+- **Reason:** Quintet documentation scope and generated-progress assumption
+- **Details:** Exploration found that sampler-focused modules already exist (`sample_capture_daemon.py`, `sampler_buffers.py`, `sampler_dispatch.py`, `synthesis/sampler_effects.scd`, and sampler anti-pattern checks), but the canonical identity file and its regression tests still describe a quartet (`artist_identity.py`, `tests/test_artist_identity.py`). This subtask will update `docs/cypherclaw-musicianship-roadmap.md` to present the quintet as the active ensemble direction with an explicit partial-rollout status snapshot rather than claiming full runtime convergence. No new dependencies or migrations are required. `progress.md` is marked as generated and already has unrelated in-flight edits, so task progress will be recorded as a minimal task-line update only instead of restructuring the generated report.
+
+## T-013@20260425T183959Zb (2026-04-25T18:39:59Z)
+
+- **Reason:** Sampler-architecture documentation scope and out-of-scope hardening checks
+- **Details:** This subtask delivers the CCS-033 architecture document at `docs/cypherclaw-sampler-architecture.md` plus its regression test at `tests/test_cypherclaw_sampler_architecture.py`. The document describes only the *currently landed* sampler subsystem (capture daemon, smoke verifier, `BufferLoader`, `SamplerDispatcher`, `sampler_effects.scd`, the `sampler_dominating` / `sampler_silent_quintet_member` detectors, and the existing master-bus / composer / diagnostics seams) and explicitly flags `SampleLibrary`, `SampleSelector`, `sw_sampler.scd`, and quintet convergence in `artist_identity.py` as still pending so it does not overstate completion. Cross-links to the upstream PRD (`my-claw/sdp/prd-cypherclaw-sampler.md`) and the musicianship roadmap (`docs/cypherclaw-musicianship-roadmap.md`) keep the artistic intent and the longer status snapshot in their canonical homes rather than duplicating them here. No new dependencies, no migrations, and no runtime code changes are required. The auto-generated hardening items referencing `bootstrap_identity()` invocation, `FirstBootAnnouncer` sequencing, standalone/federated coverage, and startup integration tests are out of scope for a documentation subtask: the `bootstrap_identity()` invocation already lives in `sample_capture_daemon.py::main` and the startup paths are already covered by `tests/test_first_boot.py` and `tests/test_governor_integration.py`. This mirrors the established out-of-scope escalation pattern from T-008@20260425T183959Zd and the sibling T-013@20260425T183959Za. The artistic-intent companion document (`docs/cypherclaw-sampler-artistic-intent.md`) is the remaining CCS-033 sibling and is left for a follow-up subtask.
+
+## T-013@20260425T183959Zc (2026-04-25T19:10:00Z)
+
+- **Reason:** Artistic-intent documentation scope and generated-progress constraint
+- **Details:** Exploration confirmed that CCS-033's remaining work is the one-page artistic-intent companion at `docs/cypherclaw-sampler-artistic-intent.md`. The sampler PRD (`my-claw/sdp/prd-cypherclaw-sampler.md`) remains the canonical source for the three usages and five principles; the new page will restate that intent in a shorter listener-facing form focused on aesthetic goals, the sampler's role inside the quintet, and the intended listener experience, while cross-linking the PRD, the roadmap, and the architecture document instead of duplicating their implementation detail. This subtask is documentation-only: no runtime code changes, no migrations, and no new dependencies are required. The generated candidate hardening items about `revise_score()` integration, resource-governor budget enforcement, and `bootstrap_identity()` sequencing are out of scope for this doc task and were verified as unrelated to the affected files. Because `progress.md` is generated and already contains unrelated in-flight state changes, its exploration update is limited to the single T-013@20260425T183959Zc task line rather than a broader manual rewrite.
+
+## T-014@20260425T183959Za (2026-04-25T19:30:00Z)
+
+- **Reason:** Service-wiring assumptions and generated-hardening scope
+- **Details:** Exploration mapped `CCS-020` to the current tree: `my-claw/systemd/` has no `cypherclaw-sample-capture.service`, `cypherclaw_boot.sh` does not yet start that service, and existing CypherClaw units consistently run as `User=user` from `/home/user/cypherclaw` with the project virtualenv at `/home/user/cypherclaw/.venv/bin/python3`. The repo references `cypherclaw-jack.service` from other units but does not define that unit locally, so this task assumes it is a host-managed prerequisite and wires the dependency without inventing a second JACK service. No new dependencies or migrations are required. The auto-generated `bootstrap_identity()` hardening items are already covered elsewhere in the current tree; because this task touches boot/service startup, the existing startup identity tests will be re-run as verification anchors rather than reworking unrelated startup code.
+
+## T-014@20260425T183959Zc (2026-04-25T23:05:00Z)
+
+- **Reason:** Live systemd verification host assumption
+- **Details:** Exploration confirmed that this checkout is running on macOS and does not provide local `systemctl`, while the target Linux host is reachable as `cypherclaw` over non-interactive SSH. This task will add a repo-backed verifier tool that supports both local Linux execution and `--host cypherclaw` remote execution, then use that remote path for the real `kill -9` / restart validation. No new dependencies or migrations are required.
+
+## T-016@20260425T183959Zd (2026-04-25T19:45:00Z)
+
+- **Reason:** Planner integration and selector-ownership assumptions
+- **Details:** Exploration found that `my-claw/tools/senseweave/cast_planner.py` already supports opt-in sampler metadata attachment through a selector Protocol, but the current planner seam is still piece-agnostic: it does not derive selector kwargs from a piece fixture and does not return assembled cast entries that carry sampler metadata forward for verification. There is still no concrete `senseweave.sample_library.SampleSelector` implementation in this checkout, so this task will keep the selector dependency Protocol-based and add a piece-aware cast-assembly helper around `select_cast_ids` instead of inventing a new library module. `target_character` will be taken from explicit piece data when present and otherwise fall back to `(patch_name,)` for piece-level sampler selection hints. Because `progress.md` is generated and already has unrelated queue-state edits, the exploration update there is limited to the single `T-016@20260425T183959Zd` line rather than a broader manual rewrite. The generated hardening items about `revise_score()`, resource-governor budget enforcement, and startup identity sequencing were rechecked during exploration and are out of scope for this cast-planner utility task; no new dependencies or migrations are required.
+
+codex
+I’ve finished diff-level inspection of the implementation and tests. Next I’m running the required full test suite command to confirm whether the new metadata behavior and schema checks pass in the current tree.
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && pip install -e '.[dev]' && pytest tests/ -x" in /Users/anthony/Programming/PromptClaw
+ succeeded in 34220ms:
+Obtaining file:///Users/anthony/Programming/PromptClaw
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: partitura<2,>=1.8 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.8.0)
+Requirement already satisfied: librosa<1,>=0.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.11.0)
+Requirement already satisfied: mypy>=1.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.19.1)
+Requirement already satisfied: pytest>=8.0 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (8.3.5)
+Requirement already satisfied: ruff>=0.9 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.9.2)
+Requirement already satisfied: audioread>=2.1.9 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (3.1.0)
+Requirement already satisfied: numba>=0.51.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.59.0)
+Requirement already satisfied: numpy>=1.22.3 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.26.0)
+Requirement already satisfied: scipy>=1.6.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.11.4)
+Requirement already satisfied: scikit-learn>=1.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.2)
+Requirement already satisfied: joblib>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.0)
+Requirement already satisfied: decorator>=4.3.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (5.1.1)
+Requirement already satisfied: soundfile>=0.12.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.13.1)
+Requirement already satisfied: pooch>=1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.9.0)
+Requirement already satisfied: soxr>=0.3.2 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: typing_extensions>=4.1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (4.15.0)
+Requirement already satisfied: lazy_loader>=0.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.3)
+Requirement already satisfied: msgpack>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.3)
+Requirement already satisfied: lxml in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.9.3)
+Requirement already satisfied: lark-parser in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (0.12.0)
+Requirement already satisfied: xmlschema in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.3.1)
+Requirement already satisfied: mido in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (1.3.3)
+Requirement already satisfied: mypy_extensions>=1.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: pathspec>=0.9.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.10.3)
+Requirement already satisfied: librt>=0.6.2 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.8.1)
+Requirement already satisfied: llvmlite<0.43,>=0.42.0dev0 in /opt/anaconda3/lib/python3.11/site-packages (from numba>=0.51.0->librosa<1,>=0.10->promptclaw==3.0.0) (0.42.0)
+Requirement already satisfied: platformdirs>=2.5.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (4.5.1)
+Requirement already satisfied: packaging>=20.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (23.2)
+Requirement already satisfied: requests>=2.19.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.32.3)
+Requirement already satisfied: iniconfig in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.1.1)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.5.0)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.4)
+Requirement already satisfied: idna<4,>=2.5 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (3.4)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.6.3)
+Requirement already satisfied: certifi>=2017.4.17 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2026.1.4)
+Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from scikit-learn>=1.1.0->librosa<1,>=0.10->promptclaw==3.0.0) (2.2.0)
+Requirement already satisfied: cffi>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.0)
+Requirement already satisfied: pycparser in /opt/anaconda3/lib/python3.11/site-packages (from cffi>=1.0->soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.21)
+Requirement already satisfied: elementpath<6.0.0,>=5.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from xmlschema->partitura<2,>=1.8->promptclaw==3.0.0) (5.1.1)
+Building wheels for collected packages: promptclaw
+  Building editable for promptclaw (pyproject.toml): started
+  Building editable for promptclaw (pyproject.toml): finished with status 'done'
+  Created wheel for promptclaw: filename=promptclaw-3.0.0-0.editable-py3-none-any.whl size=5894 sha256=292b353d0df9a1bbb319fe5f08231ba410b3591864878641650c4aa25ed9ffcd
+  Stored in directory: /private/var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/pip-ephem-wheel-cache-vd4ic6gh/wheels/ab/f4/89/0cacd29874f6252d7c6bef0fca4c14839da91ab6a8d842965e
+Successfully built promptclaw
+Installing collected packages: promptclaw
+  Attempting uninstall: promptclaw
+    Found existing installation: promptclaw 3.0.0
+    Uninstalling promptclaw-3.0.0:
+      Successfully uninstalled promptclaw-3.0.0
+Successfully installed promptclaw-3.0.0
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3395 items
+
+tests/test_accompaniment.py ...........................                  [  0%]
+tests/test_acoustic_ecology.py .................................         [  1%]
+tests/test_agent_runtime.py ..                                           [  1%]
+tests/test_agent_selector_defaults.py .                                  [  1%]
+tests/test_agent_selector_quota.py ........                              [  2%]
+tests/test_agogic_rule.py ...                                            [  2%]
+tests/test_antenna_to_skin.py .................................          [  3%]
+tests/test_archive_daemon_runtime.py .                                   [  3%]
+tests/test_archive_paths.py .....                                        [  3%]
+tests/test_arrangement_engine.py ....................................... [  4%]
+                                                                         [  4%]
+tests/test_art_engine_runtime.py ....                                    [  4%]
+tests/test_articulation.py ......                                        [  4%]
+tests/test_artist_identity.py ....................................       [  5%]
+tests/test_artistic_identity.py .                                        [  5%]
+tests/test_audio_analysis.py .....................................       [  6%]
+tests/test_audio_novelty.py ....                                         [  7%]
+tests/test_bootstrap.py ..                                               [  7%]
+tests/test_breath_to_filter.py .............................             [  7%]
+tests/test_cadence_engine.py .......                                     [  8%]
+tests/test_call_response.py ..........                                   [  8%]
+tests/test_capstone_engine.py ...                                        [  8%]
+tests/test_capture_alias.py ..                                           [  8%]
+tests/test_cast_planner.py .............                                 [  9%]
+tests/test_check_status_runtime.py ..                                    [  9%]
+tests/test_coherence_engine.py ..............                            [  9%]
+tests/test_coherence_integration.py ............                         [  9%]
+tests/test_collaborative_canvas.py ......................                [ 10%]
+tests/test_commission_context.py ..                                      [ 10%]
+tests/test_composer_quote_verify.py .....                                [ 10%]
+tests/test_config.py ..                                                  [ 10%]
+tests/test_constitution.py .......................                       [ 11%]
+tests/test_contact_listener_runtime.py ....                              [ 11%]
+tests/test_contact_mic_calibration_runtime.py ....                       [ 11%]
+tests/test_context_pulse_runtime.py .                                    [ 11%]
+tests/test_continuous_learner.py ......................                  [ 12%]
+tests/test_counterpoint_pipeline.py ...........................          [ 13%]
+tests/test_counterpoint_rules.py ....................................... [ 14%]
+......................                                                   [ 14%]
+tests/test_course_critique.py ...............................            [ 15%]
+tests/test_cypherclaw_audio_runtime.py .....                             [ 15%]
+tests/test_cypherclaw_av_stack_service.py ...                            [ 16%]
+tests/test_cypherclaw_boot_runtime.py ......                             [ 16%]
+tests/test_cypherclaw_musicianship_roadmap.py ..                         [ 16%]
+tests/test_cypherclaw_runtime.py .....                                   [ 16%]
+tests/test_cypherclaw_sampler_architecture.py ......                     [ 16%]
+tests/test_cypherclaw_sampler_artistic_intent.py .....                   [ 16%]
+tests/test_daemon_concurrency_compat.py ...                              [ 16%]
+tests/test_daemon_fallback.py ...............                            [ 17%]
+tests/test_daemon_scheduler.py ..                                        [ 17%]
+tests/test_daemon_status_ollama.py .......                               [ 17%]
+tests/test_dashboard_generator.py ...................................... [ 18%]
+.......                                                                  [ 18%]
+tests/test_dashboard_generator_runtime.py ...                            [ 18%]
+tests/test_decision_store.py .........                                   [ 19%]
+tests/test_doctor.py ...                                                 [ 19%]
+tests/test_dsp_scene_lab.py ................                             [ 19%]
+tests/test_duration_contrast_rule.py .......                             [ 20%]
+tests/test_ear_engine.py ............                                    [ 20%]
+tests/test_emsd_curriculum.py ...............                            [ 20%]
+tests/test_emsd_performance.py ....                                      [ 20%]
+tests/test_emsd_runtime.py ...                                           [ 21%]
+tests/test_event_store.py .......                                        [ 21%]
+tests/test_executable_curriculum.py ...                                  [ 21%]
+tests/test_federation_discovery.py ........                              [ 21%]
+tests/test_final_rit.py ...                                              [ 21%]
+tests/test_first_boot.py ...................................             [ 22%]
+tests/test_form_grammar.py ..                                            [ 22%]
+tests/test_fractal_form.py ...............                               [ 23%]
+tests/test_functional_harmony.py ...............................         [ 24%]
+tests/test_gallery.py ..........................                         [ 24%]
+tests/test_gallery_x11_runtime.py ...                                    [ 24%]
+tests/test_garden_watcher.py ........................................... [ 26%]
+.                                                                        [ 26%]
+tests/test_gemini_image_runtime.py ...                                   [ 26%]
+tests/test_generative_scores.py ........................................ [ 27%]
+.............................................                            [ 28%]
+tests/test_genre_literacy.py ............                                [ 29%]
+tests/test_glyphweave_cli.py ....                                        [ 29%]
+tests/test_glyphweave_runtime.py ....                                    [ 29%]
+tests/test_governor_integration.py ..............                        [ 29%]
+tests/test_graduation.py ......................                          [ 30%]
+tests/test_groove_engine.py ............................................ [ 31%]
+......................................                                   [ 32%]
+tests/test_harmonic_planner.py .........                                 [ 33%]
+tests/test_healer_runtime.py .....                                       [ 33%]
+tests/test_healthcheck_script_runtime.py ...                             [ 33%]
+tests/test_hook_engine.py .................                              [ 33%]
+tests/test_image_api_app.py ........                                     [ 34%]
+tests/test_image_api_jobs_db.py ............                             [ 34%]
+tests/test_image_api_s3_uploader.py ....                                 [ 34%]
+tests/test_image_api_spec_parser.py ...................                  [ 35%]
+tests/test_image_api_worker.py ........                                  [ 35%]
+tests/test_inner_life.py ...................................             [ 36%]
+tests/test_instrument_patches.py ........                                [ 36%]
+tests/test_ixml_chunk_writer.py .......                                  [ 36%]
+tests/test_keyboard_chat.py ..............................               [ 37%]
+tests/test_lifeimprover_bridge_runtime.py .....                          [ 37%]
+tests/test_listener_review.py .....                                      [ 38%]
+tests/test_live_buffer.py ...                                            [ 38%]
+tests/test_local_command_runtime.py ....                                 [ 38%]
+tests/test_lung_capacity_rule.py .......                                 [ 38%]
+tests/test_macbook_codex_monitor.py ....                                 [ 38%]
+tests/test_maintenance_mode.py .....                                     [ 38%]
+tests/test_master_bus.py ......                                          [ 38%]
+tests/test_master_smooth_scd.py ...                                      [ 38%]
+tests/test_melodic_mind.py ............................................. [ 40%]
+..........................................................               [ 42%]
+tests/test_metric_accent_rule.py ....                                    [ 42%]
+tests/test_microtiming.py .....................                          [ 42%]
+tests/test_midi_keyboard_listener_runtime.py ....                        [ 42%]
+tests/test_midi_state.py .......................................         [ 44%]
+tests/test_mix_engine.py ..............................                  [ 44%]
+tests/test_mix_verify.py ............................................... [ 46%]
+                                                                         [ 46%]
+tests/test_mood_mirror.py .....................................          [ 47%]
+tests/test_motif_lifecycle.py ............................               [ 48%]
+tests/test_motif_memory.py ...............                               [ 48%]
+tests/test_music_theory.py ............................................. [ 49%]
+........................................                                 [ 51%]
+tests/test_music_tracker.py ..........................................   [ 52%]
+tests/test_music_tracker_runtime.py .................................... [ 53%]
+.......                                                                  [ 53%]
+tests/test_musical_integration_runtime.py .                              [ 53%]
+tests/test_musical_marathon_integration.py ..                            [ 53%]
+tests/test_narrative_envelope.py ..............                          [ 54%]
+tests/test_observatory_authority.py .....                                [ 54%]
+tests/test_observatory_runtime.py ..                                     [ 54%]
+tests/test_observatory_verification.py ..                                [ 54%]
+tests/test_observer_vision_runtime.py ..............                     [ 54%]
+tests/test_ollama_daemon_health.py ...                                   [ 54%]
+tests/test_ollama_health.py ......                                       [ 55%]
+tests/test_ollama_invoke.py ...                                          [ 55%]
+tests/test_ollama_routing.py ...................                         [ 55%]
+tests/test_ollama_run_agent.py .......                                   [ 55%]
+tests/test_operator_diagnostics.py ..............                        [ 56%]
+tests/test_ops_helpers_runtime.py ....                                   [ 56%]
+tests/test_orchestral_form.py ...............................            [ 57%]
+tests/test_orchestrator.py ...                                           [ 57%]
+tests/test_pareidolia_art_engine.py .......                              [ 57%]
+tests/test_pareidolia_characters.py .................................    [ 58%]
+tests/test_pareidolia_color.py ......................................... [ 59%]
+........................................................................ [ 62%]
+....                                                                     [ 62%]
+tests/test_pedals_to_key.py ............................                 [ 62%]
+tests/test_phrase_arch.py ..........                                     [ 63%]
+tests/test_phrase_capture.py ........................                    [ 63%]
+tests/test_phrase_tracker.py ............                                [ 64%]
+tests/test_piece_brief.py ........                                       [ 64%]
+tests/test_piece_commission.py ....                                      [ 64%]
+tests/test_piece_queue.py ..                                             [ 64%]
+tests/test_porch_eye.py ..................................               [ 65%]
+tests/test_portfolio_report.py .........................                 [ 66%]
+tests/test_practice_curriculum.py ..                                     [ 66%]
+tests/test_preflight.py ......                                           [ 66%]
+tests/test_presence_engine.py ............                               [ 67%]
+tests/test_procedural_arc.py .....                                       [ 67%]
+tests/test_production_course_integration.py ..........                   [ 67%]
+tests/test_production_course_knowledge_base.py ...                       [ 67%]
+tests/test_project_scanner_runtime.py ....                               [ 67%]
+tests/test_prosody_engine.py ........                                    [ 67%]
+tests/test_punctuation_rule.py ............                              [ 68%]
+tests/test_quota_monitor.py .....................                        [ 68%]
+tests/test_reharmonizer.py ...                                           [ 68%]
+tests/test_render_ablation.py ....                                       [ 69%]
+tests/test_render_antipatterns.py ......................                 [ 69%]
+tests/test_render_audio_sidecar.py ...                                   [ 69%]
+tests/test_render_debugger.py ..                                         [ 69%]
+tests/test_render_diff.py ................                               [ 70%]
+tests/test_render_events.py ....................                         [ 70%]
+tests/test_render_export.py ......                                       [ 71%]
+tests/test_render_features.py ...                                        [ 71%]
+tests/test_render_metrics.py ..............                              [ 71%]
+tests/test_render_pass.py ....................                           [ 72%]
+tests/test_render_replay.py ..                                           [ 72%]
+tests/test_render_seed.py .............                                  [ 72%]
+tests/test_render_worm.py ..........                                     [ 72%]
+tests/test_repertoire_memory.py .................                        [ 73%]
+tests/test_repertoire_memory_score_tree.py .                             [ 73%]
+tests/test_research_runtime.py .....                                     [ 73%]
+tests/test_resilience_runtime_scripts.py ..............                  [ 74%]
+tests/test_resource_governor.py ..........................               [ 74%]
+tests/test_restraint.py ...                                              [ 74%]
+tests/test_reviewer_runtime.py ...                                       [ 74%]
+tests/test_role_gate_integration.py .................................... [ 76%]
+....                                                                     [ 76%]
+tests/test_room_listener_runtime.py ..................                   [ 76%]
+tests/test_room_presence_daemon.py ......                                [ 76%]
+tests/test_router.py .....                                               [ 77%]
+tests/test_row_automation.py ...........                                 [ 77%]
+tests/test_runtime_checkpoint.py ...                                     [ 77%]
+tests/test_runtime_paths.py ..                                           [ 77%]
+tests/test_sample_capture_daemon.py .................................... [ 78%]
+.............                                                            [ 78%]
+tests/test_sample_capture_service_verify.py ....                         [ 79%]
+tests/test_sample_capture_verify.py ....                                 [ 79%]
+tests/test_sample_dsp_activity.py ...........                            [ 79%]
+tests/test_sample_event_renderer.py .....                                [ 79%]
+tests/test_sample_lab.py ....                                            [ 79%]
+tests/test_sample_playback_engine.py .......                             [ 79%]
+tests/test_sample_status.py ....                                         [ 80%]
+tests/test_sampler_buffers.py ...............                            [ 80%]
+tests/test_sampler_dispatch.py ........................                  [ 81%]
+tests/test_sampler_effects.py .......................................... [ 82%]
+.......                                                                  [ 82%]
+tests/test_sampler_scheduler.py ...........                              [ 83%]
+tests/test_scene_composer.py ......................................      [ 84%]
+tests/test_score_tree.py .                                               [ 84%]
+tests/test_score_tree_composer.py .......................                [ 84%]
+tests/test_score_tree_pipeline.py .                                      [ 84%]
+tests/test_self_critique.py .........................                    [ 85%]
+tests/test_self_listener_quote_verify.py ......                          [ 85%]
+tests/test_self_listener_tracker_runtime.py ...............              [ 86%]
+tests/test_senseweave_rollout_controls.py .....                          [ 86%]
+tests/test_senseweave_voice.py ..........................                [ 87%]
+tests/test_sensor_fusion.py ...............................              [ 88%]
+tests/test_sensor_intent_rule.py ....                                    [ 88%]
+tests/test_sensory_journal.py ............................               [ 88%]
+tests/test_server_health.py ...                                          [ 89%]
+tests/test_silence_budget_rule.py .................                      [ 89%]
+tests/test_sound_palette_lab.py ..                                       [ 89%]
+tests/test_startle.py ................................                   [ 90%]
+tests/test_supercollider_recipes.py ...                                  [ 90%]
+tests/test_syncopation_features.py .........................             [ 91%]
+tests/test_synthdef_registry.py ...................................      [ 92%]
+tests/test_synthesis_architecture_registry.py .......................... [ 93%]
+.......                                                                  [ 93%]
+tests/test_tamagotchi_runtime.py ......                                  [ 93%]
+tests/test_telegram_runtime.py ......                                    [ 93%]
+tests/test_theramini_duet.py ........................................... [ 95%]
+.........                                                                [ 95%]
+tests/test_theramini_listener_runtime.py ...........                     [ 95%]
+tests/test_tracker_cadence.py ............                               [ 95%]
+tests/test_tracker_compiler.py ................                          [ 96%]
+tests/test_tracker_variation.py .....                                    [ 96%]
+tests/test_trust.py ................                                     [ 97%]
+tests/test_voice_aliases.py .......                                      [ 97%]
+tests/test_voice_interpretation_rules.py ............................... [ 98%]
+..                                                                       [ 98%]
+tests/test_voice_manager_v2.py ......................................... [ 99%]
+............                                                             [ 99%]
+tests/test_voice_shaping.py ....                                         [ 99%]
+tests/test_wizard.py ...                                                 [100%]
+
+=============================== warnings summary ===============================
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163: DeprecationWarning: module 'sre_parse' is deprecated
+    import sre_parse
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164: DeprecationWarning: module 'sre_constants' is deprecated
+    import sre_constants
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25
+  /opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    from pkg_resources import resource_stream, resource_exists
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google.cloud')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(parent)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('ruamel')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('zope')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:16: DeprecationWarning: 'aifc' is deprecated and slated for removal in Python 3.13
+    import aifc
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:17: DeprecationWarning: 'audioop' is deprecated and slated for removal in Python 3.13
+    import audioop
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:19: DeprecationWarning: 'sunau' is deprecated and slated for removal in Python 3.13
+    import sunau
+
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+  /Users/anthony/Programming/PromptClaw/tests/test_gallery.py:108: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(result.getdata()), list(canvas.getdata()))
+
+tests/test_pareidolia_characters.py: 189 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:85: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pixels = list(img.getdata())
+
+tests/test_pareidolia_characters.py: 21 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:254: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    rendered[name] = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:310: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:314: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:316: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:339: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_low = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:343: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_high = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:326: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:352: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:331: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:333: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:361: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:376: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:366: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:368: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_add_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:429: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:451: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_with_palette
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:443: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:434: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:436: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:481: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_curious_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:554: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_happy_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:542: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_neutral_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:536: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sad_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:548: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sleeping_eyes_no_highlights
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:560: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:571: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_bush
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:621: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:615: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:609: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:585: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_without_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:591: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:597: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:603: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:642: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:661: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:674: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    basalt_pixels = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:678: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pebble_pixels = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:870: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+===================== 3395 passed, 296 warnings in 29.13s ======================
+
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && rg -n "bootstrap_identity|FirstBootAnnouncer|if __name__|def main" my-claw/tools/daemon.py my-claw/tools/cypherclaw_daemon.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+my-claw/tools/cypherclaw_daemon.py:3541:    from cypherclaw.first_boot import FirstBootAnnouncer, bootstrap_identity
+my-claw/tools/cypherclaw_daemon.py:3542:    bootstrap_identity()
+my-claw/tools/cypherclaw_daemon.py:3547:    _announcer = FirstBootAnnouncer(announce_fn=lambda payload: tg_send(
+my-claw/tools/cypherclaw_daemon.py:3766:def main():
+my-claw/tools/cypherclaw_daemon.py:3791:if __name__ == "__main__":
+my-claw/tools/daemon.py:102:from cypherclaw.first_boot import FirstBootAnnouncer, bootstrap_identity
+my-claw/tools/daemon.py:2462:    bootstrap_identity()
+my-claw/tools/daemon.py:2467:    _announcer = FirstBootAnnouncer(announce_fn=lambda payload: tg_send(
+my-claw/tools/daemon.py:2778:def main():
+my-claw/tools/daemon.py:2796:if __name__ == "__main__":
+
+codex
+I verified startup files still include `bootstrap_identity()` and `FirstBootAnnouncer` in both daemon entrypoints. I’ll now confirm the identity-persistence regression test exists so we can decide whether the recurring hardening check is satisfied or out-of-scope.
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && rg -n "StartupIdentity|identity persistence|bootstrap_identity|FirstBootAnnouncer" tests/test_first_boot.py tests/test_governor_integration.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_governor_integration.py:9:- Both daemon entrypoints wire bootstrap_identity before startup.
+tests/test_governor_integration.py:143:# Startup identity wiring: both daemon entrypoints call bootstrap_identity
+tests/test_governor_integration.py:147:class TestStartupIdentityWiring:
+tests/test_governor_integration.py:148:    """Verify both daemon entrypoints wire bootstrap_identity before main loop.
+tests/test_governor_integration.py:154:    def test_daemon_py_calls_bootstrap_identity(self) -> None:
+tests/test_governor_integration.py:155:        """daemon.py poll_loop must call bootstrap_identity()."""
+tests/test_governor_integration.py:164:        assert "bootstrap_identity" in calls, (
+tests/test_governor_integration.py:165:            "daemon.py poll_loop() must call bootstrap_identity() before main loop"
+tests/test_governor_integration.py:168:    def test_cypherclaw_daemon_py_calls_bootstrap_identity(self) -> None:
+tests/test_governor_integration.py:169:        """cypherclaw_daemon.py poll_loop must call bootstrap_identity()."""
+tests/test_governor_integration.py:180:        assert "bootstrap_identity" in calls, (
+tests/test_governor_integration.py:181:            "cypherclaw_daemon.py poll_loop() must call bootstrap_identity() before main loop"
+tests/test_governor_integration.py:184:    def test_bootstrap_identity_before_announcer_in_both(self) -> None:
+tests/test_governor_integration.py:185:        """bootstrap_identity must come before FirstBootAnnouncer in both daemons."""
+tests/test_governor_integration.py:198:                if call_name == "bootstrap_identity" and bootstrap_line is None:
+tests/test_governor_integration.py:200:                if call_name == "FirstBootAnnouncer" and announcer_line is None:
+tests/test_governor_integration.py:204:                f"{name}: bootstrap_identity not found in poll_loop"
+tests/test_governor_integration.py:207:                f"{name}: FirstBootAnnouncer not found in poll_loop"
+tests/test_governor_integration.py:210:                f"{name}: bootstrap_identity (line {bootstrap_line}) must come "
+tests/test_governor_integration.py:211:                f"before FirstBootAnnouncer (line {announcer_line})"
+tests/test_first_boot.py:18:    FirstBootAnnouncer,
+tests/test_first_boot.py:19:    bootstrap_identity,
+tests/test_first_boot.py:45:    """Build a FirstBootAnnouncer wired to tmp_path with a mock announce_fn."""
+tests/test_first_boot.py:55:    announcer = FirstBootAnnouncer(
+tests/test_first_boot.py:173:        announcer2 = FirstBootAnnouncer(
+tests/test_first_boot.py:204:        announcer3 = FirstBootAnnouncer(
+tests/test_first_boot.py:221:        announcer = FirstBootAnnouncer(
+tests/test_first_boot.py:236:        announcer = FirstBootAnnouncer(
+tests/test_first_boot.py:253:        announcer = FirstBootAnnouncer(
+tests/test_first_boot.py:304:class TestStartupIdentityModePersistence:
+tests/test_first_boot.py:310:        first = bootstrap_identity(
+tests/test_first_boot.py:315:        second = bootstrap_identity(
+tests/test_first_boot.py:331:        first = bootstrap_identity(
+tests/test_first_boot.py:337:        second = bootstrap_identity(
+tests/test_first_boot.py:373:        announcer = FirstBootAnnouncer(
+tests/test_first_boot.py:387:        announcer2 = FirstBootAnnouncer(
+tests/test_first_boot.py:408:        announcer = FirstBootAnnouncer(
+tests/test_first_boot.py:462:# ── bootstrap_identity ─────────────────────────────────────────
+tests/test_first_boot.py:466:    """Tests for the load-or-create bootstrap_identity function."""
+tests/test_first_boot.py:470:        identity = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:479:        first = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:480:        second = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:491:        identity = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:501:        identity = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:510:        identity = bootstrap_identity(identity_path=path)
+tests/test_first_boot.py:517:        identity = bootstrap_identity(
+tests/test_first_boot.py:533:class TestStartupIdentityPersistence:
+tests/test_first_boot.py:534:    """Simulate the daemon startup flow: bootstrap_identity then FirstBootAnnouncer.
+tests/test_first_boot.py:546:        identity = bootstrap_identity(
+tests/test_first_boot.py:559:        announcer = FirstBootAnnouncer(
+tests/test_first_boot.py:574:        first = bootstrap_identity(identity_path=identity_path)
+tests/test_first_boot.py:575:        second = bootstrap_identity(identity_path=identity_path)
+tests/test_first_boot.py:576:        third = bootstrap_identity(identity_path=identity_path)
+tests/test_first_boot.py:587:        identity = bootstrap_identity(mode="standalone", identity_path=identity_path)
+tests/test_first_boot.py:593:        announcer = FirstBootAnnouncer(
+
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && cat 'sdp/verification/t-018@20260425t183959zc-verify.md'" in /Users/anthony/Programming/PromptClaw
+ exited 1 in 0ms:
+cat: sdp/verification/t-018@20260425t183959zc-verify.md: No such file or directory
+
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && ls sdp/verification' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+t-001 @20260425t183959zb-verify.md
+t-001@20260408t223256z-verify.md
+t-001@20260416t043834z-manual-verify.md
+t-001@20260416t043834z-verify.md
+t-001@20260416t054258z-verify.md
+t-001@20260416t181925za-verify.md
+t-001@20260416t181925zb-verify.md
+t-001@20260416t181925zc-verify.md
+t-001@20260425t183959za-verify.md
+t-001@20260425t183959zb-verify.md
+t-001@20260425t183959zc-verify.md
+t-001@20260425t183959zd-verify.md
+t-002 @20260425t183959zb-verify.md
+t-002@20260408t223256z-verify.md
+t-002@20260416t043834z-verify.md
+t-002@20260416t054258z-verify.md
+t-002@20260416t181925z-verify.md
+t-002@20260425t183959za-verify.md
+t-002@20260425t183959zb-verify.md
+t-002@20260425t183959zc-verify.md
+t-002@20260425t183959zd-verify.md
+t-003@20260408t223256z-verify.md
+t-003@20260416t043834z-verify.md
+t-003@20260416t054258z-verify.md
+t-003@20260416t181925z-verify.md
+t-003@20260425t183959z-verify.md
+t-004@20260408t223256z-verify.md
+t-004@20260416t043834z-verify.md
+t-004@20260416t054258z-verify.md
+t-004@20260416t181925z-verify.md
+t-004@20260425t183959z-verify.md
+t-005@20260408t223256z-verify.md
+t-005@20260416t043834z-verify.md
+t-005@20260416t054258z-verify.md
+t-005@20260416t181925z-verify.md
+t-005@20260425t183959za-verify.md
+t-005@20260425t183959zb-verify.md
+t-005@20260425t183959zc-verify.md
+t-005@20260425t183959zd-verify.md
+t-006@20260408t223256z-verify.md
+t-006@20260416t043834z-verify.md
+t-006@20260416t054258z-verify.md
+t-006@20260416t181925z-verify.md
+t-006@20260425t183959z-verify.md
+t-007@20260408t223256z-verify.md
+t-007@20260416t043834z-verify.md
+t-007@20260416t054258z-verify.md
+t-007@20260416t181925z-verify.md
+t-007@20260425t183959z-verify.md
+t-008@20260408t223256z-verify.md
+t-008@20260416t043834z-verify.md
+t-008@20260416t054258z-verify.md
+t-008@20260416t181925z-verify.md
+t-008@20260425t183959za-verify.md
+t-008@20260425t183959zb-verify.md
+t-008@20260425t183959zc-verify.md
+t-008@20260425t183959zd-verify.md
+t-009 @20260425t183959z-verify.md
+t-009@20260408t223256z-verify.md
+t-009@20260416t043834z-verify.md
+t-009@20260416t054258z-verify.md
+t-009@20260416t181925z-verify.md
+t-009@20260425t183959z-verify.md
+t-010@20260408t223256za-verify.md
+t-010@20260408t223256zb-verify.md
+t-010@20260408t223256zc-verify.md
+t-010@20260416t043834z-verify.md
+t-010@20260416t054258z-verify.md
+t-010@20260416t181925z-verify.md
+t-010@20260425t183959z-verify.md
+t-011@20260408t223256z-verify.md
+t-011@20260416t043834z-verify.md
+t-011@20260416t054258z-verify.md
+t-011@20260416t181925z-verify.md
+t-011@20260425t183959z-verify.md
+t-012 @20260425t183959zc-verify.md
+t-012@20260408t223256z-verify.md
+t-012@20260416t043834z-manual-verify.md
+t-012@20260416t054258z-verify.md
+t-012@20260416t181925z-verify.md
+t-012@20260425t183959za-verify.md
+t-012@20260425t183959zb-verify.md
+t-012@20260425t183959zc-verify.md
+t-012@20260425t183959zd-smoke-report.md
+t-012@20260425t183959zd-verify.md
+t-013@20260416t043834z-verify.md
+t-013@20260416t054258z-verify.md
+t-013@20260416t181925z-verify.md
+t-013@20260425t183959za-verify.md
+t-013@20260425t183959zb-verify.md
+t-013@20260425t183959zc-verify.md
+t-014@20260416t043834z-verify.md
+t-014@20260416t054258z-verify.md
+t-014@20260416t181925z-verify.md
+t-014@20260425t183959za-verify.md
+t-014@20260425t183959zb-verify.md
+t-014@20260425t183959zc-verify.md
+t-015 @20260425t183959zd-verify.md
+t-015@20260416t043834z-verify.md
+t-015@20260416t054258z-verify.md
+t-015@20260416t181925z-verify.md
+t-015@20260425t183959za-verify.md
+t-015@20260425t183959zb-verify.md
+t-015@20260425t183959zc-verify.md
+t-015@20260425t183959zd-verify.md
+t-016 @20260425t183959za-verify.md
+t-016 @20260425t183959zb-verify.md
+t-016@20260416t043834z-verify.md
+t-016@20260416t054258z-verify.md
+t-016@20260416t181925z-verify.md
+t-016@20260425t183959za-verify.md
+t-016@20260425t183959zb-verify.md
+t-016@20260425t183959zc-verify.md
+t-016@20260425t183959zd-verify.md
+t-017@20260416t043834z-verify.md
+t-017@20260416t054258z-verify.md
+t-017@20260416t181925z-verify.md
+t-017@20260425t183959z-verify.md
+t-018 @20260416t054258za-verify.md
+t-018 @20260416t054258zd-verify.md
+t-018 @20260425t183959zc-verify.md
+t-018@20260416t043834z-verify.md
+t-018@20260416t054258za-verify.md
+t-018@20260416t054258zb-verify.md
+t-018@20260416t054258zc-verify.md
+t-018@20260416t054258zd-verify.md
+t-018@20260416t181925za-verify.md
+t-018@20260416t181925zb-verify.md
+t-018@20260416t181925zc-verify.md
+t-018@20260416t181925zd-verify.md
+t-018@20260425t183959za-verify.md
+t-018@20260425t183959zb-verify.md
+t-019 @20260425t183959z-verify.md
+t-019@20260416t043834z-verify.md
+t-019@20260416t054258z-verify.md
+t-019@20260416t181925z-verify.md
+t-019@20260425t183959z-verify.md
+t-020@20260416t043834z-verify.md
+t-020@20260416t054258z-verify.md
+t-020@20260416t181925z-verify.md
+t-021@20260416t043834z-verify.md
+t-021@20260416t054258z-verify.md
+t-021@20260416t181925za-verify.md
+t-021@20260416t181925zb-verify.md
+t-021@20260416t181925zc-verify.md
+t-022@20260416t043834z-verify.md
+t-022@20260416t054258z-verify.md
+t-022@20260416t181925z-verify.md
+t-023@20260416t043834z-verify.md
+t-023@20260416t054258z-verify.md
+t-023@20260416t181925z-verify.md
+t-023@20260425t183959z-verify.md
+t-024 @20260416t181925z-verify.md
+t-024@20260416t043834z-verify.md
+t-024@20260416t054258z-verify.md
+t-024@20260416t181925z-verify.md
+t-025@20260416t043834z-verify.md
+t-025@20260416t054258z-verify.md
+t-025@20260416t181925z-verify.md
+t-026@20260416t181925z-verify.md
+t-027@20260416t181925z-verify.md
+t-028@20260416t181925z-verify.md
+t-029@20260416t181925z-verify.md
+t-030@20260416t181925z-verify.md
+t-031@20260416t181925z-verify.md
+t-032@20260416t181925z-verify.md
+t-033@20260416t181925z-verify.md
+t-034@20260416t181925z-verify.md
+t-035@20260416t181925z-verify.md
+t-036@20260416t181925z-verify.md
+t-037@20260416t181925z-verify.md
+t-038@20260416t181925z-verify.md
+t-039@20260416t181925z-verify.md
+t-040@20260416t181925z-verify.md
+
+codex
+I found prior verification artifacts, including a spaced variant of this task ID. I’ll inspect a previous non-spaced style file for format consistency, then generate the required report at `sdp/verification/t-018@20260425t183959zc-verify.md`.
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && cat 'sdp/verification/t-018@20260425t183959zc-verify.md' 2>/dev/null || true && echo '---' && cat 'sdp/verification/t-018 @20260425t183959zc-verify.md'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+---
+# Verification Report — T-018 @sdp/logs/Verify_T-018_20260425T183959Zc_1777169871.log
+
+**Verify Agent:** Gemini CLI
+**Date:** 2026-04-25
+**Artifacts Reviewed:**
+- `my-claw/tools/senseweave/phrase_capture.py`
+- `tests/test_phrase_capture.py`
+- `ESCALATIONS.md`
+
+## Correctness
+The implementation of sample tagging metadata is correct and matches the requirements. Each captured phrase is now accompanied by a sidecar `.json` file containing the mandatory tags: `instrument`, `song_id`, `key`, `tempo`, `timestamp`, `duration`, and `source`. The schema validation logic ensures that all required keys are present and have the correct types.
+
+## Completeness
+The task is complete. All specified metadata fields are included in the sidecar JSON. The `PhraseCaptureWriter` handles both MIDI (`keyboard`) and Audio (`theramini`) sources. Edge cases, such as sub-threshold bursts that do not result in a written sample, are correctly handled by not writing a sidecar file.
+
+## Consistency
+The code follows the project's established patterns, utilizing `pathlib` for file operations and `json` for metadata serialization. The metadata fields and their naming conventions are consistent with the provided specification.
+
+## Security
+No security vulnerabilities were identified. The use of UUID-based suffixes for filenames prevents collisions, and the sidecar files are stored securely alongside the audio/MIDI assets.
+
+## Quality
+The implementation is high-quality, with clean separation of concerns between capturing, validating, and persisting metadata. The tests in `tests/test_phrase_capture.py` are comprehensive, covering schema validation, default values, user-supplied tags, and path pairing.
+
+## Issues Found
+- [ ] [Issue — severity: minor] `PhraseCaptureWriter` is not yet integrated into `midi_keyboard_listener.py` or `theramini_listener.py`. This is known and expected to be addressed in the final subtask (Zd).
+
+## Verdict: PASS
+
+## Notes for Lead Agent
+Excellent implementation of the metadata sidecar logic. The schema validator is robust and the tests are thorough. Ready for integration into the listeners in the next phase.
+
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && nl -ba my-claw/tools/senseweave/phrase_capture.py | sed -n '1,280p'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+     1	"""Phrase capture writer — persists qualifying phrases to ``samples/<source>/``.
+     2	
+     3	Wraps :class:`PhraseTracker` with a buffer that accumulates input while a
+     4	play session is in progress and flushes to a timestamped file once
+     5	``phrase_ended`` fires. Sub-threshold bursts are dropped without I/O.
+     6	
+     7	Two sources are supported:
+     8	
+     9	* ``"keyboard"`` — buffer entries are ``(rel_seconds, midi_bytes)`` tuples
+    10	  and are persisted as a Standard MIDI File (Type 0).
+    11	* ``"theramini"`` — buffer entries are float sample arrays and are
+    12	  persisted as 16-bit PCM mono WAV.
+    13	
+    14	Each captured sample is paired with a sidecar ``.json`` metadata file
+    15	containing instrument/song_id/key/tempo/timestamp/duration/source tags.
+    16	"""
+    17	from __future__ import annotations
+    18	
+    19	import json
+    20	import uuid
+    21	import wave
+    22	from datetime import datetime, timezone
+    23	from pathlib import Path
+    24	from typing import Any, Iterable, Literal, Mapping, Optional, Sequence
+    25	
+    26	import numpy as np
+    27	import numpy.typing as npt
+    28	
+    29	from senseweave.phrase_tracker import PhraseTracker
+    30	
+    31	CaptureSource = Literal["keyboard", "theramini"]
+    32	_VALID_SOURCES: frozenset[str] = frozenset({"keyboard", "theramini"})
+    33	
+    34	DEFAULT_AUDIO_SAMPLE_RATE = 48_000
+    35	_MIDI_PPQ = 480
+    36	_MIDI_TEMPO_USEC_PER_QUARTER = 500_000  # 120 BPM
+    37	_MIDI_TICKS_PER_SECOND = _MIDI_PPQ * 1_000_000 // _MIDI_TEMPO_USEC_PER_QUARTER  # 960
+    38	
+    39	DEFAULT_SAMPLE_PROVENANCE = "human"
+    40	
+    41	# Sidecar metadata schema: required key -> tuple of allowed types.
+    42	SAMPLE_METADATA_SCHEMA: dict[str, tuple[type, ...]] = {
+    43	    "instrument": (str,),
+    44	    "song_id": (str, type(None)),
+    45	    "key": (str, type(None)),
+    46	    "tempo": (int, float, type(None)),
+    47	    "timestamp": (str,),
+    48	    "duration": (int, float),
+    49	    "source": (str,),
+    50	}
+    51	
+    52	
+    53	def validate_sample_metadata(meta: Mapping[str, Any]) -> None:
+    54	    """Raise ``ValueError`` if ``meta`` does not match :data:`SAMPLE_METADATA_SCHEMA`."""
+    55	    missing = sorted(set(SAMPLE_METADATA_SCHEMA) - set(meta))
+    56	    if missing:
+    57	        raise ValueError(f"sample metadata missing required keys: {missing}")
+    58	    extra = sorted(set(meta) - set(SAMPLE_METADATA_SCHEMA))
+    59	    if extra:
+    60	        raise ValueError(f"sample metadata has unknown keys: {extra}")
+    61	    for key, allowed in SAMPLE_METADATA_SCHEMA.items():
+    62	        value = meta[key]
+    63	        if not isinstance(value, allowed) or isinstance(value, bool):
+    64	            allowed_names = ", ".join(t.__name__ for t in allowed)
+    65	            raise ValueError(
+    66	                f"sample metadata field {key!r} has type "
+    67	                f"{type(value).__name__}, expected one of: {allowed_names}"
+    68	            )
+    69	
+    70	
+    71	class PhraseCaptureWriter:
+    72	    """Buffer input across a phrase and write to ``<root>/<source>/`` on phrase_ended.
+    73	
+    74	    Parameters
+    75	    ----------
+    76	    source:
+    77	        ``"keyboard"`` or ``"theramini"`` — selects the on-disk format and
+    78	        the sub-directory under ``root``.
+    79	    root:
+    80	        Base directory (the ``samples/`` directory). Created on first write.
+    81	    sample_rate:
+    82	        Audio sample rate for ``"theramini"`` captures. Ignored for MIDI.
+    83	    tracker:
+    84	        Inject a custom :class:`PhraseTracker` (e.g., a non-default threshold
+    85	        or a tracker shared with a listener). Defaults to a fresh tracker.
+    86	    metadata:
+    87	        Initial sidecar tags. Recognised keys: ``instrument``, ``song_id``,
+    88	        ``key``, ``tempo``, ``source``. Unset keys are filled with defaults
+    89	        (instrument=``source`` arg, source=``"human"``, others ``None``).
+    90	        ``timestamp`` and ``duration`` are always derived per-phrase and
+    91	        cannot be set here.
+    92	    """
+    93	
+    94	    def __init__(
+    95	        self,
+    96	        source: CaptureSource,
+    97	        root: Path | str,
+    98	        *,
+    99	        sample_rate: int = DEFAULT_AUDIO_SAMPLE_RATE,
+   100	        tracker: PhraseTracker | None = None,
+   101	        metadata: Mapping[str, Any] | None = None,
+   102	    ) -> None:
+   103	        if source not in _VALID_SOURCES:
+   104	            raise ValueError(f"unknown capture source: {source!r}")
+   105	        self.source: CaptureSource = source
+   106	        self.root = Path(root)
+   107	        self.sample_rate = sample_rate
+   108	        self.tracker = tracker or PhraseTracker()
+   109	        self._buffer: list[Any] = []
+   110	        self._first_play_time: Optional[float] = None
+   111	        self._metadata: dict[str, Any] = {}
+   112	        if metadata is not None:
+   113	            self.set_metadata(**dict(metadata))
+   114	
+   115	    _USER_METADATA_KEYS: frozenset[str] = frozenset(
+   116	        {"instrument", "song_id", "key", "tempo", "source"}
+   117	    )
+   118	
+   119	    def set_metadata(self, **fields: Any) -> None:
+   120	        """Update sidecar metadata fields. Derived keys are rejected."""
+   121	        bad = sorted(set(fields) - self._USER_METADATA_KEYS)
+   122	        if bad:
+   123	            raise ValueError(
+   124	                f"cannot set derived or unknown metadata fields: {bad}"
+   125	            )
+   126	        self._metadata.update(fields)
+   127	
+   128	    @property
+   129	    def buffered_chunks(self) -> int:
+   130	        return len(self._buffer)
+   131	
+   132	    def feed(
+   133	        self,
+   134	        chunk: Any,
+   135	        is_playing: bool,
+   136	        now: float,
+   137	    ) -> Optional[Path]:
+   138	        """Advance one tick. Returns the written path on phrase_ended, else None.
+   139	
+   140	        ``chunk`` should be raw MIDI bytes (``"keyboard"``) or a float sample
+   141	        array (``"theramini"``). Pass ``None`` on ticks where no input is
+   142	        available — the tracker still advances.
+   143	        """
+   144	        if is_playing and self.tracker.play_start is None:
+   145	            # Fresh play session — discard any leftover buffer (defensive).
+   146	            self._buffer = []
+   147	            self._first_play_time = now
+   148	
+   149	        # Append before tracker.update so the boundary tick (release/note-off
+   150	        # arriving alongside is_playing=False) still lands in the phrase.
+   151	        in_session = self.tracker.play_start is not None or is_playing
+   152	        if in_session and chunk is not None:
+   153	            self._append(chunk, now)
+   154	
+   155	        event = self.tracker.update(is_playing, now)
+   156	
+   157	        if event == "phrase_ended":
+   158	            path = self._write(now)
+   159	            self._buffer = []
+   160	            self._first_play_time = None
+   161	            return path
+   162	
+   163	        if self.tracker.play_start is None and not self.tracker.phrase_active:
+   164	            # Sub-threshold burst just ended (or we're idle) — drop buffer.
+   165	            self._buffer = []
+   166	            self._first_play_time = None
+   167	
+   168	        return None
+   169	
+   170	    def _append(self, chunk: Any, now: float) -> None:
+   171	        first = self._first_play_time if self._first_play_time is not None else now
+   172	        rel_t = max(0.0, now - first)
+   173	        if self.source == "keyboard":
+   174	            self._buffer.append((rel_t, bytes(chunk)))
+   175	        else:
+   176	            self._buffer.append(np.asarray(chunk, dtype=np.float32).reshape(-1))
+   177	
+   178	    def _build_path(self, now: float) -> Path:
+   179	        captured = datetime.fromtimestamp(now, tz=timezone.utc)
+   180	        ts = captured.strftime("%Y%m%dT%H%M%SZ")
+   181	        unique = uuid.uuid4().hex[:8]
+   182	        ext = ".mid" if self.source == "keyboard" else ".wav"
+   183	        return self.root / self.source / f"{self.source}_{ts}_{unique}{ext}"
+   184	
+   185	    def _write(self, now: float) -> Path:
+   186	        path = self._build_path(now)
+   187	        path.parent.mkdir(parents=True, exist_ok=True)
+   188	        if self.source == "keyboard":
+   189	            _write_smf0_midi(path, self._buffer)
+   190	        else:
+   191	            _write_pcm16_wav(path, self._buffer, self.sample_rate)
+   192	        self._write_sidecar(path, now)
+   193	        return path
+   194	
+   195	    def _compose_metadata(self, now: float) -> dict[str, Any]:
+   196	        start = self._first_play_time if self._first_play_time is not None else now
+   197	        duration = max(0.0, now - start)
+   198	        timestamp = (
+   199	            datetime.fromtimestamp(now, tz=timezone.utc)
+   200	            .isoformat()
+   201	            .replace("+00:00", "Z")
+   202	        )
+   203	        meta: dict[str, Any] = {
+   204	            "instrument": self._metadata.get("instrument", self.source),
+   205	            "song_id": self._metadata.get("song_id"),
+   206	            "key": self._metadata.get("key"),
+   207	            "tempo": self._metadata.get("tempo"),
+   208	            "timestamp": timestamp,
+   209	            "duration": round(duration, 6),
+   210	            "source": self._metadata.get("source", DEFAULT_SAMPLE_PROVENANCE),
+   211	        }
+   212	        validate_sample_metadata(meta)
+   213	        return meta
+   214	
+   215	    def _write_sidecar(self, path: Path, now: float) -> None:
+   216	        meta = self._compose_metadata(now)
+   217	        sidecar = path.with_suffix(".json")
+   218	        sidecar.write_text(json.dumps(meta, indent=2, sort_keys=True))
+   219	
+   220	
+   221	def _encode_varlen(value: int) -> bytes:
+   222	    if value < 0:
+   223	        raise ValueError("varlen value must be non-negative")
+   224	    out = bytearray([value & 0x7F])
+   225	    value >>= 7
+   226	    while value:
+   227	        out.append((value & 0x7F) | 0x80)
+   228	        value >>= 7
+   229	    return bytes(reversed(out))
+   230	
+   231	
+   232	def _write_smf0_midi(
+   233	    path: Path,
+   234	    events: Sequence[tuple[float, bytes]],
+   235	) -> None:
+   236	    """Write a Type-0 SMF with a leading tempo meta-event and the buffered events."""
+   237	    header = b"MThd" + (6).to_bytes(4, "big") + (0).to_bytes(2, "big") + (1).to_bytes(2, "big") + _MIDI_PPQ.to_bytes(2, "big")
+   238	
+   239	    track = bytearray()
+   240	    # Tempo meta event at tick 0 — anchors the tick→seconds mapping.
+   241	    track.extend(b"\x00\xFF\x51\x03")
+   242	    track.extend(_MIDI_TEMPO_USEC_PER_QUARTER.to_bytes(3, "big"))
+   243	
+   244	    prev_ticks = 0
+   245	    for rel_t, midi_bytes in events:
+   246	        absolute_ticks = int(round(rel_t * _MIDI_TICKS_PER_SECOND))
+   247	        delta_ticks = max(0, absolute_ticks - prev_ticks)
+   248	        prev_ticks = absolute_ticks
+   249	        track.extend(_encode_varlen(delta_ticks))
+   250	        track.extend(midi_bytes)
+   251	
+   252	    # End-of-track meta event.
+   253	    track.extend(b"\x00\xFF\x2F\x00")
+   254	
+   255	    path.write_bytes(header + b"MTrk" + len(track).to_bytes(4, "big") + bytes(track))
+   256	
+   257	
+   258	def _write_pcm16_wav(
+   259	    path: Path,
+   260	    chunks: Iterable[npt.NDArray[np.float32]],
+   261	    sample_rate: int,
+   262	) -> None:
+   263	    arrays = [np.asarray(c, dtype=np.float32).reshape(-1) for c in chunks]
+   264	    if arrays:
+   265	        joined = np.concatenate(arrays)
+   266	    else:
+   267	        joined = np.zeros(0, dtype=np.float32)
+   268	    clipped = np.clip(joined, -1.0, 1.0)
+   269	    pcm = (clipped * 32767.0).astype("<i2").tobytes()
+   270	    with wave.open(str(path), "wb") as handle:
+   271	        handle.setnchannels(1)
+   272	        handle.setsampwidth(2)
+   273	        handle.setframerate(sample_rate)
+   274	        handle.writeframes(pcm)
+
+codex
+I’ve gathered the implementation details. I’ll do one focused read of the updated test section to validate edge-case coverage against the task spec, then write the verification report.
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && nl -ba tests/test_phrase_capture.py | sed -n '180,360p'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+   180	    ]
+   181	    written = _drive(writer, stream)
+   182	    assert len(written) == 1
+   183	
+   184	
+   185	def test_idle_ticks_before_play_emit_nothing(tmp_path: Path) -> None:
+   186	    writer = PhraseCaptureWriter("theramini", tmp_path)
+   187	    silence = np.zeros(8, dtype=np.float32)
+   188	    stream = [
+   189	        (silence, False, 0.0),
+   190	        (None, False, 1.0),
+   191	        (silence, False, 100.0),
+   192	    ]
+   193	    written = _drive(writer, stream)
+   194	    assert written == []
+   195	    assert writer.buffered_chunks == 0
+   196	
+   197	
+   198	def test_smf_track_contains_tempo_and_end_meta(tmp_path: Path) -> None:
+   199	    writer = PhraseCaptureWriter("keyboard", tmp_path)
+   200	    stream = [
+   201	        (_midi_note_on(60), True, 0.0),
+   202	        (_midi_note_on(60), True, 5.0),
+   203	        (None, False, 6.0),
+   204	    ]
+   205	    written = _drive(writer, stream)
+   206	    data = written[0].read_bytes()
+   207	    # Tempo meta: FF 51 03 <3-byte tempo>
+   208	    assert b"\xFF\x51\x03" in data
+   209	    # End-of-track meta: FF 2F 00
+   210	    assert data.endswith(b"\xFF\x2F\x00")
+   211	
+   212	
+   213	def _read_sidecar(audio_path: Path) -> dict:
+   214	    sidecar = audio_path.with_suffix(".json")
+   215	    assert sidecar.exists(), f"sidecar missing for {audio_path}"
+   216	    return json.loads(sidecar.read_text())
+   217	
+   218	
+   219	def test_sidecar_metadata_written_with_complete_schema(tmp_path: Path) -> None:
+   220	    writer = PhraseCaptureWriter("keyboard", tmp_path)
+   221	    written = _drive(writer, _qualifying_keyboard_stream())
+   222	    meta = _read_sidecar(written[0])
+   223	
+   224	    # Tag completeness — every schema key is present and non-extra.
+   225	    assert set(meta) == set(SAMPLE_METADATA_SCHEMA)
+   226	    # Schema validation passes for the produced payload.
+   227	    validate_sample_metadata(meta)
+   228	
+   229	
+   230	def test_sidecar_defaults_keyboard(tmp_path: Path) -> None:
+   231	    writer = PhraseCaptureWriter("keyboard", tmp_path)
+   232	    written = _drive(writer, _qualifying_keyboard_stream())
+   233	    meta = _read_sidecar(written[0])
+   234	
+   235	    assert meta["instrument"] == "keyboard"
+   236	    assert meta["source"] == "human"
+   237	    assert meta["song_id"] is None
+   238	    assert meta["key"] is None
+   239	    assert meta["tempo"] is None
+   240	
+   241	
+   242	def test_sidecar_defaults_theramini(tmp_path: Path) -> None:
+   243	    writer = PhraseCaptureWriter("theramini", tmp_path, sample_rate=8000)
+   244	    sr = 8000
+   245	    tone = np.zeros(sr, dtype=np.float32)
+   246	    stream = [
+   247	        (tone, True, 0.0),
+   248	        (tone, True, 5.0),
+   249	        (None, False, 6.0),
+   250	    ]
+   251	    written = _drive(writer, stream)
+   252	    meta = _read_sidecar(written[0])
+   253	
+   254	    assert meta["instrument"] == "theramini"
+   255	    assert meta["source"] == "human"
+   256	
+   257	
+   258	def test_sidecar_carries_user_supplied_tags(tmp_path: Path) -> None:
+   259	    writer = PhraseCaptureWriter(
+   260	        "keyboard",
+   261	        tmp_path,
+   262	        metadata={
+   263	            "instrument": "rhodes",
+   264	            "song_id": "improv-42",
+   265	            "key": "Dm",
+   266	            "tempo": 96.0,
+   267	        },
+   268	    )
+   269	    written = _drive(writer, _qualifying_keyboard_stream())
+   270	    meta = _read_sidecar(written[0])
+   271	
+   272	    assert meta["instrument"] == "rhodes"
+   273	    assert meta["song_id"] == "improv-42"
+   274	    assert meta["key"] == "Dm"
+   275	    assert meta["tempo"] == 96.0
+   276	    assert meta["source"] == "human"
+   277	
+   278	
+   279	def test_set_metadata_updates_between_phrases(tmp_path: Path) -> None:
+   280	    writer = PhraseCaptureWriter("keyboard", tmp_path)
+   281	    note = _midi_note_on(60)
+   282	
+   283	    first_stream = [(note, True, 0.0), (note, True, 5.0), (None, False, 6.0)]
+   284	    written_first = _drive(writer, first_stream)
+   285	    meta_first = _read_sidecar(written_first[0])
+   286	    assert meta_first["key"] is None
+   287	
+   288	    writer.set_metadata(key="G", tempo=140)
+   289	
+   290	    second_stream = [(note, True, 100.0), (note, True, 105.0), (None, False, 106.0)]
+   291	    written_second = _drive(writer, second_stream)
+   292	    meta_second = _read_sidecar(written_second[0])
+   293	    assert meta_second["key"] == "G"
+   294	    assert meta_second["tempo"] == 140
+   295	
+   296	
+   297	def test_set_metadata_rejects_derived_or_unknown_fields(tmp_path: Path) -> None:
+   298	    writer = PhraseCaptureWriter("keyboard", tmp_path)
+   299	    with pytest.raises(ValueError):
+   300	        writer.set_metadata(timestamp="2026-04-25T18:39:59Z")
+   301	    with pytest.raises(ValueError):
+   302	        writer.set_metadata(duration=12.0)
+   303	    with pytest.raises(ValueError):
+   304	        writer.set_metadata(performer="anthony")
+   305	
+   306	
+   307	def test_sidecar_timestamp_is_iso_utc(tmp_path: Path) -> None:
+   308	    writer = PhraseCaptureWriter("keyboard", tmp_path)
+   309	    end_unix = datetime(2026, 4, 25, 18, 39, 59, tzinfo=timezone.utc).timestamp()
+   310	    stream = [
+   311	        (_midi_note_on(60), True, end_unix - 6.0),
+   312	        (_midi_note_on(60), True, end_unix - 1.0),
+   313	        (None, False, end_unix),
+   314	    ]
+   315	    written = _drive(writer, stream)
+   316	    meta = _read_sidecar(written[0])
+   317	
+   318	    parsed = datetime.fromisoformat(meta["timestamp"].replace("Z", "+00:00"))
+   319	    assert parsed == datetime(2026, 4, 25, 18, 39, 59, tzinfo=timezone.utc)
+   320	
+   321	
+   322	def test_sidecar_duration_matches_phrase_length(tmp_path: Path) -> None:
+   323	    writer = PhraseCaptureWriter("keyboard", tmp_path)
+   324	    note = _midi_note_on(60)
+   325	    stream = [
+   326	        (note, True, 100.0),
+   327	        (note, True, 105.0),
+   328	        (None, False, 107.5),
+   329	    ]
+   330	    written = _drive(writer, stream)
+   331	    meta = _read_sidecar(written[0])
+   332	    assert meta["duration"] == pytest.approx(7.5, abs=1e-6)
+   333	
+   334	
+   335	def test_sidecar_path_pairs_with_audio(tmp_path: Path) -> None:
+   336	    writer = PhraseCaptureWriter("theramini", tmp_path, sample_rate=8000)
+   337	    sr = 8000
+   338	    tone = np.zeros(sr, dtype=np.float32)
+   339	    stream = [
+   340	        (tone, True, 0.0),
+   341	        (tone, True, 5.0),
+   342	        (None, False, 6.0),
+   343	    ]
+   344	    written = _drive(writer, stream)
+   345	    audio = written[0]
+   346	    sidecar = audio.with_suffix(".json")
+   347	
+   348	    assert sidecar.parent == audio.parent
+   349	    assert sidecar.stem == audio.stem
+   350	    assert sidecar.suffix == ".json"
+   351	
+   352	
+   353	def test_no_sidecar_when_subthreshold_burst_dropped(tmp_path: Path) -> None:
+   354	    writer = PhraseCaptureWriter("keyboard", tmp_path)
+   355	    stream = [
+   356	        (_midi_note_on(60), True, 0.0),
+   357	        (None, False, 2.0),
+   358	    ]
+   359	    _drive(writer, stream)
+   360	    target = tmp_path / "keyboard"
+
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && nl -ba tests/test_phrase_capture.py | sed -n '360,460p'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+   360	    target = tmp_path / "keyboard"
+   361	    if target.exists():
+   362	        assert not any(p.suffix == ".json" for p in target.iterdir())
+   363	
+   364	
+   365	def test_validator_rejects_missing_keys() -> None:
+   366	    incomplete = {
+   367	        "instrument": "keyboard",
+   368	        "song_id": None,
+   369	        "key": None,
+   370	        "tempo": None,
+   371	        "timestamp": "2026-04-25T18:39:59Z",
+   372	        # duration missing
+   373	        "source": "human",
+   374	    }
+   375	    with pytest.raises(ValueError, match="missing required keys"):
+   376	        validate_sample_metadata(incomplete)
+   377	
+   378	
+   379	def test_validator_rejects_unknown_keys() -> None:
+   380	    payload = {k: _placeholder(k) for k in SAMPLE_METADATA_SCHEMA}
+   381	    payload["mystery"] = "x"
+   382	    with pytest.raises(ValueError, match="unknown keys"):
+   383	        validate_sample_metadata(payload)
+   384	
+   385	
+   386	def test_validator_rejects_wrong_types() -> None:
+   387	    payload = {k: _placeholder(k) for k in SAMPLE_METADATA_SCHEMA}
+   388	    payload["tempo"] = "fast"  # should be number-or-None
+   389	    with pytest.raises(ValueError, match="tempo"):
+   390	        validate_sample_metadata(payload)
+   391	
+   392	
+   393	def _placeholder(key: str):
+   394	    defaults = {
+   395	        "instrument": "keyboard",
+   396	        "song_id": None,
+   397	        "key": None,
+   398	        "tempo": None,
+   399	        "timestamp": "2026-04-25T18:39:59Z",
+   400	        "duration": 6.0,
+   401	        "source": "human",
+   402	    }
+   403	    return defaults[key]
+   404	
+   405	
+   406	def test_chunks_can_carry_multiple_midi_messages(tmp_path: Path) -> None:
+   407	    writer = PhraseCaptureWriter("keyboard", tmp_path)
+   408	    composite = _midi_note_on(60) + _midi_note_on(64) + _midi_note_on(67)
+   409	    stream = [
+   410	        (composite, True, 0.0),
+   411	        (composite, True, 5.0),
+   412	        (b"", False, 6.0),
+   413	    ]
+   414	    written = _drive(writer, stream)
+   415	    data = written[0].read_bytes()
+   416	    assert bytes([0x90, 60, 64]) in data
+   417	    assert bytes([0x90, 64, 64]) in data
+   418	    assert bytes([0x90, 67, 64]) in data
+
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && git diff --name-only HEAD~3' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+my-claw/tools/senseweave/phrase_capture.py
+progress.md
+sdp/logs/Lead_T-016_20260425T183959Zb_1777166097.log
+sdp/logs/Lead_T-016_20260425T183959Zc_1777166490.log
+sdp/logs/Lead_T-016_20260425T183959Zd_1777166850.log
+sdp/logs/Lead_T-018_20260425T183959Za_1777168284.log
+sdp/logs/Lead_T-018_20260425T183959Zb_1777168931.log
+sdp/logs/Lead_T-018_20260425T183959Zc_1777169624.log
+sdp/logs/Lead_T-018_20260425T183959Zc_1777170222.log
+sdp/logs/Lead_T-018_20260425T183959Zc_1777170236.log
+sdp/logs/Lead_T-023_20260425T183959Z_1777167707.log
+sdp/logs/Verify_T-016_20260425T183959Zb_1777166373.log
+sdp/logs/Verify_T-016_20260425T183959Zc_1777166673.log
+sdp/logs/Verify_T-016_20260425T183959Zd_1777167536.log
+sdp/logs/Verify_T-018_20260425T183959Za_1777168754.log
+sdp/logs/Verify_T-018_20260425T183959Zb_1777169354.log
+sdp/logs/Verify_T-018_20260425T183959Zc_1777169871.log
+sdp/logs/Verify_T-023_20260425T183959Z_1777168165.log
+sdp/logs/claude_1777168241.log
+sdp/notifications.log
+sdp/run-log.md
+sdp/telemetry/prompt-review-2026-04-26.md
+sdp/verification/t-016@20260425t183959zb-verify.md
+sdp/verification/t-018 @20260425t183959zc-verify.md
+tests/test_phrase_capture.py
+
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && nl -ba tests/test_first_boot.py | sed -n '300,620p'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+   300	        assert identity.parent_id is None
+   301	        assert identity.clone_timestamp is None
+   302	
+   303	
+   304	class TestStartupIdentityModePersistence:
+   305	    """Startup bootstrap must persist identity across repeated boots."""
+   306	
+   307	    def test_standalone_bootstrap_reuses_persisted_identity(self, tmp_path):
+   308	        identity_path = tmp_path / "identity.json"
+   309	
+   310	        first = bootstrap_identity(
+   311	            mode="standalone",
+   312	            release="test-release",
+   313	            identity_path=identity_path,
+   314	        )
+   315	        second = bootstrap_identity(
+   316	            mode="federated",
+   317	            release="ignored-release",
+   318	            parent_id="ignored-parent",
+   319	            identity_path=identity_path,
+   320	        )
+   321	
+   322	        assert identity_path.exists()
+   323	        assert second.instance_id == first.instance_id
+   324	        assert second.instance_name == first.instance_name
+   325	        assert second.mode == "standalone"
+   326	        assert second.parent_id is None
+   327	
+   328	    def test_federated_bootstrap_reuses_persisted_identity(self, tmp_path):
+   329	        identity_path = tmp_path / "identity.json"
+   330	
+   331	        first = bootstrap_identity(
+   332	            mode="federated",
+   333	            release="test-release",
+   334	            parent_id="origin-home",
+   335	            identity_path=identity_path,
+   336	        )
+   337	        second = bootstrap_identity(
+   338	            mode="standalone",
+   339	            release="ignored-release",
+   340	            identity_path=identity_path,
+   341	        )
+   342	
+   343	        assert identity_path.exists()
+   344	        assert second.instance_id == first.instance_id
+   345	        assert second.instance_name == first.instance_name
+   346	        assert second.mode == "federated"
+   347	        assert second.parent_id == "origin-home"
+   348	        assert second.clone_timestamp is not None
+   349	
+   350	
+   351	# ── Full integration: mint → boot → announce → reboot ────────────
+   352	
+   353	
+   354	class TestFullIntegration:
+   355	    """End-to-end: mint an identity, boot, announce, reboot, verify no repeat."""
+   356	
+   357	    def test_federated_clone_lifecycle(self, tmp_path):
+   358	        identity_path = tmp_path / "identity.json"
+   359	        announced_path = tmp_path / ".first_boot_announced"
+   360	
+   361	        # Step 1: Mint a federated clone identity
+   362	        identity = mint_identity(
+   363	            mode="federated",
+   364	            parent_id="origin-home",
+   365	            release="2.1.0",
+   366	            identity_path=identity_path,
+   367	        )
+   368	        assert identity.mode == "federated"
+   369	        assert identity.parent_id == "origin-home"
+   370	
+   371	        # Step 2: First boot — should announce
+   372	        mock_fn = MagicMock()
+   373	        announcer = FirstBootAnnouncer(
+   374	            identity_path=identity_path,
+   375	            announced_path=announced_path,
+   376	            announce_fn=mock_fn,
+   377	        )
+   378	        payload = announcer.maybe_announce()
+   379	
+   380	        assert payload is not None
+   381	        assert payload["instance_id"] == identity.instance_id
+   382	        assert payload["lineage"]["parent_id"] == "origin-home"
+   383	        mock_fn.assert_called_once_with(payload)
+   384	
+   385	        # Step 3: Second boot — must NOT re-announce
+   386	        mock_fn2 = MagicMock()
+   387	        announcer2 = FirstBootAnnouncer(
+   388	            identity_path=identity_path,
+   389	            announced_path=announced_path,
+   390	            announce_fn=mock_fn2,
+   391	        )
+   392	        assert announcer2.maybe_announce() is None
+   393	        mock_fn2.assert_not_called()
+   394	
+   395	    def test_standalone_clone_lifecycle(self, tmp_path):
+   396	        identity_path = tmp_path / "identity.json"
+   397	        announced_path = tmp_path / ".first_boot_announced"
+   398	
+   399	        # Mint a standalone clone
+   400	        mint_identity(
+   401	            mode="standalone",
+   402	            parent_id="origin-home",
+   403	            identity_path=identity_path,
+   404	        )
+   405	
+   406	        # Boot — should NOT announce
+   407	        mock_fn = MagicMock()
+   408	        announcer = FirstBootAnnouncer(
+   409	            identity_path=identity_path,
+   410	            announced_path=announced_path,
+   411	            announce_fn=mock_fn,
+   412	        )
+   413	        assert announcer.maybe_announce() is None
+   414	        mock_fn.assert_not_called()
+   415	        assert not announced_path.exists()
+   416	
+   417	
+   418	# ── Artistic name generation ───────────────────────────────────
+   419	
+   420	
+   421	class TestGenerateArtisticName:
+   422	    """Tests for the artistic instance name generator."""
+   423	
+   424	    def test_returns_adjective_dash_noun(self):
+   425	        name = generate_artistic_name()
+   426	        parts = name.split("-")
+   427	        assert len(parts) == 2, f"Expected 'adjective-noun', got {name!r}"
+   428	
+   429	    def test_deterministic_with_seed(self):
+   430	        import random
+   431	
+   432	        rng = random.Random(42)
+   433	        name1 = generate_artistic_name(rng=rng)
+   434	        rng2 = random.Random(42)
+   435	        name2 = generate_artistic_name(rng=rng2)
+   436	        assert name1 == name2
+   437	
+   438	    def test_different_seeds_produce_different_names(self):
+   439	        import random
+   440	
+   441	        name1 = generate_artistic_name(rng=random.Random(1))
+   442	        name2 = generate_artistic_name(rng=random.Random(999))
+   443	        assert name1 != name2
+   444	
+   445	    def test_name_uses_lowercase_alpha(self):
+   446	        import random
+   447	
+   448	        for seed in range(50):
+   449	            name = generate_artistic_name(rng=random.Random(seed))
+   450	            assert name == name.lower()
+   451	            assert all(c.isalpha() or c == "-" for c in name)
+   452	
+   453	    def test_mint_identity_uses_artistic_name(self, tmp_path):
+   454	        """mint_identity without explicit name should use an artistic name."""
+   455	        path = tmp_path / "identity.json"
+   456	        identity = mint_identity(identity_path=path)
+   457	        parts = identity.instance_name.split("-")
+   458	        assert len(parts) == 2
+   459	        assert all(part.isalpha() for part in parts)
+   460	
+   461	
+   462	# ── bootstrap_identity ─────────────────────────────────────────
+   463	
+   464	
+   465	class TestBootstrapIdentity:
+   466	    """Tests for the load-or-create bootstrap_identity function."""
+   467	
+   468	    def test_creates_new_on_first_boot(self, tmp_path):
+   469	        path = tmp_path / "identity.json"
+   470	        identity = bootstrap_identity(identity_path=path)
+   471	
+   472	        assert path.exists()
+   473	        assert identity.instance_id
+   474	        assert identity.instance_name
+   475	        assert identity.mode == "standalone"
+   476	
+   477	    def test_loads_existing_on_subsequent_boot(self, tmp_path):
+   478	        path = tmp_path / "identity.json"
+   479	        first = bootstrap_identity(identity_path=path)
+   480	        second = bootstrap_identity(identity_path=path)
+   481	
+   482	        assert first.instance_id == second.instance_id
+   483	        assert first.instance_name == second.instance_name
+   484	        assert first.created_at == second.created_at
+   485	
+   486	    def test_does_not_overwrite_existing(self, tmp_path):
+   487	        path = tmp_path / "identity.json"
+   488	        _write_identity(path, mode="federated", instance_id="keep-me",
+   489	                        instance_name="precious-artifact")
+   490	
+   491	        identity = bootstrap_identity(identity_path=path)
+   492	
+   493	        assert identity.instance_id == "keep-me"
+   494	        assert identity.instance_name == "precious-artifact"
+   495	        assert identity.mode == "federated"
+   496	
+   497	    def test_recovers_from_corrupt_file(self, tmp_path):
+   498	        path = tmp_path / "identity.json"
+   499	        path.write_text("{corrupt json!!")
+   500	
+   501	        identity = bootstrap_identity(identity_path=path)
+   502	
+   503	        assert identity.instance_id  # fresh identity minted
+   504	        assert path.exists()
+   505	        data = json.loads(path.read_text())
+   506	        assert data["instance_id"] == identity.instance_id
+   507	
+   508	    def test_creates_parent_directory(self, tmp_path):
+   509	        path = tmp_path / "nested" / "deep" / "identity.json"
+   510	        identity = bootstrap_identity(identity_path=path)
+   511	
+   512	        assert path.exists()
+   513	        assert identity.instance_id
+   514	
+   515	    def test_preserves_mode_and_release(self, tmp_path):
+   516	        path = tmp_path / "identity.json"
+   517	        identity = bootstrap_identity(
+   518	            mode="federated",
+   519	            release="3.0.0",
+   520	            parent_id="parent-abc",
+   521	            identity_path=path,
+   522	        )
+   523	
+   524	        assert identity.mode == "federated"
+   525	        assert identity.release == "3.0.0"
+   526	        assert identity.parent_id == "parent-abc"
+   527	        assert identity.clone_timestamp is not None
+   528	
+   529	
+   530	# ── Startup flow integration: bootstrap → announce ───────────────
+   531	
+   532	
+   533	class TestStartupIdentityPersistence:
+   534	    """Simulate the daemon startup flow: bootstrap_identity then FirstBootAnnouncer.
+   535	
+   536	    Verifies the identity is auto-created on first boot and persists across
+   537	    subsequent boots without regeneration, matching the real poll_loop() wiring.
+   538	    """
+   539	
+   540	    def test_first_boot_creates_identity_then_announces(self, tmp_path):
+   541	        """First startup mints identity; announcer finds it and announces."""
+   542	        identity_path = tmp_path / "identity.json"
+   543	        announced_path = tmp_path / ".first_boot_announced"
+   544	
+   545	        # Simulate startup: bootstrap creates identity
+   546	        identity = bootstrap_identity(
+   547	            mode="federated",
+   548	            release="3.0.0",
+   549	            parent_id="origin-home",
+   550	            identity_path=identity_path,
+   551	        )
+   552	
+   553	        assert identity_path.exists()
+   554	        assert identity.instance_id
+   555	        assert identity.instance_name
+   556	
+   557	        # Announcer finds the identity and announces
+   558	        mock_fn = MagicMock()
+   559	        announcer = FirstBootAnnouncer(
+   560	            identity_path=identity_path,
+   561	            announced_path=announced_path,
+   562	            announce_fn=mock_fn,
+   563	        )
+   564	        payload = announcer.maybe_announce()
+   565	
+   566	        assert payload is not None
+   567	        assert payload["instance_id"] == identity.instance_id
+   568	        mock_fn.assert_called_once()
+   569	
+   570	    def test_identity_persists_across_reboots(self, tmp_path):
+   571	        """Subsequent boots load the same identity without regenerating."""
+   572	        identity_path = tmp_path / "identity.json"
+   573	
+   574	        first = bootstrap_identity(identity_path=identity_path)
+   575	        second = bootstrap_identity(identity_path=identity_path)
+   576	        third = bootstrap_identity(identity_path=identity_path)
+   577	
+   578	        assert first.instance_id == second.instance_id == third.instance_id
+   579	        assert first.instance_name == second.instance_name == third.instance_name
+   580	        assert first.created_at == second.created_at == third.created_at
+   581	
+   582	    def test_standalone_startup_creates_identity_no_announce(self, tmp_path):
+   583	        """Standalone boot creates identity but does not announce."""
+   584	        identity_path = tmp_path / "identity.json"
+   585	        announced_path = tmp_path / ".first_boot_announced"
+   586	
+   587	        identity = bootstrap_identity(mode="standalone", identity_path=identity_path)
+   588	
+   589	        assert identity_path.exists()
+   590	        assert identity.mode == "standalone"
+   591	
+   592	        mock_fn = MagicMock()
+   593	        announcer = FirstBootAnnouncer(
+   594	            identity_path=identity_path,
+   595	            announced_path=announced_path,
+   596	            announce_fn=mock_fn,
+   597	        )
+   598	        assert announcer.maybe_announce() is None
+   599	        mock_fn.assert_not_called()
+
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && nl -ba tests/test_governor_integration.py | sed -n '130,230p'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+   130	class TestBudgetSuppressLLM:
+   131	    """suppress_llm must be True under sufficient pressure."""
+   132	
+   133	    def test_healthy_does_not_suppress(self) -> None:
+   134	        budget = rg.compute_budget(_nominal_snapshot())
+   135	        assert budget.suppress_llm is False
+   136	
+   137	    def test_emergency_suppresses(self) -> None:
+   138	        budget = rg.compute_budget(_emergency_snapshot())
+   139	        assert budget.suppress_llm is True
+   140	
+   141	
+   142	# ---------------------------------------------------------------------------
+   143	# Startup identity wiring: both daemon entrypoints call bootstrap_identity
+   144	# ---------------------------------------------------------------------------
+   145	
+   146	
+   147	class TestStartupIdentityWiring:
+   148	    """Verify both daemon entrypoints wire bootstrap_identity before main loop.
+   149	
+   150	    Uses AST inspection to confirm the call exists in the startup path
+   151	    without importing the full daemon modules (which have heavy dependencies).
+   152	    """
+   153	
+   154	    def test_daemon_py_calls_bootstrap_identity(self) -> None:
+   155	        """daemon.py poll_loop must call bootstrap_identity()."""
+   156	        source = (
+   157	            Path(__file__).parent.parent / "my-claw" / "tools" / "daemon.py"
+   158	        ).read_text()
+   159	        tree = ast.parse(source)
+   160	        poll_loop_fn = _find_function(tree, "poll_loop")
+   161	        assert poll_loop_fn is not None, "poll_loop function not found in daemon.py"
+   162	
+   163	        calls = _extract_call_names(poll_loop_fn)
+   164	        assert "bootstrap_identity" in calls, (
+   165	            "daemon.py poll_loop() must call bootstrap_identity() before main loop"
+   166	        )
+   167	
+   168	    def test_cypherclaw_daemon_py_calls_bootstrap_identity(self) -> None:
+   169	        """cypherclaw_daemon.py poll_loop must call bootstrap_identity()."""
+   170	        source = (
+   171	            Path(__file__).parent.parent / "my-claw" / "tools" / "cypherclaw_daemon.py"
+   172	        ).read_text()
+   173	        tree = ast.parse(source)
+   174	        poll_loop_fn = _find_function(tree, "poll_loop")
+   175	        assert poll_loop_fn is not None, (
+   176	            "poll_loop function not found in cypherclaw_daemon.py"
+   177	        )
+   178	
+   179	        calls = _extract_call_names(poll_loop_fn)
+   180	        assert "bootstrap_identity" in calls, (
+   181	            "cypherclaw_daemon.py poll_loop() must call bootstrap_identity() before main loop"
+   182	        )
+   183	
+   184	    def test_bootstrap_identity_before_announcer_in_both(self) -> None:
+   185	        """bootstrap_identity must come before FirstBootAnnouncer in both daemons."""
+   186	        for name in ("daemon.py", "cypherclaw_daemon.py"):
+   187	            source = (
+   188	                Path(__file__).parent.parent / "my-claw" / "tools" / name
+   189	            ).read_text()
+   190	            tree = ast.parse(source)
+   191	            poll_loop_fn = _find_function(tree, "poll_loop")
+   192	            assert poll_loop_fn is not None
+   193	
+   194	            calls_with_lines = _extract_call_names_with_lines(poll_loop_fn)
+   195	            bootstrap_line = None
+   196	            announcer_line = None
+   197	            for call_name, lineno in calls_with_lines:
+   198	                if call_name == "bootstrap_identity" and bootstrap_line is None:
+   199	                    bootstrap_line = lineno
+   200	                if call_name == "FirstBootAnnouncer" and announcer_line is None:
+   201	                    announcer_line = lineno
+   202	
+   203	            assert bootstrap_line is not None, (
+   204	                f"{name}: bootstrap_identity not found in poll_loop"
+   205	            )
+   206	            assert announcer_line is not None, (
+   207	                f"{name}: FirstBootAnnouncer not found in poll_loop"
+   208	            )
+   209	            assert bootstrap_line < announcer_line, (
+   210	                f"{name}: bootstrap_identity (line {bootstrap_line}) must come "
+   211	                f"before FirstBootAnnouncer (line {announcer_line})"
+   212	            )
+   213	
+   214	
+   215	# ---------------------------------------------------------------------------
+   216	# AST helpers
+   217	# ---------------------------------------------------------------------------
+   218	
+   219	
+   220	def _find_function(tree: ast.Module, name: str) -> ast.FunctionDef | None:
+   221	    for node in ast.walk(tree):
+   222	        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+   223	            if node.name == name:
+   224	                return node
+   225	    return None
+   226	
+   227	
+   228	def _extract_call_names(func: ast.FunctionDef) -> set[str]:
+   229	    names: set[str] = set()
+   230	    for node in ast.walk(func):
+
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && rg -n \"PhraseCaptureWriter\\(\" my-claw/tools" in /Users/anthony/Programming/PromptClaw
+ exited 1 in 0ms:
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && rg -n "PhraseCaptureWriter" my-claw/tests my-claw/tools tests | head -n 50' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+rg: my-claw/tests: No such file or directory (os error 2)
+my-claw/tools/senseweave/phrase_capture.py:71:class PhraseCaptureWriter:
+tests/test_phrase_capture.py:1:"""Tests for PhraseCaptureWriter — buffered phrase persistence."""
+tests/test_phrase_capture.py:18:    PhraseCaptureWriter,
+tests/test_phrase_capture.py:25:    writer: PhraseCaptureWriter,
+tests/test_phrase_capture.py:57:    writer = PhraseCaptureWriter("keyboard", tmp_path)
+tests/test_phrase_capture.py:75:    writer = PhraseCaptureWriter("theramini", tmp_path, sample_rate=8000)
+tests/test_phrase_capture.py:106:    writer = PhraseCaptureWriter("keyboard", tmp_path)
+tests/test_phrase_capture.py:119:    writer = PhraseCaptureWriter("keyboard", tmp_path)
+tests/test_phrase_capture.py:137:    writer = PhraseCaptureWriter("keyboard", tmp_path)
+tests/test_phrase_capture.py:156:    writer = PhraseCaptureWriter("keyboard", tmp_path)
+tests/test_phrase_capture.py:170:        PhraseCaptureWriter("contact", tmp_path)  # type: ignore[arg-type]
+tests/test_phrase_capture.py:175:    writer = PhraseCaptureWriter("keyboard", tmp_path, tracker=tracker)
+tests/test_phrase_capture.py:186:    writer = PhraseCaptureWriter("theramini", tmp_path)
+tests/test_phrase_capture.py:199:    writer = PhraseCaptureWriter("keyboard", tmp_path)
+tests/test_phrase_capture.py:220:    writer = PhraseCaptureWriter("keyboard", tmp_path)
+tests/test_phrase_capture.py:231:    writer = PhraseCaptureWriter("keyboard", tmp_path)
+tests/test_phrase_capture.py:243:    writer = PhraseCaptureWriter("theramini", tmp_path, sample_rate=8000)
+tests/test_phrase_capture.py:259:    writer = PhraseCaptureWriter(
+tests/test_phrase_capture.py:280:    writer = PhraseCaptureWriter("keyboard", tmp_path)
+tests/test_phrase_capture.py:298:    writer = PhraseCaptureWriter("keyboard", tmp_path)
+tests/test_phrase_capture.py:308:    writer = PhraseCaptureWriter("keyboard", tmp_path)
+tests/test_phrase_capture.py:323:    writer = PhraseCaptureWriter("keyboard", tmp_path)
+tests/test_phrase_capture.py:336:    writer = PhraseCaptureWriter("theramini", tmp_path, sample_rate=8000)
+tests/test_phrase_capture.py:354:    writer = PhraseCaptureWriter("keyboard", tmp_path)
+tests/test_phrase_capture.py:407:    writer = PhraseCaptureWriter("keyboard", tmp_path)
+
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M sdp/logs/Lead_T-018_20260425T183959Zc_1777170236.log
+?? sdp/logs/Verify_T-018_20260425T183959Zc_1777170297.log
+
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && cat > sdp/verification/t-018@20260425t183959zc-verify.md <<'EOF'
+# Verification Report — T-018@20260425T183959Zc
+
+**Verify Agent:** Codex
+**Date:** 2026-04-26
+**Artifacts Reviewed:**
+- [my-claw/tools/senseweave/phrase_capture.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/phrase_capture.py)
+- [tests/test_phrase_capture.py](/Users/anthony/Programming/PromptClaw/tests/test_phrase_capture.py)
+- [ESCALATIONS.md](/Users/anthony/Programming/PromptClaw/ESCALATIONS.md)
+- [tests/test_first_boot.py](/Users/anthony/Programming/PromptClaw/tests/test_first_boot.py)
+- [tests/test_governor_integration.py](/Users/anthony/Programming/PromptClaw/tests/test_governor_integration.py)
+- [my-claw/tools/daemon.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/daemon.py)
+- [my-claw/tools/cypherclaw_daemon.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/cypherclaw_daemon.py)
+
+## Correctness
+The sample capture writer now writes a "'`.json` sidecar on each successful phrase write with the required schema keys: `instrument`, `song_id`, `key`, `tempo`, `timestamp`, `duration`, and `source` via `_compose_metadata()` and `_write_sidecar()`.
+
+## Completeness
+Tests were extended to cover default and user-supplied tags, derived-field rejection, key-set completeness, schema/type validation, timestamp format, duration sanity, path pairing, and sub-threshold no-write behavior. Required schema coverage is explicitly validated.
+
+## Consistency
+Changes stay within established project patterns for path construction, audio/MIDI writing, and test helper style. API additions (`metadata` arg, `set_metadata`, schema validator) are additive and do not alter existing call behavior for untagged use.
+
+## Security
+No direct security regressions were introduced in this change set. Sidecar files are written beside the sample file using generated UUID filenames and no user-controlled filesystem paths.
+
+## Quality
+Behavior is deterministic and well-scoped. Unit coverage is substantial and the new validation helper is reusable for downstream writers.
+
+## Issues Found
+- [ ] [Issue — severity: minor] `PhraseCaptureWriter` appears to be validated only in unit tests and is not yet used by production capture listeners (`PhraseCaptureWriter` currently has no call sites in `my-claw/tools/senseweave/*`). Metadata sidecar behavior is implemented correctly, but end-to-end capture flows still depend on subsequent integration work.
+- [ ] [Issue — severity: minor] Candidate hardening checks are technically satisfied by existing startup wiring/tests (not by this change): bootstrap/announce order exists in both daemons and startup persistence tests cover standalone and federated modes, but this task does not add or alter startup-path wiring.
+
+## Verdict: PASS WITH NOTES
+
+## Notes for Lead Agent
+- Confirm whether T-018 should be treated as implementation-only (as currently) or whether listener wiring is required before closure. If end-to-end capture integration is in-scope now, schedule it explicitly.
+- Candidate hardening check around identity bootstrap is already covered by existing tests and `poll_loop` assertions in `tests/test_first_boot.py` and `tests/test_governor_integration.py`; no additional blocking action is required for this task.
+EOF' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M sdp/logs/Lead_T-018_20260425T183959Zc_1777170236.log
+?? sdp/logs/Verify_T-018_20260425T183959Zc_1777170297.log
+?? sdp/verification/t-018@20260425t183959zc-verify.md
+
+codex
+I’ve drafted the required report and I’m committing it now; I’m excluding the runtime command log noise so only the required verification artifact is recorded.
+exec
+/bin/zsh -lc "cd /Users/anthony/Programming/PromptClaw && git add 'sdp/verification/t-018@20260425t183959zc-verify.md' && git commit -m \"verify(T-018): verification report — PASS WITH NOTES [T-018@20260425T183959Zc]\"" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+[feat/graceful-degradation c344da3] verify(T-018): verification report — PASS WITH NOTES [T-018@20260425T183959Zc]
+ 1 file changed, 37 insertions(+)
+ create mode 100644 sdp/verification/t-018@20260425t183959zc-verify.md
+
+exec
+/bin/zsh -lc 'cd /Users/anthony/Programming/PromptClaw && git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M sdp/logs/Lead_T-018_20260425T183959Zc_1777170236.log
+?? sdp/logs/Verify_T-018_20260425T183959Zc_1777170297.log
+
+codex
+Verification completed.
+
+- Report written exactly at `sdp/verification/t-018@20260425t183959zc-verify.md`.
+- Committed as `c344da3` with message: `verify(T-018): verification report — PASS WITH NOTES [T-018@20260425T183959Zc]`.
+- Required commands executed:
+  - `git log --oneline -5`
+  - `git diff --stat HEAD~3`
+  - `git diff HEAD~3`
+  - `cat ESCALATIONS.md`
+  - `pip install -e '.[dev]' && pytest tests/ -x`
+- Test run result: `3395 passed` (full suite), with warnings only.
+
+Findings (from report):
+- Core requirement is satisfied: sidecar `.json` now includes all required tags and schema validation/tests were added.
+- Recurring bootstrap hardening checks are satisfied in existing startup/test coverage (`daemon.py`, `cypherclaw_daemon.py`, `tests/test_first_boot.py`, `tests/test_governor_integration.py`) but this task did not modify startup flow.
+- One minor non-blocking issue noted: `PhraseCaptureWriter` is currently validated at unit-test level and not yet wired into production capture listeners in this change set.
+2026-04-26T02:26:26.583278Z ERROR codex_core::session: failed to record rollout items: thread 019dc79a-b703-7313-9b69-4a5c858a0117 not found
+tokens used
+66,124

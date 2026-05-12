@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high -p -
+Prompt delivered via: stdin (1948 chars)
+---
+
+**Verdict: PASS**
+
+Verification complete. Summary of findings:
+
+- `get_agent_headroom("ollama")` returns `1.0` — confirmed via direct test and code inspection
+- Local provider short-circuit fires at line 198–199 of `quota_monitor.py`, before any SDP/CLI lookup
+- Ollama is never excluded from selection even when all remote providers are paused
+- 5 dedicated new tests cover all acceptance criteria; 21/21 quota tests green, 1411 total suite green
+- One minor gap: no parameterised test for the Ollama model aliases (`qwen3.5:*`, etc.) — not blocking
+
+Report committed at `sdp/verification/t-005@20260408t223256z-verify.md`.

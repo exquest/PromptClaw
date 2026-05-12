@@ -1,0 +1,26 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (3783 chars)
+---
+
+T-023 is complete. Here's a summary:
+
+**New module:** `my-claw/tools/senseweave/acoustic_ecology.py`
+
+**What it does:** A pure-function policy layer that consumes installation context (occupancy, cadence, day phase, room activity, attention, dwell time) and produces a frozen `AcousticEcologyPolicy` with:
+
+- **Six ecology modes:** sleep, wind_down, quiet_occupied, active_day, away_practice, performance
+- **Hard ceilings** for volume (dB), onset density, spectral centroid (brightness), density, and voice count
+- **Silence windows** (probability, min/max gap)
+- **Source preferences** ordered by ecological priority per mode
+- **Keynote privilege** — environmental sounds privileged over generated material in sleep/wind-down; reversed in away_practice
+- **Dwell-time shaping** — fresh arrivals get softened ceilings; settled occupants get slight relaxation
+- **Room activity shaping** — active rooms boost keynote privilege (room IS the soundscape)
+- **Day-phase brightness** — late night tightens centroid even outside sleep mode
+
+**Key design decisions:**
+- Sleep ceilings (40dB, 0.5 density, 800Hz centroid) are enforced after all modifiers — truly non-negotiable
+- Wind-down ceilings (48dB, 1.5 density, 1200Hz centroid) likewise enforced as hard caps
+- Performance attention overrides wind-down when the human is actively engaged
+- Uncertain presence fails safe to quiet_occupied, not away_practice
+
+**Validation:** 2207 tests pass (33 new), ruff clean, mypy clean.

@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1748 chars)
+---
+
+Done. T-017 committed as `85e9b3e`.
+
+**What landed:**
+- `my-claw/tools/senseweave/sampler_scheduler.py` — `count_sampler_events` (floor + Bernoulli, clamped 0..total), `density_for_mode` (mode→density lookup with default), `plan_sampler_phrase_indices` (sorted unique indices)
+- `my-claw/tools/duet_composer.py:923-952` — `tracker_solo_song` reads `mode_sampler_density` (falling back to `DEFAULT_SAMPLER_DENSITY_BY_MODE[artist_mode]`), seeds a deterministic RNG from `(song_num, mode, total_phrases)`, and records `sampler_event_count` + `sampler_event_phrase_indices` on score metadata
+- `tests/test_sampler_scheduler.py` — 11 tests covering density-to-count math (with monkey-patched RNG), clamp above 1.0 / below 0.0 / never-exceed-total, mode lookup defaults, and a 100-piece simulation showing `evening_reflection` (0.65) fires >4× more events than `working_ambience` (0.10)
+
+All 11 tests pass; ruff clean on the new files. Pre-existing ruff/mypy noise in `duet_composer.py` was left alone per the "no unrelated cleanup" rule.

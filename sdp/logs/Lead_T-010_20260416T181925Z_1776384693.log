@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1568 chars)
+---
+
+T-010 is already fully implemented and committed. The implementation covers all acceptance criteria:
+
+- **`render/rules/microtiming.py` is the only jitter source** — deterministic Gaussian via Box-Muller with SHA-256 seeding
+- **σ values below JND** — enforced by `__post_init__` validation (raises if > 10 ms)
+- **Grid-locked voices get σ=0** — `GRID_LOCKED_ROLES` frozenset maps drum/machine/perc/etc. to 0.0
+- **Tests verify all of the above** — 12 tests covering σ by role, zero-jitter on grid-locked, distribution shape, determinism, and JND enforcement
+
+No work needed — this task was completed in commits `0a08623` and `2eebebf`.

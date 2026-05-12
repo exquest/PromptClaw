@@ -1,0 +1,30 @@
+[Unit]
+Description=CypherClaw SDP Runner
+After=cypherclaw-bootstrap.service cypherclaw.service network-online.target
+Requires=cypherclaw-bootstrap.service
+ConditionPathExists=/home/user/cypherclaw
+ConditionPathExists=/home/user/.local/bin/sdp-cli
+
+[Service]
+Type=simple
+User=user
+WorkingDirectory=/run/cypherclaw-tmp/workdir/cypherclaw-work
+Environment=HOME=/home/user
+Environment=PATH=/home/user/.local/bin:/home/user/cypherclaw/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=TMPDIR=/run/cypherclaw-tmp
+Environment=PYTHONPATH=/home/user/sdp-cli/src
+Environment=TERM=dumb
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/user/cypherclaw/tools/sdp_runner_launcher.sh
+Restart=always
+RestartSec=10
+SuccessExitStatus=75
+RestartPreventExitStatus=75
+KillSignal=SIGINT
+TimeoutStopSec=30
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cypherclaw-sdp-runner
+
+[Install]
+WantedBy=multi-user.target

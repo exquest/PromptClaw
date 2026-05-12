@@ -1,0 +1,18 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2980 chars)
+---
+
+**Verdict: PASS**
+
+All acceptance criteria met:
+
+| Check | Result |
+|---|---|
+| `load_worker_config` / `worker_runtime_summary` | Pass |
+| `build_queue(config)` explicit wiring | Pass |
+| SIGTERM / SIGINT / status behavior | Pass |
+| Fractal depth ≥ 2 | **Depth 3** |
+| Startup identity persistence (standalone + federated) | Pass |
+| Full test suite | 3936 passed, 3 skipped |
+
+Hardening anchors confirmed: `bootstrap_identity()` is wired before `FirstBootAnnouncer` in both daemon startup paths, verified by AST-inspection tests in `TestStartupIdentityWiring`. No issues found. Verification report committed as `sdp/verification/frac-0003-verify.md`.

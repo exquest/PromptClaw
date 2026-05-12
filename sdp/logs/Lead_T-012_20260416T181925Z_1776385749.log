@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1588 chars)
+---
+
+All acceptance criteria met:
+
+- **sensor_tempo_scale [0.92, 1.08]**, **sensor_amp_scale [0.80, 1.20]**, **sensor_brightness [-1.0, +1.0]** stamped on every `ScheduledTrackerEvent` via `_apply_sensor_modulation`
+- **Delta track persisted as JSON** via `write_delta_track()` / `load_delta_track()` alongside output, including on early abort
+- **Out-of-bounds values clamped and logged** via `_clamp_sensor()` with `_logger.warning`
+- **Tests verify** clamping (6 tests), persistence (2 tests), and replay consuming the delta track (4 integration tests)
+
+2783 tests pass, ruff clean, mypy clean. Committed as `8704c81`.

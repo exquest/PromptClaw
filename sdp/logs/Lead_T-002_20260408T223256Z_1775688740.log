@@ -1,0 +1,70 @@
+Command: gemini -p # Task T-002@20260408T223256Z: Add dual-socket model-per-role routing configuration mapping task categories to specific Ollama models and NUMA-pinned ports (11434 for socket 0, 11435 for socket 1).
+
+## Acceptance Criteria
+
+- Configuration maps coding, review, netops, orchestrator, and default roles to model names and ports<br/>- Model names are configurable without code changes (env var or config file)<br/>- Tests verify routing returns correct model+port for each category
+
+**Tier:** T1 — Light (Bug fix / config change / minor update)
+
+## Instructions
+
+Read the project's ADP documentation and understand existing patterns before making changes.
+
+**ADP Phases:** Implement → Verify → Commit
+
+1. Implement the fix or change described above.
+2. Ensure all existing tests pass.
+3. Add a regression test if the bug was not previously caught.
+4. Commit with a descriptive message: `fix(scope): short summary [T-002@20260408T223256Z]`
+
+## Rules
+
+- No spec required. Task description + commit message is sufficient.
+- Existing tests MUST pass after your change.
+- Follow existing code patterns and conventions.
+- Do not modify files outside the scope of this task.
+- Log any concerns to ESCALATIONS.md.
+
+## Validation
+
+Run before committing:
+```bash
+pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/
+```
+
+All must pass.
+ --output-format stream-json --approval-mode yolo --sandbox -m gemini-3.1-pro-preview
+Prompt delivered via: argv
+---
+
+{"type":"init","timestamp":"2026-04-08T22:52:23.793Z","session_id":"a168c60a-a678-442d-9853-8f05d182ea87","model":"gemini-3.1-pro-preview"}
+{"type":"message","timestamp":"2026-04-08T22:52:23.868Z","role":"user","content":"# Task T-002@20260408T223256Z: Add dual-socket model-per-role routing configuration mapping task categories to specific Ollama models and NUMA-pinned ports (11434 for socket 0, 11435 for socket 1).\n\n## Acceptance Criteria\n\n- Configuration maps coding, review, netops, orchestrator, and default roles to model names and ports<br/>- Model names are configurable without code changes (env var or config file)<br/>- Tests verify routing returns correct model+port for each category\n\n**Tier:** T1 — Light (Bug fix / config change / minor update)\n\n## Instructions\n\nRead the project's ADP documentation and understand existing patterns before making changes.\n\n**ADP Phases:** Implement → Verify → Commit\n\n1. Implement the fix or change described above.\n2. Ensure all existing tests pass.\n3. Add a regression test if the bug was not previously caught.\n4. Commit with a descriptive message: `fix(scope): short summary [T-002@20260408T223256Z]`\n\n## Rules\n\n- No spec required. Task description + commit message is sufficient.\n- Existing tests MUST pass after your change.\n- Follow existing code patterns and conventions.\n- Do not modify files outside the scope of this task.\n- Log any concerns to ESCALATIONS.md.\n\n## Validation\n\nRun before committing:\n```bash\npip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/\n```\n\nAll must pass.\n"}
+{"type":"result","timestamp":"2026-04-08T22:52:24.060Z","status":"error","error":{"type":"Error","message":"[API Error: You have exhausted your capacity on this model. Your quota will reset after 6h28m27s.]"},"stats":{"total_tokens":0,"input_tokens":0,"output_tokens":0,"cached":0,"input":0,"duration_ms":0,"tool_calls":0,"models":{"gemini-3.1-pro-preview":{"total_tokens":0,"input_tokens":0,"output_tokens":0,"cached":0,"input":0}}}}
+
+--- STDERR ---
+YOLO mode is enabled. All tool calls will be automatically approved.
+Keychain initialization encountered an error: Cannot find module '../build/Release/keytar.node'
+Require stack:
+- /opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/node_modules/keytar/lib/keytar.js
+Using FileKeychain fallback for secure storage.
+Loaded cached credentials.
+YOLO mode is enabled. All tool calls will be automatically approved.
+Error when talking to Gemini API Full report available at: /var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/gemini-client-error-Turn.run-sendMessageStream-2026-04-08T22-52-24-043Z.json TerminalQuotaError: You have exhausted your capacity on this model. Your quota will reset after 6h28m27s.
+    at classifyGoogleError (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:273011:18)
+    at retryWithBackoff (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:273607:31)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async GeminiChat.makeApiCallAndProcessStream (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:308672:28)
+    at async GeminiChat.streamWithRetries (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:308515:29)
+    at async Turn.run (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:309002:24)
+    at async GeminiClient.processTurn (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:312720:22)
+    at async GeminiClient.sendMessageStream (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/chunk-QVTX2M5J.js:312833:14)
+    at async file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/gemini.js:9681:26
+    at async main (file:///opt/homebrew/Cellar/gemini-cli/0.36.0/libexec/lib/node_modules/@google/gemini-cli/bundle/gemini.js:14349:5) {
+  cause: {
+    code: 429,
+    message: 'You have exhausted your capacity on this model. Your quota will reset after 6h28m27s.',
+    details: [ [Object], [Object] ]
+  },
+  retryDelayMs: 23307941.829226997,
+  reason: 'QUOTA_EXHAUSTED'
+}

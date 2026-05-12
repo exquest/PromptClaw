@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2722 chars)
+---
+
+**Verdict: PASS WITH NOTES** — committed to `sdp/verification/t-027@20260425t183959zc-verify.md`.
+
+All 18 tests pass. The implementation is correct: `bootstrap_sample_index` creates the SQLite file with a `schema_version` table (version=1) and the full `samples`/FTS5 schema, reusing `_SCHEMA_SQL` consistently with `SampleLibrary._ensure_schema`.
+
+Three minor notes for the lead:
+1. `create_sample_library_layout` doesn't call `bootstrap_sample_index` — layout setup leaves the index absent until `SampleLibrary` is opened
+2. No test for the nested parent-directory creation branch
+3. The hardening hints in the task prompt reference `bootstrap_identity` (a different task's patterns) — they don't apply here

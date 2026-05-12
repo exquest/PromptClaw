@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3771 chars)
+---
+
+frac-0116 complete. Summary:
+
+- **Spec**: `specs/frac-0116-spec.md` — depth-2 deepening of `test_sw_sampler.py` via structural depth gate + one end-to-end diagnostic.
+- **Red**: `tests/test_test_sw_sampler_depth.py` — failed before implementation on missing `SwSamplerEndToEndTests`.
+- **Green**: appended `SwSamplerEndToEndTests.test_sw_sampler_source_and_runtime_harness_round_trip_json_diagnostic` to `tests/test_sw_sampler.py`. The test extracts all 14 SynthDef control defaults, asserts the granular signal-chain stages appear in canonical source order on a comment-stripped source, confirms the dry `Out.ar(out_bus, ...)` is not scaled by `fx_send`, inspects the SC-side runtime harness for compile/2s render/non-silence/FFT/gate-release/known-buffer checks, and round-trips a JSON-safe diagnostic.
+- **Verify**: `41 passed` for sw_sampler + depth gate, `11 passed` for startup identity hardening anchors, full gate `4669 passed, 3 skipped`, Ruff clean, mypy clean.
+- **Commits**: `ea6c6c3` (red gate + spec), `790afd5` (green + CHANGELOG/progress/ESCALATIONS).

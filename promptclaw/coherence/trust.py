@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Any
 
 
 @dataclass
@@ -16,6 +17,56 @@ class TrustScore:
     soft_violations: int = 0
     compliant_actions: int = 0
     last_updated: str = ""
+
+
+@dataclass(frozen=True)
+class TrustEventPlan:
+    """Typed canonical description of one trust mutation event."""
+
+    name: str
+    delta: float
+    counter_field: str
+    description: str
+
+
+_COUNTER_FIELDS: frozenset[str] = frozenset(
+    {"hard_violations", "soft_violations", "compliant_actions"}
+)
+
+
+def trust_event_plans() -> tuple[TrustEventPlan, ...]:
+    """Return the canonical trust event plans sourced from TrustManager constants."""
+    specs: tuple[tuple[str, float, str, str], ...] = (
+        (
+            "hard_violation",
+            TrustManager.HARD_PENALTY,
+            "hard_violations",
+            "Hard constitutional violation: large penalty.",
+        ),
+        (
+            "soft_violation",
+            TrustManager.SOFT_PENALTY,
+            "soft_violations",
+            "Soft guidance violation: small penalty.",
+        ),
+        (
+            "compliant_action",
+            TrustManager.COMPLIANT_REWARD,
+            "compliant_actions",
+            "Compliant action observed: small reward.",
+        ),
+    )
+    plans: list[TrustEventPlan] = []
+    for name, delta, counter_field, description in specs:
+        plans.append(
+            TrustEventPlan(
+                name=name,
+                delta=delta,
+                counter_field=counter_field,
+                description=description,
+            )
+        )
+    return tuple(plans)
 
 
 class TrustManager:
@@ -41,34 +92,46 @@ class TrustManager:
         return self.scores[agent]
 
     def _clamp(self, value: float) -> float:
-        return max(0.0, min(1.0, value))
+        if value < 0.0:
+            return 0.0
+        if value > 1.0:
+            return 1.0
+        return value
 
     def _touch(self, ts: TrustScore) -> None:
         ts.last_updated = datetime.now(timezone.utc).isoformat()
 
-    def apply_hard_violation(self, agent: str) -> float:
-        """Penalize by HARD_PENALTY, clamp to [0.0, 1.0], return new score."""
+    def apply_event(self, agent: str, plan: TrustEventPlan) -> float:
+        """Apply one canonical trust plan: clamp, increment counter, touch, return score."""
+        if plan.counter_field not in _COUNTER_FIELDS:
+            raise ValueError(
+                f"Unknown trust counter field on plan: {plan.counter_field!r}"
+            )
         ts = self.get_score(agent)
-        ts.score = self._clamp(ts.score + self.HARD_PENALTY)
-        ts.hard_violations += 1
+        ts.score = self._clamp(ts.score + plan.delta)
+        current = getattr(ts, plan.counter_field)
+        setattr(ts, plan.counter_field, current + 1)
         self._touch(ts)
         return ts.score
+
+    def apply_event_by_name(self, agent: str, plan_name: str) -> float:
+        """Look up a canonical plan by name and apply it to ``agent``."""
+        plan = _PLAN_BY_NAME.get(plan_name)
+        if plan is None:
+            raise ValueError(f"Unknown trust plan name: {plan_name!r}")
+        return self.apply_event(agent, plan)
+
+    def apply_hard_violation(self, agent: str) -> float:
+        """Penalize by HARD_PENALTY, clamp to [0.0, 1.0], return new score."""
+        return self.apply_event(agent, _PLAN_BY_NAME["hard_violation"])
 
     def apply_soft_violation(self, agent: str) -> float:
         """Penalize by SOFT_PENALTY, clamp to [0.0, 1.0], return new score."""
-        ts = self.get_score(agent)
-        ts.score = self._clamp(ts.score + self.SOFT_PENALTY)
-        ts.soft_violations += 1
-        self._touch(ts)
-        return ts.score
+        return self.apply_event(agent, _PLAN_BY_NAME["soft_violation"])
 
     def apply_compliant_action(self, agent: str) -> float:
         """Reward by COMPLIANT_REWARD, clamp to [0.0, 1.0], return new score."""
-        ts = self.get_score(agent)
-        ts.score = self._clamp(ts.score + self.COMPLIANT_REWARD)
-        ts.compliant_actions += 1
-        self._touch(ts)
-        return ts.score
+        return self.apply_event(agent, _PLAN_BY_NAME["compliant_action"])
 
     def should_restrict(self, agent: str) -> bool:
         """True if score < RESTRICTION_THRESHOLD."""
@@ -77,3 +140,51 @@ class TrustManager:
     def all_scores(self) -> dict[str, TrustScore]:
         """Return a copy of all tracked scores."""
         return dict(self.scores)
+
+    def restricted_agents(self) -> list[str]:
+        """Return alphabetically-sorted agents whose score is below the threshold."""
+        restricted: list[str] = []
+        for agent in sorted(self.scores):
+            if self.scores[agent].score < self.RESTRICTION_THRESHOLD:
+                restricted.append(agent)
+        return restricted
+
+    def summarize_agent(self, agent: str) -> dict[str, Any]:
+        """Return a JSON-safe per-agent summary including restriction status."""
+        ts = self.get_score(agent)
+        if ts.score < self.RESTRICTION_THRESHOLD:
+            restricted = True
+        else:
+            restricted = False
+        return {
+            "agent": ts.agent,
+            "score": ts.score,
+            "hard_violations": ts.hard_violations,
+            "soft_violations": ts.soft_violations,
+            "compliant_actions": ts.compliant_actions,
+            "last_updated": ts.last_updated,
+            "restricted": restricted,
+        }
+
+    def fleet_summary(self) -> dict[str, Any]:
+        """Return a JSON-safe operator summary of trust state across all agents."""
+        rows: list[dict[str, Any]] = []
+        restricted_count = 0
+        for agent in sorted(self.scores):
+            row = self.summarize_agent(agent)
+            if row["restricted"]:
+                restricted_count += 1
+            rows.append(row)
+        return {
+            "initial_score": self.INITIAL_SCORE,
+            "hard_penalty": self.HARD_PENALTY,
+            "soft_penalty": self.SOFT_PENALTY,
+            "compliant_reward": self.COMPLIANT_REWARD,
+            "restriction_threshold": self.RESTRICTION_THRESHOLD,
+            "agent_count": len(rows),
+            "restricted_count": restricted_count,
+            "agents": rows,
+        }
+
+
+_PLAN_BY_NAME: dict[str, TrustEventPlan] = {plan.name: plan for plan in trust_event_plans()}

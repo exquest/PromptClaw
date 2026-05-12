@@ -1,0 +1,10 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1275 chars)
+---
+
+Task T-012@20260425T183959Zc complete. Committed as `7da7ca8`.
+
+Summary:
+- Added `my-claw/tools/self_listener_quote_verify.py` — drives 3 simulated composer pieces via the existing `trigger_composer_pieces` helper, transcodes each 24-bit `samples/self/*.wav` to 16-bit, then runs `self_listener.analyze_wav` and asserts at least one observed peak ≥ 0.5 (the known tone normalizes to ~0.89).
+- Added `tests/test_self_listener_quote_verify.py` — 6 tests covering the transcoder, index lookup, peak observation, happy-path CLI, and both non-zero exit branches.
+- Validation: focused tests pass (6/6), full suite passes (3305/3305), `ruff check src/ tests/` clean, `mypy src/` clean. The new file itself is mypy-clean; 6 pre-existing mypy errors in `senseweave/sample_lab.py`, `audio_analysis.py`, `sample_capture_daemon.py`, and `self_listener.py` are out of scope.

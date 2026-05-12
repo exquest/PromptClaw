@@ -1,0 +1,20 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3450 chars)
+---
+
+frac-0022 is complete. Summary:
+
+**Changed:**
+- `my-claw/tools/senseweave/sample_lab.py` — added frozen `SamplePlanReport` plus `density_band`, `threshold_band`, `intensity_band`, `build_sample_plan_report`, `summarize_sample_plan_report`, and `_clamp_unit` helpers. `SamplePlan` gained a defaulted `cadence_state` field; only constructor (`plan_environmental_sampling`) updated.
+- `tests/test_sample_lab_depth.py` (new) — 8 locked tests covering band cutpoints, plan/bank field mirroring, alias→canonical bank resolution, section-function carry-through, JSON-safe summary, end-to-end, and depth ≥ 2.
+- `specs/frac-0022-spec.md` (new), `CHANGELOG.md`, `ESCALATIONS.md`.
+
+**Verification:**
+- Red phase confirmed (ImportError on `SamplePlanReport`).
+- `pytest tests/test_sample_lab.py tests/test_sample_lab_depth.py -q` → 13 passed.
+- `pytest tests/ -x` → 4064 passed, 3 skipped.
+- `ruff check src/ tests/` → clean. `mypy src/` → clean.
+- `classify_depth("my-claw/tools/senseweave/sample_lab.py")` → depth **3** (≥ 2 satisfied; 7 real / 5 trivial / 291 lines).
+- Identity hardening anchors (`TestStartupIdentityPersistence`, `TestStartupIdentityWiring`) → 7 passed.
+
+Committed as `36d8f58`. Unrelated dirty files (progress.md, sdp/{logs,runner.log,run-log.md,notifications.log}, fractal-reports) left uncommitted per scope rules.

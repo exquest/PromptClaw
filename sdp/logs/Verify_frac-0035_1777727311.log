@@ -1,0 +1,16 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2973 chars)
+---
+
+**Verdict: PASS**
+
+All 5 depth tests, 6 runtime regression tests, 7 startup identity hardening tests, and the full 4145-test suite pass cleanly.
+
+Key findings:
+- `PetVitalSnapshot` and `PetFleetReport` are correct frozen dataclasses matching the spec exactly
+- All four health bands, all four activity bands, edge cases (no tasks, max stage, empty fleet, unknown class) work correctly
+- `PetManager.fleet_report()` round-trips through JSON persistence with identical totals
+- `bootstrap_identity` is called before `FirstBootAnnouncer` in both daemon startup paths — hardening anchors all green
+- One minor non-blocking issue: `_snapshot_to_summary` has a redundant `success_rate` conditional that could be simplified to a direct assignment
+
+Report committed at `sdp/verification/frac-0035-verify.md`.

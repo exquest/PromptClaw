@@ -1,0 +1,18 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3374 chars)
+---
+
+**Verdict: PASS**
+
+Report committed at `sdp/verification/t-024@20260427t001208z-verify.md`.
+
+All six acceptance criteria verified:
+- `GenerationConditioner.build_request` is pure and deterministic
+- Prompt follows the static `"<mode-fragment>, <arc-fragment>, <mood-adjective>: <constraint-fragment>"` template
+- `_MODE_FRAGMENTS` dict is present with tests asserting exact table values
+- Seed is SHA-256 over `(mode.name, arc_phase, sorted-mood-tuple, normalized_centroid_bytes)` folded to 32-bit
+- CLAP centroid is unit-normalized to `float32` before storage
+- No LLM imports anywhere in the module
+- 3700/3700 tests pass
+
+Two minor notes: (1) no test for unknown `arc_phase` fallback prompt text — worth pinning; (2) `composer_hook.py` and its test are untracked in-progress work, passing but not yet committed under their owning task.

@@ -1,0 +1,4316 @@
+Command: codex exec --dangerously-bypass-approvals-and-sandbox -c model_reasoning_effort=xhigh -m gpt-5.4 -
+Prompt delivered via: stdin (1339 chars)
+---
+
+Updated [tests/test_master_bus.py](/Users/anthony/Programming/PromptClaw/tests/test_master_bus.py:76) to cover `sampler_amp` peak-normalized output and `sampler_bypass_comp` automation in both the `context=None` and live-context paths, and to lock the OSC arg ordering for both `master_bus_n_set_args` and `master_bus_s_new_args` in [the same file](/Users/anthony/Programming/PromptClaw/tests/test_master_bus.py:118).
+
+Validation passed with `pip install -e '.[dev]'`, `pytest tests/ -x --tb=short` (`3171 passed`), `ruff check src/ tests/`, and `mypy src/`. Committed as `d9623b3` with `test(master_bus): cover sampler control paths [T-005@20260425T183959Zc]`.
+
+--- STDERR ---
+OpenAI Codex v0.125.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.4
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019dc650-6532-7212-8ca2-606c801994a5
+--------
+user
+<!--
+  sdp-cli agent-specific template for codex
+  Edit this file to tune how codex handles lead_t1.md.
+  The shipped default lives at src/sdp/prompts/templates/lead_t1.md.
+  Delete this file to revert to the default.
+-->
+# Task T-005@20260425T183959Zc: Update tests/test_master_bus.py to cover the new `sampler_amp` peak-normalized output and `sampler_bypass_comp` flag in both context-present and context-None paths, plus n_set/s_new arg ordering.
+
+
+**Tier:** T1
+
+## Instructions
+
+Handle this directly. Skip broad discovery and do not write a spec.
+
+1. Read only the file(s) you expect to change and the closest relevant tests.
+2. Make the smallest change that satisfies the task.
+3. Add or update a regression test when behavior changes.
+4. Run focused validation, then broader checks if needed.
+5. Commit as soon as the change works: `<type>(scope): summary [T-005@20260425T183959Zc]`
+
+## Rules
+
+- Stay in scope; no unrelated cleanup.
+- Follow existing patterns and type hints.
+- Record blocking assumptions in `ESCALATIONS.md`.
+- Do not finish with uncommitted changes you introduced for this task.
+- Do not clean, revert, commit, or otherwise normalize unrelated pre-existing
+  workspace changes.
+
+## Validation
+
+Run before committing:
+```bash
+pip install -e '.[dev]'
+pytest tests/ -x --tb=short
+ruff check src/ tests/
+mypy src/
+```
+
+codex
+I’m updating the `master_bus` tests only, with focused reads of the target test file and the implementation it exercises so I can add the missing regression coverage without drifting scope.
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc "rg --files tests src | rg 'test_master_bus\\.py|master_bus'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M my-claw/tools/senseweave/cast_planner.py
+ M my-claw/tools/senseweave/groove_engine.py
+ M my-claw/tools/senseweave/music_tracker.py
+ M progress.md
+ M sdp/assumption-log.md
+ M sdp/clarification-register.md
+ M sdp/domain-model.md
+ M sdp/implementation-plan.md
+ M sdp/logs/Verify_T-038_20260416T181925Z_1776445749.log
+ M sdp/logs/self-repair.log
+ M sdp/notifications.log
+ M sdp/prd-snapshot.md
+ M sdp/requirements-register.md
+ M sdp/run-log.md
+ M sdp/runner.log
+ M sdp/task-graph.md
+ M tests/test_cast_planner.py
+ M tests/test_counterpoint_pipeline.py
+ M tests/test_music_tracker.py
+ M tests/test_music_tracker_runtime.py
+ M tests/test_tracker_compiler.py
+?? .claude/
+?? sdp/logs/Lead_T-001_20260425T183959Za_1777145956.log
+?? sdp/logs/Lead_T-001_20260425T183959Zb_1777146357.log
+?? sdp/logs/Lead_T-001_20260425T183959Zc_1777146529.log
+?? sdp/logs/Lead_T-001_20260425T183959Zd_1777146814.log
+?? sdp/logs/Lead_T-002_20260425T183959Z_1777142442.log
+?? sdp/logs/Lead_T-002_20260425T183959Z_1777143043.log
+?? sdp/logs/Lead_T-002_20260425T183959Z_1777143113.log
+?? sdp/logs/Lead_T-002_20260425T183959Za_1777143913.log
+?? sdp/logs/Lead_T-002_20260425T183959Za_1777144214.log
+?? sdp/logs/Lead_T-002_20260425T183959Zb_1777144615.log
+?? sdp/logs/Lead_T-002_20260425T183959Zc_1777144959.log
+?? sdp/logs/Lead_T-002_20260425T183959Zd_1777145570.log
+?? sdp/logs/Lead_T-003_20260425T183959Z_1777147315.log
+?? sdp/logs/Lead_T-004_20260425T183959Z_1777147775.log
+?? sdp/logs/Lead_T-005_20260425T183959Za_1777148089.log
+?? sdp/logs/Lead_T-005_20260425T183959Zb_1777148427.log
+?? sdp/logs/Lead_T-005_20260425T183959Zc_1777148650.log
+?? sdp/logs/Lead_T-039_20260416T181925Z_1776445959.log
+?? sdp/logs/Lead_T-040_20260416T181925Z_1776446909.log
+?? sdp/logs/Verify_T-001_20260425T183959Za_1777146185.log
+?? sdp/logs/Verify_T-001_20260425T183959Zb_1777146438.log
+?? sdp/logs/Verify_T-001_20260425T183959Zc_1777146679.log
+?? sdp/logs/Verify_T-001_20260425T183959Zd_1777147176.log
+?? sdp/logs/Verify_T-002_20260425T183959Za_1777144405.log
+?? sdp/logs/Verify_T-002_20260425T183959Zb_1777144862.log
+?? sdp/logs/Verify_T-002_20260425T183959Zc_1777145395.log
+?? sdp/logs/Verify_T-002_20260425T183959Zd_1777145833.log
+?? sdp/logs/Verify_T-003_20260425T183959Z_1777147676.log
+?? sdp/logs/Verify_T-004_20260425T183959Z_1777148003.log
+?? sdp/logs/Verify_T-005_20260425T183959Za_1777148324.log
+?? sdp/logs/Verify_T-005_20260425T183959Zb_1777148547.log
+?? sdp/logs/Verify_T-039_20260416T181925Z_1776446752.log
+?? sdp/logs/Verify_T-040_20260416T181925Z_1776447350.log
+?? sdp/logs/claude_1777143881.log
+?? sdp/logs/claude_1777145928.log
+?? sdp/logs/claude_1777147731.log
+?? sdp/self-improvement/candidates-2026-04-17.md
+?? sdp/telemetry/prompt-review-2026-04-25.md
+?? sdp/verification/t-001@20260425t183959zb-verify.md
+?? sdp/verification/t-002@20260425t183959zb-verify.md
+?? tests/test_syncopation_features.py
+?? verification_reports/completion-gate-20260417T173705Z.json
+?? verification_reports/completion-gate-20260417T173705Z.md
+
+ succeeded in 0ms:
+tests/test_master_bus.py
+
+codex
+I’ve confirmed the worktree is already dirty in unrelated areas, so I’ll keep this isolated to the `master_bus` test path and avoid touching anything else. Next I’m reading the existing test and the implementation surface that defines the new sampler fields and command ordering.
+exec
+/bin/zsh -lc "sed -n '1,260p' tests/test_master_bus.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Tests for EMSD master-bus scene control."""
+from __future__ import annotations
+
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
+
+from senseweave.emsd_runtime import build_live_emsd_context
+from senseweave.master_bus import (
+    DEFAULT_MASTER_BUS_VALUES,
+    MASTER_NODE_ID,
+    master_bus_n_set_args,
+    master_bus_s_new_args,
+    master_bus_values_for_scene,
+)
+from senseweave.music_tracker import build_korsakov_tracker_song
+from senseweave.generative_scores import Note, Phrase, Score
+
+
+def _scene_score() -> Score:
+    return Score(
+        phrases=[
+            Phrase(notes=[Note(1, 1.0, True), Note(3, 1.0, False)], voice="pluck", dynamic="mf", role="melody"),
+            Phrase(notes=[Note(1, 1.0, True), Note(5, 1.0, False)], voice="gong", dynamic="mp", role="bass"),
+        ],
+        key="C",
+        tempo_bpm=96.0,
+        mood="calm",
+        created_at=0.0,
+        metadata={"patch_name": "house_garden", "cadence_state": "occupied_day", "progression_profile": "open_day"},
+    )
+
+
+def test_master_bus_values_consume_mix_and_scene_automation() -> None:
+    context = build_live_emsd_context(
+        cadence_state="occupied_day",
+        occupancy_state="occupied_active",
+        family_name="bloom",
+        progression_profile="open_day",
+        patch_name="house_garden",
+        song_num=5,
+        theramini_present=True,
+        repertoire_songs=[],
+        attention_score=0.8,
+        now_seconds=13 * 60,
+    )
+    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+
+    values = master_bus_values_for_scene(scene, context=context, theramini_active=True)
+    args = master_bus_n_set_args(scene, context=context, theramini_active=True)
+
+    assert args[0] == MASTER_NODE_ID
+    assert "amp" in args
+    assert "reverb" in args
+    assert values["amp"] > 0.0
+    assert values["drive"] > 0.0
+    assert values["room"] >= values["reverb"]
+
+
+def test_master_bus_values_can_follow_runtime_automation_overrides() -> None:
+    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+
+    default_values = master_bus_values_for_scene(scene, context=None)
+    faded_values = master_bus_values_for_scene(
+        scene,
+        context=None,
+        automation_values={"density": 0.2, "master_amp": 0.24, "reverb_send": 0.36},
+    )
+
+    assert faded_values["amp"] < default_values["amp"]
+    assert faded_values["reverb"] > default_values["reverb"]
+
+
+def test_sampler_amp_tracks_master_amp_not_density() -> None:
+    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+
+    sparse = master_bus_values_for_scene(
+        scene,
+        context=None,
+        automation_values={"density": 0.12, "master_amp": 0.24},
+    )
+    dense = master_bus_values_for_scene(
+        scene,
+        context=None,
+        automation_values={"density": 0.9, "master_amp": 0.24},
+    )
+    hot = master_bus_values_for_scene(
+        scene,
+        context=None,
+        automation_values={"density": 0.12, "master_amp": 1.4},
+    )
+    quiet = master_bus_values_for_scene(
+        scene,
+        context=None,
+        automation_values={"density": 0.9, "master_amp": 0.0},
+    )
+
+    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+    assert hot["sampler_amp"] == 1.0
+    assert quiet["sampler_amp"] == 0.05
+
+
+def test_master_bus_seed_args_target_master_node() -> None:
+    args = master_bus_s_new_args()
+
+    assert args[0] == "sw_master_smooth"
+    assert args[1] == MASTER_NODE_ID
+    assert args[2:4] == [1, 0]
+    assert args[-6:] == [
+        "amp",
+        DEFAULT_MASTER_BUS_VALUES["amp"],
+        "sampler_amp",
+        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+        "sampler_bypass_comp",
+        DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+    ]
+
+
+def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+
+    default_values = master_bus_values_for_scene(scene, context=None)
+    overridden = master_bus_values_for_scene(
+        scene,
+        context=None,
+        automation_values={"sampler_bypass_comp": 0.0},
+    )
+
+    assert default_values["sampler_bypass_comp"] == 1.0
+    assert overridden["sampler_bypass_comp"] == 0.0
+
+    args = master_bus_n_set_args(scene, context=None)
+    idx = args.index("sampler_bypass_comp")
+    assert args[idx + 1] == default_values["sampler_bypass_comp"]
+
+exec
+/bin/zsh -lc 'rg -n "sampler_amp|sampler_bypass_comp|n_set|s_new|master bus|MasterBus" src tests' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_keyboard_chat.py:119:    def test_reads_new_messages(self, chat, tmp_path):
+tests/test_mix_verify.py:344:# master bus values: no cadence state produces clipping-prone or silent output
+tests/test_mix_verify.py:348:class TestMasterBusVerification:
+tests/test_orchestrator.py:29:    def test_resume_creates_new_completed_run(self):
+tests/test_sampler_dispatch.py:1:"""Tests for sampler_dispatch — `/s_new sw_sampler` bundle and gate release."""
+tests/test_sampler_dispatch.py:74:def test_dispatch_sample_loads_buffer_then_emits_s_new(tmp_path: Path) -> None:
+tests/test_sampler_dispatch.py:83:    assert addresses == ["/b_alloc", "/b_allocRead", "/s_new"]
+tests/test_sampler_dispatch.py:86:def test_dispatch_sample_s_new_carries_full_arg_pairs(tmp_path: Path) -> None:
+tests/test_sampler_dispatch.py:95:    s_new = next(call for call in osc.calls if call[0] == "/s_new")
+tests/test_sampler_dispatch.py:96:    args = s_new[1]
+tests/test_sampler_dispatch.py:120:    s_new = next(call for call in osc.calls if call[0] == "/s_new")
+tests/test_sampler_dispatch.py:121:    pairs = dict(zip(s_new[1][4::2], s_new[1][5::2]))
+tests/test_sampler_dispatch.py:134:    assert addresses == ["/s_new"]
+tests/test_sampler_dispatch.py:147:def test_handle_release_sends_n_set_gate_zero(tmp_path: Path) -> None:
+tests/test_sampler_dispatch.py:154:    assert osc.calls == [("/n_set", [handle.node_id, "gate", 0])]
+tests/test_sampler_dispatch.py:168:def test_dispatch_applies_per_mode_fx_preset_before_s_new(tmp_path: Path) -> None:
+tests/test_sampler_dispatch.py:180:    assert addresses == ["/b_alloc", "/b_allocRead", "/n_set", "/s_new"]
+tests/test_sampler_dispatch.py:181:    n_set = next(call for call in osc.calls if call[0] == "/n_set")
+tests/test_sampler_dispatch.py:182:    assert n_set[1][0] == 99
+tests/test_sampler_dispatch.py:183:    pairs = dict(zip(n_set[1][1::2], n_set[1][2::2]))
+tests/test_sampler_dispatch.py:199:    assert addresses == ["/b_alloc", "/b_allocRead", "/s_new"]
+tests/test_sampler_dispatch.py:213:    assert addresses == ["/b_alloc", "/b_allocRead", "/s_new"]
+tests/test_sampler_dispatch.py:253:    assert addresses == ["/b_alloc", "/b_allocRead", "/s_new"]
+tests/test_sampler_dispatch.py:259:    assert ("/n_set", [handle.node_id, "gate", 0]) in osc.calls
+tests/test_sampler_dispatch.py:278:    assert addresses == ["/b_alloc", "/b_allocRead", "/s_new"]
+tests/test_sampler_dispatch.py:281:    assert osc.calls[-1] == ("/n_set", [handle.node_id, "gate", 0])
+tests/test_sampler_dispatch.py:295:    s_news = [call for call in osc.calls if call[0] == "/s_new"]
+tests/test_sampler_dispatch.py:296:    assert len(s_news) == 2
+tests/test_sampler_dispatch.py:297:    node_ids = {s_news[0][1][1], s_news[1][1][1]}
+tests/test_sampler_dispatch.py:305:        if call[0] == "/n_set" and len(call[1]) == 3 and call[1][1] == "gate"
+tests/test_sampler_dispatch.py:323:    assert addresses == ["/b_alloc", "/b_allocRead", "/n_set", "/s_new"]
+tests/test_trust.py:14:    def test_get_score_creates_new_for_unknown_agent(self):
+tests/test_first_boot.py:468:    def test_creates_new_on_first_boot(self, tmp_path):
+tests/test_master_bus.py:14:    master_bus_n_set_args,
+tests/test_master_bus.py:15:    master_bus_s_new_args,
+tests/test_master_bus.py:52:    args = master_bus_n_set_args(scene, context=context, theramini_active=True)
+tests/test_master_bus.py:76:def test_sampler_amp_tracks_master_amp_not_density() -> None:
+tests/test_master_bus.py:100:    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+tests/test_master_bus.py:101:    assert hot["sampler_amp"] == 1.0
+tests/test_master_bus.py:102:    assert quiet["sampler_amp"] == 0.05
+tests/test_master_bus.py:106:    args = master_bus_s_new_args()
+tests/test_master_bus.py:114:        "sampler_amp",
+tests/test_master_bus.py:115:        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+tests/test_master_bus.py:116:        "sampler_bypass_comp",
+tests/test_master_bus.py:117:        DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+tests/test_master_bus.py:121:def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+tests/test_master_bus.py:128:        automation_values={"sampler_bypass_comp": 0.0},
+tests/test_master_bus.py:131:    assert default_values["sampler_bypass_comp"] == 1.0
+tests/test_master_bus.py:132:    assert overridden["sampler_bypass_comp"] == 0.0
+tests/test_master_bus.py:134:    args = master_bus_n_set_args(scene, context=None)
+tests/test_master_bus.py:135:    idx = args.index("sampler_bypass_comp")
+tests/test_master_bus.py:136:    assert args[idx + 1] == default_values["sampler_bypass_comp"]
+tests/test_functional_harmony.py:314:def test_score_tree_round_trips_new_section_fields() -> None:
+tests/test_senseweave_voice.py:60:        assert args[0] == "/s_new"
+tests/test_operator_diagnostics.py:135:    assert "master bus" in lower
+tests/test_operator_diagnostics.py:544:def test_status_display_renders_new_fields(tmp_path: Path) -> None:
+tests/test_ollama_routing.py:101:    def test_override_adds_new_role(self, monkeypatch: pytest.MonkeyPatch) -> None:
+tests/test_row_automation.py:1:"""Tests for row-level performance automation across tracker, master bus, sampler, and face state.
+tests/test_row_automation.py:118:class TestMasterBusMidScene:
+tests/test_resource_governor.py:4:dead master bus, high node counts, and combinations thereof.
+tests/test_resource_governor.py:173:# Budget — dead master bus degradation
+tests/test_resource_governor.py:177:class TestBudgetDeadMasterBus:
+tests/test_resource_governor.py:181:        assert "master bus dead" in budget.reason
+tests/test_cypherclaw_audio_runtime.py:38:def test_restart_composer_uses_graceful_shutdown_and_verifies_new_process() -> None:
+tests/test_cypherclaw_audio_runtime.py:52:def test_boot_script_no_longer_blindly_n_sets_missing_master_node() -> None:
+tests/test_cypherclaw_audio_runtime.py:55:    assert "c.send_message('/n_set', [99999, 'amp', 5.0])" not in script
+
+exec
+/bin/zsh -lc "sed -n '1,260p' my-claw/tools/senseweave/master_bus.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Translate EMSD scene and mix intent into live master-bus control."""
+from __future__ import annotations
+
+from typing import Any, Mapping
+
+from .emsd_runtime import EMSDLiveContext
+
+
+MASTER_NODE_ID = 99999
+DEFAULT_MASTER_BUS_VALUES = {
+    "amp": 5.0,
+    "sampler_amp": 1.0,
+    "sampler_bypass_comp": 1.0,
+    "drive": 0.15,
+    "warmth": 0.35,
+    "reverb": 0.05,
+    "room": 0.5,
+}
+
+
+def _clamp(value: float, lower: float, upper: float) -> float:
+    return max(lower, min(upper, value))
+
+
+def _automation_default(
+    scene: Any,
+    lane_name: str,
+    default: float,
+    *,
+    automation_values: Mapping[str, float] | None = None,
+) -> float:
+    if automation_values is not None and lane_name in automation_values:
+        try:
+            return float(automation_values[lane_name])
+        except (TypeError, ValueError):
+            return default
+    for lane in getattr(getattr(scene, "pattern", None), "automation", ()):
+        if getattr(lane, "name", "") == lane_name:
+            try:
+                return float(getattr(lane, "default", default))
+            except (TypeError, ValueError):
+                return default
+    return default
+
+
+def master_bus_values_for_scene(
+    scene: Any,
+    *,
+    context: EMSDLiveContext | None,
+    theramini_active: bool = False,
+    automation_values: Mapping[str, float] | None = None,
+) -> dict[str, float]:
+    """Return the live `sw_master_smooth` parameter set for one scene."""
+    scene_master_amp = _automation_default(scene, "master_amp", 0.6, automation_values=automation_values)
+    scene_reverb_send = _automation_default(scene, "reverb_send", 0.12, automation_values=automation_values)
+    scene_density = _automation_default(scene, "density", 0.35, automation_values=automation_values)
+    sampler_amp = round(_clamp(scene_master_amp, 0.05, 1.0), 3)
+    sampler_bypass_comp = round(
+        _clamp(
+            _automation_default(scene, "sampler_bypass_comp", 1.0, automation_values=automation_values),
+            0.0,
+            1.0,
+        ),
+        3,
+    )
+    if context is None:
+        return {
+            "amp": round(_clamp(scene_master_amp * 3.2, 0.8, 5.0), 3),
+            "sampler_amp": sampler_amp,
+            "sampler_bypass_comp": sampler_bypass_comp,
+            "drive": round(_clamp(0.12 + scene_density * 0.04, 0.05, 0.35), 3),
+            "warmth": round(_clamp(0.28 + (1.0 - scene_density) * 0.12, 0.12, 0.7), 3),
+            "reverb": round(_clamp(0.04 + scene_reverb_send * 0.6, 0.02, 0.24), 3),
+            "room": round(_clamp(0.4 + scene_reverb_send * 0.8, 0.25, 0.95), 3),
+        }
+
+    mix = context.phase_plan.mix
+    lufs_tightness = _clamp(((-mix.target_lufs) - 14.0) / 10.0, 0.0, 1.0)
+    ceiling_tightness = _clamp(abs(float(mix.peak_ceiling_dbtp) + 1.0) / 2.0, 0.0, 1.0)
+    comp_strength = _clamp((float(mix.bus_comp_ratio) - 1.0) / 4.0, 0.0, 1.0)
+    duck_strength = _clamp(float(mix.theramini_duck_db) / 6.0, 0.0, 1.0) if theramini_active else 0.0
+
+    amp = scene_master_amp * (3.8 - (lufs_tightness * 0.65) - (duck_strength * 0.22))
+    drive = 0.1 + (scene_density * 0.05) + (comp_strength * 0.09) + (ceiling_tightness * 0.03)
+    warmth = 0.2 + ((1.0 - scene_density) * 0.16) + ((1.0 - comp_strength) * 0.05)
+    reverb = 0.03 + (scene_reverb_send * 0.62) + ((1.0 - scene_density) * 0.03)
+    room = 0.34 + (scene_reverb_send * 0.85) + (ceiling_tightness * 0.08)
+
+    return {
+        "amp": round(_clamp(amp, 0.8, 5.0), 3),
+        "sampler_amp": sampler_amp,
+        "sampler_bypass_comp": sampler_bypass_comp,
+        "drive": round(_clamp(drive, 0.05, 0.35), 3),
+        "warmth": round(_clamp(warmth, 0.12, 0.72), 3),
+        "reverb": round(_clamp(reverb, 0.02, 0.24), 3),
+        "room": round(_clamp(room, 0.25, 0.95), 3),
+    }
+
+
+def master_bus_n_set_args(
+    scene: Any,
+    *,
+    context: EMSDLiveContext | None,
+    theramini_active: bool = False,
+    automation_values: Mapping[str, float] | None = None,
+) -> list[float | int | str]:
+    values = master_bus_values_for_scene(
+        scene,
+        context=context,
+        theramini_active=theramini_active,
+        automation_values=automation_values,
+    )
+    return [
+        MASTER_NODE_ID,
+        "amp",
+        values["amp"],
+        "sampler_amp",
+        values["sampler_amp"],
+        "sampler_bypass_comp",
+        values["sampler_bypass_comp"],
+        "drive",
+        values["drive"],
+        "warmth",
+        values["warmth"],
+        "reverb",
+        values["reverb"],
+        "room",
+        values["room"],
+    ]
+
+
+def master_bus_s_new_args(values: dict[str, float] | None = None) -> list[float | int | str]:
+    seeded = dict(DEFAULT_MASTER_BUS_VALUES)
+    if values:
+        seeded.update(values)
+    return [
+        "sw_master_smooth",
+        MASTER_NODE_ID,
+        1,
+        0,
+        "drive",
+        seeded["drive"],
+        "warmth",
+        seeded["warmth"],
+        "reverb",
+        seeded["reverb"],
+        "room",
+        seeded["room"],
+        "amp",
+        seeded["amp"],
+        "sampler_amp",
+        seeded["sampler_amp"],
+        "sampler_bypass_comp",
+        seeded["sampler_bypass_comp"],
+    ]
+
+
+def seed_master_bus_node(client: Any, values: dict[str, float] | None = None) -> dict[str, float]:
+    seeded = dict(DEFAULT_MASTER_BUS_VALUES)
+    if values:
+        seeded.update(values)
+    client.send_message("/s_new", master_bus_s_new_args(seeded))
+    return seeded
+
+
+def apply_master_bus_scene(
+    client: Any,
+    scene: Any,
+    *,
+    context: EMSDLiveContext | None,
+    theramini_active: bool = False,
+    automation_values: Mapping[str, float] | None = None,
+) -> dict[str, float]:
+    values = master_bus_values_for_scene(
+        scene,
+        context=context,
+        theramini_active=theramini_active,
+        automation_values=automation_values,
+    )
+    client.send_message(
+        "/n_set",
+        master_bus_n_set_args(
+            scene,
+            context=context,
+            theramini_active=theramini_active,
+            automation_values=automation_values,
+        ),
+    )
+    return values
+
+exec
+/bin/zsh -lc "rg --files my-claw/tools my-claw/tools/senseweave | rg 'master_bus\\.py|emsd_runtime\\.py'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+my-claw/tools/senseweave/master_bus.py
+my-claw/tools/senseweave/emsd_runtime.py
+my-claw/tools/senseweave/master_bus.py
+my-claw/tools/senseweave/emsd_runtime.py
+
+codex
+The implementation already exposes the new sampler fields; the remaining gap is test coverage. I’m checking the nearest master-bus assertions elsewhere so the new expectations match the existing style instead of inventing a new one.
+exec
+/bin/zsh -lc "sed -n '330,430p' tests/test_mix_verify.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+    def test_silent_render_fails(self) -> None:
+        assert not verify_render_loudness(_silence(1.0), SAMPLE_RATE, target_lufs=-16.0)
+
+    def test_sleep_target_accepts_quiet_sine(self) -> None:
+        """A quiet sine should be within tolerance of the sleep LUFS target."""
+        # amplitude chosen to land near -22.5 LUFS proxy
+        buf = _sine(440.0, 2.0, amplitude=0.08)
+        measured = estimate_lufs_proxy(buf, SAMPLE_RATE)
+        # verify the proxy is in a plausible quiet range
+        assert measured < -10.0
+        assert verify_render_loudness(buf, SAMPLE_RATE, target_lufs=measured, tolerance=1.0)
+
+
+# ---------------------------------------------------------------------------
+# master bus values: no cadence state produces clipping-prone or silent output
+# ---------------------------------------------------------------------------
+
+
+class TestMasterBusVerification:
+    def _context(self, cadence_state: str, theramini: bool = False) -> object:
+        return build_live_emsd_context(
+            cadence_state=cadence_state,
+            occupancy_state="occupied_active" if "occupied" in cadence_state else "likely_away",
+            family_name="bloom",
+            progression_profile="open_day",
+            patch_name="house_garden",
+            song_num=5,
+            theramini_present=theramini,
+            repertoire_songs=[],
+            attention_score=0.7,
+            now_seconds=12 * 60,
+        )
+
+    def _dummy_scene(self) -> object:
+        from senseweave.generative_scores import Note, Phrase, Score
+        from senseweave.music_tracker import build_korsakov_tracker_song
+
+        score = Score(
+            phrases=[
+                Phrase(notes=[Note(1, 1.0, True)], voice="pluck", dynamic="mf", role="melody"),
+                Phrase(notes=[Note(1, 1.0, True)], voice="gong", dynamic="mp", role="bass"),
+            ],
+            key="C",
+            tempo_bpm=96.0,
+            mood="calm",
+            created_at=0.0,
+            metadata={"patch_name": "house_garden", "cadence_state": "occupied_day", "progression_profile": "open_day"},
+        )
+        return build_korsakov_tracker_song(score).scenes[0]
+
+    def test_amp_within_safe_range_all_states(self) -> None:
+        scene = self._dummy_scene()
+        for state in ("sleep", "wind_down", "wake_ramp", "occupied_day", "away_practice"):
+            ctx = self._context(state)
+            values = master_bus_values_for_scene(scene, context=ctx)
+            assert 0.8 <= values["amp"] <= 5.0, f"{state}: amp {values['amp']}"
+
+    def test_drive_below_harshness_threshold_all_states(self) -> None:
+        scene = self._dummy_scene()
+        for state in ("sleep", "wind_down", "wake_ramp", "occupied_day", "away_practice"):
+            ctx = self._context(state)
+            values = master_bus_values_for_scene(scene, context=ctx)
+            report = check_harshness_proxy(drive=values["drive"], saturation=0.0)
+            assert not report.over_threshold, f"{state}: drive {values['drive']}"
+
+    def test_theramini_ducking_lowers_amp(self) -> None:
+        scene = self._dummy_scene()
+        ctx_off = self._context("occupied_day", theramini=True)
+        ctx_on = self._context("occupied_day", theramini=True)
+        without = master_bus_values_for_scene(scene, context=ctx_off, theramini_active=False)
+        with_t = master_bus_values_for_scene(scene, context=ctx_on, theramini_active=True)
+        assert with_t["amp"] <= without["amp"]
+
+    def test_reverb_never_exceeds_room(self) -> None:
+        scene = self._dummy_scene()
+        for state in ("sleep", "wind_down", "wake_ramp", "occupied_day", "away_practice"):
+            ctx = self._context(state)
+            values = master_bus_values_for_scene(scene, context=ctx)
+            assert values["reverb"] <= values["room"], f"{state}: reverb > room"
+
+
+# ---------------------------------------------------------------------------
+# per-note render shaping: bounds and non-clipping
+# ---------------------------------------------------------------------------
+
+
+class TestPerNoteShapingBounds:
+    def test_voice_shaping_amp_never_exceeds_one(self) -> None:
+        for voice in ("pluck", "bowed", "bell", "choir", "breath", "gong", "kotekan"):
+            for freq in (220.0, 440.0, 880.0, 1200.0, 2000.0):
+                shape = shaping_for_note(voice, freq)
+                assert shape.amp_multiplier <= 1.0, f"{voice}@{freq}Hz: amp {shape.amp_multiplier}"
+
+    def test_high_register_folded_down(self) -> None:
+        shape = shaping_for_note("pluck", 1600.0)
+        assert shape.pitch_multiplier < 1.0
+
+    def test_emsd_performance_amp_clamped(self) -> None:
+        ctx = build_live_emsd_context(
+            cadence_state="occupied_day",
+            occupancy_state="occupied_active",
+
+exec
+/bin/zsh -lc "sed -n '1,220p' tests/test_row_automation.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Tests for row-level performance automation across tracker, master bus, sampler, and face state.
+
+Verifies the state contract:
+- Tracker runtime exposes interpolated automation per row.
+- Master bus consumes automation_values at non-scene-start rows.
+- Sampler scene profiles vary with row bucket.
+- Composer state carries section_curve and automation_values.
+- Runtime state includes total_rows.
+"""
+from __future__ import annotations
+
+import json
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
+
+from senseweave.generative_scores import Note, Phrase, Score
+from senseweave.music_tracker import AutomationLane, build_scene_from_score
+from senseweave.music_tracker_runtime import (
+    interpolate_automation_at_row,
+    schedule_scene,
+)
+from senseweave.master_bus import master_bus_values_for_scene
+from senseweave.sample_dsp_activity import _row_bucket, _scene_profile
+
+
+def _sample_scene():
+    score = Score(
+        phrases=[
+            Phrase(notes=[Note(1, 1.0, False), Note(3, 0.5, True), Note(5, 1.5, False)],
+                   voice="pluck", dynamic="mf", role="melody"),
+            Phrase(notes=[Note(1, 1.0, True), Note(5, 1.0, False), Note(1, 1.0, False)],
+                   voice="gong", dynamic="mp", role="bass"),
+        ],
+        key="C", tempo_bpm=120.0, mood="calm", created_at=0.0,
+    )
+    return build_scene_from_score(
+        score, name="Development", allowed_roles=("melody", "bass"),
+        rows_per_beat=4, max_polyphony=3,
+    )
+
+
+# ---------- Tracker runtime: public interpolation API ----------
+
+class TestInterpolateAutomationAtRow:
+    def test_returns_interpolated_density_at_midpoint(self):
+        scene = _sample_scene()
+        last_row = scene.pattern.rows - 1
+        scene.pattern.automation = [
+            AutomationLane(name="density", default=0.5, points=[(0, 0.2), (last_row, 0.8)]),
+        ]
+        mid = last_row // 2
+        values = interpolate_automation_at_row(scene, mid)
+        assert "density" in values
+        assert 0.2 < values["density"] < 0.8
+
+    def test_returns_defaults_when_no_automation_lanes(self):
+        scene = _sample_scene()
+        scene.pattern.automation = []
+        values = interpolate_automation_at_row(scene, 0)
+        assert values == {}
+
+
+# ---------- Runtime state contract ----------
+
+class TestRuntimeStateContract:
+    def test_runtime_state_includes_total_rows(self, tmp_path):
+        scene = _sample_scene()
+        state_path = tmp_path / "tracker_state.json"
+
+        schedule_scene(
+            scene,
+            play_event=lambda _e: None,
+            sleep_fn=lambda _s: None,
+            stop_check=lambda row: row >= 1,
+            state_path=state_path,
+            time_fn=lambda: 1000.0,
+        )
+
+        state = json.loads(state_path.read_text())
+        assert "total_rows" in state
+        assert state["total_rows"] == scene.pattern.rows
+
+    def test_automation_updates_happen_beyond_scene_start(self, tmp_path):
+        """Verify that on_row fires with different automation values at non-zero rows."""
+        scene = _sample_scene()
+        last_row = scene.pattern.rows - 1
+        scene.pattern.automation = [
+            AutomationLane(name="master_amp", default=0.6,
+                           points=[(0, 0.3), (last_row, 0.9)]),
+        ]
+        seen_rows: list[tuple[int, float]] = []
+
+        schedule_scene(
+            scene,
+            play_event=lambda _e: None,
+            sleep_fn=lambda _s: None,
+            state_path=tmp_path / "tracker_state.json",
+            time_fn=lambda: 1000.0,
+            on_row=lambda _sc, row, state: seen_rows.append(
+                (row, state["automation"]["master_amp"])
+            ),
+        )
+
+        # on_row fires for every row, not just row 0
+        assert len(seen_rows) == scene.pattern.rows
+        non_zero = [r for r, _v in seen_rows if r > 0]
+        assert len(non_zero) > 0
+
+        # Values change between first and last row
+        assert seen_rows[0][1] < seen_rows[-1][1]
+
+
+# ---------- Master bus: mid-scene automation ----------
+
+class TestMasterBusMidScene:
+    def test_automation_values_shift_master_bus_output(self):
+        scene = _sample_scene()
+        scene.pattern.automation = [
+            AutomationLane(name="density", default=0.5, points=[(0, 0.5)]),
+            AutomationLane(name="master_amp", default=0.6, points=[(0, 0.6)]),
+            AutomationLane(name="reverb_send", default=0.12, points=[(0, 0.12)]),
+        ]
+
+        early = master_bus_values_for_scene(
+            scene, context=None,
+            automation_values={"density": 0.2, "master_amp": 0.3, "reverb_send": 0.1},
+        )
+        late = master_bus_values_for_scene(
+            scene, context=None,
+            automation_values={"density": 0.9, "master_amp": 0.9, "reverb_send": 0.5},
+        )
+
+        # Louder amp at higher master_amp
+        assert late["amp"] > early["amp"]
+        # Higher reverb at higher reverb_send
+        assert late["reverb"] > early["reverb"]
+
+
+# ---------- Sampler: row bucket alignment ----------
+
+class TestSamplerRowBucket:
+    def test_row_bucket_early_mid_late(self):
+        assert _row_bucket({"tracker_row": 0, "tracker_total_rows": 30}) == "early"
+        assert _row_bucket({"tracker_row": 15, "tracker_total_rows": 30}) == "mid"
+        assert _row_bucket({"tracker_row": 28, "tracker_total_rows": 30}) == "late"
+
+    def test_row_bucket_defaults_to_mid_without_data(self):
+        assert _row_bucket({}) == "mid"
+        assert _row_bucket({"tracker_row": -1}) == "mid"
+
+    def test_recap_scene_shifts_to_afterglow_in_late_bucket(self):
+        early_state = {
+            "tracker_scene_name": "Recap",
+            "tracker_row": 2,
+            "tracker_total_rows": 30,
+        }
+        late_state = {
+            "tracker_scene_name": "Recap",
+            "tracker_row": 28,
+            "tracker_total_rows": 30,
+        }
+
+        early_profile, early_mode = _scene_profile(
+            composer_state={}, self_state=early_state,
+            sample_source="room_mic", base_mode="texture_bed",
+        )
+        late_profile, late_mode = _scene_profile(
+            composer_state={}, self_state=late_state,
+            sample_source="room_mic", base_mode="texture_bed",
+        )
+
+        assert early_profile == "recap_echo"
+        assert early_mode == "window_echo"
+        assert late_profile == "afterglow_residue"
+        assert late_mode == "freeze_bed"
+
+    def test_theme_scene_shifts_to_emergence_motion_in_late_bucket(self):
+        early_state = {
+            "tracker_scene_name": "Theme",
+            "tracker_row": 1,
+            "tracker_total_rows": 30,
+        }
+        late_state = {
+            "tracker_scene_name": "Theme",
+            "tracker_row": 28,
+            "tracker_total_rows": 30,
+        }
+
+        early_profile, early_mode = _scene_profile(
+            composer_state={}, self_state=early_state,
+            sample_source="room_mic", base_mode="texture_bed",
+        )
+        late_profile, late_mode = _scene_profile(
+            composer_state={}, self_state=late_state,
+            sample_source="room_mic", base_mode="texture_bed",
+        )
+
+        assert early_profile == "theme_accents"
+        assert early_mode == "slice_accents"
+        assert late_profile == "emergence_motion"
+        assert late_mode == "grain_cloud"
+
+    def test_development_scene_consistent_across_buckets(self):
+        """Development stays grain_cloud regardless of bucket."""
+        for row in (0, 15, 29):
+            profile, mode = _scene_profile(
+                composer_state={},
+                self_state={
+                    "tracker_scene_name": "Development",
+                    "tracker_row": row,
+                    "tracker_total_rows": 30,
+                },
+                sample_source="room_mic",
+                base_mode="texture_bed",
+            )
+            assert profile == "development_grains"
+            assert mode == "grain_cloud"
+
+exec
+/bin/zsh -lc 'rg -n "master_bus_s_new_args|master_bus_n_set_args" my-claw/tools tests' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'rg -n "sampler_amp|sampler_bypass_comp" my-claw/tools tests' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_master_bus.py:14:    master_bus_n_set_args,
+tests/test_master_bus.py:15:    master_bus_s_new_args,
+tests/test_master_bus.py:52:    args = master_bus_n_set_args(scene, context=context, theramini_active=True)
+tests/test_master_bus.py:106:    args = master_bus_s_new_args()
+tests/test_master_bus.py:134:    args = master_bus_n_set_args(scene, context=None)
+my-claw/tools/senseweave/master_bus.py:100:def master_bus_n_set_args(
+my-claw/tools/senseweave/master_bus.py:132:def master_bus_s_new_args(values: dict[str, float] | None = None) -> list[float | int | str]:
+my-claw/tools/senseweave/master_bus.py:162:    client.send_message("/s_new", master_bus_s_new_args(seeded))
+my-claw/tools/senseweave/master_bus.py:182:        master_bus_n_set_args(
+
+ succeeded in 0ms:
+tests/test_master_bus.py:76:def test_sampler_amp_tracks_master_amp_not_density() -> None:
+tests/test_master_bus.py:100:    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+tests/test_master_bus.py:101:    assert hot["sampler_amp"] == 1.0
+tests/test_master_bus.py:102:    assert quiet["sampler_amp"] == 0.05
+tests/test_master_bus.py:114:        "sampler_amp",
+tests/test_master_bus.py:115:        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+tests/test_master_bus.py:116:        "sampler_bypass_comp",
+tests/test_master_bus.py:117:        DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+tests/test_master_bus.py:121:def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+tests/test_master_bus.py:128:        automation_values={"sampler_bypass_comp": 0.0},
+tests/test_master_bus.py:131:    assert default_values["sampler_bypass_comp"] == 1.0
+tests/test_master_bus.py:132:    assert overridden["sampler_bypass_comp"] == 0.0
+tests/test_master_bus.py:135:    idx = args.index("sampler_bypass_comp")
+tests/test_master_bus.py:136:    assert args[idx + 1] == default_values["sampler_bypass_comp"]
+my-claw/tools/senseweave/master_bus.py:12:    "sampler_amp": 1.0,
+my-claw/tools/senseweave/master_bus.py:13:    "sampler_bypass_comp": 1.0,
+my-claw/tools/senseweave/master_bus.py:57:    sampler_amp = round(_clamp(scene_master_amp, 0.05, 1.0), 3)
+my-claw/tools/senseweave/master_bus.py:58:    sampler_bypass_comp = round(
+my-claw/tools/senseweave/master_bus.py:60:            _automation_default(scene, "sampler_bypass_comp", 1.0, automation_values=automation_values),
+my-claw/tools/senseweave/master_bus.py:69:            "sampler_amp": sampler_amp,
+my-claw/tools/senseweave/master_bus.py:70:            "sampler_bypass_comp": sampler_bypass_comp,
+my-claw/tools/senseweave/master_bus.py:91:        "sampler_amp": sampler_amp,
+my-claw/tools/senseweave/master_bus.py:92:        "sampler_bypass_comp": sampler_bypass_comp,
+my-claw/tools/senseweave/master_bus.py:117:        "sampler_amp",
+my-claw/tools/senseweave/master_bus.py:118:        values["sampler_amp"],
+my-claw/tools/senseweave/master_bus.py:119:        "sampler_bypass_comp",
+my-claw/tools/senseweave/master_bus.py:120:        values["sampler_bypass_comp"],
+my-claw/tools/senseweave/master_bus.py:151:        "sampler_amp",
+my-claw/tools/senseweave/master_bus.py:152:        seeded["sampler_amp"],
+my-claw/tools/senseweave/master_bus.py:153:        "sampler_bypass_comp",
+my-claw/tools/senseweave/master_bus.py:154:        seeded["sampler_bypass_comp"],
+
+codex
+I’ve narrowed this to one file. I’m updating `tests/test_master_bus.py` to exercise `sampler_amp` and `sampler_bypass_comp` in both runtime branches and to assert the exact OSC parameter ordering for both `n_set` and `s_new`.
+apply patch
+patch: completed
+/Users/anthony/Programming/PromptClaw/tests/test_master_bus.py
+diff --git a/tests/test_master_bus.py b/tests/test_master_bus.py
+index dafac5d0bdf4edbb3cdf066aa6800c54d623d1f6..931cfb5651fe50bfed571e2b495a2f765c7a8aa5
+--- a/tests/test_master_bus.py
++++ b/tests/test_master_bus.py
+@@ -75,62 +75,118 @@
+ 
+ def test_sampler_amp_tracks_master_amp_not_density() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    sparse = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 0.24},
+-    )
+-    dense = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.24},
+-    )
+-    hot = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 1.4},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+-    quiet = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.0},
+-    )
+ 
+-    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+-    assert hot["sampler_amp"] == 1.0
+-    assert quiet["sampler_amp"] == 0.05
++    for runtime_context in (None, context):
++        sparse = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 0.24},
++        )
++        dense = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.24},
++        )
++        hot = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 1.4},
++        )
++        quiet = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.0},
++        )
++
++        assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
++        assert hot["sampler_amp"] == 1.0
++        assert quiet["sampler_amp"] == 0.05
+ 
+ 
+ def test_master_bus_seed_args_target_master_node() -> None:
+     args = master_bus_s_new_args()
+ 
+-    assert args[0] == "sw_master_smooth"
+-    assert args[1] == MASTER_NODE_ID
+-    assert args[2:4] == [1, 0]
+-    assert args[-6:] == [
++    assert args[:4] == ["sw_master_smooth", MASTER_NODE_ID, 1, 0]
++    assert args[4::2] == [
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
+         "amp",
+-        DEFAULT_MASTER_BUS_VALUES["amp"],
+         "sampler_amp",
+-        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         "sampler_bypass_comp",
++    ]
++    assert args[5::2] == [
++        DEFAULT_MASTER_BUS_VALUES["drive"],
++        DEFAULT_MASTER_BUS_VALUES["warmth"],
++        DEFAULT_MASTER_BUS_VALUES["reverb"],
++        DEFAULT_MASTER_BUS_VALUES["room"],
++        DEFAULT_MASTER_BUS_VALUES["amp"],
++        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+     ]
+ 
+ 
+ def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    default_values = master_bus_values_for_scene(scene, context=None)
+-    overridden = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"sampler_bypass_comp": 0.0},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+ 
+-    assert default_values["sampler_bypass_comp"] == 1.0
+-    assert overridden["sampler_bypass_comp"] == 0.0
++    for runtime_context in (None, context):
++        default_values = master_bus_values_for_scene(scene, context=runtime_context)
++        overridden = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"sampler_bypass_comp": 0.0},
++        )
+ 
++        assert default_values["sampler_bypass_comp"] == 1.0
++        assert overridden["sampler_bypass_comp"] == 0.0
++
++
++def test_master_bus_n_set_args_target_master_node_and_preserve_param_order() -> None:
++    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
++    values = master_bus_values_for_scene(scene, context=None)
+     args = master_bus_n_set_args(scene, context=None)
+-    idx = args.index("sampler_bypass_comp")
+-    assert args[idx + 1] == default_values["sampler_bypass_comp"]
++
++    assert args[0] == MASTER_NODE_ID
++    assert args[1::2] == [
++        "amp",
++        "sampler_amp",
++        "sampler_bypass_comp",
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
++    ]
++    assert args[2::2] == [
++        values["amp"],
++        values["sampler_amp"],
++        values["sampler_bypass_comp"],
++        values["drive"],
++        values["warmth"],
++        values["reverb"],
++        values["room"],
++    ]
+
+diff --git a/tests/test_master_bus.py b/tests/test_master_bus.py
+index dafac5d0bdf4edbb3cdf066aa6800c54d623d1f6..931cfb5651fe50bfed571e2b495a2f765c7a8aa5
+--- a/tests/test_master_bus.py
++++ b/tests/test_master_bus.py
+@@ -75,62 +75,118 @@
+ 
+ def test_sampler_amp_tracks_master_amp_not_density() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    sparse = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 0.24},
+-    )
+-    dense = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.24},
+-    )
+-    hot = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 1.4},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+-    quiet = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.0},
+-    )
+ 
+-    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+-    assert hot["sampler_amp"] == 1.0
+-    assert quiet["sampler_amp"] == 0.05
++    for runtime_context in (None, context):
++        sparse = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 0.24},
++        )
++        dense = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.24},
++        )
++        hot = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 1.4},
++        )
++        quiet = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.0},
++        )
++
++        assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
++        assert hot["sampler_amp"] == 1.0
++        assert quiet["sampler_amp"] == 0.05
+ 
+ 
+ def test_master_bus_seed_args_target_master_node() -> None:
+     args = master_bus_s_new_args()
+ 
+-    assert args[0] == "sw_master_smooth"
+-    assert args[1] == MASTER_NODE_ID
+-    assert args[2:4] == [1, 0]
+-    assert args[-6:] == [
++    assert args[:4] == ["sw_master_smooth", MASTER_NODE_ID, 1, 0]
++    assert args[4::2] == [
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
+         "amp",
+-        DEFAULT_MASTER_BUS_VALUES["amp"],
+         "sampler_amp",
+-        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         "sampler_bypass_comp",
++    ]
++    assert args[5::2] == [
++        DEFAULT_MASTER_BUS_VALUES["drive"],
++        DEFAULT_MASTER_BUS_VALUES["warmth"],
++        DEFAULT_MASTER_BUS_VALUES["reverb"],
++        DEFAULT_MASTER_BUS_VALUES["room"],
++        DEFAULT_MASTER_BUS_VALUES["amp"],
++        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+     ]
+ 
+ 
+ def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    default_values = master_bus_values_for_scene(scene, context=None)
+-    overridden = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"sampler_bypass_comp": 0.0},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+ 
+-    assert default_values["sampler_bypass_comp"] == 1.0
+-    assert overridden["sampler_bypass_comp"] == 0.0
++    for runtime_context in (None, context):
++        default_values = master_bus_values_for_scene(scene, context=runtime_context)
++        overridden = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"sampler_bypass_comp": 0.0},
++        )
+ 
++        assert default_values["sampler_bypass_comp"] == 1.0
++        assert overridden["sampler_bypass_comp"] == 0.0
++
++
++def test_master_bus_n_set_args_target_master_node_and_preserve_param_order() -> None:
++    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
++    values = master_bus_values_for_scene(scene, context=None)
+     args = master_bus_n_set_args(scene, context=None)
+-    idx = args.index("sampler_bypass_comp")
+-    assert args[idx + 1] == default_values["sampler_bypass_comp"]
++
++    assert args[0] == MASTER_NODE_ID
++    assert args[1::2] == [
++        "amp",
++        "sampler_amp",
++        "sampler_bypass_comp",
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
++    ]
++    assert args[2::2] == [
++        values["amp"],
++        values["sampler_amp"],
++        values["sampler_bypass_comp"],
++        values["drive"],
++        values["warmth"],
++        values["reverb"],
++        values["room"],
++    ]
+
+codex
+The test file is updated. I’m running the focused `master_bus` test first to catch any mistakes locally before I spend time on the broader validation and commit.
+exec
+/bin/zsh -lc 'ruff check tests/test_master_bus.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+All checks passed!
+
+exec
+/bin/zsh -lc 'pytest tests/test_master_bus.py -q' in /Users/anthony/Programming/PromptClaw
+diff --git a/tests/test_master_bus.py b/tests/test_master_bus.py
+index dafac5d0bdf4edbb3cdf066aa6800c54d623d1f6..931cfb5651fe50bfed571e2b495a2f765c7a8aa5
+--- a/tests/test_master_bus.py
++++ b/tests/test_master_bus.py
+@@ -75,62 +75,118 @@
+ 
+ def test_sampler_amp_tracks_master_amp_not_density() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    sparse = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 0.24},
+-    )
+-    dense = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.24},
+-    )
+-    hot = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 1.4},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+-    quiet = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.0},
+-    )
+ 
+-    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+-    assert hot["sampler_amp"] == 1.0
+-    assert quiet["sampler_amp"] == 0.05
++    for runtime_context in (None, context):
++        sparse = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 0.24},
++        )
++        dense = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.24},
++        )
++        hot = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 1.4},
++        )
++        quiet = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.0},
++        )
++
++        assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
++        assert hot["sampler_amp"] == 1.0
++        assert quiet["sampler_amp"] == 0.05
+ 
+ 
+ def test_master_bus_seed_args_target_master_node() -> None:
+     args = master_bus_s_new_args()
+ 
+-    assert args[0] == "sw_master_smooth"
+-    assert args[1] == MASTER_NODE_ID
+-    assert args[2:4] == [1, 0]
+-    assert args[-6:] == [
++    assert args[:4] == ["sw_master_smooth", MASTER_NODE_ID, 1, 0]
++    assert args[4::2] == [
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
+         "amp",
+-        DEFAULT_MASTER_BUS_VALUES["amp"],
+         "sampler_amp",
+-        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         "sampler_bypass_comp",
++    ]
++    assert args[5::2] == [
++        DEFAULT_MASTER_BUS_VALUES["drive"],
++        DEFAULT_MASTER_BUS_VALUES["warmth"],
++        DEFAULT_MASTER_BUS_VALUES["reverb"],
++        DEFAULT_MASTER_BUS_VALUES["room"],
++        DEFAULT_MASTER_BUS_VALUES["amp"],
++        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+     ]
+ 
+ 
+ def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    default_values = master_bus_values_for_scene(scene, context=None)
+-    overridden = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"sampler_bypass_comp": 0.0},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+ 
+-    assert default_values["sampler_bypass_comp"] == 1.0
+-    assert overridden["sampler_bypass_comp"] == 0.0
++    for runtime_context in (None, context):
++        default_values = master_bus_values_for_scene(scene, context=runtime_context)
++        overridden = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"sampler_bypass_comp": 0.0},
++        )
+ 
++        assert default_values["sampler_bypass_comp"] == 1.0
++        assert overridden["sampler_bypass_comp"] == 0.0
++
++
++def test_master_bus_n_set_args_target_master_node_and_preserve_param_order() -> None:
++    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
++    values = master_bus_values_for_scene(scene, context=None)
+     args = master_bus_n_set_args(scene, context=None)
+-    idx = args.index("sampler_bypass_comp")
+-    assert args[idx + 1] == default_values["sampler_bypass_comp"]
++
++    assert args[0] == MASTER_NODE_ID
++    assert args[1::2] == [
++        "amp",
++        "sampler_amp",
++        "sampler_bypass_comp",
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
++    ]
++    assert args[2::2] == [
++        values["amp"],
++        values["sampler_amp"],
++        values["sampler_bypass_comp"],
++        values["drive"],
++        values["warmth"],
++        values["reverb"],
++        values["room"],
++    ]
+
+ succeeded in 913ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+......                                                                   [100%]
+6 passed in 0.13s
+
+codex
+The focused test passed, so I’m switching to the required broader validation now. I’m also checking whether the repo actually has a `src/` tree because the task’s lint/type commands are written against that layout.
+exec
+/bin/zsh -lc 'test -d src && echo src-present || echo src-missing' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+src-present
+
+exec
+/bin/zsh -lc "pip install -e '.[dev]'" in /Users/anthony/Programming/PromptClaw
+diff --git a/tests/test_master_bus.py b/tests/test_master_bus.py
+index dafac5d0bdf4edbb3cdf066aa6800c54d623d1f6..931cfb5651fe50bfed571e2b495a2f765c7a8aa5
+--- a/tests/test_master_bus.py
++++ b/tests/test_master_bus.py
+@@ -75,62 +75,118 @@
+ 
+ def test_sampler_amp_tracks_master_amp_not_density() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    sparse = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 0.24},
+-    )
+-    dense = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.24},
+-    )
+-    hot = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 1.4},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+-    quiet = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.0},
+-    )
+ 
+-    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+-    assert hot["sampler_amp"] == 1.0
+-    assert quiet["sampler_amp"] == 0.05
++    for runtime_context in (None, context):
++        sparse = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 0.24},
++        )
++        dense = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.24},
++        )
++        hot = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 1.4},
++        )
++        quiet = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.0},
++        )
++
++        assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
++        assert hot["sampler_amp"] == 1.0
++        assert quiet["sampler_amp"] == 0.05
+ 
+ 
+ def test_master_bus_seed_args_target_master_node() -> None:
+     args = master_bus_s_new_args()
+ 
+-    assert args[0] == "sw_master_smooth"
+-    assert args[1] == MASTER_NODE_ID
+-    assert args[2:4] == [1, 0]
+-    assert args[-6:] == [
++    assert args[:4] == ["sw_master_smooth", MASTER_NODE_ID, 1, 0]
++    assert args[4::2] == [
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
+         "amp",
+-        DEFAULT_MASTER_BUS_VALUES["amp"],
+         "sampler_amp",
+-        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         "sampler_bypass_comp",
++    ]
++    assert args[5::2] == [
++        DEFAULT_MASTER_BUS_VALUES["drive"],
++        DEFAULT_MASTER_BUS_VALUES["warmth"],
++        DEFAULT_MASTER_BUS_VALUES["reverb"],
++        DEFAULT_MASTER_BUS_VALUES["room"],
++        DEFAULT_MASTER_BUS_VALUES["amp"],
++        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+     ]
+ 
+ 
+ def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    default_values = master_bus_values_for_scene(scene, context=None)
+-    overridden = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"sampler_bypass_comp": 0.0},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+ 
+-    assert default_values["sampler_bypass_comp"] == 1.0
+-    assert overridden["sampler_bypass_comp"] == 0.0
++    for runtime_context in (None, context):
++        default_values = master_bus_values_for_scene(scene, context=runtime_context)
++        overridden = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"sampler_bypass_comp": 0.0},
++        )
+ 
++        assert default_values["sampler_bypass_comp"] == 1.0
++        assert overridden["sampler_bypass_comp"] == 0.0
++
++
++def test_master_bus_n_set_args_target_master_node_and_preserve_param_order() -> None:
++    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
++    values = master_bus_values_for_scene(scene, context=None)
+     args = master_bus_n_set_args(scene, context=None)
+-    idx = args.index("sampler_bypass_comp")
+-    assert args[idx + 1] == default_values["sampler_bypass_comp"]
++
++    assert args[0] == MASTER_NODE_ID
++    assert args[1::2] == [
++        "amp",
++        "sampler_amp",
++        "sampler_bypass_comp",
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
++    ]
++    assert args[2::2] == [
++        values["amp"],
++        values["sampler_amp"],
++        values["sampler_bypass_comp"],
++        values["drive"],
++        values["warmth"],
++        values["reverb"],
++        values["room"],
++    ]
+
+ succeeded in 3036ms:
+Obtaining file:///Users/anthony/Programming/PromptClaw
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: partitura<2,>=1.8 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.8.0)
+Requirement already satisfied: librosa<1,>=0.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.11.0)
+Requirement already satisfied: mypy>=1.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.19.1)
+Requirement already satisfied: pytest>=8.0 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (8.3.5)
+Requirement already satisfied: ruff>=0.9 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.9.2)
+Requirement already satisfied: audioread>=2.1.9 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (3.1.0)
+Requirement already satisfied: numba>=0.51.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.59.0)
+Requirement already satisfied: numpy>=1.22.3 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.26.0)
+Requirement already satisfied: scipy>=1.6.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.11.4)
+Requirement already satisfied: scikit-learn>=1.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.2)
+Requirement already satisfied: joblib>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.0)
+Requirement already satisfied: decorator>=4.3.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (5.1.1)
+Requirement already satisfied: soundfile>=0.12.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.13.1)
+Requirement already satisfied: pooch>=1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.9.0)
+Requirement already satisfied: soxr>=0.3.2 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: typing_extensions>=4.1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (4.15.0)
+Requirement already satisfied: lazy_loader>=0.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.3)
+Requirement already satisfied: msgpack>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.3)
+Requirement already satisfied: lxml in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.9.3)
+Requirement already satisfied: lark-parser in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (0.12.0)
+Requirement already satisfied: xmlschema in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.3.1)
+Requirement already satisfied: mido in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (1.3.3)
+Requirement already satisfied: mypy_extensions>=1.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: pathspec>=0.9.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.10.3)
+Requirement already satisfied: librt>=0.6.2 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.8.1)
+Requirement already satisfied: llvmlite<0.43,>=0.42.0dev0 in /opt/anaconda3/lib/python3.11/site-packages (from numba>=0.51.0->librosa<1,>=0.10->promptclaw==3.0.0) (0.42.0)
+Requirement already satisfied: platformdirs>=2.5.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (4.5.1)
+Requirement already satisfied: packaging>=20.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (23.2)
+Requirement already satisfied: requests>=2.19.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.32.3)
+Requirement already satisfied: iniconfig in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.1.1)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.5.0)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.4)
+Requirement already satisfied: idna<4,>=2.5 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (3.4)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.6.3)
+Requirement already satisfied: certifi>=2017.4.17 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2026.1.4)
+Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from scikit-learn>=1.1.0->librosa<1,>=0.10->promptclaw==3.0.0) (2.2.0)
+Requirement already satisfied: cffi>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.0)
+Requirement already satisfied: pycparser in /opt/anaconda3/lib/python3.11/site-packages (from cffi>=1.0->soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.21)
+Requirement already satisfied: elementpath<6.0.0,>=5.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from xmlschema->partitura<2,>=1.8->promptclaw==3.0.0) (5.1.1)
+Building wheels for collected packages: promptclaw
+  Building editable for promptclaw (pyproject.toml): started
+  Building editable for promptclaw (pyproject.toml): finished with status 'done'
+  Created wheel for promptclaw: filename=promptclaw-3.0.0-0.editable-py3-none-any.whl size=5894 sha256=25b91756f51dd3745c5b612ae96b73fdc0cc9cecf685bd009e30d52f498f00ce
+  Stored in directory: /private/var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/pip-ephem-wheel-cache-grjrst1s/wheels/ab/f4/89/0cacd29874f6252d7c6bef0fca4c14839da91ab6a8d842965e
+Successfully built promptclaw
+Installing collected packages: promptclaw
+  Attempting uninstall: promptclaw
+    Found existing installation: promptclaw 3.0.0
+    Uninstalling promptclaw-3.0.0:
+      Successfully uninstalled promptclaw-3.0.0
+Successfully installed promptclaw-3.0.0
+
+codex
+`src/` is present, so I can run the validation exactly as requested after the editable install completes. I’m waiting on that install, then I’ll run the full test, lint, and typecheck sequence.
+diff --git a/tests/test_master_bus.py b/tests/test_master_bus.py
+index dafac5d0bdf4edbb3cdf066aa6800c54d623d1f6..931cfb5651fe50bfed571e2b495a2f765c7a8aa5
+--- a/tests/test_master_bus.py
++++ b/tests/test_master_bus.py
+@@ -75,62 +75,118 @@
+ 
+ def test_sampler_amp_tracks_master_amp_not_density() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    sparse = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 0.24},
+-    )
+-    dense = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.24},
+-    )
+-    hot = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 1.4},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+-    quiet = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.0},
+-    )
+ 
+-    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+-    assert hot["sampler_amp"] == 1.0
+-    assert quiet["sampler_amp"] == 0.05
++    for runtime_context in (None, context):
++        sparse = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 0.24},
++        )
++        dense = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.24},
++        )
++        hot = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 1.4},
++        )
++        quiet = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.0},
++        )
++
++        assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
++        assert hot["sampler_amp"] == 1.0
++        assert quiet["sampler_amp"] == 0.05
+ 
+ 
+ def test_master_bus_seed_args_target_master_node() -> None:
+     args = master_bus_s_new_args()
+ 
+-    assert args[0] == "sw_master_smooth"
+-    assert args[1] == MASTER_NODE_ID
+-    assert args[2:4] == [1, 0]
+-    assert args[-6:] == [
++    assert args[:4] == ["sw_master_smooth", MASTER_NODE_ID, 1, 0]
++    assert args[4::2] == [
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
+         "amp",
+-        DEFAULT_MASTER_BUS_VALUES["amp"],
+         "sampler_amp",
+-        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         "sampler_bypass_comp",
++    ]
++    assert args[5::2] == [
++        DEFAULT_MASTER_BUS_VALUES["drive"],
++        DEFAULT_MASTER_BUS_VALUES["warmth"],
++        DEFAULT_MASTER_BUS_VALUES["reverb"],
++        DEFAULT_MASTER_BUS_VALUES["room"],
++        DEFAULT_MASTER_BUS_VALUES["amp"],
++        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+     ]
+ 
+ 
+ def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    default_values = master_bus_values_for_scene(scene, context=None)
+-    overridden = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"sampler_bypass_comp": 0.0},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+ 
+-    assert default_values["sampler_bypass_comp"] == 1.0
+-    assert overridden["sampler_bypass_comp"] == 0.0
++    for runtime_context in (None, context):
++        default_values = master_bus_values_for_scene(scene, context=runtime_context)
++        overridden = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"sampler_bypass_comp": 0.0},
++        )
+ 
++        assert default_values["sampler_bypass_comp"] == 1.0
++        assert overridden["sampler_bypass_comp"] == 0.0
++
++
++def test_master_bus_n_set_args_target_master_node_and_preserve_param_order() -> None:
++    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
++    values = master_bus_values_for_scene(scene, context=None)
+     args = master_bus_n_set_args(scene, context=None)
+-    idx = args.index("sampler_bypass_comp")
+-    assert args[idx + 1] == default_values["sampler_bypass_comp"]
++
++    assert args[0] == MASTER_NODE_ID
++    assert args[1::2] == [
++        "amp",
++        "sampler_amp",
++        "sampler_bypass_comp",
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
++    ]
++    assert args[2::2] == [
++        values["amp"],
++        values["sampler_amp"],
++        values["sampler_bypass_comp"],
++        values["drive"],
++        values["warmth"],
++        values["reverb"],
++        values["room"],
++    ]
+
+exec
+/bin/zsh -lc 'ruff check src/ tests/' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+All checks passed!
+
+exec
+/bin/zsh -lc 'pytest tests/ -x --tb=short' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'mypy src/' in /Users/anthony/Programming/PromptClaw
+ succeeded in 195ms:
+Success: no issues found in 13 source files
+
+diff --git a/tests/test_master_bus.py b/tests/test_master_bus.py
+index dafac5d0bdf4edbb3cdf066aa6800c54d623d1f6..931cfb5651fe50bfed571e2b495a2f765c7a8aa5
+--- a/tests/test_master_bus.py
++++ b/tests/test_master_bus.py
+@@ -75,62 +75,118 @@
+ 
+ def test_sampler_amp_tracks_master_amp_not_density() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    sparse = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 0.24},
+-    )
+-    dense = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.24},
+-    )
+-    hot = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 1.4},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+-    quiet = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.0},
+-    )
+ 
+-    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+-    assert hot["sampler_amp"] == 1.0
+-    assert quiet["sampler_amp"] == 0.05
++    for runtime_context in (None, context):
++        sparse = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 0.24},
++        )
++        dense = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.24},
++        )
++        hot = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 1.4},
++        )
++        quiet = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.0},
++        )
++
++        assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
++        assert hot["sampler_amp"] == 1.0
++        assert quiet["sampler_amp"] == 0.05
+ 
+ 
+ def test_master_bus_seed_args_target_master_node() -> None:
+     args = master_bus_s_new_args()
+ 
+-    assert args[0] == "sw_master_smooth"
+-    assert args[1] == MASTER_NODE_ID
+-    assert args[2:4] == [1, 0]
+-    assert args[-6:] == [
++    assert args[:4] == ["sw_master_smooth", MASTER_NODE_ID, 1, 0]
++    assert args[4::2] == [
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
+         "amp",
+-        DEFAULT_MASTER_BUS_VALUES["amp"],
+         "sampler_amp",
+-        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         "sampler_bypass_comp",
++    ]
++    assert args[5::2] == [
++        DEFAULT_MASTER_BUS_VALUES["drive"],
++        DEFAULT_MASTER_BUS_VALUES["warmth"],
++        DEFAULT_MASTER_BUS_VALUES["reverb"],
++        DEFAULT_MASTER_BUS_VALUES["room"],
++        DEFAULT_MASTER_BUS_VALUES["amp"],
++        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+     ]
+ 
+ 
+ def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    default_values = master_bus_values_for_scene(scene, context=None)
+-    overridden = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"sampler_bypass_comp": 0.0},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+ 
+-    assert default_values["sampler_bypass_comp"] == 1.0
+-    assert overridden["sampler_bypass_comp"] == 0.0
++    for runtime_context in (None, context):
++        default_values = master_bus_values_for_scene(scene, context=runtime_context)
++        overridden = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"sampler_bypass_comp": 0.0},
++        )
+ 
++        assert default_values["sampler_bypass_comp"] == 1.0
++        assert overridden["sampler_bypass_comp"] == 0.0
++
++
++def test_master_bus_n_set_args_target_master_node_and_preserve_param_order() -> None:
++    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
++    values = master_bus_values_for_scene(scene, context=None)
+     args = master_bus_n_set_args(scene, context=None)
+-    idx = args.index("sampler_bypass_comp")
+-    assert args[idx + 1] == default_values["sampler_bypass_comp"]
++
++    assert args[0] == MASTER_NODE_ID
++    assert args[1::2] == [
++        "amp",
++        "sampler_amp",
++        "sampler_bypass_comp",
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
++    ]
++    assert args[2::2] == [
++        values["amp"],
++        values["sampler_amp"],
++        values["sampler_bypass_comp"],
++        values["drive"],
++        values["warmth"],
++        values["reverb"],
++        values["room"],
++    ]
+
+codex
+Lint and typecheck are clean. The only remaining gate is the full test suite, which is still running.
+diff --git a/tests/test_master_bus.py b/tests/test_master_bus.py
+index dafac5d0bdf4edbb3cdf066aa6800c54d623d1f6..931cfb5651fe50bfed571e2b495a2f765c7a8aa5
+--- a/tests/test_master_bus.py
++++ b/tests/test_master_bus.py
+@@ -75,62 +75,118 @@
+ 
+ def test_sampler_amp_tracks_master_amp_not_density() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    sparse = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 0.24},
+-    )
+-    dense = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.24},
+-    )
+-    hot = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 1.4},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+-    quiet = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.0},
+-    )
+ 
+-    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+-    assert hot["sampler_amp"] == 1.0
+-    assert quiet["sampler_amp"] == 0.05
++    for runtime_context in (None, context):
++        sparse = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 0.24},
++        )
++        dense = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.24},
++        )
++        hot = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 1.4},
++        )
++        quiet = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.0},
++        )
++
++        assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
++        assert hot["sampler_amp"] == 1.0
++        assert quiet["sampler_amp"] == 0.05
+ 
+ 
+ def test_master_bus_seed_args_target_master_node() -> None:
+     args = master_bus_s_new_args()
+ 
+-    assert args[0] == "sw_master_smooth"
+-    assert args[1] == MASTER_NODE_ID
+-    assert args[2:4] == [1, 0]
+-    assert args[-6:] == [
++    assert args[:4] == ["sw_master_smooth", MASTER_NODE_ID, 1, 0]
++    assert args[4::2] == [
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
+         "amp",
+-        DEFAULT_MASTER_BUS_VALUES["amp"],
+         "sampler_amp",
+-        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         "sampler_bypass_comp",
++    ]
++    assert args[5::2] == [
++        DEFAULT_MASTER_BUS_VALUES["drive"],
++        DEFAULT_MASTER_BUS_VALUES["warmth"],
++        DEFAULT_MASTER_BUS_VALUES["reverb"],
++        DEFAULT_MASTER_BUS_VALUES["room"],
++        DEFAULT_MASTER_BUS_VALUES["amp"],
++        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+     ]
+ 
+ 
+ def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    default_values = master_bus_values_for_scene(scene, context=None)
+-    overridden = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"sampler_bypass_comp": 0.0},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+ 
+-    assert default_values["sampler_bypass_comp"] == 1.0
+-    assert overridden["sampler_bypass_comp"] == 0.0
++    for runtime_context in (None, context):
++        default_values = master_bus_values_for_scene(scene, context=runtime_context)
++        overridden = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"sampler_bypass_comp": 0.0},
++        )
+ 
++        assert default_values["sampler_bypass_comp"] == 1.0
++        assert overridden["sampler_bypass_comp"] == 0.0
++
++
++def test_master_bus_n_set_args_target_master_node_and_preserve_param_order() -> None:
++    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
++    values = master_bus_values_for_scene(scene, context=None)
+     args = master_bus_n_set_args(scene, context=None)
+-    idx = args.index("sampler_bypass_comp")
+-    assert args[idx + 1] == default_values["sampler_bypass_comp"]
++
++    assert args[0] == MASTER_NODE_ID
++    assert args[1::2] == [
++        "amp",
++        "sampler_amp",
++        "sampler_bypass_comp",
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
++    ]
++    assert args[2::2] == [
++        values["amp"],
++        values["sampler_amp"],
++        values["sampler_bypass_comp"],
++        values["drive"],
++        values["warmth"],
++        values["reverb"],
++        values["room"],
++    ]
+
+diff --git a/tests/test_master_bus.py b/tests/test_master_bus.py
+index dafac5d0bdf4edbb3cdf066aa6800c54d623d1f6..931cfb5651fe50bfed571e2b495a2f765c7a8aa5
+--- a/tests/test_master_bus.py
++++ b/tests/test_master_bus.py
+@@ -75,62 +75,118 @@
+ 
+ def test_sampler_amp_tracks_master_amp_not_density() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    sparse = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 0.24},
+-    )
+-    dense = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.24},
+-    )
+-    hot = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 1.4},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+-    quiet = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.0},
+-    )
+ 
+-    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+-    assert hot["sampler_amp"] == 1.0
+-    assert quiet["sampler_amp"] == 0.05
++    for runtime_context in (None, context):
++        sparse = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 0.24},
++        )
++        dense = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.24},
++        )
++        hot = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 1.4},
++        )
++        quiet = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.0},
++        )
++
++        assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
++        assert hot["sampler_amp"] == 1.0
++        assert quiet["sampler_amp"] == 0.05
+ 
+ 
+ def test_master_bus_seed_args_target_master_node() -> None:
+     args = master_bus_s_new_args()
+ 
+-    assert args[0] == "sw_master_smooth"
+-    assert args[1] == MASTER_NODE_ID
+-    assert args[2:4] == [1, 0]
+-    assert args[-6:] == [
++    assert args[:4] == ["sw_master_smooth", MASTER_NODE_ID, 1, 0]
++    assert args[4::2] == [
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
+         "amp",
+-        DEFAULT_MASTER_BUS_VALUES["amp"],
+         "sampler_amp",
+-        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         "sampler_bypass_comp",
++    ]
++    assert args[5::2] == [
++        DEFAULT_MASTER_BUS_VALUES["drive"],
++        DEFAULT_MASTER_BUS_VALUES["warmth"],
++        DEFAULT_MASTER_BUS_VALUES["reverb"],
++        DEFAULT_MASTER_BUS_VALUES["room"],
++        DEFAULT_MASTER_BUS_VALUES["amp"],
++        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+     ]
+ 
+ 
+ def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    default_values = master_bus_values_for_scene(scene, context=None)
+-    overridden = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"sampler_bypass_comp": 0.0},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+ 
+-    assert default_values["sampler_bypass_comp"] == 1.0
+-    assert overridden["sampler_bypass_comp"] == 0.0
++    for runtime_context in (None, context):
++        default_values = master_bus_values_for_scene(scene, context=runtime_context)
++        overridden = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"sampler_bypass_comp": 0.0},
++        )
+ 
++        assert default_values["sampler_bypass_comp"] == 1.0
++        assert overridden["sampler_bypass_comp"] == 0.0
++
++
++def test_master_bus_n_set_args_target_master_node_and_preserve_param_order() -> None:
++    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
++    values = master_bus_values_for_scene(scene, context=None)
+     args = master_bus_n_set_args(scene, context=None)
+-    idx = args.index("sampler_bypass_comp")
+-    assert args[idx + 1] == default_values["sampler_bypass_comp"]
++
++    assert args[0] == MASTER_NODE_ID
++    assert args[1::2] == [
++        "amp",
++        "sampler_amp",
++        "sampler_bypass_comp",
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
++    ]
++    assert args[2::2] == [
++        values["amp"],
++        values["sampler_amp"],
++        values["sampler_bypass_comp"],
++        values["drive"],
++        values["warmth"],
++        values["reverb"],
++        values["room"],
++    ]
+
+codex
+The full suite has passed well past the `master_bus` area and is still advancing cleanly. I’m waiting for the run to finish so I can commit immediately afterward.
+diff --git a/tests/test_master_bus.py b/tests/test_master_bus.py
+index dafac5d0bdf4edbb3cdf066aa6800c54d623d1f6..931cfb5651fe50bfed571e2b495a2f765c7a8aa5
+--- a/tests/test_master_bus.py
++++ b/tests/test_master_bus.py
+@@ -75,62 +75,118 @@
+ 
+ def test_sampler_amp_tracks_master_amp_not_density() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    sparse = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 0.24},
+-    )
+-    dense = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.24},
+-    )
+-    hot = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 1.4},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+-    quiet = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.0},
+-    )
+ 
+-    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+-    assert hot["sampler_amp"] == 1.0
+-    assert quiet["sampler_amp"] == 0.05
++    for runtime_context in (None, context):
++        sparse = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 0.24},
++        )
++        dense = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.24},
++        )
++        hot = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 1.4},
++        )
++        quiet = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.0},
++        )
++
++        assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
++        assert hot["sampler_amp"] == 1.0
++        assert quiet["sampler_amp"] == 0.05
+ 
+ 
+ def test_master_bus_seed_args_target_master_node() -> None:
+     args = master_bus_s_new_args()
+ 
+-    assert args[0] == "sw_master_smooth"
+-    assert args[1] == MASTER_NODE_ID
+-    assert args[2:4] == [1, 0]
+-    assert args[-6:] == [
++    assert args[:4] == ["sw_master_smooth", MASTER_NODE_ID, 1, 0]
++    assert args[4::2] == [
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
+         "amp",
+-        DEFAULT_MASTER_BUS_VALUES["amp"],
+         "sampler_amp",
+-        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         "sampler_bypass_comp",
++    ]
++    assert args[5::2] == [
++        DEFAULT_MASTER_BUS_VALUES["drive"],
++        DEFAULT_MASTER_BUS_VALUES["warmth"],
++        DEFAULT_MASTER_BUS_VALUES["reverb"],
++        DEFAULT_MASTER_BUS_VALUES["room"],
++        DEFAULT_MASTER_BUS_VALUES["amp"],
++        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+     ]
+ 
+ 
+ def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    default_values = master_bus_values_for_scene(scene, context=None)
+-    overridden = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"sampler_bypass_comp": 0.0},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+ 
+-    assert default_values["sampler_bypass_comp"] == 1.0
+-    assert overridden["sampler_bypass_comp"] == 0.0
++    for runtime_context in (None, context):
++        default_values = master_bus_values_for_scene(scene, context=runtime_context)
++        overridden = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"sampler_bypass_comp": 0.0},
++        )
+ 
++        assert default_values["sampler_bypass_comp"] == 1.0
++        assert overridden["sampler_bypass_comp"] == 0.0
++
++
++def test_master_bus_n_set_args_target_master_node_and_preserve_param_order() -> None:
++    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
++    values = master_bus_values_for_scene(scene, context=None)
+     args = master_bus_n_set_args(scene, context=None)
+-    idx = args.index("sampler_bypass_comp")
+-    assert args[idx + 1] == default_values["sampler_bypass_comp"]
++
++    assert args[0] == MASTER_NODE_ID
++    assert args[1::2] == [
++        "amp",
++        "sampler_amp",
++        "sampler_bypass_comp",
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
++    ]
++    assert args[2::2] == [
++        values["amp"],
++        values["sampler_amp"],
++        values["sampler_bypass_comp"],
++        values["drive"],
++        values["warmth"],
++        values["reverb"],
++        values["room"],
++    ]
+
+ succeeded in 19092ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3171 items
+
+tests/test_accompaniment.py ...........................                  [  0%]
+tests/test_acoustic_ecology.py .................................         [  1%]
+tests/test_agent_runtime.py ..                                           [  1%]
+tests/test_agent_selector_defaults.py .                                  [  1%]
+tests/test_agent_selector_quota.py ........                              [  2%]
+tests/test_agogic_rule.py ...                                            [  2%]
+tests/test_antenna_to_skin.py .................................          [  3%]
+tests/test_archive_daemon_runtime.py .                                   [  3%]
+tests/test_archive_paths.py .....                                        [  3%]
+tests/test_arrangement_engine.py ....................................... [  4%]
+                                                                         [  4%]
+tests/test_art_engine_runtime.py ....                                    [  4%]
+tests/test_articulation.py ......                                        [  5%]
+tests/test_artist_identity.py ....................................       [  6%]
+tests/test_artistic_identity.py .                                        [  6%]
+tests/test_audio_analysis.py .....................................       [  7%]
+tests/test_audio_novelty.py ....                                         [  7%]
+tests/test_bootstrap.py ..                                               [  7%]
+tests/test_breath_to_filter.py .............................             [  8%]
+tests/test_cadence_engine.py .......                                     [  8%]
+tests/test_call_response.py ..........                                   [  9%]
+tests/test_capstone_engine.py ...                                        [  9%]
+tests/test_capture_alias.py ..                                           [  9%]
+tests/test_cast_planner.py ......                                        [  9%]
+tests/test_check_status_runtime.py ..                                    [  9%]
+tests/test_coherence_engine.py ..............                            [  9%]
+tests/test_coherence_integration.py ............                         [ 10%]
+tests/test_collaborative_canvas.py ......................                [ 11%]
+tests/test_commission_context.py ..                                      [ 11%]
+tests/test_config.py ..                                                  [ 11%]
+tests/test_constitution.py .......................                       [ 11%]
+tests/test_contact_listener_runtime.py ....                              [ 11%]
+tests/test_contact_mic_calibration_runtime.py ....                       [ 12%]
+tests/test_context_pulse_runtime.py .                                    [ 12%]
+tests/test_continuous_learner.py ......................                  [ 12%]
+tests/test_counterpoint_pipeline.py ...........................          [ 13%]
+tests/test_counterpoint_rules.py ....................................... [ 14%]
+......................                                                   [ 15%]
+tests/test_course_critique.py ...............................            [ 16%]
+tests/test_cypherclaw_audio_runtime.py .....                             [ 16%]
+tests/test_cypherclaw_av_stack_service.py ...                            [ 16%]
+tests/test_cypherclaw_boot_runtime.py ....                               [ 16%]
+tests/test_cypherclaw_runtime.py .....                                   [ 17%]
+tests/test_daemon_concurrency_compat.py ...                              [ 17%]
+tests/test_daemon_fallback.py ...............                            [ 17%]
+tests/test_daemon_scheduler.py ..                                        [ 17%]
+tests/test_daemon_status_ollama.py .......                               [ 17%]
+tests/test_dashboard_generator.py ...................................... [ 19%]
+.......                                                                  [ 19%]
+tests/test_dashboard_generator_runtime.py ...                            [ 19%]
+tests/test_decision_store.py .........                                   [ 19%]
+tests/test_doctor.py ...                                                 [ 19%]
+tests/test_dsp_scene_lab.py ................                             [ 20%]
+tests/test_duration_contrast_rule.py .......                             [ 20%]
+tests/test_ear_engine.py ............                                    [ 20%]
+tests/test_emsd_curriculum.py ...............                            [ 21%]
+tests/test_emsd_performance.py ....                                      [ 21%]
+tests/test_emsd_runtime.py ...                                           [ 21%]
+tests/test_event_store.py .......                                        [ 21%]
+tests/test_executable_curriculum.py ...                                  [ 21%]
+tests/test_federation_discovery.py ........                              [ 22%]
+tests/test_final_rit.py ...                                              [ 22%]
+tests/test_first_boot.py ...................................             [ 23%]
+tests/test_form_grammar.py ..                                            [ 23%]
+tests/test_fractal_form.py ...............                               [ 23%]
+tests/test_functional_harmony.py ...............................         [ 24%]
+tests/test_gallery.py ..........................                         [ 25%]
+tests/test_gallery_x11_runtime.py ...                                    [ 25%]
+tests/test_garden_watcher.py ........................................... [ 27%]
+.                                                                        [ 27%]
+tests/test_gemini_image_runtime.py ...                                   [ 27%]
+tests/test_generative_scores.py ........................................ [ 28%]
+.............................................                            [ 30%]
+tests/test_genre_literacy.py ............                                [ 30%]
+tests/test_glyphweave_cli.py ....                                        [ 30%]
+tests/test_glyphweave_runtime.py ....                                    [ 30%]
+tests/test_governor_integration.py ..............                        [ 31%]
+tests/test_graduation.py ......................                          [ 31%]
+tests/test_groove_engine.py ............................................ [ 33%]
+......................................                                   [ 34%]
+tests/test_harmonic_planner.py .........                                 [ 34%]
+tests/test_healer_runtime.py .....                                       [ 34%]
+tests/test_healthcheck_script_runtime.py ...                             [ 34%]
+tests/test_hook_engine.py .................                              [ 35%]
+tests/test_inner_life.py ...................................             [ 36%]
+tests/test_instrument_patches.py ........                                [ 36%]
+tests/test_ixml_chunk_writer.py .......                                  [ 37%]
+tests/test_keyboard_chat.py ..............................               [ 37%]
+tests/test_lifeimprover_bridge_runtime.py .....                          [ 38%]
+tests/test_listener_review.py .....                                      [ 38%]
+tests/test_live_buffer.py ...                                            [ 38%]
+tests/test_local_command_runtime.py ....                                 [ 38%]
+tests/test_lung_capacity_rule.py .......                                 [ 38%]
+tests/test_macbook_codex_monitor.py ....                                 [ 38%]
+tests/test_maintenance_mode.py .....                                     [ 39%]
+tests/test_master_bus.py ......                                          [ 39%]
+tests/test_melodic_mind.py ............................................. [ 40%]
+..........................................................               [ 42%]
+tests/test_metric_accent_rule.py ....                                    [ 42%]
+tests/test_microtiming.py .....................                          [ 43%]
+tests/test_midi_keyboard_listener_runtime.py ...                         [ 43%]
+tests/test_midi_state.py .......................................         [ 44%]
+tests/test_mix_engine.py ..............................                  [ 45%]
+tests/test_mix_verify.py ............................................... [ 46%]
+                                                                         [ 46%]
+tests/test_mood_mirror.py .....................................          [ 48%]
+tests/test_motif_lifecycle.py ............................               [ 49%]
+tests/test_motif_memory.py ...............                               [ 49%]
+tests/test_music_theory.py ............................................. [ 50%]
+........................................                                 [ 52%]
+tests/test_music_tracker.py ..........................................   [ 53%]
+tests/test_music_tracker_runtime.py .................................... [ 54%]
+.......                                                                  [ 54%]
+tests/test_musical_integration_runtime.py .                              [ 54%]
+tests/test_musical_marathon_integration.py ..                            [ 54%]
+tests/test_narrative_envelope.py ..............                          [ 55%]
+tests/test_observatory_authority.py .....                                [ 55%]
+tests/test_observatory_runtime.py ..                                     [ 55%]
+tests/test_observatory_verification.py ..                                [ 55%]
+tests/test_observer_vision_runtime.py ..............                     [ 56%]
+tests/test_ollama_daemon_health.py ...                                   [ 56%]
+tests/test_ollama_health.py ......                                       [ 56%]
+tests/test_ollama_invoke.py ...                                          [ 56%]
+tests/test_ollama_routing.py ...................                         [ 57%]
+tests/test_ollama_run_agent.py .......                                   [ 57%]
+tests/test_operator_diagnostics.py ...........                           [ 57%]
+tests/test_ops_helpers_runtime.py ....                                   [ 57%]
+tests/test_orchestral_form.py ...............................            [ 58%]
+tests/test_orchestrator.py ...                                           [ 58%]
+tests/test_pareidolia_art_engine.py .......                              [ 59%]
+tests/test_pareidolia_characters.py .................................    [ 60%]
+tests/test_pareidolia_color.py ......................................... [ 61%]
+........................................................................ [ 63%]
+....                                                                     [ 63%]
+tests/test_pedals_to_key.py ............................                 [ 64%]
+tests/test_phrase_arch.py ..........                                     [ 65%]
+tests/test_piece_brief.py ........                                       [ 65%]
+tests/test_piece_commission.py ....                                      [ 65%]
+tests/test_piece_queue.py ..                                             [ 65%]
+tests/test_porch_eye.py ..................................               [ 66%]
+tests/test_portfolio_report.py .........................                 [ 67%]
+tests/test_practice_curriculum.py ..                                     [ 67%]
+tests/test_preflight.py ......                                           [ 67%]
+tests/test_presence_engine.py ............                               [ 67%]
+tests/test_procedural_arc.py .....                                       [ 68%]
+tests/test_production_course_integration.py ..........                   [ 68%]
+tests/test_production_course_knowledge_base.py ...                       [ 68%]
+tests/test_project_scanner_runtime.py ....                               [ 68%]
+tests/test_prosody_engine.py ........                                    [ 68%]
+tests/test_punctuation_rule.py ............                              [ 69%]
+tests/test_quota_monitor.py .....................                        [ 69%]
+tests/test_reharmonizer.py ...                                           [ 70%]
+tests/test_render_ablation.py ....                                       [ 70%]
+tests/test_render_antipatterns.py ............                           [ 70%]
+tests/test_render_audio_sidecar.py ...                                   [ 70%]
+tests/test_render_debugger.py ..                                         [ 70%]
+tests/test_render_diff.py ................                               [ 71%]
+tests/test_render_events.py ....................                         [ 71%]
+tests/test_render_export.py ......                                       [ 72%]
+tests/test_render_features.py ...                                        [ 72%]
+tests/test_render_metrics.py .....                                       [ 72%]
+tests/test_render_pass.py ....................                           [ 72%]
+tests/test_render_replay.py ..                                           [ 72%]
+tests/test_render_seed.py .............                                  [ 73%]
+tests/test_render_worm.py ..........                                     [ 73%]
+tests/test_repertoire_memory.py .................                        [ 74%]
+tests/test_repertoire_memory_score_tree.py .                             [ 74%]
+tests/test_research_runtime.py .....                                     [ 74%]
+tests/test_resilience_runtime_scripts.py ..............                  [ 74%]
+tests/test_resource_governor.py ..........................               [ 75%]
+tests/test_restraint.py ...                                              [ 75%]
+tests/test_reviewer_runtime.py ...                                       [ 75%]
+tests/test_role_gate_integration.py .................................... [ 77%]
+....                                                                     [ 77%]
+tests/test_room_listener_runtime.py ..................                   [ 77%]
+tests/test_room_presence_daemon.py ......                                [ 77%]
+tests/test_router.py .....                                               [ 78%]
+tests/test_row_automation.py ...........                                 [ 78%]
+tests/test_runtime_checkpoint.py ...                                     [ 78%]
+tests/test_runtime_paths.py ..                                           [ 78%]
+tests/test_sample_dsp_activity.py ...........                            [ 78%]
+tests/test_sample_event_renderer.py .....                                [ 79%]
+tests/test_sample_lab.py ....                                            [ 79%]
+tests/test_sample_playback_engine.py .......                             [ 79%]
+tests/test_sample_status.py ....                                         [ 79%]
+tests/test_sampler_buffers.py ...............                            [ 80%]
+tests/test_sampler_dispatch.py ................                          [ 80%]
+tests/test_sampler_effects.py .......................................... [ 81%]
+.......                                                                  [ 82%]
+tests/test_scene_composer.py ......................................      [ 83%]
+tests/test_score_tree.py .                                               [ 83%]
+tests/test_score_tree_composer.py .......................                [ 84%]
+tests/test_score_tree_pipeline.py .                                      [ 84%]
+tests/test_self_critique.py .........................                    [ 84%]
+tests/test_self_listener_tracker_runtime.py ...............              [ 85%]
+tests/test_senseweave_rollout_controls.py .....                          [ 85%]
+tests/test_senseweave_voice.py ..........................                [ 86%]
+tests/test_sensor_fusion.py ...............................              [ 87%]
+tests/test_sensor_intent_rule.py ....                                    [ 87%]
+tests/test_sensory_journal.py ............................               [ 88%]
+tests/test_server_health.py ...                                          [ 88%]
+tests/test_silence_budget_rule.py .................                      [ 88%]
+tests/test_sound_palette_lab.py ..                                       [ 88%]
+tests/test_startle.py ................................                   [ 89%]
+tests/test_supercollider_recipes.py ...                                  [ 90%]
+tests/test_syncopation_features.py .........................             [ 90%]
+tests/test_synthdef_registry.py ...................................      [ 91%]
+tests/test_synthesis_architecture_registry.py .......................... [ 92%]
+.......                                                                  [ 92%]
+tests/test_tamagotchi_runtime.py ......                                  [ 93%]
+tests/test_telegram_runtime.py ......                                    [ 93%]
+tests/test_theramini_duet.py ........................................... [ 94%]
+.........                                                                [ 95%]
+tests/test_theramini_listener_runtime.py .........                       [ 95%]
+tests/test_tracker_cadence.py ............                               [ 95%]
+tests/test_tracker_compiler.py ................                          [ 96%]
+tests/test_tracker_variation.py .....                                    [ 96%]
+tests/test_trust.py ................                                     [ 96%]
+tests/test_voice_aliases.py .......                                      [ 97%]
+tests/test_voice_interpretation_rules.py ............................... [ 98%]
+..                                                                       [ 98%]
+tests/test_voice_manager_v2.py ......................................... [ 99%]
+............                                                             [ 99%]
+tests/test_voice_shaping.py ....                                         [ 99%]
+tests/test_wizard.py ...                                                 [100%]
+
+=============================== warnings summary ===============================
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163: DeprecationWarning: module 'sre_parse' is deprecated
+    import sre_parse
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164: DeprecationWarning: module 'sre_constants' is deprecated
+    import sre_constants
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25
+  /opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    from pkg_resources import resource_stream, resource_exists
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google.cloud')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(parent)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('ruamel')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('zope')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:16: DeprecationWarning: 'aifc' is deprecated and slated for removal in Python 3.13
+    import aifc
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:17: DeprecationWarning: 'audioop' is deprecated and slated for removal in Python 3.13
+    import audioop
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:19: DeprecationWarning: 'sunau' is deprecated and slated for removal in Python 3.13
+    import sunau
+
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+  /Users/anthony/Programming/PromptClaw/tests/test_gallery.py:108: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(result.getdata()), list(canvas.getdata()))
+
+tests/test_pareidolia_characters.py: 189 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:85: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pixels = list(img.getdata())
+
+tests/test_pareidolia_characters.py: 21 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:254: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    rendered[name] = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:310: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:314: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:316: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:339: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_low = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:343: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_high = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:326: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:352: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:331: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:333: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:361: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:376: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:366: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:368: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_add_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:429: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:451: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_with_palette
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:443: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:434: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:436: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:481: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_curious_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:554: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_happy_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:542: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_neutral_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:536: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sad_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:548: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sleeping_eyes_no_highlights
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:560: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:571: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_bush
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:621: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:615: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:609: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:585: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_without_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:591: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:597: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:603: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:642: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:661: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:674: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    basalt_pixels = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:678: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pebble_pixels = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:870: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+===================== 3171 passed, 296 warnings in 17.75s ======================
+
+codex
+Validation is clean: the focused test, full suite, lint, and typecheck all passed. I’m checking the exact diff for `tests/test_master_bus.py` and then committing only that file with the required task tag.
+exec
+/bin/zsh -lc 'git diff -- tests/test_master_bus.py' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'git status --short tests/test_master_bus.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M tests/test_master_bus.py
+
+ succeeded in 0ms:
+diff --git a/tests/test_master_bus.py b/tests/test_master_bus.py
+index dafac5d..931cfb5 100644
+--- a/tests/test_master_bus.py
++++ b/tests/test_master_bus.py
+@@ -75,62 +75,118 @@ def test_master_bus_values_can_follow_runtime_automation_overrides() -> None:
+ 
+ def test_sampler_amp_tracks_master_amp_not_density() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    sparse = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 0.24},
+-    )
+-    dense = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.24},
+-    )
+-    hot = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 1.4},
+-    )
+-    quiet = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.0},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+ 
+-    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+-    assert hot["sampler_amp"] == 1.0
+-    assert quiet["sampler_amp"] == 0.05
++    for runtime_context in (None, context):
++        sparse = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 0.24},
++        )
++        dense = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.24},
++        )
++        hot = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 1.4},
++        )
++        quiet = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.0},
++        )
++
++        assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
++        assert hot["sampler_amp"] == 1.0
++        assert quiet["sampler_amp"] == 0.05
+ 
+ 
+ def test_master_bus_seed_args_target_master_node() -> None:
+     args = master_bus_s_new_args()
+ 
+-    assert args[0] == "sw_master_smooth"
+-    assert args[1] == MASTER_NODE_ID
+-    assert args[2:4] == [1, 0]
+-    assert args[-6:] == [
++    assert args[:4] == ["sw_master_smooth", MASTER_NODE_ID, 1, 0]
++    assert args[4::2] == [
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
+         "amp",
+-        DEFAULT_MASTER_BUS_VALUES["amp"],
+         "sampler_amp",
+-        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         "sampler_bypass_comp",
++    ]
++    assert args[5::2] == [
++        DEFAULT_MASTER_BUS_VALUES["drive"],
++        DEFAULT_MASTER_BUS_VALUES["warmth"],
++        DEFAULT_MASTER_BUS_VALUES["reverb"],
++        DEFAULT_MASTER_BUS_VALUES["room"],
++        DEFAULT_MASTER_BUS_VALUES["amp"],
++        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+     ]
+ 
+ 
+ def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    default_values = master_bus_values_for_scene(scene, context=None)
+-    overridden = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"sampler_bypass_comp": 0.0},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+ 
+-    assert default_values["sampler_bypass_comp"] == 1.0
+-    assert overridden["sampler_bypass_comp"] == 0.0
++    for runtime_context in (None, context):
++        default_values = master_bus_values_for_scene(scene, context=runtime_context)
++        overridden = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"sampler_bypass_comp": 0.0},
++        )
++
++        assert default_values["sampler_bypass_comp"] == 1.0
++        assert overridden["sampler_bypass_comp"] == 0.0
+ 
++
++def test_master_bus_n_set_args_target_master_node_and_preserve_param_order() -> None:
++    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
++    values = master_bus_values_for_scene(scene, context=None)
+     args = master_bus_n_set_args(scene, context=None)
+-    idx = args.index("sampler_bypass_comp")
+-    assert args[idx + 1] == default_values["sampler_bypass_comp"]
++
++    assert args[0] == MASTER_NODE_ID
++    assert args[1::2] == [
++        "amp",
++        "sampler_amp",
++        "sampler_bypass_comp",
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
++    ]
++    assert args[2::2] == [
++        values["amp"],
++        values["sampler_amp"],
++        values["sampler_bypass_comp"],
++        values["drive"],
++        values["warmth"],
++        values["reverb"],
++        values["room"],
++    ]
+
+diff --git a/tests/test_master_bus.py b/tests/test_master_bus.py
+index dafac5d0bdf4edbb3cdf066aa6800c54d623d1f6..931cfb5651fe50bfed571e2b495a2f765c7a8aa5
+--- a/tests/test_master_bus.py
++++ b/tests/test_master_bus.py
+@@ -75,62 +75,118 @@
+ 
+ def test_sampler_amp_tracks_master_amp_not_density() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    sparse = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 0.24},
+-    )
+-    dense = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.24},
+-    )
+-    hot = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 1.4},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+-    quiet = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.0},
+-    )
+ 
+-    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+-    assert hot["sampler_amp"] == 1.0
+-    assert quiet["sampler_amp"] == 0.05
++    for runtime_context in (None, context):
++        sparse = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 0.24},
++        )
++        dense = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.24},
++        )
++        hot = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 1.4},
++        )
++        quiet = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.0},
++        )
++
++        assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
++        assert hot["sampler_amp"] == 1.0
++        assert quiet["sampler_amp"] == 0.05
+ 
+ 
+ def test_master_bus_seed_args_target_master_node() -> None:
+     args = master_bus_s_new_args()
+ 
+-    assert args[0] == "sw_master_smooth"
+-    assert args[1] == MASTER_NODE_ID
+-    assert args[2:4] == [1, 0]
+-    assert args[-6:] == [
++    assert args[:4] == ["sw_master_smooth", MASTER_NODE_ID, 1, 0]
++    assert args[4::2] == [
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
+         "amp",
+-        DEFAULT_MASTER_BUS_VALUES["amp"],
+         "sampler_amp",
+-        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         "sampler_bypass_comp",
++    ]
++    assert args[5::2] == [
++        DEFAULT_MASTER_BUS_VALUES["drive"],
++        DEFAULT_MASTER_BUS_VALUES["warmth"],
++        DEFAULT_MASTER_BUS_VALUES["reverb"],
++        DEFAULT_MASTER_BUS_VALUES["room"],
++        DEFAULT_MASTER_BUS_VALUES["amp"],
++        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+     ]
+ 
+ 
+ def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    default_values = master_bus_values_for_scene(scene, context=None)
+-    overridden = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"sampler_bypass_comp": 0.0},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+ 
+-    assert default_values["sampler_bypass_comp"] == 1.0
+-    assert overridden["sampler_bypass_comp"] == 0.0
++    for runtime_context in (None, context):
++        default_values = master_bus_values_for_scene(scene, context=runtime_context)
++        overridden = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"sampler_bypass_comp": 0.0},
++        )
+ 
++        assert default_values["sampler_bypass_comp"] == 1.0
++        assert overridden["sampler_bypass_comp"] == 0.0
++
++
++def test_master_bus_n_set_args_target_master_node_and_preserve_param_order() -> None:
++    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
++    values = master_bus_values_for_scene(scene, context=None)
+     args = master_bus_n_set_args(scene, context=None)
+-    idx = args.index("sampler_bypass_comp")
+-    assert args[idx + 1] == default_values["sampler_bypass_comp"]
++
++    assert args[0] == MASTER_NODE_ID
++    assert args[1::2] == [
++        "amp",
++        "sampler_amp",
++        "sampler_bypass_comp",
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
++    ]
++    assert args[2::2] == [
++        values["amp"],
++        values["sampler_amp"],
++        values["sampler_bypass_comp"],
++        values["drive"],
++        values["warmth"],
++        values["reverb"],
++        values["room"],
++    ]
+
+exec
+/bin/zsh -lc 'git add tests/test_master_bus.py && git commit -m "test(master_bus): cover sampler control paths [T-005@20260425T183959Zc]"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+[feat/graceful-degradation d9623b3] test(master_bus): cover sampler control paths [T-005@20260425T183959Zc]
+ 1 file changed, 95 insertions(+), 39 deletions(-)
+
+diff --git a/tests/test_master_bus.py b/tests/test_master_bus.py
+index dafac5d0bdf4edbb3cdf066aa6800c54d623d1f6..931cfb5651fe50bfed571e2b495a2f765c7a8aa5
+--- a/tests/test_master_bus.py
++++ b/tests/test_master_bus.py
+@@ -75,62 +75,118 @@
+ 
+ def test_sampler_amp_tracks_master_amp_not_density() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    sparse = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 0.24},
+-    )
+-    dense = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.24},
+-    )
+-    hot = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 1.4},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+-    quiet = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.0},
+-    )
+ 
+-    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+-    assert hot["sampler_amp"] == 1.0
+-    assert quiet["sampler_amp"] == 0.05
++    for runtime_context in (None, context):
++        sparse = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 0.24},
++        )
++        dense = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.24},
++        )
++        hot = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 1.4},
++        )
++        quiet = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.0},
++        )
++
++        assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
++        assert hot["sampler_amp"] == 1.0
++        assert quiet["sampler_amp"] == 0.05
+ 
+ 
+ def test_master_bus_seed_args_target_master_node() -> None:
+     args = master_bus_s_new_args()
+ 
+-    assert args[0] == "sw_master_smooth"
+-    assert args[1] == MASTER_NODE_ID
+-    assert args[2:4] == [1, 0]
+-    assert args[-6:] == [
++    assert args[:4] == ["sw_master_smooth", MASTER_NODE_ID, 1, 0]
++    assert args[4::2] == [
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
+         "amp",
+-        DEFAULT_MASTER_BUS_VALUES["amp"],
+         "sampler_amp",
+-        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         "sampler_bypass_comp",
++    ]
++    assert args[5::2] == [
++        DEFAULT_MASTER_BUS_VALUES["drive"],
++        DEFAULT_MASTER_BUS_VALUES["warmth"],
++        DEFAULT_MASTER_BUS_VALUES["reverb"],
++        DEFAULT_MASTER_BUS_VALUES["room"],
++        DEFAULT_MASTER_BUS_VALUES["amp"],
++        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+     ]
+ 
+ 
+ def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    default_values = master_bus_values_for_scene(scene, context=None)
+-    overridden = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"sampler_bypass_comp": 0.0},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+ 
+-    assert default_values["sampler_bypass_comp"] == 1.0
+-    assert overridden["sampler_bypass_comp"] == 0.0
++    for runtime_context in (None, context):
++        default_values = master_bus_values_for_scene(scene, context=runtime_context)
++        overridden = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"sampler_bypass_comp": 0.0},
++        )
+ 
++        assert default_values["sampler_bypass_comp"] == 1.0
++        assert overridden["sampler_bypass_comp"] == 0.0
++
++
++def test_master_bus_n_set_args_target_master_node_and_preserve_param_order() -> None:
++    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
++    values = master_bus_values_for_scene(scene, context=None)
+     args = master_bus_n_set_args(scene, context=None)
+-    idx = args.index("sampler_bypass_comp")
+-    assert args[idx + 1] == default_values["sampler_bypass_comp"]
++
++    assert args[0] == MASTER_NODE_ID
++    assert args[1::2] == [
++        "amp",
++        "sampler_amp",
++        "sampler_bypass_comp",
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
++    ]
++    assert args[2::2] == [
++        values["amp"],
++        values["sampler_amp"],
++        values["sampler_bypass_comp"],
++        values["drive"],
++        values["warmth"],
++        values["reverb"],
++        values["room"],
++    ]
+
+codex
+The commit is in place. I’m doing one last scoped status check to confirm there are no leftover changes from this task beyond the committed test update.
+exec
+/bin/zsh -lc 'git status --short tests/test_master_bus.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+exec
+/bin/zsh -lc 'git show --stat --oneline --no-patch HEAD' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+d9623b3 test(master_bus): cover sampler control paths [T-005@20260425T183959Zc]
+
+diff --git a/tests/test_master_bus.py b/tests/test_master_bus.py
+index dafac5d0bdf4edbb3cdf066aa6800c54d623d1f6..931cfb5651fe50bfed571e2b495a2f765c7a8aa5
+--- a/tests/test_master_bus.py
++++ b/tests/test_master_bus.py
+@@ -75,62 +75,118 @@
+ 
+ def test_sampler_amp_tracks_master_amp_not_density() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    sparse = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 0.24},
+-    )
+-    dense = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.24},
+-    )
+-    hot = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 1.4},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+-    quiet = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.0},
+-    )
+ 
+-    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+-    assert hot["sampler_amp"] == 1.0
+-    assert quiet["sampler_amp"] == 0.05
++    for runtime_context in (None, context):
++        sparse = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 0.24},
++        )
++        dense = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.24},
++        )
++        hot = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 1.4},
++        )
++        quiet = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.0},
++        )
++
++        assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
++        assert hot["sampler_amp"] == 1.0
++        assert quiet["sampler_amp"] == 0.05
+ 
+ 
+ def test_master_bus_seed_args_target_master_node() -> None:
+     args = master_bus_s_new_args()
+ 
+-    assert args[0] == "sw_master_smooth"
+-    assert args[1] == MASTER_NODE_ID
+-    assert args[2:4] == [1, 0]
+-    assert args[-6:] == [
++    assert args[:4] == ["sw_master_smooth", MASTER_NODE_ID, 1, 0]
++    assert args[4::2] == [
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
+         "amp",
+-        DEFAULT_MASTER_BUS_VALUES["amp"],
+         "sampler_amp",
+-        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         "sampler_bypass_comp",
++    ]
++    assert args[5::2] == [
++        DEFAULT_MASTER_BUS_VALUES["drive"],
++        DEFAULT_MASTER_BUS_VALUES["warmth"],
++        DEFAULT_MASTER_BUS_VALUES["reverb"],
++        DEFAULT_MASTER_BUS_VALUES["room"],
++        DEFAULT_MASTER_BUS_VALUES["amp"],
++        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+     ]
+ 
+ 
+ def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    default_values = master_bus_values_for_scene(scene, context=None)
+-    overridden = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"sampler_bypass_comp": 0.0},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+ 
+-    assert default_values["sampler_bypass_comp"] == 1.0
+-    assert overridden["sampler_bypass_comp"] == 0.0
++    for runtime_context in (None, context):
++        default_values = master_bus_values_for_scene(scene, context=runtime_context)
++        overridden = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"sampler_bypass_comp": 0.0},
++        )
+ 
++        assert default_values["sampler_bypass_comp"] == 1.0
++        assert overridden["sampler_bypass_comp"] == 0.0
++
++
++def test_master_bus_n_set_args_target_master_node_and_preserve_param_order() -> None:
++    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
++    values = master_bus_values_for_scene(scene, context=None)
+     args = master_bus_n_set_args(scene, context=None)
+-    idx = args.index("sampler_bypass_comp")
+-    assert args[idx + 1] == default_values["sampler_bypass_comp"]
++
++    assert args[0] == MASTER_NODE_ID
++    assert args[1::2] == [
++        "amp",
++        "sampler_amp",
++        "sampler_bypass_comp",
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
++    ]
++    assert args[2::2] == [
++        values["amp"],
++        values["sampler_amp"],
++        values["sampler_bypass_comp"],
++        values["drive"],
++        values["warmth"],
++        values["reverb"],
++        values["room"],
++    ]
+
+exec
+/bin/zsh -lc "nl -ba tests/test_master_bus.py | sed -n '70,180p'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+    70	    )
+    71	
+    72	    assert faded_values["amp"] < default_values["amp"]
+    73	    assert faded_values["reverb"] > default_values["reverb"]
+    74	
+    75	
+    76	def test_sampler_amp_tracks_master_amp_not_density() -> None:
+    77	    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+    78	    context = build_live_emsd_context(
+    79	        cadence_state="occupied_day",
+    80	        occupancy_state="occupied_active",
+    81	        family_name="bloom",
+    82	        progression_profile="open_day",
+    83	        patch_name="house_garden",
+    84	        song_num=5,
+    85	        theramini_present=True,
+    86	        repertoire_songs=[],
+    87	        attention_score=0.8,
+    88	        now_seconds=13 * 60,
+    89	    )
+    90	
+    91	    for runtime_context in (None, context):
+    92	        sparse = master_bus_values_for_scene(
+    93	            scene,
+    94	            context=runtime_context,
+    95	            automation_values={"density": 0.12, "master_amp": 0.24},
+    96	        )
+    97	        dense = master_bus_values_for_scene(
+    98	            scene,
+    99	            context=runtime_context,
+   100	            automation_values={"density": 0.9, "master_amp": 0.24},
+   101	        )
+   102	        hot = master_bus_values_for_scene(
+   103	            scene,
+   104	            context=runtime_context,
+   105	            automation_values={"density": 0.12, "master_amp": 1.4},
+   106	        )
+   107	        quiet = master_bus_values_for_scene(
+   108	            scene,
+   109	            context=runtime_context,
+   110	            automation_values={"density": 0.9, "master_amp": 0.0},
+   111	        )
+   112	
+   113	        assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+   114	        assert hot["sampler_amp"] == 1.0
+   115	        assert quiet["sampler_amp"] == 0.05
+   116	
+   117	
+   118	def test_master_bus_seed_args_target_master_node() -> None:
+   119	    args = master_bus_s_new_args()
+   120	
+   121	    assert args[:4] == ["sw_master_smooth", MASTER_NODE_ID, 1, 0]
+   122	    assert args[4::2] == [
+   123	        "drive",
+   124	        "warmth",
+   125	        "reverb",
+   126	        "room",
+   127	        "amp",
+   128	        "sampler_amp",
+   129	        "sampler_bypass_comp",
+   130	    ]
+   131	    assert args[5::2] == [
+   132	        DEFAULT_MASTER_BUS_VALUES["drive"],
+   133	        DEFAULT_MASTER_BUS_VALUES["warmth"],
+   134	        DEFAULT_MASTER_BUS_VALUES["reverb"],
+   135	        DEFAULT_MASTER_BUS_VALUES["room"],
+   136	        DEFAULT_MASTER_BUS_VALUES["amp"],
+   137	        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+   138	        DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+   139	    ]
+   140	
+   141	
+   142	def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+   143	    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+   144	    context = build_live_emsd_context(
+   145	        cadence_state="occupied_day",
+   146	        occupancy_state="occupied_active",
+   147	        family_name="bloom",
+   148	        progression_profile="open_day",
+   149	        patch_name="house_garden",
+   150	        song_num=5,
+   151	        theramini_present=True,
+   152	        repertoire_songs=[],
+   153	        attention_score=0.8,
+   154	        now_seconds=13 * 60,
+   155	    )
+   156	
+   157	    for runtime_context in (None, context):
+   158	        default_values = master_bus_values_for_scene(scene, context=runtime_context)
+   159	        overridden = master_bus_values_for_scene(
+   160	            scene,
+   161	            context=runtime_context,
+   162	            automation_values={"sampler_bypass_comp": 0.0},
+   163	        )
+   164	
+   165	        assert default_values["sampler_bypass_comp"] == 1.0
+   166	        assert overridden["sampler_bypass_comp"] == 0.0
+   167	
+   168	
+   169	def test_master_bus_n_set_args_target_master_node_and_preserve_param_order() -> None:
+   170	    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+   171	    values = master_bus_values_for_scene(scene, context=None)
+   172	    args = master_bus_n_set_args(scene, context=None)
+   173	
+   174	    assert args[0] == MASTER_NODE_ID
+   175	    assert args[1::2] == [
+   176	        "amp",
+   177	        "sampler_amp",
+   178	        "sampler_bypass_comp",
+   179	        "drive",
+   180	        "warmth",
+
+diff --git a/tests/test_master_bus.py b/tests/test_master_bus.py
+index dafac5d0bdf4edbb3cdf066aa6800c54d623d1f6..931cfb5651fe50bfed571e2b495a2f765c7a8aa5
+--- a/tests/test_master_bus.py
++++ b/tests/test_master_bus.py
+@@ -75,62 +75,118 @@
+ 
+ def test_sampler_amp_tracks_master_amp_not_density() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    sparse = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 0.24},
+-    )
+-    dense = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.24},
+-    )
+-    hot = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 1.4},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+-    quiet = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.0},
+-    )
+ 
+-    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+-    assert hot["sampler_amp"] == 1.0
+-    assert quiet["sampler_amp"] == 0.05
++    for runtime_context in (None, context):
++        sparse = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 0.24},
++        )
++        dense = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.24},
++        )
++        hot = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 1.4},
++        )
++        quiet = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.0},
++        )
++
++        assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
++        assert hot["sampler_amp"] == 1.0
++        assert quiet["sampler_amp"] == 0.05
+ 
+ 
+ def test_master_bus_seed_args_target_master_node() -> None:
+     args = master_bus_s_new_args()
+ 
+-    assert args[0] == "sw_master_smooth"
+-    assert args[1] == MASTER_NODE_ID
+-    assert args[2:4] == [1, 0]
+-    assert args[-6:] == [
++    assert args[:4] == ["sw_master_smooth", MASTER_NODE_ID, 1, 0]
++    assert args[4::2] == [
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
+         "amp",
+-        DEFAULT_MASTER_BUS_VALUES["amp"],
+         "sampler_amp",
+-        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         "sampler_bypass_comp",
++    ]
++    assert args[5::2] == [
++        DEFAULT_MASTER_BUS_VALUES["drive"],
++        DEFAULT_MASTER_BUS_VALUES["warmth"],
++        DEFAULT_MASTER_BUS_VALUES["reverb"],
++        DEFAULT_MASTER_BUS_VALUES["room"],
++        DEFAULT_MASTER_BUS_VALUES["amp"],
++        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+     ]
+ 
+ 
+ def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    default_values = master_bus_values_for_scene(scene, context=None)
+-    overridden = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"sampler_bypass_comp": 0.0},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+ 
+-    assert default_values["sampler_bypass_comp"] == 1.0
+-    assert overridden["sampler_bypass_comp"] == 0.0
++    for runtime_context in (None, context):
++        default_values = master_bus_values_for_scene(scene, context=runtime_context)
++        overridden = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"sampler_bypass_comp": 0.0},
++        )
+ 
++        assert default_values["sampler_bypass_comp"] == 1.0
++        assert overridden["sampler_bypass_comp"] == 0.0
++
++
++def test_master_bus_n_set_args_target_master_node_and_preserve_param_order() -> None:
++    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
++    values = master_bus_values_for_scene(scene, context=None)
+     args = master_bus_n_set_args(scene, context=None)
+-    idx = args.index("sampler_bypass_comp")
+-    assert args[idx + 1] == default_values["sampler_bypass_comp"]
++
++    assert args[0] == MASTER_NODE_ID
++    assert args[1::2] == [
++        "amp",
++        "sampler_amp",
++        "sampler_bypass_comp",
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
++    ]
++    assert args[2::2] == [
++        values["amp"],
++        values["sampler_amp"],
++        values["sampler_bypass_comp"],
++        values["drive"],
++        values["warmth"],
++        values["reverb"],
++        values["room"],
++    ]
+
+exec
+/bin/zsh -lc "nl -ba tests/test_master_bus.py | sed -n '180,220p'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+   180	        "warmth",
+   181	        "reverb",
+   182	        "room",
+   183	    ]
+   184	    assert args[2::2] == [
+   185	        values["amp"],
+   186	        values["sampler_amp"],
+   187	        values["sampler_bypass_comp"],
+   188	        values["drive"],
+   189	        values["warmth"],
+   190	        values["reverb"],
+   191	        values["room"],
+   192	    ]
+
+diff --git a/tests/test_master_bus.py b/tests/test_master_bus.py
+index dafac5d0bdf4edbb3cdf066aa6800c54d623d1f6..931cfb5651fe50bfed571e2b495a2f765c7a8aa5
+--- a/tests/test_master_bus.py
++++ b/tests/test_master_bus.py
+@@ -75,62 +75,118 @@
+ 
+ def test_sampler_amp_tracks_master_amp_not_density() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    sparse = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 0.24},
+-    )
+-    dense = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.24},
+-    )
+-    hot = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 1.4},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+-    quiet = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.0},
+-    )
+ 
+-    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+-    assert hot["sampler_amp"] == 1.0
+-    assert quiet["sampler_amp"] == 0.05
++    for runtime_context in (None, context):
++        sparse = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 0.24},
++        )
++        dense = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.24},
++        )
++        hot = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 1.4},
++        )
++        quiet = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.0},
++        )
++
++        assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
++        assert hot["sampler_amp"] == 1.0
++        assert quiet["sampler_amp"] == 0.05
+ 
+ 
+ def test_master_bus_seed_args_target_master_node() -> None:
+     args = master_bus_s_new_args()
+ 
+-    assert args[0] == "sw_master_smooth"
+-    assert args[1] == MASTER_NODE_ID
+-    assert args[2:4] == [1, 0]
+-    assert args[-6:] == [
++    assert args[:4] == ["sw_master_smooth", MASTER_NODE_ID, 1, 0]
++    assert args[4::2] == [
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
+         "amp",
+-        DEFAULT_MASTER_BUS_VALUES["amp"],
+         "sampler_amp",
+-        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         "sampler_bypass_comp",
++    ]
++    assert args[5::2] == [
++        DEFAULT_MASTER_BUS_VALUES["drive"],
++        DEFAULT_MASTER_BUS_VALUES["warmth"],
++        DEFAULT_MASTER_BUS_VALUES["reverb"],
++        DEFAULT_MASTER_BUS_VALUES["room"],
++        DEFAULT_MASTER_BUS_VALUES["amp"],
++        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+     ]
+ 
+ 
+ def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    default_values = master_bus_values_for_scene(scene, context=None)
+-    overridden = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"sampler_bypass_comp": 0.0},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+ 
+-    assert default_values["sampler_bypass_comp"] == 1.0
+-    assert overridden["sampler_bypass_comp"] == 0.0
++    for runtime_context in (None, context):
++        default_values = master_bus_values_for_scene(scene, context=runtime_context)
++        overridden = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"sampler_bypass_comp": 0.0},
++        )
+ 
++        assert default_values["sampler_bypass_comp"] == 1.0
++        assert overridden["sampler_bypass_comp"] == 0.0
++
++
++def test_master_bus_n_set_args_target_master_node_and_preserve_param_order() -> None:
++    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
++    values = master_bus_values_for_scene(scene, context=None)
+     args = master_bus_n_set_args(scene, context=None)
+-    idx = args.index("sampler_bypass_comp")
+-    assert args[idx + 1] == default_values["sampler_bypass_comp"]
++
++    assert args[0] == MASTER_NODE_ID
++    assert args[1::2] == [
++        "amp",
++        "sampler_amp",
++        "sampler_bypass_comp",
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
++    ]
++    assert args[2::2] == [
++        values["amp"],
++        values["sampler_amp"],
++        values["sampler_bypass_comp"],
++        values["drive"],
++        values["warmth"],
++        values["reverb"],
++        values["room"],
++    ]
+
+codex
+Updated [tests/test_master_bus.py](/Users/anthony/Programming/PromptClaw/tests/test_master_bus.py:76) to cover `sampler_amp` peak-normalized output and `sampler_bypass_comp` automation in both the `context=None` and live-context paths, and to lock the OSC arg ordering for both `master_bus_n_set_args` and `master_bus_s_new_args` in [the same file](/Users/anthony/Programming/PromptClaw/tests/test_master_bus.py:118).
+
+Validation passed with `pip install -e '.[dev]'`, `pytest tests/ -x --tb=short` (`3171 passed`), `ruff check src/ tests/`, and `mypy src/`. Committed as `d9623b3` with `test(master_bus): cover sampler control paths [T-005@20260425T183959Zc]`.
+diff --git a/tests/test_master_bus.py b/tests/test_master_bus.py
+index dafac5d0bdf4edbb3cdf066aa6800c54d623d1f6..931cfb5651fe50bfed571e2b495a2f765c7a8aa5
+--- a/tests/test_master_bus.py
++++ b/tests/test_master_bus.py
+@@ -75,62 +75,118 @@
+ 
+ def test_sampler_amp_tracks_master_amp_not_density() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    sparse = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 0.24},
+-    )
+-    dense = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.24},
+-    )
+-    hot = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.12, "master_amp": 1.4},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+-    quiet = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"density": 0.9, "master_amp": 0.0},
+-    )
+ 
+-    assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
+-    assert hot["sampler_amp"] == 1.0
+-    assert quiet["sampler_amp"] == 0.05
++    for runtime_context in (None, context):
++        sparse = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 0.24},
++        )
++        dense = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.24},
++        )
++        hot = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.12, "master_amp": 1.4},
++        )
++        quiet = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"density": 0.9, "master_amp": 0.0},
++        )
++
++        assert sparse["sampler_amp"] == dense["sampler_amp"] == 0.24
++        assert hot["sampler_amp"] == 1.0
++        assert quiet["sampler_amp"] == 0.05
+ 
+ 
+ def test_master_bus_seed_args_target_master_node() -> None:
+     args = master_bus_s_new_args()
+ 
+-    assert args[0] == "sw_master_smooth"
+-    assert args[1] == MASTER_NODE_ID
+-    assert args[2:4] == [1, 0]
+-    assert args[-6:] == [
++    assert args[:4] == ["sw_master_smooth", MASTER_NODE_ID, 1, 0]
++    assert args[4::2] == [
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
+         "amp",
+-        DEFAULT_MASTER_BUS_VALUES["amp"],
+         "sampler_amp",
+-        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         "sampler_bypass_comp",
++    ]
++    assert args[5::2] == [
++        DEFAULT_MASTER_BUS_VALUES["drive"],
++        DEFAULT_MASTER_BUS_VALUES["warmth"],
++        DEFAULT_MASTER_BUS_VALUES["reverb"],
++        DEFAULT_MASTER_BUS_VALUES["room"],
++        DEFAULT_MASTER_BUS_VALUES["amp"],
++        DEFAULT_MASTER_BUS_VALUES["sampler_amp"],
+         DEFAULT_MASTER_BUS_VALUES["sampler_bypass_comp"],
+     ]
+ 
+ 
+ def test_sampler_bypass_comp_defaults_to_bypass_and_follows_automation() -> None:
+     scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
+-
+-    default_values = master_bus_values_for_scene(scene, context=None)
+-    overridden = master_bus_values_for_scene(
+-        scene,
+-        context=None,
+-        automation_values={"sampler_bypass_comp": 0.0},
++    context = build_live_emsd_context(
++        cadence_state="occupied_day",
++        occupancy_state="occupied_active",
++        family_name="bloom",
++        progression_profile="open_day",
++        patch_name="house_garden",
++        song_num=5,
++        theramini_present=True,
++        repertoire_songs=[],
++        attention_score=0.8,
++        now_seconds=13 * 60,
+     )
+ 
+-    assert default_values["sampler_bypass_comp"] == 1.0
+-    assert overridden["sampler_bypass_comp"] == 0.0
++    for runtime_context in (None, context):
++        default_values = master_bus_values_for_scene(scene, context=runtime_context)
++        overridden = master_bus_values_for_scene(
++            scene,
++            context=runtime_context,
++            automation_values={"sampler_bypass_comp": 0.0},
++        )
+ 
++        assert default_values["sampler_bypass_comp"] == 1.0
++        assert overridden["sampler_bypass_comp"] == 0.0
++
++
++def test_master_bus_n_set_args_target_master_node_and_preserve_param_order() -> None:
++    scene = build_korsakov_tracker_song(_scene_score()).scenes[2]
++    values = master_bus_values_for_scene(scene, context=None)
+     args = master_bus_n_set_args(scene, context=None)
+-    idx = args.index("sampler_bypass_comp")
+-    assert args[idx + 1] == default_values["sampler_bypass_comp"]
++
++    assert args[0] == MASTER_NODE_ID
++    assert args[1::2] == [
++        "amp",
++        "sampler_amp",
++        "sampler_bypass_comp",
++        "drive",
++        "warmth",
++        "reverb",
++        "room",
++    ]
++    assert args[2::2] == [
++        values["amp"],
++        values["sampler_amp"],
++        values["sampler_bypass_comp"],
++        values["drive"],
++        values["warmth"],
++        values["reverb"],
++        values["room"],
++    ]
+
+2026-04-25T20:27:11.645926Z ERROR codex_core::session: failed to record rollout items: thread 019dc650-6532-7212-8ca2-606c801994a5 not found
+tokens used
+50,346

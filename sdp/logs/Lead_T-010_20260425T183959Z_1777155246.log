@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1451 chars)
+---
+
+Gate failures resolved. The failures were pre-existing issues in `src/cypherclaw/image_api/` (unrelated to T-010's `my-claw/tools/` changes, but blocking the gate):
+
+- `worker.py:11` — removed unused `Awaitable` import
+- `s3_uploader.py:29` — added `type: ignore[import-untyped]` for boto3
+- `gemini_backend.py:46` — cast `genai.Client()` to `_GenAIClientProtocol`
+
+All checks now pass: `pytest` (3267 passed), `ruff`, `mypy`. Committed as `16f04f9`.

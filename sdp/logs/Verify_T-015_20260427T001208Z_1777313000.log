@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3186 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+The unit file correctly implements all acceptance criteria. 13/13 tests pass. Two minor pre-deployment notes were filed:
+
+1. **`ProtectSystem=strict` + `WorkingDirectory`**: The repo dir `/home/user/cypherclaw` is read-only at runtime — confirm the worker writes all output to `/home/user/cypherclaw-data` (already in `ReadWritePaths`). If it ever writes to the working dir, add that path to `ReadWritePaths` before deploying.
+
+2. **`ConditionPathExists` vs `AssertPathExists`**: Currently a missing worker script causes a silent `inactive (condition)` rather than a hard `failed`. `AssertPathExists` would give a clearer deployment failure signal.
+
+The missing `generation_worker.py` entrypoint was correctly escalated by the LEAD agent — it's a deployment gap, not a defect in the unit itself.

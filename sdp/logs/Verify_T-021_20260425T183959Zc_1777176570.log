@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2753 chars)
+---
+
+**Verdict: PASS**
+
+All four acceptance criteria confirmed:
+- Shared `face_display_sample_status_text` helper is called with correct arguments
+- Long lines are truncated with `...` using Pillow pixel-accurate measurement
+- Lines that fit are preserved unchanged
+- Empty sampler state omits the line entirely
+
+Full test suite: **3452 passed**. All three hardening anchors (startup identity sequencing, self-critique wiring, resource governor) verified via existing tests. One minor finding: the whitespace-normalization step in `_truncate_to_width` lacks a dedicated unit test, but it's exercised through the AC tests and is not blocking.

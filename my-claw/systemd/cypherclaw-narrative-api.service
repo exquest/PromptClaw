@@ -1,0 +1,36 @@
+[Unit]
+Description=CypherClaw Narrative API — HTTP wrapper around the in-process narrative engine
+Documentation=file:///home/user/cypherclaw/sdp/prd-cypherclaw-narrative-http-service.md
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+# Install location (user-mode systemd):
+#   ~/.config/systemd/user/cypherclaw-narrative-api.service
+# Enable with:
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now cypherclaw-narrative-api.service
+# Linger so it survives logout (one-time, as root):
+#   loginctl enable-linger user
+
+[Service]
+Type=simple
+
+# NARRATIVE_AUTH_TOKEN (optional; per CN-004) and any binding overrides live here.
+EnvironmentFile=-%h/cypherclaw/.env
+
+Environment=PYTHONUNBUFFERED=1
+
+WorkingDirectory=%h/cypherclaw
+ExecStart=%h/cypherclaw/.venv/bin/python3 -m cypherclaw.narrative_api
+
+Restart=on-failure
+RestartSec=5
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cypherclaw-narrative-api
+
+[Install]
+WantedBy=default.target

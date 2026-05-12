@@ -12,8 +12,8 @@ from pathlib import Path
 
 from promptclaw.bootstrap import init_project
 from promptclaw.config import load_config, save_config
-from promptclaw.coherence.engine import CoherenceEngine
-from promptclaw.coherence.models import CoherenceConfig, EnforcementMode, ViolationSeverity
+from promptclaw.coherence.models import EnforcementMode, ViolationSeverity
+from promptclaw.models import RunState
 from promptclaw.orchestrator import PromptClawOrchestrator
 
 
@@ -305,11 +305,11 @@ class CoherenceIntegrationTests(unittest.TestCase):
             "coherence.pre_lead",
             "coherence.finalize",
         }
-        for hook_type in expected_coherence_hooks:
+        for hook_class in expected_coherence_hooks:
             self.assertIn(
-                hook_type,
+                hook_class,
                 event_types,
-                f"Expected coherence hook event '{hook_type}' in replay",
+                f"Expected coherence hook event '{hook_class}' in replay",
             )
 
     # ------------------------------------------------------------------

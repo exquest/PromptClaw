@@ -1,0 +1,20 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (4724 chars)
+---
+
+Here's a summary of the changes:
+
+**Problem**: The `revise_score()` self-critique function was implemented but never wired into the active composition pipeline. Both `tracker_compiler.py` and `duet_composer.py` called `score_from_mood()` directly, bypassing quality critique.
+
+**Changes made:**
+
+1. **`my-claw/tools/senseweave/tracker_compiler.py`** — Imported `revise_score` from `self_critique` and replaced the `score_from_mood()` call in `compile_score_tree_to_tracker()` with `revise_score()`, using `.final_score` to get the best-of-two result. This covers the **gate-backed path** (score tree compilation).
+
+2. **`my-claw/tools/duet_composer.py`** — Imported `revise_score` from `senseweave.self_critique` and replaced the `score_from_mood()` call in the **fallback path** (gate not approved) with `revise_score()`, using `.final_score`. Removed the now-unused `score_from_mood` import.
+
+3. **`tests/test_self_critique.py`** — Added `TestPipelineIntegration` class with 3 tests:
+   - `test_tracker_compiler_uses_revise_score` — Patches `revise_score` to verify it's called by `compile_score_tree_to_tracker`, builds a full minimal `ScoreTree` fixture.
+   - `test_fallback_path_uses_revise_score` — Source-level verification that `duet_composer.py` imports and calls `revise_score` in the fallback path.
+   - `test_revision_result_selected_from_two_pass` — Functional test that strict thresholds trigger a revision attempt and the final score is correctly selected from the two-pass result.
+
+**All 2171 tests pass**, no new lint issues introduced.

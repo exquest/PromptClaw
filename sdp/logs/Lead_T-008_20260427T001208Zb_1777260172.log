@@ -1,0 +1,9 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1406 chars)
+---
+
+Done. T-008@20260427T001208Zb committed as 7dec3be.
+
+- `queue.py`: Added `GenerationQueue.enqueue(payload, idempotency_key)` using `INSERT ... ON CONFLICT(idempotency_key) DO NOTHING` plus a follow-up `SELECT id` to return the row id whether new or existing.
+- Tests: first-insert creates a queued row; duplicate-key is a no-op preserving the original payload and id; 8 concurrent threads on a barrier collapse to a single row id.
+- Validation: 5/5 queue tests, full suite 3657 passed, ruff clean, mypy clean.

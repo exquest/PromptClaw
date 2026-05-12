@@ -1,0 +1,23 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3446 chars)
+---
+
+Task frac-0046 complete. Summary:
+
+**Module deepened:** `promptclaw/config.py` from depth 1 → depth 3 (well past target of 2)
+
+**What was added:**
+- Frozen `ConfigStatusReport` dataclass exposing project name, artifact root, control-plane mode/agent, default task type, agent count, sorted enabled/disabled agent name tuples, validity flag, and validation issues
+- `enabled_agents(config)` — deterministic alphabetical tuple of enabled agent names
+- `config_status_report(config)` — builds the typed report by reusing `validate_config`
+- `summarize_config(config)` — JSON-safe operator summary
+- `load_or_default(project_root, project_name)` — one-path load-if-present-else-default helper
+
+**Validation:**
+- 6 new depth tests in `tests/test_promptclaw_config_depth.py` all pass
+- Existing `tests/test_config.py` still passes
+- Full suite: 4209 passed, 3 skipped
+- `ruff check src/ tests/` — all checks passed
+- `mypy src/` — no issues
+
+**Commits:** spec → implementation+tests → docs (3 commits, all on `feat/graceful-degradation`).

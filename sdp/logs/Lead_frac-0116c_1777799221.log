@@ -1,0 +1,20 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3662 chars)
+---
+
+frac-0116c complete. Summary:
+
+**Spec** — `specs/frac-0116c-spec.md` documents the tightening from spot-check to exhaustive coverage.
+
+**Test changes** — `tests/test_sw_sampler.py:442` block now adds:
+- `set(round_tripped["defaults"].keys()) == {…14 names…}` + `len == 14`
+- `set(round_tripped["signal_chain"]) == {…8 stages…}` + `len == 8`
+
+The new assertions are additive; existing list-equality + numeric spot-checks remain. Production behavior unchanged — the diagnostic constructor already enumerates all 14 controls and 8 stages, so the new assertions pass on first run (documented as an assumption in `ESCALATIONS.md`).
+
+**Validation**
+- `pytest tests/test_sw_sampler.py tests/test_test_sw_sampler_depth.py -q` → 42 passed
+- Startup identity anchors → 11 passed
+- Full gate `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` → 4670 passed, 3 skipped, Ruff clean, mypy clean
+
+**Commit** — `a5519e2 feat(sw_sampler): exhaustive defaults+signal_chain assertions [frac-0116c]`

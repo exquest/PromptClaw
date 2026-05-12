@@ -1,0 +1,49 @@
+# EMSD-210 Exercises
+
+## ex01: Chord Voicing Register Plan
+
+**Objective:** Assign chord tones to synthesis voices with explicit spacing, doubling, register, and mix-role constraints.
+
+**Verifier:** `constraint`
+
+**Template:**
+
+```json
+{
+  "voicings": {
+    "bass": [
+      "root"
+    ],
+    "pad": [
+      "third",
+      "seventh"
+    ],
+    "lead": [
+      "ninth"
+    ]
+  },
+  "register_plan": {
+    "bass": "C2-C3",
+    "pad": "G3-E5",
+    "lead": "D5-A5"
+  },
+  "voice_roles": [
+    "bass",
+    "pad",
+    "lead"
+  ],
+  "spacing_limits": {
+    "low_interval_min_semitones": 7
+  },
+  "doubling_policy": "double root only below C3"
+}
+```
+
+**Expected features:**
+
+- `voicings`
+- `register_plan`
+- `voice_roles`
+- `spacing_limits`
+- `doubling_policy`
+

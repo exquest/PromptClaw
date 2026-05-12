@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3964 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+All acceptance criteria verified:
+- 5 curated 5-minute fixture renders (statement/development/recap/withhold/release) pass the gate
+- `evaluate_render_gate` gates on both metric battery and anti-pattern detectors
+- `withhold` intent tag correctly relaxes `velocity_sigma` floor from 12 → 7.5
+- Broken render test fails with the expected anti-patterns; healthy renders pass
+- Full suite: **2811 passed, 0 failed**
+
+Two minor notes only: no explicit `pytest.raises` test for the `assert_render_gate` error path, and `INTENT_PASS_BANDS` only covers `withhold` (expected, but documented). No blocking issues. Report committed at `sdp/verification/t-017@20260416t181925z-verify.md`.

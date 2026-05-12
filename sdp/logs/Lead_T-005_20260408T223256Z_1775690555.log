@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1407 chars)
+---
+
+**T-005 is complete and verified.** The commit `9b4b1c1` is already in place with all acceptance criteria met:
+
+- **`get_agent_headroom("ollama")` returns 1.0** — local providers short-circuit in `_load_provider_headroom` returning `(1.0, "local")`
+- **Ollama is never excluded from selection** — `LOCAL_PROVIDERS` always stay "healthy", so local agents remain available even when all remote providers are paused
+- **Tests verify infinite headroom** — 5 new tests covering: local provider always healthy, ollama headroom = 1.0, ollama never excluded, SDP lookup skipped for local, and the existing "never empty" test updated
+
+Validation: 1430 tests pass, ruff clean, mypy clean.

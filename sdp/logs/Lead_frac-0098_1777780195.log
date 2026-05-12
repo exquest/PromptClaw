@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3777 chars)
+---
+
+frac-0098 complete:
+
+- **Spec**: `specs/frac-0098-spec.md` — depth-2 contract, end-to-end run_agent lifecycle, JSON-safe diagnostic, identity hardening anchors retained.
+- **Red gate**: `tests/test_test_ollama_run_agent_depth.py` — depth >= 2 + requires `OllamaRunAgentEndToEndTests`. Confirmed failing before implementation.
+- **Green class**: `OllamaRunAgentEndToEndTests` appended to `tests/test_ollama_run_agent.py` — drives one `run_agent("ollama", ...)` lifecycle end-to-end (HTTP path, fenced-off subprocess, observatory + pet manager bookkeeping, semaphore acquire/release events, no healing events, JSON round-trip).
+- **Validation**: `pytest tests/ -x` → `4590 passed, 3 skipped`; `ruff check src/ tests/` clean; `mypy src/` clean.
+- **Notes**: CHANGELOG + progress updated; existing locked tests untouched; no new deps/migrations.
+- **Commit**: `f9acdb2 feat(tests): deepen ollama run_agent coverage [frac-0098]`.

@@ -1,0 +1,4076 @@
+Command: codex exec --dangerously-bypass-approvals-and-sandbox -c model_reasoning_effort=xhigh -m gpt-5.5 -
+Prompt delivered via: stdin (1435 chars)
+---
+
+Implemented and committed `5ed73c3`:
+
+`feat(generation): add queue sqlite skeleton [T-008@20260427T001208Za]`
+
+Changes:
+- Added [queue.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/generation/queue.py:1) with `queue_items` SQLite schema, idempotent `connect_generation_queue_db()`, and `GenerationQueue(db_path)`.
+- Added [test_generation_queue.py](/Users/anthony/Programming/PromptClaw/tests/test_generation_queue.py:1) covering schema creation, unique idempotency keys, and idempotent init.
+
+Validation passed:
+- `pip install -e '.[dev]'`
+- `pytest tests/ -x --tb=short` → `3654 passed, 2 skipped`
+- `ruff check src/ tests/`
+- `mypy src/`
+- Extra: `ruff check my-claw/tools/senseweave/generation/queue.py tests/test_generation_queue.py`
+
+Existing `progress.md` and `sdp/` changes remain uncommitted and untouched.
+
+--- STDERR ---
+OpenAI Codex v0.125.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019dccf0-0e30-7d52-a8fc-9fed52e13fcf
+--------
+user
+<!--
+  sdp-cli agent-specific template for codex
+  Edit this file to tune how codex handles lead_t1.md.
+  The shipped default lives at src/sdp/prompts/templates/lead_t1.md.
+  Delete this file to revert to the default.
+-->
+# Task T-008@20260427T001208Za: Create SQLite schema and `GenerationQueue` class skeleton: define `queue_items` table (id, idempotency_key UNIQUE, payload JSON, status, attempts, created_at, updated_at), connection/init helper that creates the DB file and applies schema idempotently, and a constructor accepting a db path.
+
+
+**Tier:** T1
+
+## Instructions
+
+Handle this directly. Skip broad discovery and do not write a spec.
+
+1. Read only the file(s) you expect to change and the closest relevant tests.
+2. Make the smallest change that satisfies the task.
+3. Add or update a regression test when behavior changes.
+4. Run focused validation, then broader checks if needed.
+5. Commit as soon as the change works: `<type>(scope): summary [T-008@20260427T001208Za]`
+
+## Rules
+
+- Stay in scope; no unrelated cleanup.
+- Follow existing patterns and type hints.
+- Record blocking assumptions in `ESCALATIONS.md`.
+- Do not finish with uncommitted changes you introduced for this task.
+- Do not clean, revert, commit, or otherwise normalize unrelated pre-existing
+  workspace changes.
+
+## Validation
+
+Run before committing:
+```bash
+pip install -e '.[dev]'
+pytest tests/ -x --tb=short
+ruff check src/ tests/
+mypy src/
+```
+
+codex
+I’ll keep this narrow: locate the queue-related source and closest tests, add the schema/helper skeleton with regression coverage, run the requested checks, then commit only the changes for this task.
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/logs/Lead_T-001_20260427T001208Zc_1777258675.log
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M sdp/runner.log
+?? sdp/logs/Lead_T-001_20260427T001208Zd_1777258881.log
+?? sdp/logs/Lead_T-007_20260427T001208Z_1777259352.log
+?? sdp/logs/Lead_T-008_20260427T001208Za_1777259776.log
+?? sdp/logs/Verify_T-001_20260427T001208Zc_1777258749.log
+?? sdp/logs/Verify_T-001_20260427T001208Zd_1777259178.log
+?? sdp/logs/Verify_T-007_20260427T001208Z_1777259622.log
+?? sdp/logs/claude_1777259730.log
+
+exec
+/bin/zsh -lc "rg --files src tests | rg 'queue|generation|sqlite|db|storage'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+src/cypherclaw/image_api/jobs_db.py
+tests/test_generation_storage.py
+tests/test_piece_queue.py
+tests/test_generation_live_modal.py
+tests/test_generation_live_replicate.py
+tests/test_generation_replicate_retry.py
+tests/test_image_api_jobs_db.py
+
+exec
+/bin/zsh -lc 'rg -n "GenerationQueue|queue_items|sqlite|idempotency|generation queue|queue" src tests' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_lifeimprover_bridge_runtime.py:72:        lambda: lifeimprover_bridge.BriefingResult(True, "Ship the queue"),
+tests/test_lifeimprover_bridge_runtime.py:88:    assert "Ship the queue" in summary
+src/cypherclaw/image_api/jobs_db.py:11:import sqlite3
+src/cypherclaw/image_api/jobs_db.py:65:    def _connect(self) -> Iterator[sqlite3.Connection]:
+src/cypherclaw/image_api/jobs_db.py:66:        conn = sqlite3.connect(self.path, isolation_level=None, timeout=10.0)
+src/cypherclaw/image_api/jobs_db.py:67:        conn.row_factory = sqlite3.Row
+src/cypherclaw/image_api/jobs_db.py:92:                (job_id, project_slug, spec_yaml, JobStatus.queued.value, "[]",
+src/cypherclaw/image_api/jobs_db.py:160:    def _row_to_record(row: sqlite3.Row) -> JobRecord:
+tests/test_sample_library_import.py:116:    assert (library_root / "index.sqlite").exists()
+tests/test_maintenance_mode.py:6:import sqlite3
+tests/test_maintenance_mode.py:73:    conn = sqlite3.connect(sdp_dir / "state.db")
+tests/test_daemon_fallback.py:6:import sqlite3
+tests/test_daemon_fallback.py:243:        con = sqlite3.connect(db_path)
+tests/test_daemon_fallback.py:343:        (sdp_dir / "execution-roadmap.queue-map.json").write_text(
+tests/test_daemon_fallback.py:418:    def test_monitor_command_returns_live_queue_state(
+tests/test_daemon_fallback.py:429:        con = sqlite3.connect(db_path)
+tests/test_daemon_fallback.py:570:        con = sqlite3.connect(db_path)
+tests/test_daemon_fallback.py:646:    def test_tasks_command_returns_actionable_queue_sections(
+tests/test_daemon_fallback.py:657:        with sqlite3.connect(db_path) as con:
+tests/test_daemon_fallback.py:749:        with sqlite3.connect(db_path) as con:
+tests/test_daemon_fallback.py:828:        with sqlite3.connect(db_path) as con:
+tests/test_daemon_fallback.py:901:        (sdp_dir / "execution-roadmap.queue-map.json").write_text(
+tests/test_daemon_fallback.py:954:        con = sqlite3.connect(db_path)
+tests/test_daemon_fallback.py:1055:        with sqlite3.connect(db_path) as con:
+src/cypherclaw/image_api/app.py:70:            status=JobStatus.queued,
+tests/test_antenna_to_skin.py:137:            "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n"
+tests/test_sample_capture_daemon.py:7:import sqlite3
+tests/test_sample_capture_daemon.py:880:    index_path = tmp_path / "index.sqlite"
+tests/test_sample_capture_daemon.py:883:    with sqlite3.connect(index_path) as con:
+tests/test_sample_capture_daemon.py:937:    with sqlite3.connect(tmp_path / "index.sqlite") as con:
+tests/test_sample_capture_daemon.py:1048:    with sqlite3.connect(tmp_path / "index.sqlite") as con:
+tests/test_sample_capture_daemon.py:1183:    with sqlite3.connect(tmp_path / "index.sqlite") as con:
+src/cypherclaw/image_api/schemas.py:19:    queued = "queued"
+src/cypherclaw/image_api/schemas.py:46:    status: JobStatus = JobStatus.queued
+tests/test_piece_queue.py:12:from senseweave.piece_queue import PieceQueue
+tests/test_piece_queue.py:32:def test_piece_queue_round_trips_ready_piece(tmp_path: Path) -> None:
+tests/test_piece_queue.py:33:    queue = PieceQueue(path=tmp_path / "piece_queue.json")
+tests/test_piece_queue.py:36:    queue.enqueue(tree, context_key="occupied_day:ember")
+tests/test_piece_queue.py:37:    recovered = queue.dequeue_matching(context_key="occupied_day:ember")
+tests/test_piece_queue.py:41:    assert queue.dequeue_matching(context_key="occupied_day:ember") is None
+tests/test_piece_queue.py:44:def test_piece_queue_persists_active_score_tree(tmp_path: Path) -> None:
+tests/test_piece_queue.py:45:    path = tmp_path / "piece_queue.json"
+tests/test_piece_queue.py:47:    queue = PieceQueue(path=str(path), active_path=str(active_path))
+tests/test_piece_queue.py:50:    queue.set_active(tree)
+tests/test_piece_queue.py:55:    # queue ledger is unavailable.
+tests/test_piece_queue.py:56:    active_only_queue = PieceQueue(path=str(tmp_path / "missing_queue.json"), active_path=str(active_path))
+tests/test_piece_queue.py:57:    active_only = active_only_queue.get_active()
+tests/test_piece_queue.py:62:    queue_restarted = PieceQueue(path=str(path), active_path=str(active_path))
+tests/test_piece_queue.py:63:    active = queue_restarted.get_active()
+tests/test_piece_queue.py:68:    queue_restarted.set_active(None)
+tests/test_piece_queue.py:69:    assert queue_restarted.get_active() is None
+tests/test_observer_vision_runtime.py:189:def test_is_ollama_busy_error_detects_queue_saturation() -> None:
+tests/test_preflight.py:6:import sqlite3
+tests/test_preflight.py:18:    conn = sqlite3.connect(db_path)
+tests/test_preflight.py:68:    (promptclaw_dir / "observatory.db").write_bytes(b"sqlite placeholder")
+tests/test_preflight.py:124:    checkpoint.write_text(json.dumps({"queue_counts": {"pending": 99, "complete": 1}}))
+tests/test_sample_capture_verify.py:6:import sqlite3
+tests/test_sample_capture_verify.py:58:    index_path = tmp_path / "index.sqlite"
+tests/test_sample_capture_verify.py:59:    with sqlite3.connect(str(index_path)) as con:
+tests/test_score_tree_pipeline.py:15:from senseweave.piece_queue import PieceQueue
+tests/test_score_tree_pipeline.py:57:    queue = PieceQueue(path=tmp_path / "piece_queue.json")
+tests/test_score_tree_pipeline.py:58:    queue.enqueue(tree, context_key="wind_down:nocturne")
+tests/test_score_tree_pipeline.py:59:    active = queue.dequeue_matching(context_key="wind_down:nocturne")
+tests/test_sample_library.py:108:    assert (tmp_path / "index.sqlite").exists()
+tests/test_sample_library.py:295:    db = tmp_path / "index.sqlite"
+tests/test_sample_library.py:296:    db.write_bytes(b"this is not a sqlite database")
+tests/test_sample_library.py:306:    db_path = tmp_path / "index.sqlite"
+tests/test_sample_library.py:311:    import sqlite3
+tests/test_sample_library.py:312:    with sqlite3.connect(db_path) as conn:
+tests/test_sample_library.py:313:        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+tests/test_sample_library.py:322:    db_path = tmp_path / "index.sqlite"
+tests/test_sample_library.py:326:    import sqlite3
+tests/test_sample_library.py:327:    with sqlite3.connect(db_path) as conn:
+tests/test_sample_library.py:340:    db_path = layout.base / "index.sqlite"
+tests/test_sample_library.py:343:    import sqlite3
+tests/test_sample_library.py:344:    with sqlite3.connect(db_path) as conn:
+tests/test_sample_library.py:345:        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+src/cypherclaw/image_api/worker.py:1:"""Worker that walks a job through queued → running → uploading → completed.
+tests/test_composer_quote_verify.py:6:import sqlite3
+tests/test_composer_quote_verify.py:26:    with sqlite3.connect(str(index_path)) as con:
+tests/test_composer_quote_verify.py:41:    assert _self_quote_count(tmp_path / "index.sqlite") == PIECES_TO_RUN
+tests/test_coherence_engine.py:22:    def test_init_creates_sqlite_db(self):
+tests/test_image_api_app.py:76:        assert body["status"] == "queued"
+tests/test_daemon_status_ollama.py:88:    """Stub heartbeat-specific deps (server_health, queue, agents, pets)."""
+tests/test_daemon_status_ollama.py:106:        "_root_queue_counts",
+tests/test_self_listener_quote_verify.py:30:    return tmp_path / "index.sqlite"
+tests/test_doctor.py:4:import sqlite3
+tests/test_doctor.py:29:    conn = sqlite3.connect(state_dir / "state.db")
+tests/test_doctor.py:35:    conn = sqlite3.connect(promptclaw_dir / "observatory.db")
+tests/test_production_course_integration.py:22:from senseweave.piece_queue import PieceQueue
+tests/test_production_course_integration.py:250:def test_proxy_arc_piece_queue_round_trip(tmp_path: Path) -> None:
+tests/test_production_course_integration.py:255:    queue = PieceQueue(path=tmp_path / "queue.json")
+tests/test_production_course_integration.py:256:    queue.enqueue(tree, context_key="occupied_day:ember")
+tests/test_production_course_integration.py:257:    restored = queue.dequeue_matching(context_key="occupied_day:ember")
+tests/test_musical_marathon_integration.py:249:def test_multi_piece_queue_run_schedules_each_piece_without_hardware(tmp_path: Path) -> None:
+tests/test_musical_marathon_integration.py:267:    queued_trees = [
+tests/test_musical_marathon_integration.py:283:    for spec, tree in zip(specs, queued_trees):
+tests/test_dashboard_generator_runtime.py:5:import sqlite3
+tests/test_dashboard_generator_runtime.py:16:    conn = sqlite3.connect(path)
+tests/test_dashboard_generator_runtime.py:33:    conn = sqlite3.connect(path)
+tests/test_cypherclaw_runtime.py:104:    bridge._queue = SimpleNamespace(
+tests/test_daemon_scheduler.py:38:        "_root_queue_counts",
+tests/test_daemon_scheduler.py:101:        "_root_queue_counts",
+tests/test_observatory_authority.py:5:import sqlite3
+tests/test_observatory_authority.py:52:    conn = sqlite3.connect(db_path)
+tests/test_observatory_authority.py:67:    conn = sqlite3.connect(db_path)
+tests/test_runtime_checkpoint.py:6:import sqlite3
+tests/test_runtime_checkpoint.py:73:    conn = sqlite3.connect(db_path)
+tests/test_runtime_checkpoint.py:163:def test_collect_checkpoint_summarizes_queue_and_batches(tmp_path: Path) -> None:
+tests/test_runtime_checkpoint.py:171:    (promptclaw_dir / "observatory.db").write_bytes(b"sqlite placeholder")
+tests/test_runtime_checkpoint.py:178:    assert checkpoint["queue_counts"] == {"blocked": 1, "complete": 1, "running": 1}
+tests/test_runtime_checkpoint.py:201:    assert payload["queue_counts"]["running"] == 1
+tests/test_resilience_runtime_scripts.py:7:import sqlite3
+tests/test_resilience_runtime_scripts.py:24:    conn = sqlite3.connect(db_path)
+tests/test_resilience_runtime_scripts.py:96:    promptclaw_db = sqlite3.connect(promptclaw_dir / "observatory.db")
+tests/test_resilience_runtime_scripts.py:208:    conn = sqlite3.connect(project_root / ".sdp" / "state.db")
+tests/test_dashboard_generator.py:6:import sqlite3
+tests/test_dashboard_generator.py:142:        conn = sqlite3.connect(str(db))
+tests/test_dashboard_generator.py:165:        conn = sqlite3.connect(str(db))
+tests/test_dashboard_generator.py:298:        conn = sqlite3.connect(str(db))
+tests/test_dashboard_generator.py:442:        conn = sqlite3.connect(str(sdp_db))
+tests/test_dashboard_generator.py:448:        conn = sqlite3.connect(str(obs_db))
+tests/test_image_api_jobs_db.py:18:    def test_insert_creates_queued_record(self, db):
+tests/test_image_api_jobs_db.py:21:        assert rec.status == JobStatus.queued
+tests/test_cypherclaw_sampler_architecture.py:74:        "index.sqlite",
+tests/test_context_pulse_runtime.py:6:import sqlite3
+tests/test_context_pulse_runtime.py:36:    conn = sqlite3.connect(observatory_db)
+tests/test_context_pulse_runtime.py:64:    conn = sqlite3.connect(observatory_db)
+
+codex
+There are pre-existing modified SDP/log files in the tree. I’ll leave those alone and make sure the commit contains only the queue work.
+exec
+/bin/zsh -lc "sed -n '1,220p' tests/test_generation_storage.py" in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc "sed -n '1,240p' src/cypherclaw/image_api/jobs_db.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Tests for generated-audio storage and SampleRecord registration."""
+
+from __future__ import annotations
+
+import os
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
+
+import numpy as np
+import soundfile as sf
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+
+from senseweave.generation import storage as storage_module  # noqa: E402
+from senseweave.generation.storage import GenerationStorage  # noqa: E402
+from senseweave.sample_library import SampleRecord  # noqa: E402
+
+
+REQUEST_HASH = "a" * 64
+
+
+def _write_wav(
+    path: Path,
+    data: np.ndarray,
+    *,
+    sample_rate: int = 48_000,
+) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    sf.write(path, data, sample_rate, subtype="PCM_16")
+    return path
+
+
+def _request() -> SimpleNamespace:
+    return SimpleNamespace(
+        hash=lambda: REQUEST_HASH,
+        model="musicgen-medium",
+        mode_name="solitary",
+        arc_phase="Emergence",
+        mood=0.25,
+    )
+
+
+def test_save_writes_date_partitioned_request_hash_path_and_registers_record(
+    tmp_path: Path,
+) -> None:
+    source = _write_wav(tmp_path / "input.wav", np.array([[0.25, -0.5], [0.5, -0.25]]))
+    library = Mock()
+
+    record = GenerationStorage(library, tmp_path / "samples").save(
+        SimpleNamespace(audio_path=source, model_used="musicgen-medium"),
+        _request(),
+    )
+
+    day = datetime.now(timezone.utc).date().isoformat()
+    expected_path = tmp_path / "samples" / "generated" / day / f"{REQUEST_HASH}.wav"
+    assert record.path == expected_path
+    assert expected_path.exists()
+    assert record.source == "generated"
+    assert record.sample_id == REQUEST_HASH
+    assert record.arc_phase == "Emergence"
+    assert record.mood == 0.25
+    assert record.extras["tags"].split() == [
+        "generated",
+        "musicgen-medium",
+        "solitary",
+    ]
+    library.add.assert_called_once_with(record)
+
+
+def test_save_computes_peak_rms_and_duration_from_saved_wav(tmp_path: Path) -> None:
+    data = np.array([[0.25, -0.25], [0.5, -0.5], [0.0, 0.0]], dtype=np.float32)
+    source = _write_wav(tmp_path / "source.wav", data)
+    library = Mock()
+
+    record = GenerationStorage(library, tmp_path / "samples").save(
+        SimpleNamespace(audio_path=source),
+        _request(),
+    )
+
+    assert record.duration == 3 / 48_000
+    assert record.peak == np.max(np.abs(sf.read(record.path, always_2d=True)[0]))
+    assert record.rms == np.sqrt(np.mean(np.square(sf.read(record.path)[0])))
+
+
+def test_save_transcodes_mp3_to_wav_with_ffmpeg(monkeypatch, tmp_path: Path) -> None:
+    source = tmp_path / "source.mp3"
+    source.write_bytes(b"fake mp3")
+    commands: list[list[str]] = []
+
+    def fake_run(cmd: list[str], *, check: bool) -> None:
+        commands.append(cmd)
+        assert check is True
+        _write_wav(Path(cmd[-1]), np.array([[0.1, -0.1]], dtype=np.float32))
+
+    monkeypatch.setattr(storage_module.subprocess, "run", fake_run)
+
+    record = GenerationStorage(Mock(), tmp_path / "samples").save(
+        {"audio_path": source, "audio_format": "mp3"},
+        _request(),
+    )
+
+    assert commands == [
+        [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(source),
+            "-ar",
+            "48000",
+            "-ac",
+            "2",
+            str(record.path),
+        ]
+    ]
+    assert record.path.suffix == ".wav"
+
+
+def test_save_resamples_and_upmixes_non_48khz_mono_wav(tmp_path: Path) -> None:
+    source = _write_wav(
+        tmp_path / "mono.wav",
+        np.array([0.1, -0.1, 0.2], dtype=np.float32),
+        sample_rate=24_000,
+    )
+
+    record = GenerationStorage(Mock(), tmp_path / "samples").save(
+        SimpleNamespace(audio_path=source),
+        _request(),
+    )
+
+    info = sf.info(record.path)
+    data, _ = sf.read(record.path, always_2d=True)
+    assert info.samplerate == 48_000
+    assert info.channels == 2
+    assert data.shape[1] == 2
+    assert isinstance(record, SampleRecord)
+
+ succeeded in 0ms:
+"""SQLite job state for the image API.
+
+One row per submitted job. Stable schema: jobs are append-only except
+for the lifecycle columns (`status`, `output_urls`, `cost_usd`, `error`,
+`updated_at`). The DB file lives outside the package so it survives
+upgrades.
+"""
+from __future__ import annotations
+
+import json
+import sqlite3
+import time
+from contextlib import contextmanager
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Iterator, Optional
+
+from .schemas import JobStatus
+
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS image_jobs (
+    job_id           TEXT PRIMARY KEY,
+    project_slug     TEXT NOT NULL,
+    spec_yaml        TEXT NOT NULL,
+    status           TEXT NOT NULL,
+    output_urls_json TEXT NOT NULL DEFAULT '[]',
+    cost_usd         REAL,
+    error            TEXT,
+    content_piece_id INTEGER,
+    model_used       TEXT,
+    created_at       REAL NOT NULL,
+    updated_at       REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_image_jobs_status ON image_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_image_jobs_project ON image_jobs(project_slug);
+"""
+
+
+@dataclass
+class JobRecord:
+    job_id: str
+    project_slug: str
+    spec_yaml: str
+    status: JobStatus
+    output_urls: list[str]
+    cost_usd: Optional[float]
+    error: Optional[str]
+    content_piece_id: Optional[int]
+    model_used: Optional[str]
+    created_at: float
+    updated_at: float
+
+
+class JobsDB:
+    """Thin wrapper around SQLite. Thread-safe via per-call connections."""
+
+    def __init__(self, path: str | Path) -> None:
+        self.path = str(path)
+        Path(self.path).parent.mkdir(parents=True, exist_ok=True)
+        with self._connect() as conn:
+            conn.executescript(SCHEMA)
+
+    @contextmanager
+    def _connect(self) -> Iterator[sqlite3.Connection]:
+        conn = sqlite3.connect(self.path, isolation_level=None, timeout=10.0)
+        conn.row_factory = sqlite3.Row
+        try:
+            conn.execute("PRAGMA journal_mode=WAL;")
+            yield conn
+        finally:
+            conn.close()
+
+    # ---- writes ---------------------------------------------------------
+
+    def insert(
+        self,
+        *,
+        job_id: str,
+        project_slug: str,
+        spec_yaml: str,
+        content_piece_id: Optional[int] = None,
+        now: Optional[float] = None,
+    ) -> JobRecord:
+        ts = now if now is not None else time.time()
+        with self._connect() as conn:
+            conn.execute(
+                """INSERT INTO image_jobs
+                   (job_id, project_slug, spec_yaml, status, output_urls_json,
+                    content_piece_id, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (job_id, project_slug, spec_yaml, JobStatus.queued.value, "[]",
+                 content_piece_id, ts, ts),
+            )
+        rec = self.get(job_id)
+        assert rec is not None
+        return rec
+
+    def update_status(
+        self,
+        job_id: str,
+        status: JobStatus,
+        *,
+        output_urls: Optional[list[str]] = None,
+        cost_usd: Optional[float] = None,
+        error: Optional[str] = None,
+        model_used: Optional[str] = None,
+        now: Optional[float] = None,
+    ) -> JobRecord:
+        ts = now if now is not None else time.time()
+        sets: list[str] = ["status = ?", "updated_at = ?"]
+        args: list[object] = [status.value, ts]
+        if output_urls is not None:
+            sets.append("output_urls_json = ?")
+            args.append(json.dumps(list(output_urls)))
+        if cost_usd is not None:
+            sets.append("cost_usd = ?")
+            args.append(float(cost_usd))
+        if error is not None:
+            sets.append("error = ?")
+            args.append(error)
+        if model_used is not None:
+            sets.append("model_used = ?")
+            args.append(model_used)
+        args.append(job_id)
+        with self._connect() as conn:
+            conn.execute(
+                f"UPDATE image_jobs SET {', '.join(sets)} WHERE job_id = ?",
+                args,
+            )
+        rec = self.get(job_id)
+        if rec is None:
+            raise KeyError(job_id)
+        return rec
+
+    # ---- reads ----------------------------------------------------------
+
+    def get(self, job_id: str) -> Optional[JobRecord]:
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT * FROM image_jobs WHERE job_id = ?", (job_id,)
+            ).fetchone()
+        if row is None:
+            return None
+        return self._row_to_record(row)
+
+    def list_pending(self, *, limit: int = 32) -> list[JobRecord]:
+        """Return jobs in non-terminal states, oldest first."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                """SELECT * FROM image_jobs
+                   WHERE status NOT IN (?, ?)
+                   ORDER BY created_at ASC
+                   LIMIT ?""",
+                (JobStatus.completed.value, JobStatus.failed.value, limit),
+            ).fetchall()
+        return [self._row_to_record(r) for r in rows]
+
+    @staticmethod
+    def _row_to_record(row: sqlite3.Row) -> JobRecord:
+        return JobRecord(
+            job_id=row["job_id"],
+            project_slug=row["project_slug"],
+            spec_yaml=row["spec_yaml"],
+            status=JobStatus(row["status"]),
+            output_urls=json.loads(row["output_urls_json"] or "[]"),
+            cost_usd=row["cost_usd"],
+            error=row["error"],
+            content_piece_id=row["content_piece_id"],
+            model_used=row["model_used"],
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+        )
+
+exec
+/bin/zsh -lc "find src -maxdepth 3 -type f | sort | sed -n '1,120p'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+src/cypherclaw/__init__.py
+src/cypherclaw/__pycache__/__init__.cpython-311.pyc
+src/cypherclaw/__pycache__/first_boot.cpython-311.pyc
+src/cypherclaw/first_boot.py
+src/cypherclaw/image_api/__init__.py
+src/cypherclaw/image_api/__main__.py
+src/cypherclaw/image_api/app.py
+src/cypherclaw/image_api/config.py
+src/cypherclaw/image_api/gemini_backend.py
+src/cypherclaw/image_api/jobs_db.py
+src/cypherclaw/image_api/s3_uploader.py
+src/cypherclaw/image_api/schemas.py
+src/cypherclaw/image_api/spec_parser.py
+src/cypherclaw/image_api/worker.py
+src/cypherclaw/render/events.py
+src/cypherclaw/render/features.py
+src/cypherclaw/render/narrative_envelope.py
+src/cypherclaw/render/role_gate.py
+src/cypherclaw/render/seed.py
+
+codex
+The existing generation tests are under `my-claw/tools/senseweave`, so the new queue class likely belongs alongside generation storage rather than in the image API. I’m checking that package boundary before editing.
+exec
+/bin/zsh -lc "sed -n '1,220p' my-claw/tools/senseweave/generation/storage.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Persist generated audio into the sample library."""
+
+from __future__ import annotations
+
+import json
+import shutil
+import subprocess
+from collections.abc import Mapping
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+import librosa
+import numpy as np
+import soundfile as sf
+
+from senseweave.sample_library import SampleRecord
+
+
+TARGET_SAMPLE_RATE = 48_000
+TARGET_CHANNELS = 2
+
+
+class GenerationStorage:
+    """Write generation results under ``samples/generated`` and index them."""
+
+    def __init__(self, library: Any, samples_root: Path | str) -> None:
+        self.library = library
+        self.samples_root = Path(samples_root)
+
+    def save(self, result: Any, req: Any) -> SampleRecord:
+        """Store ``result`` audio as normalized WAV and register a SampleRecord."""
+        request_hash = _request_hash(req)
+        day = datetime.now(timezone.utc).date().isoformat()
+        target_dir = self.samples_root / "generated" / day
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target_path = target_dir / f"{request_hash}.wav"
+
+        source_path = _audio_path(result)
+        _write_wav(source_path, target_path, result)
+
+        analysis = _analyze_audio(target_path)
+        model = _optional_string(req, "model", "model_name") or _optional_string(
+            result, "model_used"
+        )
+        mode = _mode_name(req)
+        tags = ["generated"]
+        if model:
+            tags.append(model)
+        if mode:
+            tags.append(mode)
+
+        extras = {
+            "tags": " ".join(tags),
+            "tags_json": json.dumps(tags),
+        }
+        if model:
+            extras["model"] = model
+        if mode:
+            extras["mode"] = mode
+        api_request_id = _optional_string(result, "api_request_id")
+        if api_request_id:
+            extras["api_request_id"] = api_request_id
+
+        record = SampleRecord(
+            character_tags=frozenset(),
+            sample_id=request_hash,
+            path=target_path,
+            source="generated",
+            arc_phase=_optional_string(req, "arc_phase"),
+            mood=_optional_float(_field(req, "mood")),
+            captured_at=datetime.now(timezone.utc),
+            duration=analysis["duration"],
+            rms=analysis["rms"],
+            peak=analysis["peak"],
+            extras=extras,
+        )
+        self.library.add(record)
+        return record
+
+
+def _write_wav(source_path: Path, target_path: Path, result: Any) -> None:
+    audio_format = _audio_format(source_path, result)
+    if audio_format == "mp3":
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-y",
+                "-i",
+                str(source_path),
+                "-ar",
+                str(TARGET_SAMPLE_RATE),
+                "-ac",
+                str(TARGET_CHANNELS),
+                str(target_path),
+            ],
+            check=True,
+        )
+        return
+
+    if audio_format != "wav":
+        raise ValueError(f"unsupported generated audio format: {audio_format}")
+
+    info = sf.info(source_path)
+    if info.samplerate == TARGET_SAMPLE_RATE and info.channels == TARGET_CHANNELS:
+        if source_path.resolve() != target_path.resolve():
+            shutil.copy2(source_path, target_path)
+        return
+
+    data, sample_rate = sf.read(source_path, always_2d=True)
+    normalized = _normalize_channels(data)
+    if sample_rate != TARGET_SAMPLE_RATE:
+        resampled = librosa.resample(
+            normalized.T,
+            orig_sr=sample_rate,
+            target_sr=TARGET_SAMPLE_RATE,
+        )
+        normalized = resampled.T
+    sf.write(target_path, normalized, TARGET_SAMPLE_RATE, subtype="PCM_16")
+
+
+def _normalize_channels(data: np.ndarray) -> np.ndarray:
+    if data.shape[1] == TARGET_CHANNELS:
+        return data
+    if data.shape[1] == 1:
+        return np.repeat(data, TARGET_CHANNELS, axis=1)
+    mono = np.mean(data, axis=1, keepdims=True)
+    return np.repeat(mono, TARGET_CHANNELS, axis=1)
+
+
+def _analyze_audio(path: Path) -> dict[str, float]:
+    data, sample_rate = sf.read(path, always_2d=False)
+    values = np.asarray(data, dtype=np.float64)
+    if values.size == 0:
+        return {"duration": 0.0, "rms": 0.0, "peak": 0.0}
+    peak = float(np.max(np.abs(values)))
+    rms = float(np.sqrt(np.mean(np.square(values))))
+    frames = values.shape[0] if values.ndim > 1 else values.size
+    return {
+        "duration": float(frames / sample_rate),
+        "rms": rms,
+        "peak": peak,
+    }
+
+
+def _audio_path(result: Any) -> Path:
+    value = _field(result, "audio_path", "wav_path", "path")
+    if value is None:
+        raise ValueError("generation result must expose audio_path, wav_path, or path")
+    path = Path(value)
+    if not path.exists():
+        raise FileNotFoundError(f"generated audio file missing: {path}")
+    return path
+
+
+def _audio_format(source_path: Path, result: Any) -> str:
+    explicit = _optional_string(result, "format", "audio_format")
+    if explicit:
+        return explicit.lower().lstrip(".")
+    suffix = source_path.suffix.lower().lstrip(".")
+    if suffix:
+        return suffix
+    return sf.info(source_path).format.lower()
+
+
+def _request_hash(req: Any) -> str:
+    value = _field(req, "hash", "request_hash")
+    if callable(value):
+        value = value()
+    if value is None:
+        raise ValueError("generation request must expose hash() or request_hash")
+    text = str(value).strip()
+    if not text:
+        raise ValueError("generation request hash must be non-empty")
+    return text
+
+
+def _mode_name(req: Any) -> str | None:
+    value = _field(req, "mode_name", "mode")
+    if hasattr(value, "name"):
+        value = value.name
+    return str(value) if value not in (None, "") else None
+
+
+def _optional_string(obj: Any, *names: str) -> str | None:
+    value = _field(obj, *names)
+    if value in (None, ""):
+        return None
+    return str(value)
+
+
+def _optional_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _field(obj: Any, *names: str) -> Any:
+    if isinstance(obj, Mapping):
+        for name in names:
+            if name in obj:
+                return obj[name]
+        return None
+    for name in names:
+        if hasattr(obj, name):
+            return getattr(obj, name)
+    return None
+
+exec
+/bin/zsh -lc "rg --files my-claw/tools tests | rg 'senseweave/generation|generation|queue'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_generation_live_replicate.py
+tests/test_generation_replicate_retry.py
+my-claw/tools/senseweave/generation/client_local.py
+my-claw/tools/senseweave/generation/client_replicate.py
+my-claw/tools/senseweave/generation/storage.py
+my-claw/tools/senseweave/generation/__init__.py
+my-claw/tools/senseweave/generation/client_modal.py
+tests/test_generation_live_modal.py
+tests/test_piece_queue.py
+tests/test_generation_storage.py
+my-claw/tools/senseweave/piece_queue.py
+
+exec
+/bin/zsh -lc 'find my-claw/tools/senseweave/generation -maxdepth 2 -type f -print | sort' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+my-claw/tools/senseweave/generation/__init__.py
+my-claw/tools/senseweave/generation/__pycache__/__init__.cpython-311.pyc
+my-claw/tools/senseweave/generation/__pycache__/client_local.cpython-311.pyc
+my-claw/tools/senseweave/generation/__pycache__/client_modal.cpython-311.pyc
+my-claw/tools/senseweave/generation/__pycache__/client_replicate.cpython-311.pyc
+my-claw/tools/senseweave/generation/__pycache__/storage.cpython-311.pyc
+my-claw/tools/senseweave/generation/client_local.py
+my-claw/tools/senseweave/generation/client_modal.py
+my-claw/tools/senseweave/generation/client_replicate.py
+my-claw/tools/senseweave/generation/storage.py
+
+codex
+The narrow implementation target is a new `senseweave.generation.queue` module plus one focused test file. I’ll mirror the repo’s SQLite wrapper style: create the parent directory, open per-call SQLite connections, and apply `CREATE TABLE IF NOT EXISTS`.
+exec
+/bin/zsh -lc "sed -n '1,160p' my-claw/tools/senseweave/generation/__init__.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""CypherClaw external generation back-end (Phase 5)."""
+
+exec
+/bin/zsh -lc "sed -n '1,120p' my-claw/tools/senseweave/piece_queue.py" in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc "sed -n '1,140p' tests/test_piece_queue.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Small persistent queue of precomposed score trees."""
+from __future__ import annotations
+
+import json
+import os
+import time
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+from .score_tree import ScoreTree
+
+
+@dataclass(frozen=True)
+class QueuedPiece:
+    context_key: str
+    created_at: float
+    score_tree: ScoreTree
+
+
+class PieceQueue:
+    def __init__(
+        self,
+        path: str | Path = "/home/user/cypherclaw-data/state/piece_queue.json",
+        active_path: str | Path = "/tmp/current_score_tree.json",
+    ):
+        self.path = Path(path)
+        self.active_path = Path(active_path)
+
+    def _load(self) -> dict[str, Any]:
+        try:
+            if self.path.exists():
+                return json.loads(self.path.read_text())
+        except (OSError, json.JSONDecodeError):
+            pass
+        return {"pieces": []}
+
+    def _save(self, data: dict[str, Any]) -> None:
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = self.path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(data, indent=2))
+            os.replace(str(tmp), str(self.path))
+        except OSError:
+            pass
+
+    def _write_active_path(self, score_tree: ScoreTree) -> None:
+        try:
+            self.active_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = self.active_path.with_name(f"{self.active_path.name}.tmp")
+            tmp.write_text(json.dumps(score_tree.to_dict(), indent=2))
+            os.replace(str(tmp), str(self.active_path))
+        except OSError:
+            pass
+
+    def set_active(self, score_tree: ScoreTree | None) -> None:
+        data = self._load()
+        if score_tree is None:
+            data.pop("active_score_tree", None)
+            try:
+                self.active_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        else:
+            data["active_score_tree"] = score_tree.to_dict()
+            self._write_active_path(score_tree)
+        self._save(data)
+
+    def get_active(self) -> ScoreTree | None:
+        data = self._load()
+        active = data.get("active_score_tree")
+        if not active:
+            try:
+                if self.active_path.exists():
+                    active = json.loads(self.active_path.read_text())
+            except (OSError, json.JSONDecodeError):
+                active = None
+        if not active:
+            return None
+        return ScoreTree.from_dict(dict(active))
+
+    def enqueue(self, score_tree: ScoreTree, *, context_key: str) -> None:
+        data = self._load()
+        pieces = list(data.get("pieces", []))
+        pieces.append(
+            {
+                "context_key": context_key,
+                "created_at": time.time(),
+                "score_tree": score_tree.to_dict(),
+            }
+        )
+        data["pieces"] = pieces[-8:]
+        self._save(data)
+
+    def has_context_key(self, *, context_key: str) -> bool:
+        data = self._load()
+        pieces = list(data.get("pieces", []))
+        return any(item.get("context_key") == context_key for item in pieces)
+
+    def dequeue_matching(self, *, context_key: str) -> ScoreTree | None:
+        data = self._load()
+        pieces = list(data.get("pieces", []))
+        selected_index: int | None = None
+        for index, item in enumerate(pieces):
+            if item.get("context_key") == context_key:
+                selected_index = index
+                break
+        if selected_index is None and pieces:
+            selected_index = 0
+        if selected_index is None:
+            return None
+        selected = pieces.pop(selected_index)
+        data["pieces"] = pieces
+        self._save(data)
+        return ScoreTree.from_dict(dict(selected.get("score_tree", {})))
+
+ succeeded in 0ms:
+from __future__ import annotations
+
+import json
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
+
+from senseweave.piece_commission import commission_piece
+from senseweave.piece_queue import PieceQueue
+from senseweave.score_tree import ScoreTree
+
+
+def _fake_tree(piece_id: str) -> ScoreTree:
+    commission = commission_piece(
+        cadence_state="occupied_day",
+        day_phase="day",
+        weekly_phase="midweek",
+        attention_score=0.4,
+        song_num=1,
+        hour=14,
+    )
+    return ScoreTree.minimal(
+        piece_id=piece_id,
+        title=f"Piece {piece_id}",
+        commission=commission,
+    )
+
+
+def test_piece_queue_round_trips_ready_piece(tmp_path: Path) -> None:
+    queue = PieceQueue(path=tmp_path / "piece_queue.json")
+    tree = _fake_tree("piece-1")
+
+    queue.enqueue(tree, context_key="occupied_day:ember")
+    recovered = queue.dequeue_matching(context_key="occupied_day:ember")
+
+    assert recovered is not None
+    assert recovered.piece_id == "piece-1"
+    assert queue.dequeue_matching(context_key="occupied_day:ember") is None
+
+
+def test_piece_queue_persists_active_score_tree(tmp_path: Path) -> None:
+    path = tmp_path / "piece_queue.json"
+    active_path = tmp_path / "current_score_tree.json"
+    queue = PieceQueue(path=str(path), active_path=str(active_path))
+    tree = _fake_tree("piece-1")
+
+    queue.set_active(tree)
+    assert active_path.exists()
+    assert json.loads(active_path.read_text())["piece_id"] == "piece-1"
+
+    # The active state path is sufficient for restart recovery even if the
+    # queue ledger is unavailable.
+    active_only_queue = PieceQueue(path=str(tmp_path / "missing_queue.json"), active_path=str(active_path))
+    active_only = active_only_queue.get_active()
+    assert active_only is not None
+    assert active_only.piece_id == "piece-1"
+
+    # Restart
+    queue_restarted = PieceQueue(path=str(path), active_path=str(active_path))
+    active = queue_restarted.get_active()
+    assert active is not None
+    assert active.piece_id == "piece-1"
+
+    # Clear active
+    queue_restarted.set_active(None)
+    assert queue_restarted.get_active() is None
+    assert not active_path.exists()
+
+codex
+I’m going to add a focused regression test first for constructor-driven schema creation and helper idempotency, then implement the minimal module to satisfy it.
+apply patch
+patch: completed
+/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/generation/queue.py
+/Users/anthony/Programming/PromptClaw/tests/test_generation_queue.py
+diff --git a/my-claw/tools/senseweave/generation/queue.py b/my-claw/tools/senseweave/generation/queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..33dfcecb38f76ce7fe14e60efcd9eb326d98cbaa
+--- /dev/null
++++ b/my-claw/tools/senseweave/generation/queue.py
+@@ -0,0 +1,44 @@
++"""SQLite-backed skeleton for generation queue state."""
++
++from __future__ import annotations
++
++import sqlite3
++from contextlib import contextmanager
++from pathlib import Path
++from typing import Iterator
++
++
++SCHEMA = """
++CREATE TABLE IF NOT EXISTS queue_items (
++    id INTEGER PRIMARY KEY,
++    idempotency_key TEXT NOT NULL UNIQUE,
++    payload JSON NOT NULL,
++    status TEXT NOT NULL,
++    attempts INTEGER NOT NULL DEFAULT 0,
++    created_at REAL NOT NULL,
++    updated_at REAL NOT NULL
++);
++"""
++
++
++@contextmanager
++def connect_generation_queue_db(db_path: str | Path) -> Iterator[sqlite3.Connection]:
++    """Open the queue DB, creating its parent directory and schema if needed."""
++    path = Path(db_path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(path, isolation_level=None, timeout=10.0)
++    conn.row_factory = sqlite3.Row
++    try:
++        conn.executescript(SCHEMA)
++        yield conn
++    finally:
++        conn.close()
++
++
++class GenerationQueue:
++    """Thin wrapper around the generation queue database."""
++
++    def __init__(self, db_path: str | Path) -> None:
++        self.db_path = Path(db_path)
++        with connect_generation_queue_db(self.db_path):
++            pass
+diff --git a/tests/test_generation_queue.py b/tests/test_generation_queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..56f30978284a298860367ae60006522eee64cc56
+--- /dev/null
++++ b/tests/test_generation_queue.py
+@@ -0,0 +1,78 @@
++from __future__ import annotations
++
++import os
++import sqlite3
++import sys
++from pathlib import Path
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++
++from senseweave.generation.queue import (  # noqa: E402
++    GenerationQueue,
++    connect_generation_queue_db,
++)
++
++
++def test_generation_queue_constructor_creates_queue_items_schema(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "state" / "generation_queue.sqlite"
++
++    queue = GenerationQueue(db_path)
++
++    assert queue.db_path == db_path
++    assert db_path.exists()
++    with sqlite3.connect(db_path) as conn:
++        columns = {
++            row[1]: {"type": row[2], "not_null": bool(row[3]), "default": row[4]}
++            for row in conn.execute("PRAGMA table_info(queue_items)")
++        }
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++        )
++        try:
++            conn.execute(
++                """INSERT INTO queue_items
++                   (idempotency_key, payload, status, created_at, updated_at)
++                   VALUES (?, ?, ?, ?, ?)""",
++                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++            )
++        except sqlite3.IntegrityError:
++            duplicate_rejected = True
++        else:
++            duplicate_rejected = False
++
++    assert list(columns) == [
++        "id",
++        "idempotency_key",
++        "payload",
++        "status",
++        "attempts",
++        "created_at",
++        "updated_at",
++    ]
++    assert columns["payload"]["type"] == "JSON"
++    assert columns["attempts"]["default"] == "0"
++    assert duplicate_rejected is True
++
++
++def test_connect_generation_queue_db_applies_schema_idempotently(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "generation_queue.sqlite"
++
++    with connect_generation_queue_db(db_path) as conn:
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", "{}", "queued", 1.0, 1.0),
++        )
++
++    with connect_generation_queue_db(db_path) as conn:
++        rows = conn.execute("SELECT idempotency_key FROM queue_items").fetchall()
++
++    assert [row[0] for row in rows] == ["request-1"]
+
+diff --git a/my-claw/tools/senseweave/generation/queue.py b/my-claw/tools/senseweave/generation/queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..33dfcecb38f76ce7fe14e60efcd9eb326d98cbaa
+--- /dev/null
++++ b/my-claw/tools/senseweave/generation/queue.py
+@@ -0,0 +1,44 @@
++"""SQLite-backed skeleton for generation queue state."""
++
++from __future__ import annotations
++
++import sqlite3
++from contextlib import contextmanager
++from pathlib import Path
++from typing import Iterator
++
++
++SCHEMA = """
++CREATE TABLE IF NOT EXISTS queue_items (
++    id INTEGER PRIMARY KEY,
++    idempotency_key TEXT NOT NULL UNIQUE,
++    payload JSON NOT NULL,
++    status TEXT NOT NULL,
++    attempts INTEGER NOT NULL DEFAULT 0,
++    created_at REAL NOT NULL,
++    updated_at REAL NOT NULL
++);
++"""
++
++
++@contextmanager
++def connect_generation_queue_db(db_path: str | Path) -> Iterator[sqlite3.Connection]:
++    """Open the queue DB, creating its parent directory and schema if needed."""
++    path = Path(db_path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(path, isolation_level=None, timeout=10.0)
++    conn.row_factory = sqlite3.Row
++    try:
++        conn.executescript(SCHEMA)
++        yield conn
++    finally:
++        conn.close()
++
++
++class GenerationQueue:
++    """Thin wrapper around the generation queue database."""
++
++    def __init__(self, db_path: str | Path) -> None:
++        self.db_path = Path(db_path)
++        with connect_generation_queue_db(self.db_path):
++            pass
+diff --git a/tests/test_generation_queue.py b/tests/test_generation_queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..56f30978284a298860367ae60006522eee64cc56
+--- /dev/null
++++ b/tests/test_generation_queue.py
+@@ -0,0 +1,78 @@
++from __future__ import annotations
++
++import os
++import sqlite3
++import sys
++from pathlib import Path
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++
++from senseweave.generation.queue import (  # noqa: E402
++    GenerationQueue,
++    connect_generation_queue_db,
++)
++
++
++def test_generation_queue_constructor_creates_queue_items_schema(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "state" / "generation_queue.sqlite"
++
++    queue = GenerationQueue(db_path)
++
++    assert queue.db_path == db_path
++    assert db_path.exists()
++    with sqlite3.connect(db_path) as conn:
++        columns = {
++            row[1]: {"type": row[2], "not_null": bool(row[3]), "default": row[4]}
++            for row in conn.execute("PRAGMA table_info(queue_items)")
++        }
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++        )
++        try:
++            conn.execute(
++                """INSERT INTO queue_items
++                   (idempotency_key, payload, status, created_at, updated_at)
++                   VALUES (?, ?, ?, ?, ?)""",
++                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++            )
++        except sqlite3.IntegrityError:
++            duplicate_rejected = True
++        else:
++            duplicate_rejected = False
++
++    assert list(columns) == [
++        "id",
++        "idempotency_key",
++        "payload",
++        "status",
++        "attempts",
++        "created_at",
++        "updated_at",
++    ]
++    assert columns["payload"]["type"] == "JSON"
++    assert columns["attempts"]["default"] == "0"
++    assert duplicate_rejected is True
++
++
++def test_connect_generation_queue_db_applies_schema_idempotently(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "generation_queue.sqlite"
++
++    with connect_generation_queue_db(db_path) as conn:
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", "{}", "queued", 1.0, 1.0),
++        )
++
++    with connect_generation_queue_db(db_path) as conn:
++        rows = conn.execute("SELECT idempotency_key FROM queue_items").fetchall()
++
++    assert [row[0] for row in rows] == ["request-1"]
+
+codex
+The test and module are in place. I’m running the focused test now to catch schema/import issues before the full validation pass.
+exec
+/bin/zsh -lc 'pytest tests/test_generation_queue.py -q' in /Users/anthony/Programming/PromptClaw
+diff --git a/my-claw/tools/senseweave/generation/queue.py b/my-claw/tools/senseweave/generation/queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..33dfcecb38f76ce7fe14e60efcd9eb326d98cbaa
+--- /dev/null
++++ b/my-claw/tools/senseweave/generation/queue.py
+@@ -0,0 +1,44 @@
++"""SQLite-backed skeleton for generation queue state."""
++
++from __future__ import annotations
++
++import sqlite3
++from contextlib import contextmanager
++from pathlib import Path
++from typing import Iterator
++
++
++SCHEMA = """
++CREATE TABLE IF NOT EXISTS queue_items (
++    id INTEGER PRIMARY KEY,
++    idempotency_key TEXT NOT NULL UNIQUE,
++    payload JSON NOT NULL,
++    status TEXT NOT NULL,
++    attempts INTEGER NOT NULL DEFAULT 0,
++    created_at REAL NOT NULL,
++    updated_at REAL NOT NULL
++);
++"""
++
++
++@contextmanager
++def connect_generation_queue_db(db_path: str | Path) -> Iterator[sqlite3.Connection]:
++    """Open the queue DB, creating its parent directory and schema if needed."""
++    path = Path(db_path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(path, isolation_level=None, timeout=10.0)
++    conn.row_factory = sqlite3.Row
++    try:
++        conn.executescript(SCHEMA)
++        yield conn
++    finally:
++        conn.close()
++
++
++class GenerationQueue:
++    """Thin wrapper around the generation queue database."""
++
++    def __init__(self, db_path: str | Path) -> None:
++        self.db_path = Path(db_path)
++        with connect_generation_queue_db(self.db_path):
++            pass
+diff --git a/tests/test_generation_queue.py b/tests/test_generation_queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..56f30978284a298860367ae60006522eee64cc56
+--- /dev/null
++++ b/tests/test_generation_queue.py
+@@ -0,0 +1,78 @@
++from __future__ import annotations
++
++import os
++import sqlite3
++import sys
++from pathlib import Path
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++
++from senseweave.generation.queue import (  # noqa: E402
++    GenerationQueue,
++    connect_generation_queue_db,
++)
++
++
++def test_generation_queue_constructor_creates_queue_items_schema(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "state" / "generation_queue.sqlite"
++
++    queue = GenerationQueue(db_path)
++
++    assert queue.db_path == db_path
++    assert db_path.exists()
++    with sqlite3.connect(db_path) as conn:
++        columns = {
++            row[1]: {"type": row[2], "not_null": bool(row[3]), "default": row[4]}
++            for row in conn.execute("PRAGMA table_info(queue_items)")
++        }
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++        )
++        try:
++            conn.execute(
++                """INSERT INTO queue_items
++                   (idempotency_key, payload, status, created_at, updated_at)
++                   VALUES (?, ?, ?, ?, ?)""",
++                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++            )
++        except sqlite3.IntegrityError:
++            duplicate_rejected = True
++        else:
++            duplicate_rejected = False
++
++    assert list(columns) == [
++        "id",
++        "idempotency_key",
++        "payload",
++        "status",
++        "attempts",
++        "created_at",
++        "updated_at",
++    ]
++    assert columns["payload"]["type"] == "JSON"
++    assert columns["attempts"]["default"] == "0"
++    assert duplicate_rejected is True
++
++
++def test_connect_generation_queue_db_applies_schema_idempotently(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "generation_queue.sqlite"
++
++    with connect_generation_queue_db(db_path) as conn:
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", "{}", "queued", 1.0, 1.0),
++        )
++
++    with connect_generation_queue_db(db_path) as conn:
++        rows = conn.execute("SELECT idempotency_key FROM queue_items").fetchall()
++
++    assert [row[0] for row in rows] == ["request-1"]
+
+ succeeded in 1009ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+..                                                                       [100%]
+2 passed in 0.11s
+
+codex
+The focused test passes. I’m moving through the requested validation commands next, starting with the editable dev install.
+exec
+/bin/zsh -lc "pip install -e '.[dev]'" in /Users/anthony/Programming/PromptClaw
+diff --git a/my-claw/tools/senseweave/generation/queue.py b/my-claw/tools/senseweave/generation/queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..33dfcecb38f76ce7fe14e60efcd9eb326d98cbaa
+--- /dev/null
++++ b/my-claw/tools/senseweave/generation/queue.py
+@@ -0,0 +1,44 @@
++"""SQLite-backed skeleton for generation queue state."""
++
++from __future__ import annotations
++
++import sqlite3
++from contextlib import contextmanager
++from pathlib import Path
++from typing import Iterator
++
++
++SCHEMA = """
++CREATE TABLE IF NOT EXISTS queue_items (
++    id INTEGER PRIMARY KEY,
++    idempotency_key TEXT NOT NULL UNIQUE,
++    payload JSON NOT NULL,
++    status TEXT NOT NULL,
++    attempts INTEGER NOT NULL DEFAULT 0,
++    created_at REAL NOT NULL,
++    updated_at REAL NOT NULL
++);
++"""
++
++
++@contextmanager
++def connect_generation_queue_db(db_path: str | Path) -> Iterator[sqlite3.Connection]:
++    """Open the queue DB, creating its parent directory and schema if needed."""
++    path = Path(db_path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(path, isolation_level=None, timeout=10.0)
++    conn.row_factory = sqlite3.Row
++    try:
++        conn.executescript(SCHEMA)
++        yield conn
++    finally:
++        conn.close()
++
++
++class GenerationQueue:
++    """Thin wrapper around the generation queue database."""
++
++    def __init__(self, db_path: str | Path) -> None:
++        self.db_path = Path(db_path)
++        with connect_generation_queue_db(self.db_path):
++            pass
+diff --git a/tests/test_generation_queue.py b/tests/test_generation_queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..56f30978284a298860367ae60006522eee64cc56
+--- /dev/null
++++ b/tests/test_generation_queue.py
+@@ -0,0 +1,78 @@
++from __future__ import annotations
++
++import os
++import sqlite3
++import sys
++from pathlib import Path
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++
++from senseweave.generation.queue import (  # noqa: E402
++    GenerationQueue,
++    connect_generation_queue_db,
++)
++
++
++def test_generation_queue_constructor_creates_queue_items_schema(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "state" / "generation_queue.sqlite"
++
++    queue = GenerationQueue(db_path)
++
++    assert queue.db_path == db_path
++    assert db_path.exists()
++    with sqlite3.connect(db_path) as conn:
++        columns = {
++            row[1]: {"type": row[2], "not_null": bool(row[3]), "default": row[4]}
++            for row in conn.execute("PRAGMA table_info(queue_items)")
++        }
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++        )
++        try:
++            conn.execute(
++                """INSERT INTO queue_items
++                   (idempotency_key, payload, status, created_at, updated_at)
++                   VALUES (?, ?, ?, ?, ?)""",
++                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++            )
++        except sqlite3.IntegrityError:
++            duplicate_rejected = True
++        else:
++            duplicate_rejected = False
++
++    assert list(columns) == [
++        "id",
++        "idempotency_key",
++        "payload",
++        "status",
++        "attempts",
++        "created_at",
++        "updated_at",
++    ]
++    assert columns["payload"]["type"] == "JSON"
++    assert columns["attempts"]["default"] == "0"
++    assert duplicate_rejected is True
++
++
++def test_connect_generation_queue_db_applies_schema_idempotently(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "generation_queue.sqlite"
++
++    with connect_generation_queue_db(db_path) as conn:
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", "{}", "queued", 1.0, 1.0),
++        )
++
++    with connect_generation_queue_db(db_path) as conn:
++        rows = conn.execute("SELECT idempotency_key FROM queue_items").fetchall()
++
++    assert [row[0] for row in rows] == ["request-1"]
+
+ succeeded in 3660ms:
+Obtaining file:///Users/anthony/Programming/PromptClaw
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: partitura<2,>=1.8 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.8.0)
+Requirement already satisfied: librosa<1,>=0.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.11.0)
+Requirement already satisfied: mypy>=1.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.19.1)
+Requirement already satisfied: pytest>=8.0 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (8.3.5)
+Requirement already satisfied: ruff>=0.9 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.9.2)
+Requirement already satisfied: audioread>=2.1.9 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (3.1.0)
+Requirement already satisfied: numba>=0.51.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.59.0)
+Requirement already satisfied: numpy>=1.22.3 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.26.0)
+Requirement already satisfied: scipy>=1.6.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.11.4)
+Requirement already satisfied: scikit-learn>=1.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.2)
+Requirement already satisfied: joblib>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.0)
+Requirement already satisfied: decorator>=4.3.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (5.1.1)
+Requirement already satisfied: soundfile>=0.12.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.13.1)
+Requirement already satisfied: pooch>=1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.9.0)
+Requirement already satisfied: soxr>=0.3.2 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: typing_extensions>=4.1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (4.15.0)
+Requirement already satisfied: lazy_loader>=0.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.3)
+Requirement already satisfied: msgpack>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.3)
+Requirement already satisfied: lxml in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.9.3)
+Requirement already satisfied: lark-parser in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (0.12.0)
+Requirement already satisfied: xmlschema in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.3.1)
+Requirement already satisfied: mido in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (1.3.3)
+Requirement already satisfied: mypy_extensions>=1.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: pathspec>=0.9.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.10.3)
+Requirement already satisfied: librt>=0.6.2 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.8.1)
+Requirement already satisfied: llvmlite<0.43,>=0.42.0dev0 in /opt/anaconda3/lib/python3.11/site-packages (from numba>=0.51.0->librosa<1,>=0.10->promptclaw==3.0.0) (0.42.0)
+Requirement already satisfied: platformdirs>=2.5.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (4.5.1)
+Requirement already satisfied: packaging>=20.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (23.2)
+Requirement already satisfied: requests>=2.19.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.32.3)
+Requirement already satisfied: iniconfig in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.1.1)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.5.0)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.4)
+Requirement already satisfied: idna<4,>=2.5 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (3.4)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.6.3)
+Requirement already satisfied: certifi>=2017.4.17 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2026.1.4)
+Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from scikit-learn>=1.1.0->librosa<1,>=0.10->promptclaw==3.0.0) (2.2.0)
+Requirement already satisfied: cffi>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.0)
+Requirement already satisfied: pycparser in /opt/anaconda3/lib/python3.11/site-packages (from cffi>=1.0->soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.21)
+Requirement already satisfied: elementpath<6.0.0,>=5.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from xmlschema->partitura<2,>=1.8->promptclaw==3.0.0) (5.1.1)
+Building wheels for collected packages: promptclaw
+  Building editable for promptclaw (pyproject.toml): started
+  Building editable for promptclaw (pyproject.toml): finished with status 'done'
+  Created wheel for promptclaw: filename=promptclaw-3.0.0-0.editable-py3-none-any.whl size=5894 sha256=36f5a44aa79c9dab7516857dd2cafbf4639ee98e6f7a53f59751e2e58b211ad3
+  Stored in directory: /private/var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/pip-ephem-wheel-cache-1o9mrthi/wheels/ab/f4/89/0cacd29874f6252d7c6bef0fca4c14839da91ab6a8d842965e
+Successfully built promptclaw
+Installing collected packages: promptclaw
+  Attempting uninstall: promptclaw
+    Found existing installation: promptclaw 3.0.0
+    Uninstalling promptclaw-3.0.0:
+      Successfully uninstalled promptclaw-3.0.0
+Successfully installed promptclaw-3.0.0
+
+codex
+The dev install completed successfully. I’m running the full test suite with `-x --tb=short` as requested.
+exec
+/bin/zsh -lc 'pytest tests/ -x --tb=short' in /Users/anthony/Programming/PromptClaw
+diff --git a/my-claw/tools/senseweave/generation/queue.py b/my-claw/tools/senseweave/generation/queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..33dfcecb38f76ce7fe14e60efcd9eb326d98cbaa
+--- /dev/null
++++ b/my-claw/tools/senseweave/generation/queue.py
+@@ -0,0 +1,44 @@
++"""SQLite-backed skeleton for generation queue state."""
++
++from __future__ import annotations
++
++import sqlite3
++from contextlib import contextmanager
++from pathlib import Path
++from typing import Iterator
++
++
++SCHEMA = """
++CREATE TABLE IF NOT EXISTS queue_items (
++    id INTEGER PRIMARY KEY,
++    idempotency_key TEXT NOT NULL UNIQUE,
++    payload JSON NOT NULL,
++    status TEXT NOT NULL,
++    attempts INTEGER NOT NULL DEFAULT 0,
++    created_at REAL NOT NULL,
++    updated_at REAL NOT NULL
++);
++"""
++
++
++@contextmanager
++def connect_generation_queue_db(db_path: str | Path) -> Iterator[sqlite3.Connection]:
++    """Open the queue DB, creating its parent directory and schema if needed."""
++    path = Path(db_path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(path, isolation_level=None, timeout=10.0)
++    conn.row_factory = sqlite3.Row
++    try:
++        conn.executescript(SCHEMA)
++        yield conn
++    finally:
++        conn.close()
++
++
++class GenerationQueue:
++    """Thin wrapper around the generation queue database."""
++
++    def __init__(self, db_path: str | Path) -> None:
++        self.db_path = Path(db_path)
++        with connect_generation_queue_db(self.db_path):
++            pass
+diff --git a/tests/test_generation_queue.py b/tests/test_generation_queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..56f30978284a298860367ae60006522eee64cc56
+--- /dev/null
++++ b/tests/test_generation_queue.py
+@@ -0,0 +1,78 @@
++from __future__ import annotations
++
++import os
++import sqlite3
++import sys
++from pathlib import Path
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++
++from senseweave.generation.queue import (  # noqa: E402
++    GenerationQueue,
++    connect_generation_queue_db,
++)
++
++
++def test_generation_queue_constructor_creates_queue_items_schema(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "state" / "generation_queue.sqlite"
++
++    queue = GenerationQueue(db_path)
++
++    assert queue.db_path == db_path
++    assert db_path.exists()
++    with sqlite3.connect(db_path) as conn:
++        columns = {
++            row[1]: {"type": row[2], "not_null": bool(row[3]), "default": row[4]}
++            for row in conn.execute("PRAGMA table_info(queue_items)")
++        }
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++        )
++        try:
++            conn.execute(
++                """INSERT INTO queue_items
++                   (idempotency_key, payload, status, created_at, updated_at)
++                   VALUES (?, ?, ?, ?, ?)""",
++                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++            )
++        except sqlite3.IntegrityError:
++            duplicate_rejected = True
++        else:
++            duplicate_rejected = False
++
++    assert list(columns) == [
++        "id",
++        "idempotency_key",
++        "payload",
++        "status",
++        "attempts",
++        "created_at",
++        "updated_at",
++    ]
++    assert columns["payload"]["type"] == "JSON"
++    assert columns["attempts"]["default"] == "0"
++    assert duplicate_rejected is True
++
++
++def test_connect_generation_queue_db_applies_schema_idempotently(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "generation_queue.sqlite"
++
++    with connect_generation_queue_db(db_path) as conn:
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", "{}", "queued", 1.0, 1.0),
++        )
++
++    with connect_generation_queue_db(db_path) as conn:
++        rows = conn.execute("SELECT idempotency_key FROM queue_items").fetchall()
++
++    assert [row[0] for row in rows] == ["request-1"]
+
+codex
+The full test run is still active and has passed past the new queue tests; I’m waiting for the tail of the suite before lint/type checks.
+ succeeded in 32813ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3656 items
+
+tests/test_accompaniment.py ...........................                  [  0%]
+tests/test_acoustic_ecology.py .................................         [  1%]
+tests/test_agent_runtime.py ..                                           [  1%]
+tests/test_agent_selector_defaults.py .                                  [  1%]
+tests/test_agent_selector_quota.py ........                              [  1%]
+tests/test_agogic_rule.py ...                                            [  2%]
+tests/test_antenna_to_skin.py .................................          [  2%]
+tests/test_archive_daemon_runtime.py .                                   [  2%]
+tests/test_archive_paths.py .....                                        [  3%]
+tests/test_arrangement_engine.py ....................................... [  4%]
+                                                                         [  4%]
+tests/test_art_engine_runtime.py ....                                    [  4%]
+tests/test_articulation.py ......                                        [  4%]
+tests/test_artist_identity.py .......................................... [  5%]
+.........                                                                [  5%]
+tests/test_artistic_identity.py .                                        [  5%]
+tests/test_audio_analysis.py .....................................       [  6%]
+tests/test_audio_novelty.py ....                                         [  6%]
+tests/test_bootstrap.py ..                                               [  7%]
+tests/test_breath_to_filter.py .............................             [  7%]
+tests/test_cadence_engine.py .......                                     [  8%]
+tests/test_call_response.py ..........                                   [  8%]
+tests/test_capstone_engine.py ...                                        [  8%]
+tests/test_capture_alias.py ..                                           [  8%]
+tests/test_cast_planner.py .............                                 [  8%]
+tests/test_character_registry.py ......                                  [  8%]
+tests/test_check_status_runtime.py ..                                    [  8%]
+tests/test_client_local.py ..                                            [  9%]
+tests/test_client_modal.py ..                                            [  9%]
+tests/test_coherence_engine.py ..............                            [  9%]
+tests/test_coherence_integration.py ............                         [  9%]
+tests/test_collaborative_canvas.py ......................                [ 10%]
+tests/test_commission_context.py ..                                      [ 10%]
+tests/test_composer_quote_verify.py .....                                [ 10%]
+tests/test_config.py ..                                                  [ 10%]
+tests/test_constitution.py .......................                       [ 11%]
+tests/test_contact_listener_runtime.py ....                              [ 11%]
+tests/test_contact_mic_calibration_runtime.py ....                       [ 11%]
+tests/test_context_pulse_runtime.py .                                    [ 11%]
+tests/test_continuous_learner.py ......................                  [ 12%]
+tests/test_counterpoint_pipeline.py ...........................          [ 12%]
+tests/test_counterpoint_rules.py ....................................... [ 13%]
+......................                                                   [ 14%]
+tests/test_course_critique.py ...............................            [ 15%]
+tests/test_cypherclaw_audio_runtime.py .....                             [ 15%]
+tests/test_cypherclaw_av_stack_service.py ...                            [ 15%]
+tests/test_cypherclaw_boot_runtime.py ......                             [ 15%]
+tests/test_cypherclaw_musicianship_roadmap.py ..                         [ 15%]
+tests/test_cypherclaw_runtime.py .....                                   [ 15%]
+tests/test_cypherclaw_sampler_architecture.py .......                    [ 16%]
+tests/test_cypherclaw_sampler_artistic_intent.py .....                   [ 16%]
+tests/test_daemon_concurrency_compat.py ...                              [ 16%]
+tests/test_daemon_fallback.py ...............                            [ 16%]
+tests/test_daemon_scheduler.py ..                                        [ 16%]
+tests/test_daemon_status_ollama.py .......                               [ 17%]
+tests/test_dashboard_generator.py ...................................... [ 18%]
+.......                                                                  [ 18%]
+tests/test_dashboard_generator_runtime.py ...                            [ 18%]
+tests/test_decision_store.py .........                                   [ 18%]
+tests/test_doctor.py ...                                                 [ 18%]
+tests/test_dsp_scene_lab.py ................                             [ 19%]
+tests/test_duration_contrast_rule.py .......                             [ 19%]
+tests/test_ear_engine.py ............                                    [ 19%]
+tests/test_emsd_curriculum.py ...............                            [ 20%]
+tests/test_emsd_performance.py ....                                      [ 20%]
+tests/test_emsd_runtime.py ...                                           [ 20%]
+tests/test_event_store.py .......                                        [ 20%]
+tests/test_executable_curriculum.py ...                                  [ 20%]
+tests/test_face_display_sample_status.py ....                            [ 20%]
+tests/test_federation_discovery.py ........                              [ 20%]
+tests/test_final_rit.py ...                                              [ 20%]
+tests/test_first_boot.py ...................................             [ 21%]
+tests/test_form_grammar.py ..                                            [ 21%]
+tests/test_fractal_form.py ...............                               [ 22%]
+tests/test_functional_harmony.py ...............................         [ 23%]
+tests/test_gallery.py ..........................                         [ 23%]
+tests/test_gallery_x11_runtime.py ...                                    [ 23%]
+tests/test_garden_watcher.py ........................................... [ 25%]
+.                                                                        [ 25%]
+tests/test_gemini_image_runtime.py ...                                   [ 25%]
+tests/test_generation_live_modal.py s                                    [ 25%]
+tests/test_generation_live_replicate.py s                                [ 25%]
+tests/test_generation_queue.py ..                                        [ 25%]
+tests/test_generation_replicate_retry.py ............................... [ 26%]
+..................                                                       [ 26%]
+tests/test_generation_storage.py ....                                    [ 26%]
+tests/test_generative_scores.py ........................................ [ 27%]
+.............................................                            [ 29%]
+tests/test_genre_literacy.py ............                                [ 29%]
+tests/test_glyphweave_cli.py ....                                        [ 29%]
+tests/test_glyphweave_runtime.py ....                                    [ 29%]
+tests/test_governor_integration.py ..............                        [ 30%]
+tests/test_graduation.py ......................                          [ 30%]
+tests/test_groove_engine.py ............................................ [ 31%]
+......................................                                   [ 32%]
+tests/test_harmonic_planner.py .........                                 [ 33%]
+tests/test_healer_runtime.py .....                                       [ 33%]
+tests/test_healthcheck_script_runtime.py ...                             [ 33%]
+tests/test_hook_engine.py .................                              [ 33%]
+tests/test_human_phrase_capture_verify.py .                              [ 33%]
+tests/test_image_api_app.py ........                                     [ 34%]
+tests/test_image_api_jobs_db.py ............                             [ 34%]
+tests/test_image_api_s3_uploader.py ....                                 [ 34%]
+tests/test_image_api_spec_parser.py ...................                  [ 35%]
+tests/test_image_api_worker.py ........                                  [ 35%]
+tests/test_inkplate_display.py ....                                      [ 35%]
+tests/test_inner_life.py ...................................             [ 36%]
+tests/test_instrument_patches.py ........                                [ 36%]
+tests/test_ixml_chunk_writer.py .......                                  [ 36%]
+tests/test_keyboard_chat.py ..............................               [ 37%]
+tests/test_lifeimprover_bridge_runtime.py .....                          [ 37%]
+tests/test_listener_review.py .....                                      [ 37%]
+tests/test_live_buffer.py ...                                            [ 37%]
+tests/test_local_command_runtime.py ....                                 [ 38%]
+tests/test_lung_capacity_rule.py .......                                 [ 38%]
+tests/test_macbook_codex_monitor.py ....                                 [ 38%]
+tests/test_maintenance_mode.py .....                                     [ 38%]
+tests/test_master_bus.py ......                                          [ 38%]
+tests/test_master_smooth_scd.py ...                                      [ 38%]
+tests/test_melodic_mind.py ............................................. [ 39%]
+..........................................................               [ 41%]
+tests/test_metric_accent_rule.py ....                                    [ 41%]
+tests/test_microtiming.py .....................                          [ 42%]
+tests/test_midi_keyboard_listener_runtime.py .....                       [ 42%]
+tests/test_midi_state.py .......................................         [ 43%]
+tests/test_mix_engine.py ..............................                  [ 44%]
+tests/test_mix_verify.py ............................................... [ 45%]
+                                                                         [ 45%]
+tests/test_mood_mirror.py .....................................          [ 46%]
+tests/test_motif_lifecycle.py ............................               [ 47%]
+tests/test_motif_memory.py ...............                               [ 47%]
+tests/test_music_theory.py ............................................. [ 48%]
+........................................                                 [ 50%]
+tests/test_music_tracker.py ..........................................   [ 51%]
+tests/test_music_tracker_runtime.py .................................... [ 52%]
+........                                                                 [ 52%]
+tests/test_musical_integration_runtime.py .                              [ 52%]
+tests/test_musical_marathon_integration.py ..                            [ 52%]
+tests/test_narrative_envelope.py ..............                          [ 52%]
+tests/test_observatory_authority.py .....                                [ 53%]
+tests/test_observatory_runtime.py ..                                     [ 53%]
+tests/test_observatory_verification.py ..                                [ 53%]
+tests/test_observer_vision_runtime.py ..............                     [ 53%]
+tests/test_ollama_daemon_health.py ...                                   [ 53%]
+tests/test_ollama_health.py ......                                       [ 53%]
+tests/test_ollama_invoke.py ...                                          [ 53%]
+tests/test_ollama_routing.py ...................                         [ 54%]
+tests/test_ollama_run_agent.py .......                                   [ 54%]
+tests/test_operator_diagnostics.py ...............                       [ 54%]
+tests/test_operator_diagnostics_sample_status.py ....                    [ 55%]
+tests/test_ops_helpers_runtime.py ....                                   [ 55%]
+tests/test_orchestral_form.py ...............................            [ 56%]
+tests/test_orchestrator.py ...                                           [ 56%]
+tests/test_pareidolia_art_engine.py .......                              [ 56%]
+tests/test_pareidolia_characters.py .................................    [ 57%]
+tests/test_pareidolia_color.py ......................................... [ 58%]
+........................................................................ [ 60%]
+....                                                                     [ 60%]
+tests/test_pedals_to_key.py ............................                 [ 61%]
+tests/test_phrase_arch.py ..........                                     [ 61%]
+tests/test_phrase_capture.py ........................                    [ 62%]
+tests/test_phrase_capture_runtime.py ...                                 [ 62%]
+tests/test_phrase_tracker.py ............                                [ 62%]
+tests/test_piece_brief.py ........                                       [ 62%]
+tests/test_piece_commission.py ....                                      [ 62%]
+tests/test_piece_queue.py ..                                             [ 62%]
+tests/test_porch_eye.py ..................................               [ 63%]
+tests/test_portfolio_report.py .........................                 [ 64%]
+tests/test_practice_curriculum.py ..                                     [ 64%]
+tests/test_preflight.py ......                                           [ 64%]
+tests/test_presence_engine.py ............                               [ 65%]
+tests/test_procedural_arc.py .....                                       [ 65%]
+tests/test_production_course_integration.py ..........                   [ 65%]
+tests/test_production_course_knowledge_base.py ...                       [ 65%]
+tests/test_project_scanner_runtime.py ....                               [ 65%]
+tests/test_prosody_engine.py ........                                    [ 65%]
+tests/test_punctuation_rule.py ............                              [ 66%]
+tests/test_quota_monitor.py .....................                        [ 66%]
+tests/test_reharmonizer.py ...                                           [ 66%]
+tests/test_render_ablation.py ....                                       [ 66%]
+tests/test_render_antipatterns.py ......................                 [ 67%]
+tests/test_render_audio_sidecar.py ...                                   [ 67%]
+tests/test_render_debugger.py ..                                         [ 67%]
+tests/test_render_diff.py ................                               [ 68%]
+tests/test_render_events.py ....................                         [ 68%]
+tests/test_render_export.py ......                                       [ 68%]
+tests/test_render_features.py ...                                        [ 68%]
+tests/test_render_metrics.py ..............                              [ 69%]
+tests/test_render_pass.py ....................                           [ 69%]
+tests/test_render_replay.py ..                                           [ 69%]
+tests/test_render_seed.py .............                                  [ 70%]
+tests/test_render_worm.py ..........                                     [ 70%]
+tests/test_repertoire_memory.py .................                        [ 71%]
+tests/test_repertoire_memory_score_tree.py .                             [ 71%]
+tests/test_research_runtime.py .....                                     [ 71%]
+tests/test_resilience_runtime_scripts.py ..............                  [ 71%]
+tests/test_resource_governor.py ..........................               [ 72%]
+tests/test_restraint.py ...                                              [ 72%]
+tests/test_reviewer_runtime.py ...                                       [ 72%]
+tests/test_role_gate_integration.py .................................... [ 73%]
+....                                                                     [ 73%]
+tests/test_room_listener_runtime.py ..................                   [ 74%]
+tests/test_room_presence_daemon.py ......                                [ 74%]
+tests/test_router.py .....                                               [ 74%]
+tests/test_row_automation.py ...........                                 [ 74%]
+tests/test_runtime_checkpoint.py ...                                     [ 74%]
+tests/test_runtime_paths.py ..                                           [ 74%]
+tests/test_sample_capture_daemon.py .................................... [ 75%]
+.............                                                            [ 76%]
+tests/test_sample_capture_service_verify.py ....                         [ 76%]
+tests/test_sample_capture_verify.py ....                                 [ 76%]
+tests/test_sample_dsp_activity.py ...........                            [ 76%]
+tests/test_sample_event_renderer.py .....                                [ 76%]
+tests/test_sample_lab.py ....                                            [ 76%]
+tests/test_sample_library.py ......................                      [ 77%]
+tests/test_sample_library_import.py ...                                  [ 77%]
+tests/test_sample_playback_engine.py .......                             [ 77%]
+tests/test_sample_record_audio_analysis.py .............                 [ 78%]
+tests/test_sample_record_context.py ..........                           [ 78%]
+tests/test_sample_record_json.py ..............                          [ 78%]
+tests/test_sample_record_skeleton.py .........                           [ 78%]
+tests/test_sample_selector.py .................                          [ 79%]
+tests/test_sample_status.py .....                                        [ 79%]
+tests/test_sampler_buffers.py ...............                            [ 80%]
+tests/test_sampler_dispatch.py ....................................      [ 80%]
+tests/test_sampler_effects.py .......................................... [ 82%]
+.......                                                                  [ 82%]
+tests/test_sampler_fx_mode_verify.py ...                                 [ 82%]
+tests/test_sampler_scheduler.py ...........                              [ 82%]
+tests/test_scene_composer.py ......................................      [ 83%]
+tests/test_score_tree.py .                                               [ 83%]
+tests/test_score_tree_composer.py .......................                [ 84%]
+tests/test_score_tree_pipeline.py .                                      [ 84%]
+tests/test_self_critique.py .........................                    [ 85%]
+tests/test_self_listener_quote_verify.py ......                          [ 85%]
+tests/test_self_listener_tracker_runtime.py ...............              [ 85%]
+tests/test_senseweave_rollout_controls.py .....                          [ 85%]
+tests/test_senseweave_voice.py ..........................                [ 86%]
+tests/test_sensor_fusion.py ...............................              [ 87%]
+tests/test_sensor_intent_rule.py ....                                    [ 87%]
+tests/test_sensory_journal.py ............................               [ 88%]
+tests/test_server_health.py ...                                          [ 88%]
+tests/test_silence_budget_rule.py .................                      [ 88%]
+tests/test_sound_palette_lab.py ..                                       [ 88%]
+tests/test_startle.py ................................                   [ 89%]
+tests/test_supercollider_recipes.py ...                                  [ 89%]
+tests/test_sw_sampler.py .......................................         [ 90%]
+tests/test_syncopation_features.py .........................             [ 91%]
+tests/test_synthdef_registry.py ...................................      [ 92%]
+tests/test_synthesis_architecture_registry.py .......................... [ 93%]
+.......                                                                  [ 93%]
+tests/test_tamagotchi_runtime.py ......                                  [ 93%]
+tests/test_telegram_runtime.py ......                                    [ 93%]
+tests/test_theramini_duet.py ........................................... [ 94%]
+.........                                                                [ 95%]
+tests/test_theramini_listener_runtime.py ............                    [ 95%]
+tests/test_tracker_cadence.py ............                               [ 95%]
+tests/test_tracker_compiler.py ................                          [ 96%]
+tests/test_tracker_variation.py .....                                    [ 96%]
+tests/test_trust.py ................                                     [ 96%]
+tests/test_usage_journal.py ..............                               [ 97%]
+tests/test_usage_journal_integration.py .                                [ 97%]
+tests/test_voice_aliases.py .......                                      [ 97%]
+tests/test_voice_interpretation_rules.py ............................... [ 98%]
+..                                                                       [ 98%]
+tests/test_voice_manager_v2.py ......................................... [ 99%]
+............                                                             [ 99%]
+tests/test_voice_shaping.py ....                                         [ 99%]
+tests/test_wizard.py ...                                                 [100%]
+
+=============================== warnings summary ===============================
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163: DeprecationWarning: module 'sre_parse' is deprecated
+    import sre_parse
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164: DeprecationWarning: module 'sre_constants' is deprecated
+    import sre_constants
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25
+  /opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    from pkg_resources import resource_stream, resource_exists
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google.cloud')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(parent)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('ruamel')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('zope')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:16: DeprecationWarning: 'aifc' is deprecated and slated for removal in Python 3.13
+    import aifc
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:17: DeprecationWarning: 'audioop' is deprecated and slated for removal in Python 3.13
+    import audioop
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:19: DeprecationWarning: 'sunau' is deprecated and slated for removal in Python 3.13
+    import sunau
+
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+  /Users/anthony/Programming/PromptClaw/tests/test_gallery.py:108: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(result.getdata()), list(canvas.getdata()))
+
+tests/test_pareidolia_characters.py: 189 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:85: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pixels = list(img.getdata())
+
+tests/test_pareidolia_characters.py: 21 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:254: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    rendered[name] = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:310: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:314: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:316: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:339: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_low = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:343: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_high = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:326: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:352: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:331: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:333: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:361: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:376: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:366: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:368: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_add_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:429: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:451: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_with_palette
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:443: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:434: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:436: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:481: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_curious_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:554: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_happy_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:542: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_neutral_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:536: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sad_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:548: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sleeping_eyes_no_highlights
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:560: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:571: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_bush
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:621: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:615: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:609: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:585: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_without_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:591: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:597: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:603: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:642: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:661: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:674: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    basalt_pixels = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:678: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pebble_pixels = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:870: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================ 3654 passed, 2 skipped, 296 warnings in 31.36s ================
+
+diff --git a/my-claw/tools/senseweave/generation/queue.py b/my-claw/tools/senseweave/generation/queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..33dfcecb38f76ce7fe14e60efcd9eb326d98cbaa
+--- /dev/null
++++ b/my-claw/tools/senseweave/generation/queue.py
+@@ -0,0 +1,44 @@
++"""SQLite-backed skeleton for generation queue state."""
++
++from __future__ import annotations
++
++import sqlite3
++from contextlib import contextmanager
++from pathlib import Path
++from typing import Iterator
++
++
++SCHEMA = """
++CREATE TABLE IF NOT EXISTS queue_items (
++    id INTEGER PRIMARY KEY,
++    idempotency_key TEXT NOT NULL UNIQUE,
++    payload JSON NOT NULL,
++    status TEXT NOT NULL,
++    attempts INTEGER NOT NULL DEFAULT 0,
++    created_at REAL NOT NULL,
++    updated_at REAL NOT NULL
++);
++"""
++
++
++@contextmanager
++def connect_generation_queue_db(db_path: str | Path) -> Iterator[sqlite3.Connection]:
++    """Open the queue DB, creating its parent directory and schema if needed."""
++    path = Path(db_path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(path, isolation_level=None, timeout=10.0)
++    conn.row_factory = sqlite3.Row
++    try:
++        conn.executescript(SCHEMA)
++        yield conn
++    finally:
++        conn.close()
++
++
++class GenerationQueue:
++    """Thin wrapper around the generation queue database."""
++
++    def __init__(self, db_path: str | Path) -> None:
++        self.db_path = Path(db_path)
++        with connect_generation_queue_db(self.db_path):
++            pass
+diff --git a/tests/test_generation_queue.py b/tests/test_generation_queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..56f30978284a298860367ae60006522eee64cc56
+--- /dev/null
++++ b/tests/test_generation_queue.py
+@@ -0,0 +1,78 @@
++from __future__ import annotations
++
++import os
++import sqlite3
++import sys
++from pathlib import Path
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++
++from senseweave.generation.queue import (  # noqa: E402
++    GenerationQueue,
++    connect_generation_queue_db,
++)
++
++
++def test_generation_queue_constructor_creates_queue_items_schema(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "state" / "generation_queue.sqlite"
++
++    queue = GenerationQueue(db_path)
++
++    assert queue.db_path == db_path
++    assert db_path.exists()
++    with sqlite3.connect(db_path) as conn:
++        columns = {
++            row[1]: {"type": row[2], "not_null": bool(row[3]), "default": row[4]}
++            for row in conn.execute("PRAGMA table_info(queue_items)")
++        }
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++        )
++        try:
++            conn.execute(
++                """INSERT INTO queue_items
++                   (idempotency_key, payload, status, created_at, updated_at)
++                   VALUES (?, ?, ?, ?, ?)""",
++                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++            )
++        except sqlite3.IntegrityError:
++            duplicate_rejected = True
++        else:
++            duplicate_rejected = False
++
++    assert list(columns) == [
++        "id",
++        "idempotency_key",
++        "payload",
++        "status",
++        "attempts",
++        "created_at",
++        "updated_at",
++    ]
++    assert columns["payload"]["type"] == "JSON"
++    assert columns["attempts"]["default"] == "0"
++    assert duplicate_rejected is True
++
++
++def test_connect_generation_queue_db_applies_schema_idempotently(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "generation_queue.sqlite"
++
++    with connect_generation_queue_db(db_path) as conn:
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", "{}", "queued", 1.0, 1.0),
++        )
++
++    with connect_generation_queue_db(db_path) as conn:
++        rows = conn.execute("SELECT idempotency_key FROM queue_items").fetchall()
++
++    assert [row[0] for row in rows] == ["request-1"]
+
+codex
+The full test suite passed: 3654 passed, 2 skipped. I’m running the requested Ruff check next.
+exec
+/bin/zsh -lc 'ruff check src/ tests/' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+All checks passed!
+
+diff --git a/my-claw/tools/senseweave/generation/queue.py b/my-claw/tools/senseweave/generation/queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..33dfcecb38f76ce7fe14e60efcd9eb326d98cbaa
+--- /dev/null
++++ b/my-claw/tools/senseweave/generation/queue.py
+@@ -0,0 +1,44 @@
++"""SQLite-backed skeleton for generation queue state."""
++
++from __future__ import annotations
++
++import sqlite3
++from contextlib import contextmanager
++from pathlib import Path
++from typing import Iterator
++
++
++SCHEMA = """
++CREATE TABLE IF NOT EXISTS queue_items (
++    id INTEGER PRIMARY KEY,
++    idempotency_key TEXT NOT NULL UNIQUE,
++    payload JSON NOT NULL,
++    status TEXT NOT NULL,
++    attempts INTEGER NOT NULL DEFAULT 0,
++    created_at REAL NOT NULL,
++    updated_at REAL NOT NULL
++);
++"""
++
++
++@contextmanager
++def connect_generation_queue_db(db_path: str | Path) -> Iterator[sqlite3.Connection]:
++    """Open the queue DB, creating its parent directory and schema if needed."""
++    path = Path(db_path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(path, isolation_level=None, timeout=10.0)
++    conn.row_factory = sqlite3.Row
++    try:
++        conn.executescript(SCHEMA)
++        yield conn
++    finally:
++        conn.close()
++
++
++class GenerationQueue:
++    """Thin wrapper around the generation queue database."""
++
++    def __init__(self, db_path: str | Path) -> None:
++        self.db_path = Path(db_path)
++        with connect_generation_queue_db(self.db_path):
++            pass
+diff --git a/tests/test_generation_queue.py b/tests/test_generation_queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..56f30978284a298860367ae60006522eee64cc56
+--- /dev/null
++++ b/tests/test_generation_queue.py
+@@ -0,0 +1,78 @@
++from __future__ import annotations
++
++import os
++import sqlite3
++import sys
++from pathlib import Path
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++
++from senseweave.generation.queue import (  # noqa: E402
++    GenerationQueue,
++    connect_generation_queue_db,
++)
++
++
++def test_generation_queue_constructor_creates_queue_items_schema(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "state" / "generation_queue.sqlite"
++
++    queue = GenerationQueue(db_path)
++
++    assert queue.db_path == db_path
++    assert db_path.exists()
++    with sqlite3.connect(db_path) as conn:
++        columns = {
++            row[1]: {"type": row[2], "not_null": bool(row[3]), "default": row[4]}
++            for row in conn.execute("PRAGMA table_info(queue_items)")
++        }
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++        )
++        try:
++            conn.execute(
++                """INSERT INTO queue_items
++                   (idempotency_key, payload, status, created_at, updated_at)
++                   VALUES (?, ?, ?, ?, ?)""",
++                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++            )
++        except sqlite3.IntegrityError:
++            duplicate_rejected = True
++        else:
++            duplicate_rejected = False
++
++    assert list(columns) == [
++        "id",
++        "idempotency_key",
++        "payload",
++        "status",
++        "attempts",
++        "created_at",
++        "updated_at",
++    ]
++    assert columns["payload"]["type"] == "JSON"
++    assert columns["attempts"]["default"] == "0"
++    assert duplicate_rejected is True
++
++
++def test_connect_generation_queue_db_applies_schema_idempotently(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "generation_queue.sqlite"
++
++    with connect_generation_queue_db(db_path) as conn:
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", "{}", "queued", 1.0, 1.0),
++        )
++
++    with connect_generation_queue_db(db_path) as conn:
++        rows = conn.execute("SELECT idempotency_key FROM queue_items").fetchall()
++
++    assert [row[0] for row in rows] == ["request-1"]
+
+codex
+Ruff passed on `src/ tests/`. I’m running `mypy src/` now, then I’ll do one quick targeted lint on the new module since it lives outside `src/`.
+exec
+/bin/zsh -lc 'mypy src/' in /Users/anthony/Programming/PromptClaw
+diff --git a/my-claw/tools/senseweave/generation/queue.py b/my-claw/tools/senseweave/generation/queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..33dfcecb38f76ce7fe14e60efcd9eb326d98cbaa
+--- /dev/null
++++ b/my-claw/tools/senseweave/generation/queue.py
+@@ -0,0 +1,44 @@
++"""SQLite-backed skeleton for generation queue state."""
++
++from __future__ import annotations
++
++import sqlite3
++from contextlib import contextmanager
++from pathlib import Path
++from typing import Iterator
++
++
++SCHEMA = """
++CREATE TABLE IF NOT EXISTS queue_items (
++    id INTEGER PRIMARY KEY,
++    idempotency_key TEXT NOT NULL UNIQUE,
++    payload JSON NOT NULL,
++    status TEXT NOT NULL,
++    attempts INTEGER NOT NULL DEFAULT 0,
++    created_at REAL NOT NULL,
++    updated_at REAL NOT NULL
++);
++"""
++
++
++@contextmanager
++def connect_generation_queue_db(db_path: str | Path) -> Iterator[sqlite3.Connection]:
++    """Open the queue DB, creating its parent directory and schema if needed."""
++    path = Path(db_path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(path, isolation_level=None, timeout=10.0)
++    conn.row_factory = sqlite3.Row
++    try:
++        conn.executescript(SCHEMA)
++        yield conn
++    finally:
++        conn.close()
++
++
++class GenerationQueue:
++    """Thin wrapper around the generation queue database."""
++
++    def __init__(self, db_path: str | Path) -> None:
++        self.db_path = Path(db_path)
++        with connect_generation_queue_db(self.db_path):
++            pass
+diff --git a/tests/test_generation_queue.py b/tests/test_generation_queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..56f30978284a298860367ae60006522eee64cc56
+--- /dev/null
++++ b/tests/test_generation_queue.py
+@@ -0,0 +1,78 @@
++from __future__ import annotations
++
++import os
++import sqlite3
++import sys
++from pathlib import Path
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++
++from senseweave.generation.queue import (  # noqa: E402
++    GenerationQueue,
++    connect_generation_queue_db,
++)
++
++
++def test_generation_queue_constructor_creates_queue_items_schema(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "state" / "generation_queue.sqlite"
++
++    queue = GenerationQueue(db_path)
++
++    assert queue.db_path == db_path
++    assert db_path.exists()
++    with sqlite3.connect(db_path) as conn:
++        columns = {
++            row[1]: {"type": row[2], "not_null": bool(row[3]), "default": row[4]}
++            for row in conn.execute("PRAGMA table_info(queue_items)")
++        }
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++        )
++        try:
++            conn.execute(
++                """INSERT INTO queue_items
++                   (idempotency_key, payload, status, created_at, updated_at)
++                   VALUES (?, ?, ?, ?, ?)""",
++                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++            )
++        except sqlite3.IntegrityError:
++            duplicate_rejected = True
++        else:
++            duplicate_rejected = False
++
++    assert list(columns) == [
++        "id",
++        "idempotency_key",
++        "payload",
++        "status",
++        "attempts",
++        "created_at",
++        "updated_at",
++    ]
++    assert columns["payload"]["type"] == "JSON"
++    assert columns["attempts"]["default"] == "0"
++    assert duplicate_rejected is True
++
++
++def test_connect_generation_queue_db_applies_schema_idempotently(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "generation_queue.sqlite"
++
++    with connect_generation_queue_db(db_path) as conn:
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", "{}", "queued", 1.0, 1.0),
++        )
++
++    with connect_generation_queue_db(db_path) as conn:
++        rows = conn.execute("SELECT idempotency_key FROM queue_items").fetchall()
++
++    assert [row[0] for row in rows] == ["request-1"]
+
+ succeeded in 952ms:
+Success: no issues found in 23 source files
+
+codex
+`mypy src/` passed. I’m checking the new queue module explicitly now because the requested Ruff scope does not include `my-claw/tools`.
+exec
+/bin/zsh -lc 'ruff check my-claw/tools/senseweave/generation/queue.py tests/test_generation_queue.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+All checks passed!
+
+diff --git a/my-claw/tools/senseweave/generation/queue.py b/my-claw/tools/senseweave/generation/queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..33dfcecb38f76ce7fe14e60efcd9eb326d98cbaa
+--- /dev/null
++++ b/my-claw/tools/senseweave/generation/queue.py
+@@ -0,0 +1,44 @@
++"""SQLite-backed skeleton for generation queue state."""
++
++from __future__ import annotations
++
++import sqlite3
++from contextlib import contextmanager
++from pathlib import Path
++from typing import Iterator
++
++
++SCHEMA = """
++CREATE TABLE IF NOT EXISTS queue_items (
++    id INTEGER PRIMARY KEY,
++    idempotency_key TEXT NOT NULL UNIQUE,
++    payload JSON NOT NULL,
++    status TEXT NOT NULL,
++    attempts INTEGER NOT NULL DEFAULT 0,
++    created_at REAL NOT NULL,
++    updated_at REAL NOT NULL
++);
++"""
++
++
++@contextmanager
++def connect_generation_queue_db(db_path: str | Path) -> Iterator[sqlite3.Connection]:
++    """Open the queue DB, creating its parent directory and schema if needed."""
++    path = Path(db_path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(path, isolation_level=None, timeout=10.0)
++    conn.row_factory = sqlite3.Row
++    try:
++        conn.executescript(SCHEMA)
++        yield conn
++    finally:
++        conn.close()
++
++
++class GenerationQueue:
++    """Thin wrapper around the generation queue database."""
++
++    def __init__(self, db_path: str | Path) -> None:
++        self.db_path = Path(db_path)
++        with connect_generation_queue_db(self.db_path):
++            pass
+diff --git a/tests/test_generation_queue.py b/tests/test_generation_queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..56f30978284a298860367ae60006522eee64cc56
+--- /dev/null
++++ b/tests/test_generation_queue.py
+@@ -0,0 +1,78 @@
++from __future__ import annotations
++
++import os
++import sqlite3
++import sys
++from pathlib import Path
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++
++from senseweave.generation.queue import (  # noqa: E402
++    GenerationQueue,
++    connect_generation_queue_db,
++)
++
++
++def test_generation_queue_constructor_creates_queue_items_schema(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "state" / "generation_queue.sqlite"
++
++    queue = GenerationQueue(db_path)
++
++    assert queue.db_path == db_path
++    assert db_path.exists()
++    with sqlite3.connect(db_path) as conn:
++        columns = {
++            row[1]: {"type": row[2], "not_null": bool(row[3]), "default": row[4]}
++            for row in conn.execute("PRAGMA table_info(queue_items)")
++        }
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++        )
++        try:
++            conn.execute(
++                """INSERT INTO queue_items
++                   (idempotency_key, payload, status, created_at, updated_at)
++                   VALUES (?, ?, ?, ?, ?)""",
++                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++            )
++        except sqlite3.IntegrityError:
++            duplicate_rejected = True
++        else:
++            duplicate_rejected = False
++
++    assert list(columns) == [
++        "id",
++        "idempotency_key",
++        "payload",
++        "status",
++        "attempts",
++        "created_at",
++        "updated_at",
++    ]
++    assert columns["payload"]["type"] == "JSON"
++    assert columns["attempts"]["default"] == "0"
++    assert duplicate_rejected is True
++
++
++def test_connect_generation_queue_db_applies_schema_idempotently(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "generation_queue.sqlite"
++
++    with connect_generation_queue_db(db_path) as conn:
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", "{}", "queued", 1.0, 1.0),
++        )
++
++    with connect_generation_queue_db(db_path) as conn:
++        rows = conn.execute("SELECT idempotency_key FROM queue_items").fetchall()
++
++    assert [row[0] for row in rows] == ["request-1"]
+
+codex
+Validation is clean. I’m checking the final diff and status so I can stage only the files introduced for T-008 and leave the existing SDP/log changes untouched.
+exec
+/bin/zsh -lc 'git diff -- my-claw/tools/senseweave/generation/queue.py tests/test_generation_queue.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/logs/Lead_T-001_20260427T001208Zc_1777258675.log
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M sdp/runner.log
+?? my-claw/tools/senseweave/generation/queue.py
+?? sdp/logs/Lead_T-001_20260427T001208Zd_1777258881.log
+?? sdp/logs/Lead_T-007_20260427T001208Z_1777259352.log
+?? sdp/logs/Lead_T-008_20260427T001208Za_1777259776.log
+?? sdp/logs/Verify_T-001_20260427T001208Zc_1777258749.log
+?? sdp/logs/Verify_T-001_20260427T001208Zd_1777259178.log
+?? sdp/logs/Verify_T-007_20260427T001208Z_1777259622.log
+?? sdp/logs/claude_1777259730.log
+?? tests/test_generation_queue.py
+
+diff --git a/my-claw/tools/senseweave/generation/queue.py b/my-claw/tools/senseweave/generation/queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..33dfcecb38f76ce7fe14e60efcd9eb326d98cbaa
+--- /dev/null
++++ b/my-claw/tools/senseweave/generation/queue.py
+@@ -0,0 +1,44 @@
++"""SQLite-backed skeleton for generation queue state."""
++
++from __future__ import annotations
++
++import sqlite3
++from contextlib import contextmanager
++from pathlib import Path
++from typing import Iterator
++
++
++SCHEMA = """
++CREATE TABLE IF NOT EXISTS queue_items (
++    id INTEGER PRIMARY KEY,
++    idempotency_key TEXT NOT NULL UNIQUE,
++    payload JSON NOT NULL,
++    status TEXT NOT NULL,
++    attempts INTEGER NOT NULL DEFAULT 0,
++    created_at REAL NOT NULL,
++    updated_at REAL NOT NULL
++);
++"""
++
++
++@contextmanager
++def connect_generation_queue_db(db_path: str | Path) -> Iterator[sqlite3.Connection]:
++    """Open the queue DB, creating its parent directory and schema if needed."""
++    path = Path(db_path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(path, isolation_level=None, timeout=10.0)
++    conn.row_factory = sqlite3.Row
++    try:
++        conn.executescript(SCHEMA)
++        yield conn
++    finally:
++        conn.close()
++
++
++class GenerationQueue:
++    """Thin wrapper around the generation queue database."""
++
++    def __init__(self, db_path: str | Path) -> None:
++        self.db_path = Path(db_path)
++        with connect_generation_queue_db(self.db_path):
++            pass
+diff --git a/tests/test_generation_queue.py b/tests/test_generation_queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..56f30978284a298860367ae60006522eee64cc56
+--- /dev/null
++++ b/tests/test_generation_queue.py
+@@ -0,0 +1,78 @@
++from __future__ import annotations
++
++import os
++import sqlite3
++import sys
++from pathlib import Path
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++
++from senseweave.generation.queue import (  # noqa: E402
++    GenerationQueue,
++    connect_generation_queue_db,
++)
++
++
++def test_generation_queue_constructor_creates_queue_items_schema(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "state" / "generation_queue.sqlite"
++
++    queue = GenerationQueue(db_path)
++
++    assert queue.db_path == db_path
++    assert db_path.exists()
++    with sqlite3.connect(db_path) as conn:
++        columns = {
++            row[1]: {"type": row[2], "not_null": bool(row[3]), "default": row[4]}
++            for row in conn.execute("PRAGMA table_info(queue_items)")
++        }
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++        )
++        try:
++            conn.execute(
++                """INSERT INTO queue_items
++                   (idempotency_key, payload, status, created_at, updated_at)
++                   VALUES (?, ?, ?, ?, ?)""",
++                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++            )
++        except sqlite3.IntegrityError:
++            duplicate_rejected = True
++        else:
++            duplicate_rejected = False
++
++    assert list(columns) == [
++        "id",
++        "idempotency_key",
++        "payload",
++        "status",
++        "attempts",
++        "created_at",
++        "updated_at",
++    ]
++    assert columns["payload"]["type"] == "JSON"
++    assert columns["attempts"]["default"] == "0"
++    assert duplicate_rejected is True
++
++
++def test_connect_generation_queue_db_applies_schema_idempotently(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "generation_queue.sqlite"
++
++    with connect_generation_queue_db(db_path) as conn:
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", "{}", "queued", 1.0, 1.0),
++        )
++
++    with connect_generation_queue_db(db_path) as conn:
++        rows = conn.execute("SELECT idempotency_key FROM queue_items").fetchall()
++
++    assert [row[0] for row in rows] == ["request-1"]
+
+codex
+The only files I’m staging are the new queue module and its test. The existing `progress.md`/`sdp/` changes remain untracked or unstaged.
+exec
+/bin/zsh -lc 'git add -- my-claw/tools/senseweave/generation/queue.py tests/test_generation_queue.py && git diff --cached --stat' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ my-claw/tools/senseweave/generation/queue.py | 44 ++++++++++++++++
+ tests/test_generation_queue.py               | 78 ++++++++++++++++++++++++++++
+ 2 files changed, 122 insertions(+)
+
+diff --git a/my-claw/tools/senseweave/generation/queue.py b/my-claw/tools/senseweave/generation/queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..33dfcecb38f76ce7fe14e60efcd9eb326d98cbaa
+--- /dev/null
++++ b/my-claw/tools/senseweave/generation/queue.py
+@@ -0,0 +1,44 @@
++"""SQLite-backed skeleton for generation queue state."""
++
++from __future__ import annotations
++
++import sqlite3
++from contextlib import contextmanager
++from pathlib import Path
++from typing import Iterator
++
++
++SCHEMA = """
++CREATE TABLE IF NOT EXISTS queue_items (
++    id INTEGER PRIMARY KEY,
++    idempotency_key TEXT NOT NULL UNIQUE,
++    payload JSON NOT NULL,
++    status TEXT NOT NULL,
++    attempts INTEGER NOT NULL DEFAULT 0,
++    created_at REAL NOT NULL,
++    updated_at REAL NOT NULL
++);
++"""
++
++
++@contextmanager
++def connect_generation_queue_db(db_path: str | Path) -> Iterator[sqlite3.Connection]:
++    """Open the queue DB, creating its parent directory and schema if needed."""
++    path = Path(db_path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(path, isolation_level=None, timeout=10.0)
++    conn.row_factory = sqlite3.Row
++    try:
++        conn.executescript(SCHEMA)
++        yield conn
++    finally:
++        conn.close()
++
++
++class GenerationQueue:
++    """Thin wrapper around the generation queue database."""
++
++    def __init__(self, db_path: str | Path) -> None:
++        self.db_path = Path(db_path)
++        with connect_generation_queue_db(self.db_path):
++            pass
+diff --git a/tests/test_generation_queue.py b/tests/test_generation_queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..56f30978284a298860367ae60006522eee64cc56
+--- /dev/null
++++ b/tests/test_generation_queue.py
+@@ -0,0 +1,78 @@
++from __future__ import annotations
++
++import os
++import sqlite3
++import sys
++from pathlib import Path
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++
++from senseweave.generation.queue import (  # noqa: E402
++    GenerationQueue,
++    connect_generation_queue_db,
++)
++
++
++def test_generation_queue_constructor_creates_queue_items_schema(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "state" / "generation_queue.sqlite"
++
++    queue = GenerationQueue(db_path)
++
++    assert queue.db_path == db_path
++    assert db_path.exists()
++    with sqlite3.connect(db_path) as conn:
++        columns = {
++            row[1]: {"type": row[2], "not_null": bool(row[3]), "default": row[4]}
++            for row in conn.execute("PRAGMA table_info(queue_items)")
++        }
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++        )
++        try:
++            conn.execute(
++                """INSERT INTO queue_items
++                   (idempotency_key, payload, status, created_at, updated_at)
++                   VALUES (?, ?, ?, ?, ?)""",
++                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++            )
++        except sqlite3.IntegrityError:
++            duplicate_rejected = True
++        else:
++            duplicate_rejected = False
++
++    assert list(columns) == [
++        "id",
++        "idempotency_key",
++        "payload",
++        "status",
++        "attempts",
++        "created_at",
++        "updated_at",
++    ]
++    assert columns["payload"]["type"] == "JSON"
++    assert columns["attempts"]["default"] == "0"
++    assert duplicate_rejected is True
++
++
++def test_connect_generation_queue_db_applies_schema_idempotently(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "generation_queue.sqlite"
++
++    with connect_generation_queue_db(db_path) as conn:
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", "{}", "queued", 1.0, 1.0),
++        )
++
++    with connect_generation_queue_db(db_path) as conn:
++        rows = conn.execute("SELECT idempotency_key FROM queue_items").fetchall()
++
++    assert [row[0] for row in rows] == ["request-1"]
+
+exec
+/bin/zsh -lc 'git diff --cached -- my-claw/tools/senseweave/generation/queue.py tests/test_generation_queue.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+diff --git a/my-claw/tools/senseweave/generation/queue.py b/my-claw/tools/senseweave/generation/queue.py
+new file mode 100644
+index 0000000..33dfcec
+--- /dev/null
++++ b/my-claw/tools/senseweave/generation/queue.py
+@@ -0,0 +1,44 @@
++"""SQLite-backed skeleton for generation queue state."""
++
++from __future__ import annotations
++
++import sqlite3
++from contextlib import contextmanager
++from pathlib import Path
++from typing import Iterator
++
++
++SCHEMA = """
++CREATE TABLE IF NOT EXISTS queue_items (
++    id INTEGER PRIMARY KEY,
++    idempotency_key TEXT NOT NULL UNIQUE,
++    payload JSON NOT NULL,
++    status TEXT NOT NULL,
++    attempts INTEGER NOT NULL DEFAULT 0,
++    created_at REAL NOT NULL,
++    updated_at REAL NOT NULL
++);
++"""
++
++
++@contextmanager
++def connect_generation_queue_db(db_path: str | Path) -> Iterator[sqlite3.Connection]:
++    """Open the queue DB, creating its parent directory and schema if needed."""
++    path = Path(db_path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(path, isolation_level=None, timeout=10.0)
++    conn.row_factory = sqlite3.Row
++    try:
++        conn.executescript(SCHEMA)
++        yield conn
++    finally:
++        conn.close()
++
++
++class GenerationQueue:
++    """Thin wrapper around the generation queue database."""
++
++    def __init__(self, db_path: str | Path) -> None:
++        self.db_path = Path(db_path)
++        with connect_generation_queue_db(self.db_path):
++            pass
+diff --git a/tests/test_generation_queue.py b/tests/test_generation_queue.py
+new file mode 100644
+index 0000000..56f3097
+--- /dev/null
++++ b/tests/test_generation_queue.py
+@@ -0,0 +1,78 @@
++from __future__ import annotations
++
++import os
++import sqlite3
++import sys
++from pathlib import Path
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++
++from senseweave.generation.queue import (  # noqa: E402
++    GenerationQueue,
++    connect_generation_queue_db,
++)
++
++
++def test_generation_queue_constructor_creates_queue_items_schema(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "state" / "generation_queue.sqlite"
++
++    queue = GenerationQueue(db_path)
++
++    assert queue.db_path == db_path
++    assert db_path.exists()
++    with sqlite3.connect(db_path) as conn:
++        columns = {
++            row[1]: {"type": row[2], "not_null": bool(row[3]), "default": row[4]}
++            for row in conn.execute("PRAGMA table_info(queue_items)")
++        }
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++        )
++        try:
++            conn.execute(
++                """INSERT INTO queue_items
++                   (idempotency_key, payload, status, created_at, updated_at)
++                   VALUES (?, ?, ?, ?, ?)""",
++                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++            )
++        except sqlite3.IntegrityError:
++            duplicate_rejected = True
++        else:
++            duplicate_rejected = False
++
++    assert list(columns) == [
++        "id",
++        "idempotency_key",
++        "payload",
++        "status",
++        "attempts",
++        "created_at",
++        "updated_at",
++    ]
++    assert columns["payload"]["type"] == "JSON"
++    assert columns["attempts"]["default"] == "0"
++    assert duplicate_rejected is True
++
++
++def test_connect_generation_queue_db_applies_schema_idempotently(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "generation_queue.sqlite"
++
++    with connect_generation_queue_db(db_path) as conn:
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", "{}", "queued", 1.0, 1.0),
++        )
++
++    with connect_generation_queue_db(db_path) as conn:
++        rows = conn.execute("SELECT idempotency_key FROM queue_items").fetchall()
++
++    assert [row[0] for row in rows] == ["request-1"]
+
+diff --git a/my-claw/tools/senseweave/generation/queue.py b/my-claw/tools/senseweave/generation/queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..33dfcecb38f76ce7fe14e60efcd9eb326d98cbaa
+--- /dev/null
++++ b/my-claw/tools/senseweave/generation/queue.py
+@@ -0,0 +1,44 @@
++"""SQLite-backed skeleton for generation queue state."""
++
++from __future__ import annotations
++
++import sqlite3
++from contextlib import contextmanager
++from pathlib import Path
++from typing import Iterator
++
++
++SCHEMA = """
++CREATE TABLE IF NOT EXISTS queue_items (
++    id INTEGER PRIMARY KEY,
++    idempotency_key TEXT NOT NULL UNIQUE,
++    payload JSON NOT NULL,
++    status TEXT NOT NULL,
++    attempts INTEGER NOT NULL DEFAULT 0,
++    created_at REAL NOT NULL,
++    updated_at REAL NOT NULL
++);
++"""
++
++
++@contextmanager
++def connect_generation_queue_db(db_path: str | Path) -> Iterator[sqlite3.Connection]:
++    """Open the queue DB, creating its parent directory and schema if needed."""
++    path = Path(db_path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(path, isolation_level=None, timeout=10.0)
++    conn.row_factory = sqlite3.Row
++    try:
++        conn.executescript(SCHEMA)
++        yield conn
++    finally:
++        conn.close()
++
++
++class GenerationQueue:
++    """Thin wrapper around the generation queue database."""
++
++    def __init__(self, db_path: str | Path) -> None:
++        self.db_path = Path(db_path)
++        with connect_generation_queue_db(self.db_path):
++            pass
+diff --git a/tests/test_generation_queue.py b/tests/test_generation_queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..56f30978284a298860367ae60006522eee64cc56
+--- /dev/null
++++ b/tests/test_generation_queue.py
+@@ -0,0 +1,78 @@
++from __future__ import annotations
++
++import os
++import sqlite3
++import sys
++from pathlib import Path
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++
++from senseweave.generation.queue import (  # noqa: E402
++    GenerationQueue,
++    connect_generation_queue_db,
++)
++
++
++def test_generation_queue_constructor_creates_queue_items_schema(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "state" / "generation_queue.sqlite"
++
++    queue = GenerationQueue(db_path)
++
++    assert queue.db_path == db_path
++    assert db_path.exists()
++    with sqlite3.connect(db_path) as conn:
++        columns = {
++            row[1]: {"type": row[2], "not_null": bool(row[3]), "default": row[4]}
++            for row in conn.execute("PRAGMA table_info(queue_items)")
++        }
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++        )
++        try:
++            conn.execute(
++                """INSERT INTO queue_items
++                   (idempotency_key, payload, status, created_at, updated_at)
++                   VALUES (?, ?, ?, ?, ?)""",
++                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++            )
++        except sqlite3.IntegrityError:
++            duplicate_rejected = True
++        else:
++            duplicate_rejected = False
++
++    assert list(columns) == [
++        "id",
++        "idempotency_key",
++        "payload",
++        "status",
++        "attempts",
++        "created_at",
++        "updated_at",
++    ]
++    assert columns["payload"]["type"] == "JSON"
++    assert columns["attempts"]["default"] == "0"
++    assert duplicate_rejected is True
++
++
++def test_connect_generation_queue_db_applies_schema_idempotently(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "generation_queue.sqlite"
++
++    with connect_generation_queue_db(db_path) as conn:
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", "{}", "queued", 1.0, 1.0),
++        )
++
++    with connect_generation_queue_db(db_path) as conn:
++        rows = conn.execute("SELECT idempotency_key FROM queue_items").fetchall()
++
++    assert [row[0] for row in rows] == ["request-1"]
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+A  my-claw/tools/senseweave/generation/queue.py
+ M progress.md
+ M sdp/logs/Lead_T-001_20260427T001208Zc_1777258675.log
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M sdp/runner.log
+A  tests/test_generation_queue.py
+?? sdp/logs/Lead_T-001_20260427T001208Zd_1777258881.log
+?? sdp/logs/Lead_T-007_20260427T001208Z_1777259352.log
+?? sdp/logs/Lead_T-008_20260427T001208Za_1777259776.log
+?? sdp/logs/Verify_T-001_20260427T001208Zc_1777258749.log
+?? sdp/logs/Verify_T-001_20260427T001208Zd_1777259178.log
+?? sdp/logs/Verify_T-007_20260427T001208Z_1777259622.log
+?? sdp/logs/claude_1777259730.log
+
+diff --git a/my-claw/tools/senseweave/generation/queue.py b/my-claw/tools/senseweave/generation/queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..33dfcecb38f76ce7fe14e60efcd9eb326d98cbaa
+--- /dev/null
++++ b/my-claw/tools/senseweave/generation/queue.py
+@@ -0,0 +1,44 @@
++"""SQLite-backed skeleton for generation queue state."""
++
++from __future__ import annotations
++
++import sqlite3
++from contextlib import contextmanager
++from pathlib import Path
++from typing import Iterator
++
++
++SCHEMA = """
++CREATE TABLE IF NOT EXISTS queue_items (
++    id INTEGER PRIMARY KEY,
++    idempotency_key TEXT NOT NULL UNIQUE,
++    payload JSON NOT NULL,
++    status TEXT NOT NULL,
++    attempts INTEGER NOT NULL DEFAULT 0,
++    created_at REAL NOT NULL,
++    updated_at REAL NOT NULL
++);
++"""
++
++
++@contextmanager
++def connect_generation_queue_db(db_path: str | Path) -> Iterator[sqlite3.Connection]:
++    """Open the queue DB, creating its parent directory and schema if needed."""
++    path = Path(db_path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(path, isolation_level=None, timeout=10.0)
++    conn.row_factory = sqlite3.Row
++    try:
++        conn.executescript(SCHEMA)
++        yield conn
++    finally:
++        conn.close()
++
++
++class GenerationQueue:
++    """Thin wrapper around the generation queue database."""
++
++    def __init__(self, db_path: str | Path) -> None:
++        self.db_path = Path(db_path)
++        with connect_generation_queue_db(self.db_path):
++            pass
+diff --git a/tests/test_generation_queue.py b/tests/test_generation_queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..56f30978284a298860367ae60006522eee64cc56
+--- /dev/null
++++ b/tests/test_generation_queue.py
+@@ -0,0 +1,78 @@
++from __future__ import annotations
++
++import os
++import sqlite3
++import sys
++from pathlib import Path
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++
++from senseweave.generation.queue import (  # noqa: E402
++    GenerationQueue,
++    connect_generation_queue_db,
++)
++
++
++def test_generation_queue_constructor_creates_queue_items_schema(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "state" / "generation_queue.sqlite"
++
++    queue = GenerationQueue(db_path)
++
++    assert queue.db_path == db_path
++    assert db_path.exists()
++    with sqlite3.connect(db_path) as conn:
++        columns = {
++            row[1]: {"type": row[2], "not_null": bool(row[3]), "default": row[4]}
++            for row in conn.execute("PRAGMA table_info(queue_items)")
++        }
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++        )
++        try:
++            conn.execute(
++                """INSERT INTO queue_items
++                   (idempotency_key, payload, status, created_at, updated_at)
++                   VALUES (?, ?, ?, ?, ?)""",
++                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++            )
++        except sqlite3.IntegrityError:
++            duplicate_rejected = True
++        else:
++            duplicate_rejected = False
++
++    assert list(columns) == [
++        "id",
++        "idempotency_key",
++        "payload",
++        "status",
++        "attempts",
++        "created_at",
++        "updated_at",
++    ]
++    assert columns["payload"]["type"] == "JSON"
++    assert columns["attempts"]["default"] == "0"
++    assert duplicate_rejected is True
++
++
++def test_connect_generation_queue_db_applies_schema_idempotently(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "generation_queue.sqlite"
++
++    with connect_generation_queue_db(db_path) as conn:
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", "{}", "queued", 1.0, 1.0),
++        )
++
++    with connect_generation_queue_db(db_path) as conn:
++        rows = conn.execute("SELECT idempotency_key FROM queue_items").fetchall()
++
++    assert [row[0] for row in rows] == ["request-1"]
+
+codex
+The index contains only the two T-008 files. I’m committing them now with the requested task tag.
+exec
+/bin/zsh -lc 'git commit -m "feat(generation): add queue sqlite skeleton [T-008@20260427T001208Za]"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+[feat/graceful-degradation 5ed73c3] feat(generation): add queue sqlite skeleton [T-008@20260427T001208Za]
+ 2 files changed, 122 insertions(+)
+ create mode 100644 my-claw/tools/senseweave/generation/queue.py
+ create mode 100644 tests/test_generation_queue.py
+
+diff --git a/my-claw/tools/senseweave/generation/queue.py b/my-claw/tools/senseweave/generation/queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..33dfcecb38f76ce7fe14e60efcd9eb326d98cbaa
+--- /dev/null
++++ b/my-claw/tools/senseweave/generation/queue.py
+@@ -0,0 +1,44 @@
++"""SQLite-backed skeleton for generation queue state."""
++
++from __future__ import annotations
++
++import sqlite3
++from contextlib import contextmanager
++from pathlib import Path
++from typing import Iterator
++
++
++SCHEMA = """
++CREATE TABLE IF NOT EXISTS queue_items (
++    id INTEGER PRIMARY KEY,
++    idempotency_key TEXT NOT NULL UNIQUE,
++    payload JSON NOT NULL,
++    status TEXT NOT NULL,
++    attempts INTEGER NOT NULL DEFAULT 0,
++    created_at REAL NOT NULL,
++    updated_at REAL NOT NULL
++);
++"""
++
++
++@contextmanager
++def connect_generation_queue_db(db_path: str | Path) -> Iterator[sqlite3.Connection]:
++    """Open the queue DB, creating its parent directory and schema if needed."""
++    path = Path(db_path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(path, isolation_level=None, timeout=10.0)
++    conn.row_factory = sqlite3.Row
++    try:
++        conn.executescript(SCHEMA)
++        yield conn
++    finally:
++        conn.close()
++
++
++class GenerationQueue:
++    """Thin wrapper around the generation queue database."""
++
++    def __init__(self, db_path: str | Path) -> None:
++        self.db_path = Path(db_path)
++        with connect_generation_queue_db(self.db_path):
++            pass
+diff --git a/tests/test_generation_queue.py b/tests/test_generation_queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..56f30978284a298860367ae60006522eee64cc56
+--- /dev/null
++++ b/tests/test_generation_queue.py
+@@ -0,0 +1,78 @@
++from __future__ import annotations
++
++import os
++import sqlite3
++import sys
++from pathlib import Path
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++
++from senseweave.generation.queue import (  # noqa: E402
++    GenerationQueue,
++    connect_generation_queue_db,
++)
++
++
++def test_generation_queue_constructor_creates_queue_items_schema(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "state" / "generation_queue.sqlite"
++
++    queue = GenerationQueue(db_path)
++
++    assert queue.db_path == db_path
++    assert db_path.exists()
++    with sqlite3.connect(db_path) as conn:
++        columns = {
++            row[1]: {"type": row[2], "not_null": bool(row[3]), "default": row[4]}
++            for row in conn.execute("PRAGMA table_info(queue_items)")
++        }
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++        )
++        try:
++            conn.execute(
++                """INSERT INTO queue_items
++                   (idempotency_key, payload, status, created_at, updated_at)
++                   VALUES (?, ?, ?, ?, ?)""",
++                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++            )
++        except sqlite3.IntegrityError:
++            duplicate_rejected = True
++        else:
++            duplicate_rejected = False
++
++    assert list(columns) == [
++        "id",
++        "idempotency_key",
++        "payload",
++        "status",
++        "attempts",
++        "created_at",
++        "updated_at",
++    ]
++    assert columns["payload"]["type"] == "JSON"
++    assert columns["attempts"]["default"] == "0"
++    assert duplicate_rejected is True
++
++
++def test_connect_generation_queue_db_applies_schema_idempotently(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "generation_queue.sqlite"
++
++    with connect_generation_queue_db(db_path) as conn:
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", "{}", "queued", 1.0, 1.0),
++        )
++
++    with connect_generation_queue_db(db_path) as conn:
++        rows = conn.execute("SELECT idempotency_key FROM queue_items").fetchall()
++
++    assert [row[0] for row in rows] == ["request-1"]
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/logs/Lead_T-001_20260427T001208Zc_1777258675.log
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M sdp/runner.log
+?? sdp/logs/Lead_T-001_20260427T001208Zd_1777258881.log
+?? sdp/logs/Lead_T-007_20260427T001208Z_1777259352.log
+?? sdp/logs/Lead_T-008_20260427T001208Za_1777259776.log
+?? sdp/logs/Verify_T-001_20260427T001208Zc_1777258749.log
+?? sdp/logs/Verify_T-001_20260427T001208Zd_1777259178.log
+?? sdp/logs/Verify_T-007_20260427T001208Z_1777259622.log
+?? sdp/logs/claude_1777259730.log
+
+diff --git a/my-claw/tools/senseweave/generation/queue.py b/my-claw/tools/senseweave/generation/queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..33dfcecb38f76ce7fe14e60efcd9eb326d98cbaa
+--- /dev/null
++++ b/my-claw/tools/senseweave/generation/queue.py
+@@ -0,0 +1,44 @@
++"""SQLite-backed skeleton for generation queue state."""
++
++from __future__ import annotations
++
++import sqlite3
++from contextlib import contextmanager
++from pathlib import Path
++from typing import Iterator
++
++
++SCHEMA = """
++CREATE TABLE IF NOT EXISTS queue_items (
++    id INTEGER PRIMARY KEY,
++    idempotency_key TEXT NOT NULL UNIQUE,
++    payload JSON NOT NULL,
++    status TEXT NOT NULL,
++    attempts INTEGER NOT NULL DEFAULT 0,
++    created_at REAL NOT NULL,
++    updated_at REAL NOT NULL
++);
++"""
++
++
++@contextmanager
++def connect_generation_queue_db(db_path: str | Path) -> Iterator[sqlite3.Connection]:
++    """Open the queue DB, creating its parent directory and schema if needed."""
++    path = Path(db_path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(path, isolation_level=None, timeout=10.0)
++    conn.row_factory = sqlite3.Row
++    try:
++        conn.executescript(SCHEMA)
++        yield conn
++    finally:
++        conn.close()
++
++
++class GenerationQueue:
++    """Thin wrapper around the generation queue database."""
++
++    def __init__(self, db_path: str | Path) -> None:
++        self.db_path = Path(db_path)
++        with connect_generation_queue_db(self.db_path):
++            pass
+diff --git a/tests/test_generation_queue.py b/tests/test_generation_queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..56f30978284a298860367ae60006522eee64cc56
+--- /dev/null
++++ b/tests/test_generation_queue.py
+@@ -0,0 +1,78 @@
++from __future__ import annotations
++
++import os
++import sqlite3
++import sys
++from pathlib import Path
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++
++from senseweave.generation.queue import (  # noqa: E402
++    GenerationQueue,
++    connect_generation_queue_db,
++)
++
++
++def test_generation_queue_constructor_creates_queue_items_schema(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "state" / "generation_queue.sqlite"
++
++    queue = GenerationQueue(db_path)
++
++    assert queue.db_path == db_path
++    assert db_path.exists()
++    with sqlite3.connect(db_path) as conn:
++        columns = {
++            row[1]: {"type": row[2], "not_null": bool(row[3]), "default": row[4]}
++            for row in conn.execute("PRAGMA table_info(queue_items)")
++        }
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++        )
++        try:
++            conn.execute(
++                """INSERT INTO queue_items
++                   (idempotency_key, payload, status, created_at, updated_at)
++                   VALUES (?, ?, ?, ?, ?)""",
++                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++            )
++        except sqlite3.IntegrityError:
++            duplicate_rejected = True
++        else:
++            duplicate_rejected = False
++
++    assert list(columns) == [
++        "id",
++        "idempotency_key",
++        "payload",
++        "status",
++        "attempts",
++        "created_at",
++        "updated_at",
++    ]
++    assert columns["payload"]["type"] == "JSON"
++    assert columns["attempts"]["default"] == "0"
++    assert duplicate_rejected is True
++
++
++def test_connect_generation_queue_db_applies_schema_idempotently(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "generation_queue.sqlite"
++
++    with connect_generation_queue_db(db_path) as conn:
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", "{}", "queued", 1.0, 1.0),
++        )
++
++    with connect_generation_queue_db(db_path) as conn:
++        rows = conn.execute("SELECT idempotency_key FROM queue_items").fetchall()
++
++    assert [row[0] for row in rows] == ["request-1"]
+
+codex
+Implemented and committed `5ed73c3`:
+
+`feat(generation): add queue sqlite skeleton [T-008@20260427T001208Za]`
+
+Changes:
+- Added [queue.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/generation/queue.py:1) with `queue_items` SQLite schema, idempotent `connect_generation_queue_db()`, and `GenerationQueue(db_path)`.
+- Added [test_generation_queue.py](/Users/anthony/Programming/PromptClaw/tests/test_generation_queue.py:1) covering schema creation, unique idempotency keys, and idempotent init.
+
+Validation passed:
+- `pip install -e '.[dev]'`
+- `pytest tests/ -x --tb=short` → `3654 passed, 2 skipped`
+- `ruff check src/ tests/`
+- `mypy src/`
+- Extra: `ruff check my-claw/tools/senseweave/generation/queue.py tests/test_generation_queue.py`
+
+Existing `progress.md` and `sdp/` changes remain uncommitted and untouched.
+diff --git a/my-claw/tools/senseweave/generation/queue.py b/my-claw/tools/senseweave/generation/queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..33dfcecb38f76ce7fe14e60efcd9eb326d98cbaa
+--- /dev/null
++++ b/my-claw/tools/senseweave/generation/queue.py
+@@ -0,0 +1,44 @@
++"""SQLite-backed skeleton for generation queue state."""
++
++from __future__ import annotations
++
++import sqlite3
++from contextlib import contextmanager
++from pathlib import Path
++from typing import Iterator
++
++
++SCHEMA = """
++CREATE TABLE IF NOT EXISTS queue_items (
++    id INTEGER PRIMARY KEY,
++    idempotency_key TEXT NOT NULL UNIQUE,
++    payload JSON NOT NULL,
++    status TEXT NOT NULL,
++    attempts INTEGER NOT NULL DEFAULT 0,
++    created_at REAL NOT NULL,
++    updated_at REAL NOT NULL
++);
++"""
++
++
++@contextmanager
++def connect_generation_queue_db(db_path: str | Path) -> Iterator[sqlite3.Connection]:
++    """Open the queue DB, creating its parent directory and schema if needed."""
++    path = Path(db_path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(path, isolation_level=None, timeout=10.0)
++    conn.row_factory = sqlite3.Row
++    try:
++        conn.executescript(SCHEMA)
++        yield conn
++    finally:
++        conn.close()
++
++
++class GenerationQueue:
++    """Thin wrapper around the generation queue database."""
++
++    def __init__(self, db_path: str | Path) -> None:
++        self.db_path = Path(db_path)
++        with connect_generation_queue_db(self.db_path):
++            pass
+diff --git a/tests/test_generation_queue.py b/tests/test_generation_queue.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..56f30978284a298860367ae60006522eee64cc56
+--- /dev/null
++++ b/tests/test_generation_queue.py
+@@ -0,0 +1,78 @@
++from __future__ import annotations
++
++import os
++import sqlite3
++import sys
++from pathlib import Path
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
++
++from senseweave.generation.queue import (  # noqa: E402
++    GenerationQueue,
++    connect_generation_queue_db,
++)
++
++
++def test_generation_queue_constructor_creates_queue_items_schema(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "state" / "generation_queue.sqlite"
++
++    queue = GenerationQueue(db_path)
++
++    assert queue.db_path == db_path
++    assert db_path.exists()
++    with sqlite3.connect(db_path) as conn:
++        columns = {
++            row[1]: {"type": row[2], "not_null": bool(row[3]), "default": row[4]}
++            for row in conn.execute("PRAGMA table_info(queue_items)")
++        }
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++        )
++        try:
++            conn.execute(
++                """INSERT INTO queue_items
++                   (idempotency_key, payload, status, created_at, updated_at)
++                   VALUES (?, ?, ?, ?, ?)""",
++                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
++            )
++        except sqlite3.IntegrityError:
++            duplicate_rejected = True
++        else:
++            duplicate_rejected = False
++
++    assert list(columns) == [
++        "id",
++        "idempotency_key",
++        "payload",
++        "status",
++        "attempts",
++        "created_at",
++        "updated_at",
++    ]
++    assert columns["payload"]["type"] == "JSON"
++    assert columns["attempts"]["default"] == "0"
++    assert duplicate_rejected is True
++
++
++def test_connect_generation_queue_db_applies_schema_idempotently(
++    tmp_path: Path,
++) -> None:
++    db_path = tmp_path / "generation_queue.sqlite"
++
++    with connect_generation_queue_db(db_path) as conn:
++        conn.execute(
++            """INSERT INTO queue_items
++               (idempotency_key, payload, status, created_at, updated_at)
++               VALUES (?, ?, ?, ?, ?)""",
++            ("request-1", "{}", "queued", 1.0, 1.0),
++        )
++
++    with connect_generation_queue_db(db_path) as conn:
++        rows = conn.execute("SELECT idempotency_key FROM queue_items").fetchall()
++
++    assert [row[0] for row in rows] == ["request-1"]
+
+2026-04-27T03:19:55.242419Z ERROR codex_core::session: failed to record rollout items: thread 019dccf0-0e30-7d52-a8fc-9fed52e13fcf not found
+tokens used
+79,623

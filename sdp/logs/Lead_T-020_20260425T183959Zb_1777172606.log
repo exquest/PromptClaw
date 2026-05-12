@@ -1,0 +1,17 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1410 chars)
+---
+
+T-020@20260425T183959Zb done.
+
+**What changed**
+- `my-claw/tools/senseweave/sampler_dispatch.py`: added `EffectsBus` class with `apply_mode(mode)` that pushes `/n_set` to the shared `sw_sampler_fx` bus only when the mode changes (idempotent for repeats; unknown modes resolve to `DEFAULT_FX_PRESET`).
+- `tests/test_sampler_dispatch.py`: 8 new tests covering the apply path and CCS-026 artistic-intent assertions — solitary & evening_reflection both beat working_ambience on `verb_mix`/`delay_feedback`/`delay_time`; working_ambience is the floor on every effect axis; storm tops all other presets on `freeze_amount` and `comb_b_amount` (and is ≥0.5 on both).
+
+**Validation**
+- `pytest tests/test_sampler_dispatch.py`: 40 passed
+- `pytest tests/`: 3421 passed
+- `ruff check`: clean
+- `mypy`: only the two pre-existing `BufferLoader`/`_DispatchRecord` errors in `dispatch_sample` (called out in the prior verify report) — no new errors
+
+**Commit**: `8323668 feat(sampler-dispatch): add EffectsBus apply path for per-mode FX presets [T-020@20260425T183959Zb]`

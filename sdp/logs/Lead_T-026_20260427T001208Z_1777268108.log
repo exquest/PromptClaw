@@ -1,0 +1,3374 @@
+Command: codex exec --dangerously-bypass-approvals-and-sandbox -c model_reasoning_effort=xhigh -m gpt-5.5 -
+Prompt delivered via: stdin (1583 chars)
+---
+
+Implemented and committed T-026.
+
+Commit: `90ab15e test(generation): cover arc prompt fragments [T-026@20260427T001208Z]`
+
+Changed:
+- Set unknown arc fallback to exact neutral `in-progress` in [conditioner.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/generation/conditioner.py:66).
+- Added regression coverage for canonical `_ARC_FRAGMENTS`, procedural arc coverage, prompt contribution per arc, and fallback behavior in [test_generation_conditioner.py](/Users/anthony/Programming/PromptClaw/tests/test_generation_conditioner.py:73).
+
+Validation passed:
+- `pip install -e '.[dev]'`
+- `pytest tests/test_generation_conditioner.py -x --tb=short`
+- `pytest tests/ -x --tb=short` → `3718 passed, 3 skipped`
+- `ruff check src/ tests/`
+- `mypy src/`
+- `ruff check my-claw/tools/senseweave/generation/conditioner.py tests/test_generation_conditioner.py`
+
+Only pre-existing unrelated workspace changes remain unstaged.
+
+--- STDERR ---
+OpenAI Codex v0.125.0 (research preview)
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019dcd6f-30e6-7933-8c92-fd2815f60581
+--------
+user
+<!--
+  sdp-cli agent-specific template for codex
+  Edit this file to tune how codex handles lead_t1.md.
+  The shipped default lives at src/sdp/prompts/templates/lead_t1.md.
+  Delete this file to revert to the default.
+-->
+# Task T-026@20260427T001208Z: Define per-arc-phase fragment overlays (Emergence, Crystallization, Divination, Convergence, Conversation, Reflection, etc.) feeding into prompt composition.
+
+## Acceptance Criteria
+
+- `_ARC_FRAGMENTS` dict keyed by ArcPhase name<br/>- Each value contributes one short string fragment to the final prompt<br/>- Unknown arc names fall back to a neutral "in-progress" fragment<br/>- Tests assert canonical fragment per arc and the fallback path
+
+**Tier:** T1
+
+## Instructions
+
+Handle this directly. Skip broad discovery and do not write a spec.
+
+1. Read only the file(s) you expect to change and the closest relevant tests.
+2. Make the smallest change that satisfies the task.
+3. Add or update a regression test when behavior changes.
+4. Run focused validation, then broader checks if needed.
+5. Commit as soon as the change works: `<type>(scope): summary [T-026@20260427T001208Z]`
+
+## Rules
+
+- Stay in scope; no unrelated cleanup.
+- Follow existing patterns and type hints.
+- Record blocking assumptions in `ESCALATIONS.md`.
+- Do not finish with uncommitted changes you introduced for this task.
+- Do not clean, revert, commit, or otherwise normalize unrelated pre-existing
+  workspace changes.
+
+## Validation
+
+Run before committing:
+```bash
+pip install -e '.[dev]'
+pytest tests/ -x --tb=short
+ruff check src/ tests/
+mypy src/
+```
+
+codex
+I’ll make this as a narrow TDD change: find the prompt composition code around `ArcPhase`, inspect its nearest tests, add the fragment behavior and regression coverage, then run the requested checks and commit only my changes.
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/logs/Lead_T-023_20260427T001208Zc_1777267823.log
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M sdp/runner.log
+?? sdp/logs/Lead_T-026_20260427T001208Z_1777268108.log
+?? sdp/logs/Verify_T-023_20260427T001208Zc_1777267925.log
+?? sdp/verification/t-023@20260427t001208zc-verify.md
+
+exec
+/bin/zsh -lc 'rg -n "ArcPhase|arc phase|arc_phase|_ARC" src tests' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_emsd_runtime.py:13:def test_build_live_emsd_context_tracks_arc_phase_and_density_bias() -> None:
+tests/test_emsd_runtime.py:60:    assert extras["arc_phase"] == "Divination"
+tests/test_generation_e2e_cypherclaw.py:49:        arc_phase: str,
+tests/test_generation_e2e_cypherclaw.py:58:            arc_phase=arc_phase,
+tests/test_generation_e2e_cypherclaw.py:297:        SimpleNamespace(metadata={"arc_phase": ARC_PHASE}),
+tests/test_generation_e2e_cypherclaw.py:328:            arc_phase=ARC_PHASE,
+tests/test_narrative_envelope.py:27:    arc_phase: str = "Emergence",
+tests/test_narrative_envelope.py:36:        arc_phase=arc_phase,
+tests/test_narrative_envelope.py:49:    def test_arc_phase_produces_distinct_tension_shapes(self) -> None:
+tests/test_narrative_envelope.py:52:            phase: envelope_for_beat(_make_beat(arc_phase=phase))
+tests/test_narrative_envelope.py:126:            arc_phase="Conversation",
+tests/test_narrative_envelope.py:147:                beat = _make_beat(arc_phase=phase, section_function=func)
+tests/test_narrative_envelope.py:158:        unknown = envelope_for_beat(_make_beat(arc_phase="NonexistentPhase"))
+tests/test_narrative_envelope.py:159:        emergence = envelope_for_beat(_make_beat(arc_phase="Emergence"))
+tests/test_narrative_envelope.py:173:            arc_phase="Emergence",
+tests/test_narrative_envelope.py:182:            arc_phase="Emergence",
+tests/test_narrative_envelope.py:194:            arc_phase="Emergence",
+tests/test_narrative_envelope.py:203:            arc_phase="Emergence",
+tests/test_narrative_envelope.py:215:            arc_phase="Emergence",
+tests/test_narrative_envelope.py:231:        assert beat.arc_phase == directive.phase.name
+tests/test_narrative_envelope.py:239:    def test_all_arc_phases_produce_valid_beats(self) -> None:
+tests/test_render_events.py:9:from cypherclaw.render.events import Event, IntentTag, PerformanceIntent, SectionEnvelope, VALID_ARC_SHAPES
+tests/test_render_events.py:130:        for shape in VALID_ARC_SHAPES:
+tests/test_sample_capture_verify.py:41:    assert descriptor["arc_phase"] == "rest"
+tests/test_sample_capture_verify.py:70:        "arc_phase": "rest",
+tests/test_inner_life.py:217:        assert s.arc_phase == "build"
+tests/test_inner_life.py:268:                       arc_phase="climax")
+tests/test_inner_life.py:275:                       arc_phase="climax")
+tests/test_inner_life.py:283:        s = InnerState(mode="solitary", arc_phase="rest",
+tests/test_sample_library.py:89:    arc_phase: str | None = "Emergence",
+tests/test_sample_library.py:99:        arc_phase=arc_phase,
+tests/test_sample_library.py:137:        pitch_hz=220.0, arc_phase="Emergence", mood=0.4,
+tests/test_sample_library.py:143:        pitch_hz=880.0, arc_phase="Convergence", mood=-0.3,
+tests/test_sample_library.py:149:        pitch_hz=440.0, arc_phase="Convergence", mood=0.1,
+tests/test_sample_library.py:155:        pitch_hz=110.0, arc_phase="Emergence", mood=0.8,
+tests/test_sample_library.py:171:    by_phase = [r.sample_id for r in library.find(arc_phase="Convergence")]
+tests/test_sample_library.py:217:    assert library.find(arc_phase="Crystallization") == []
+tests/test_self_listener_tracker_runtime.py:63:                "arc_phase": "Conversation",
+tests/test_self_listener_tracker_runtime.py:78:        assert glyph["arc_phase"] == "Conversation"
+tests/test_sample_dsp_activity.py:216:            "arc_phase": "Crystallization",
+tests/test_sample_dsp_activity.py:276:            "arc_phase": "Emergence",
+tests/test_sample_dsp_activity.py:311:            "arc_phase": "Crystallization",
+tests/test_sample_dsp_activity.py:346:            "arc_phase": "Emergence",
+tests/test_sample_capture_daemon.py:513:            "arc_phase": "Climax",
+tests/test_sample_capture_daemon.py:526:    assert tags.arc_phase == "climax"
+tests/test_sample_capture_daemon.py:543:    assert tags.arc_phase == "unknown"
+tests/test_sample_capture_daemon.py:554:            "arc_phase": "intermission",
+tests/test_sample_capture_daemon.py:561:    assert tags.arc_phase == "unknown"
+tests/test_sample_capture_daemon.py:572:        "arc_phase": "rest",
+tests/test_sample_capture_daemon.py:579:    assert tags.arc_phase == "rest"
+tests/test_sample_capture_daemon.py:589:        {"organism": {"arc_phase": "build"}}, captured_at=1777152600.0
+tests/test_sample_capture_daemon.py:594:        "arc_phase",
+tests/test_sample_capture_daemon.py:609:    assert payload["arc_phase"] == "build"
+tests/test_sample_capture_daemon.py:790:        context={"organism": {"arc_phase": "rest"}},
+tests/test_sample_capture_daemon.py:795:    assert tags.arc_phase == "rest"
+tests/test_sample_capture_daemon.py:802:    assert payload["arc_phase"] == "rest"
+tests/test_sample_capture_daemon.py:814:    assert tags.arc_phase == "unknown"
+tests/test_sample_capture_daemon.py:831:                "arc_phase": "rest",
+tests/test_sample_capture_daemon.py:844:    assert capture.tags.arc_phase == "rest"
+tests/test_sample_capture_daemon.py:871:                "arc_phase": "rest",
+tests/test_sample_capture_daemon.py:886:            SELECT source, path, arc_phase, mood_label, presence, someone_here,
+tests/test_sample_capture_daemon.py:905:    assert payload["arc_phase"] == "rest"
+tests/test_sample_capture_daemon.py:917:            "arc_phase": "climax",
+tests/test_sample_capture_daemon.py:931:    assert capture.tags.arc_phase == "climax"
+tests/test_sample_capture_daemon.py:939:            "SELECT source, arc_phase, presence, acoustic_tags_json FROM samples WHERE sample_id = ?",
+tests/test_sample_capture_daemon.py:1085:        "arc_phase": "rest",
+tests/test_sample_capture_daemon.py:1171:        _passing_score_summary(arc_phase="rest", mood="content", mode="solo", song_id=42),
+tests/test_sample_capture_daemon.py:1178:    assert capture.tags.arc_phase == "rest"
+tests/test_sample_capture_daemon.py:1191:    assert payload["arc_phase"] == "rest"
+tests/test_synthesis_architecture_registry.py:12:    REQUIRED_ARCHITECTURES,
+tests/test_synthesis_architecture_registry.py:28:        assert REQUIRED_ARCHITECTURES <= covered_architectures()
+tests/test_synthesis_architecture_registry.py:34:        assert set(ARCHITECTURE_REGISTRY.keys()) == REQUIRED_ARCHITECTURES
+tests/test_synthesis_architecture_registry.py:102:class TestArcPhaseAffinity:
+tests/test_synthesis_architecture_registry.py:194:        assert covered_architectures() == REQUIRED_ARCHITECTURES
+tests/test_synthesis_architecture_registry.py:201:    def test_arc_phase_synthesis_targets_are_registered(self) -> None:
+tests/test_synthesis_architecture_registry.py:210:    def test_arc_phase_best_match_agrees_with_procedural_arc(self) -> None:
+src/cypherclaw/render/narrative_envelope.py:23:    arc_phase: str
+src/cypherclaw/render/narrative_envelope.py:98:    phase = beat.arc_phase
+src/cypherclaw/render/narrative_envelope.py:124:    arc_phase: str,
+src/cypherclaw/render/narrative_envelope.py:156:        arc_phase=phase_name,
+src/cypherclaw/render/narrative_envelope.py:168:        arc_phase=phase_name,
+src/cypherclaw/render/events.py:25:VALID_ARC_SHAPES: frozenset[str] = frozenset(
+src/cypherclaw/render/events.py:54:        if self.arc_shape not in VALID_ARC_SHAPES:
+src/cypherclaw/render/events.py:56:                f"arc_shape must be one of {sorted(VALID_ARC_SHAPES)}, "
+tests/test_archive_daemon_runtime.py:18:    monkeypatch.setenv("CYPHERCLAW_ARCHIVE_RECORDINGS_DIR", str(archive_root / "archive"))
+tests/test_production_course_knowledge_base.py:16:    arc_phase_profile,
+tests/test_production_course_knowledge_base.py:19:    load_arc_phase_profiles,
+tests/test_production_course_knowledge_base.py:46:def test_required_arc_phase_profiles_are_present_and_loadable() -> None:
+tests/test_production_course_knowledge_base.py:47:    profiles = {profile.phase_name: profile for profile in load_arc_phase_profiles()}
+tests/test_production_course_knowledge_base.py:51:        profile = arc_phase_profile(phase_name)
+tests/test_production_course_knowledge_base.py:70:            "arc_phase": "Conversation",
+tests/test_generation_conditioner.py:80:    arc_phase: str,
+tests/test_generation_conditioner.py:86:    for text in (mode_name, arc_phase):
+tests/test_generation_conditioner.py:131:    assert req.arc_phase == "Emergence"
+tests/test_generation_conditioner.py:171:        arc_phase="Emergence",
+tests/test_piece_brief.py:120:        narrative={"mood": 0.5},  # arc_phase missing → no derivation
+tests/test_piece_brief.py:135:        "arc_phase": "rise",
+tests/test_piece_brief.py:170:    """Different arc phases produce different beat content."""
+tests/test_piece_brief.py:182:            narrative={"arc_phase": phase, "mood": 0.0, "creative_energy": 0.5, "curiosity": 0.5},
+tests/test_piece_brief.py:204:        narrative={"arc_phase": "rise", "creative_energy": 0.9, "curiosity": 0.5},
+tests/test_piece_brief.py:209:        narrative={"arc_phase": "rise", "creative_energy": 0.1, "curiosity": 0.5},
+tests/test_piece_brief.py:228:        narrative={"arc_phase": "rise", "curiosity": 0.9, "creative_energy": 0.5},
+tests/test_piece_brief.py:246:        narrative={"arc_phase": "climax", "mood": 0.6, "creative_energy": 0.8, "curiosity": 0.5},
+tests/test_piece_brief.py:251:        narrative={"arc_phase": "climax", "mood": -0.6, "creative_energy": 0.2, "curiosity": 0.5},
+tests/test_generation_storage.py:41:        arc_phase="Emergence",
+tests/test_generation_storage.py:63:    assert record.arc_phase == "Emergence"
+tests/test_musical_integration_runtime.py:27:            "arc_phase": "Emergence",
+tests/test_musical_integration_runtime.py:92:            "arc_phase": "Emergence",
+tests/test_sample_record_context.py:64:        arc_phase="Emergence",
+tests/test_genre_literacy.py:35:        arc_phase="Conversation",
+tests/test_genre_literacy.py:44:        arc_phase="Conversation",
+tests/test_genre_literacy.py:49:        arc_phase="Conversation",
+tests/test_genre_literacy.py:84:def test_every_strategy_has_all_arc_phases() -> None:
+tests/test_genre_literacy.py:88:            f"{genre_id} missing arc phases"
+tests/test_genre_literacy.py:106:        arc_phase="Crystallization",
+tests/test_genre_literacy.py:116:        arc_phase="Emergence",
+tests/test_music_theory.py:162:    def test_every_interval_has_arc_phase(self) -> None:
+tests/test_music_theory.py:168:            assert iv.arc_phase in valid_phases, f"{iv.name} has invalid phase {iv.arc_phase}"
+tests/test_composer_quote_verify.py:56:        descriptor_arc_phase=descriptor.tags.arc_phase,
+tests/test_composer_quote_verify.py:61:    assert match.arc_phase == descriptor.tags.arc_phase
+tests/test_composer_quote_verify.py:67:def test_find_motif_tag_match_returns_none_when_arc_phase_diverges(tmp_path) -> None:
+tests/test_composer_quote_verify.py:79:        descriptor_arc_phase="climax",
+tests/test_music_tracker.py:121:                "arc_phase": "Convergence",
+tests/test_counterpoint_rules.py:117:class TestArcPhaseAffinity:
+tests/test_generation_composer_hook.py:66:        arc_phase="Emergence",
+tests/test_generation_composer_hook.py:72:        arc_phase="Emergence",
+tests/test_generation_composer_hook.py:80:    assert first["arc_phase"] == "Emergence"
+tests/test_production_course_integration.py:128:def test_proxy_arc_phase_contour() -> None:
+tests/test_production_course_integration.py:130:    contour = json.loads(tree.metadata["arc_phase_contour"])
+tests/test_procedural_arc.py:13:def test_arc_phase_boundaries_follow_the_five_stage_cycle() -> None:
+tests/test_procedural_arc.py:81:def test_arc_phases_expose_production_target_payloads() -> None:
+tests/test_tracker_compiler.py:1032:    contour = json.loads(tree.metadata["arc_phase_contour"])
+tests/test_tracker_compiler.py:1057:        assert scene.metadata["arc_phase"] == expected["arc_phase"]
+tests/test_tracker_compiler.py:1068:        if current.metadata["arc_phase"] == target.metadata["arc_phase"]:
+tests/test_sample_selector.py:37:    arc_phase: str | None = "Emergence",
+tests/test_sample_selector.py:49:        arc_phase=arc_phase,
+tests/test_sample_selector.py:100:        arc_phase="Emergence",
+tests/test_sample_selector.py:109:        arc_phase="Emergence",
+tests/test_sample_selector.py:119:    # All same source, same arc_phase; mood scalar varies. Target mood is positive.
+tests/test_sample_selector.py:127:        arc_phase="Emergence",
+tests/test_sample_selector.py:136:        arc_phase="Emergence",
+tests/test_sample_selector.py:144:def test_arc_phase_mismatch_falls_back_to_character_tags(tmp_path: Path) -> None:
+tests/test_sample_selector.py:147:    _add(library, tmp_path, "warm_a", source="library", arc_phase="Emergence",
+tests/test_sample_selector.py:149:    _add(library, tmp_path, "voicey", source="library", arc_phase="Emergence",
+tests/test_sample_selector.py:155:        arc_phase="Convergence",
+tests/test_sample_selector.py:166:    # Only `room` source samples; arc_phase mismatch; no target_character.
+tests/test_sample_selector.py:167:    _add(library, tmp_path, "r1", source="room", arc_phase="Emergence", mood=0.5)
+tests/test_sample_selector.py:168:    _add(library, tmp_path, "r2", source="room", arc_phase="Emergence", mood=0.5)
+tests/test_sample_selector.py:173:        arc_phase="Crystallization",
+tests/test_sample_selector.py:194:            arc_phase="Emergence",
+tests/test_sample_selector.py:206:        arc_phase="Emergence",
+tests/test_sample_selector.py:223:            arc_phase="Emergence",
+tests/test_sample_selector.py:245:        mode=COMPANION, arc_phase="Emergence",
+tests/test_sample_selector.py:249:        mode=COMPANION, arc_phase="Emergence",
+tests/test_sample_selector.py:258:        mode=COMPANION, arc_phase="Emergence",
+tests/test_sample_selector.py:263:        mode=COMPANION, arc_phase="Emergence",
+tests/test_sample_selector.py:275:        arc_phase="Emergence",
+tests/test_sample_selector.py:288:        arc_phase="Emergence",
+tests/test_sample_selector.py:300:        arc_phase="Emergence",
+tests/test_sample_selector.py:308:def test_generated_source_can_be_selected_by_arc_phase(tmp_path: Path) -> None:
+tests/test_sample_selector.py:315:        arc_phase="E2E-Emergence",
+tests/test_sample_selector.py:318:    _add(library, tmp_path, "lib", source="library", arc_phase="Other", mood=0.5)
+tests/test_sample_selector.py:322:        arc_phase="E2E-Emergence",
+tests/test_sample_selector.py:337:        arc_phase="Emergence",
+tests/test_sample_selector.py:351:        arc_phase="Emergence",
+tests/test_sample_selector.py:367:        arc_phase="Emergence",
+tests/test_sample_selector.py:389:            arc_phase="Emergence",
+tests/test_generation_request.py:37:        arc_phase="Emergence",
+tests/test_generation_request.py:55:    assert isinstance(req.arc_phase, str)
+tests/test_sample_record_json.py:23:        arc_phase="Emergence",
+tests/test_cast_planner.py:111:        sample_select_kwargs={"arc_phase": "intro", "mode": "solitary"},
+tests/test_cast_planner.py:122:    assert selector.calls == [{"arc_phase": "intro", "mode": "solitary"}]
+tests/test_cast_planner.py:252:        "arc_phase": "recap",
+tests/test_cast_planner.py:276:            "arc_phase": "recap",
+
+codex
+The worktree already has unrelated runtime/log changes, including an untracked T-026 log. I’ll leave those untouched and keep the commit scoped to source/tests I change.
+exec
+/bin/zsh -lc 'rg -n "ArcPhase" src/cypherclaw tests/test_procedural_arc.py tests/test_narrative_envelope.py' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'rg -n "prompt|compose|fragment|final prompt|GenerationRequest|arc_phase" src/cypherclaw tests/test_generation* tests/test_emsd_runtime.py' in /Users/anthony/Programming/PromptClaw
+ exited 1 in 0ms:
+ succeeded in 0ms:
+tests/test_generation_storage.py:41:        arc_phase="Emergence",
+tests/test_generation_storage.py:63:    assert record.arc_phase == "Emergence"
+tests/test_emsd_runtime.py:10:from senseweave.emsd_runtime import build_live_emsd_context, composer_emsd_extras
+tests/test_emsd_runtime.py:13:def test_build_live_emsd_context_tracks_arc_phase_and_density_bias() -> None:
+tests/test_emsd_runtime.py:43:def test_composer_emsd_extras_exposes_arc_mix_sample_and_identity_fields() -> None:
+tests/test_emsd_runtime.py:58:    extras = composer_emsd_extras(context)
+tests/test_emsd_runtime.py:60:    assert extras["arc_phase"] == "Divination"
+tests/test_emsd_runtime.py:75:def test_composer_emsd_extras_exposes_dynamics_and_sidechain_metadata() -> None:
+tests/test_emsd_runtime.py:88:    extras = composer_emsd_extras(context)
+tests/test_generation_live_modal.py:20:        "prompt": "solitary: intimate, sparse, single voice",
+tests/test_generation_queue.py:60:            ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
+tests/test_generation_queue.py:67:                ("request-1", '{"prompt": "bells"}', "queued", 1.0, 1.0),
+tests/test_generation_queue.py:112:    row_id = queue.enqueue({"prompt": "bells"}, "request-1")
+tests/test_generation_queue.py:123:    assert json.loads(rows[0]["payload"]) == {"prompt": "bells"}
+tests/test_generation_queue.py:131:    first_id = queue.enqueue({"prompt": "bells"}, "request-1")
+tests/test_generation_queue.py:132:    second_id = queue.enqueue({"prompt": "different"}, "request-1")
+tests/test_generation_queue.py:142:    assert json.loads(rows[0][0]) == {"prompt": "bells"}
+tests/test_generation_queue.py:152:        return queue.enqueue({"prompt": "bells", "n": index}, "request-1")
+tests/test_generation_queue.py:169:    first_id = queue.enqueue({"prompt": "first"}, "request-1")
+tests/test_generation_queue.py:170:    second_id = queue.enqueue({"prompt": "second"}, "request-2")
+tests/test_generation_queue.py:176:    assert first_claim.payload == {"prompt": "first"}
+tests/test_generation_queue.py:191:    assert second_claim.payload == {"prompt": "second"}
+tests/test_generation_queue.py:200:    row_id = queue.enqueue({"prompt": "bells"}, "request-1")
+tests/test_generation_queue.py:218:    row_id = queue.enqueue({"prompt": "bells"}, "request-1")
+tests/test_generation_queue.py:245:    row_id = queue.enqueue({"prompt": "bells"}, "request-1")
+tests/test_generation_queue.py:265:    row_id = queue.enqueue({"prompt": "bells"}, "request-1")
+tests/test_generation_queue.py:295:    row_id = queue.enqueue({"prompt": "bells"}, "request-1")
+tests/test_generation_queue.py:318:    row_id = queue.enqueue({"prompt": "bells"}, "request-1")
+tests/test_generation_queue.py:335:    row_id = queue.enqueue({"prompt": "bells"}, "request-1")
+tests/test_generation_queue.py:445:    row_id = queue.enqueue({"prompt": "bells"}, "request-1")
+tests/test_generation_queue.py:471:    row_id = queue.enqueue({"prompt": "bells"}, "request-1")
+tests/test_generation_queue.py:495:    row_id = queue.enqueue({"prompt": "bells"}, "request-1")
+tests/test_generation_queue.py:531:    row_id = queue.enqueue({"prompt": "bells"}, "request-1")
+tests/test_generation_queue.py:555:    row_id = queue.enqueue({"prompt": "bells"}, "request-1")
+tests/test_generation_queue.py:577:    row_id = queue.enqueue({"prompt": "bells"}, "request-1")
+tests/test_generation_queue.py:604:            return {"audio_path": f"/tmp/{payload['prompt']}.wav", "cost_usd": 0.01}
+tests/test_generation_queue.py:613:        queue.enqueue({"prompt": f"sound-{index}"}, f"request-{index}")
+tests/test_generation_queue.py:659:    job_id = queue.enqueue({"prompt": "bells", "hash": "abc"}, "req-1")
+tests/test_generation_conditioner.py:80:    arc_phase: str,
+tests/test_generation_conditioner.py:86:    for text in (mode_name, arc_phase):
+tests/test_generation_conditioner.py:98:def test_mode_fragments_match_artist_mode_table() -> None:
+tests/test_generation_conditioner.py:103:@pytest.mark.parametrize(("mode_name", "canonical_fragments"), CANONICAL_MODE_FRAGMENTS)
+tests/test_generation_conditioner.py:104:def test_mode_fragment_table_includes_canonical_fragments(
+tests/test_generation_conditioner.py:105:    mode_name: str, canonical_fragments: tuple[str, ...]
+tests/test_generation_conditioner.py:107:    fragments = _MODE_FRAGMENTS[mode_name]
+tests/test_generation_conditioner.py:108:    assert isinstance(fragments, tuple)
+tests/test_generation_conditioner.py:109:    assert all(isinstance(fragment, str) for fragment in fragments)
+tests/test_generation_conditioner.py:110:    for fragment in canonical_fragments:
+tests/test_generation_conditioner.py:111:        assert fragment in fragments, (
+tests/test_generation_conditioner.py:112:            f"{mode_name} fragments must include {fragment!r}; got {fragments!r}"
+tests/test_generation_conditioner.py:116:def test_build_request_uses_static_prompt_template() -> None:
+tests/test_generation_conditioner.py:125:    assert req.prompt == (
+tests/test_generation_conditioner.py:131:    assert req.arc_phase == "Emergence"
+tests/test_generation_conditioner.py:171:        arc_phase="Emergence",
+tests/test_generation_e2e_cypherclaw.py:49:        arc_phase: str,
+tests/test_generation_e2e_cypherclaw.py:54:        from senseweave.generation.composer_hook import build_generation_request
+tests/test_generation_e2e_cypherclaw.py:58:            arc_phase=arc_phase,
+tests/test_generation_e2e_cypherclaw.py:74:            "prompt": request["prompt"],
+tests/test_generation_e2e_cypherclaw.py:271:    import duet_composer
+tests/test_generation_e2e_cypherclaw.py:290:    duet_composer._generation_queue = queue
+tests/test_generation_e2e_cypherclaw.py:291:    duet_composer._generation_conditioner = _FixedConditioner(model)
+tests/test_generation_e2e_cypherclaw.py:292:    duet_composer._generation_last_enqueued_at = None
+tests/test_generation_e2e_cypherclaw.py:295:    assert duet_composer._should_queue_now(MODE_NAME, MOOD, learning)
+tests/test_generation_e2e_cypherclaw.py:296:    row_id = duet_composer._post_song_generation_hook(
+tests/test_generation_e2e_cypherclaw.py:297:        SimpleNamespace(metadata={"arc_phase": ARC_PHASE}),
+tests/test_generation_e2e_cypherclaw.py:328:            arc_phase=ARC_PHASE,
+tests/test_generation_composer_hook.py:8:from senseweave.generation.composer_hook import (  # noqa: E402
+tests/test_generation_composer_hook.py:66:        arc_phase="Emergence",
+tests/test_generation_composer_hook.py:72:        arc_phase="Emergence",
+tests/test_generation_composer_hook.py:80:    assert first["arc_phase"] == "Emergence"
+tests/test_generation_replicate_retry.py:292:        "prompt": "ambient pad",
+tests/test_generation_replicate_retry.py:301:            "input": {"prompt": "ambient pad", "duration_sec": 30.0},
+tests/test_generation_replicate_retry.py:315:        {"model": "ignored", "version": "abc123", "input": {"prompt": "p"}}
+tests/test_generation_replicate_retry.py:318:    assert predictions.calls == [{"version": "abc123", "input": {"prompt": "p"}}]
+tests/test_generation_replicate_retry.py:332:        client._submit_prediction({"model": "m", "prompt": "p"})
+tests/test_generation_replicate_retry.py:348:        client._submit_prediction({"model": "m", "prompt": "p"})
+tests/test_generation_replicate_retry.py:362:        client._submit_prediction({"model": "m", "prompt": "p"})
+tests/test_generation_replicate_retry.py:373:        client._submit_prediction({"prompt": "p"})
+tests/test_generation_replicate_retry.py:387:        client._submit_prediction({"model": "m", "prompt": "p"})
+tests/test_generation_replicate_retry.py:412:    result = client.generate({"model": "m", "prompt": "p"})
+tests/test_generation_replicate_retry.py:605:    result = client.generate({"model": "musicgen-medium", "prompt": "p"})
+tests/test_generation_replicate_retry.py:614:        {"model": "musicgen-medium", "input": {"prompt": "p"}}
+tests/test_generation_replicate_retry.py:638:        client.generate({"model": "musicgen-medium", "prompt": "p"})
+tests/test_generation_replicate_retry.py:641:        {"model": "musicgen-medium", "input": {"prompt": "p"}}
+tests/test_generation_replicate_retry.py:662:        client.generate({"model": "musicgen-medium", "prompt": "p"})
+tests/test_generation_replicate_retry.py:665:        {"model": "musicgen-medium", "input": {"prompt": "p"}}
+tests/test_generation_replicate_retry.py:694:        client.generate({"model": "musicgen-medium", "prompt": "p"})
+tests/test_generation_replicate_retry.py:698:        {"model": "musicgen-medium", "input": {"prompt": "p"}}
+tests/test_generation_replicate_retry.py:716:    result = client.generate({"model": "musicgen-medium", "prompt": "p"})
+tests/test_generation_replicate_retry.py:734:    result = client.generate({"model": "ignored", "version": "abc123", "prompt": "p"})
+tests/test_generation_request.py:15:    GenerationRequest,
+tests/test_generation_request.py:31:        prompt="evening reflection texture",
+tests/test_generation_request.py:37:        arc_phase="Emergence",
+tests/test_generation_request.py:44:    req = GenerationRequest(**_kwargs())
+tests/test_generation_request.py:47:    assert isinstance(req.prompt, str)
+tests/test_generation_request.py:55:    assert isinstance(req.arc_phase, str)
+tests/test_generation_request.py:59:    req = GenerationRequest(**_kwargs())
+tests/test_generation_request.py:61:        req.prompt = "other"  # type: ignore[misc]
+tests/test_generation_request.py:66:        GenerationRequest(**_kwargs(clap_centroid=np.zeros(256, dtype=np.float32)))
+tests/test_generation_request.py:71:        GenerationRequest(**_kwargs(clap_centroid=np.zeros(CLAP_CENTROID_DIM, dtype=np.float64)))
+tests/test_generation_request.py:76:        GenerationRequest(**_kwargs(clap_centroid=[0.0] * CLAP_CENTROID_DIM))
+tests/test_generation_request.py:81:        GenerationRequest(**_kwargs(duration_sec=4.9))
+tests/test_generation_request.py:86:        GenerationRequest(**_kwargs(duration_sec=60.1))
+tests/test_generation_request.py:90:    GenerationRequest(**_kwargs(duration_sec=5.0))
+tests/test_generation_request.py:91:    GenerationRequest(**_kwargs(duration_sec=60.0))
+tests/test_generation_request.py:96:        GenerationRequest(**_kwargs(backend="bogus"))
+tests/test_generation_request.py:101:        GenerationRequest(**_kwargs(model="bogus"))
+tests/test_generation_request.py:105:    req = GenerationRequest(**_kwargs(backend="modal", model="stable-audio-open"))
+tests/test_generation_request.py:111:    a = GenerationRequest(**_kwargs(seed=1))
+tests/test_generation_request.py:112:    b = GenerationRequest(**_kwargs(seed=2))
+tests/test_generation_request.py:117:    a = GenerationRequest(**_kwargs())
+tests/test_generation_request.py:118:    b = GenerationRequest(**_kwargs())
+tests/test_generation_request.py:123:    a = GenerationRequest(**_kwargs())
+tests/test_generation_request.py:124:    b = GenerationRequest(**_kwargs())
+tests/test_generation_request.py:129:    replicate = GenerationRequest(**_kwargs(backend="replicate"))
+tests/test_generation_request.py:130:    modal = GenerationRequest(**_kwargs(backend="modal"))
+tests/test_generation_request.py:137:        pytest.param({"prompt": "morning reflection texture"}, id="prompt"),
+tests/test_generation_request.py:146:    baseline = GenerationRequest(**_kwargs())
+tests/test_generation_request.py:147:    changed = GenerationRequest(**_kwargs(**overrides))
+tests/test_generation_live_replicate.py:59:        "prompt": "ambient pad, slow, sparse, 30 seconds",
+src/cypherclaw/image_api/spec_parser.py:3:Shape A — explicit prompt
+src/cypherclaw/image_api/spec_parser.py:5:    prompt: "..."
+src/cypherclaw/image_api/spec_parser.py:11:Shape B — content-derived (no prompt; we infer from title/description)
+src/cypherclaw/image_api/spec_parser.py:20:v1 for prompt derivation — a deterministic template covers it.
+src/cypherclaw/image_api/spec_parser.py:65:def _shape_a_prompt(doc: Mapping[str, Any]) -> str | None:
+src/cypherclaw/image_api/spec_parser.py:66:    """Shape A signal: an explicit `prompt` field."""
+src/cypherclaw/image_api/spec_parser.py:67:    prompt = doc.get("prompt")
+src/cypherclaw/image_api/spec_parser.py:68:    if isinstance(prompt, str) and prompt.strip():
+src/cypherclaw/image_api/spec_parser.py:69:        return prompt.strip()
+src/cypherclaw/image_api/spec_parser.py:73:def _shape_b_inferred_prompt(doc: Mapping[str, Any]) -> str | None:
+src/cypherclaw/image_api/spec_parser.py:74:    """Shape B: derive a prompt from title + description + media_type.
+src/cypherclaw/image_api/spec_parser.py:128:    prompt = _shape_a_prompt(doc) or _shape_b_inferred_prompt(doc)
+src/cypherclaw/image_api/spec_parser.py:129:    if not prompt:
+src/cypherclaw/image_api/spec_parser.py:131:            "spec_yaml must include `prompt` (Shape A) or `title`/`description` (Shape B)"
+src/cypherclaw/image_api/spec_parser.py:152:        prompt=prompt,
+src/cypherclaw/image_api/gemini_backend.py:97:    # Build a single-part text prompt. Gemini-3-pro-image-preview accepts
+src/cypherclaw/image_api/gemini_backend.py:98:    # plain string content; size hints are injected into the prompt
+src/cypherclaw/image_api/gemini_backend.py:101:        f"{spec.prompt}\n\n"
+src/cypherclaw/image_api/schemas.py:73:    `prompt` is always set by `spec_parser`: Shape A passes it through;
+src/cypherclaw/image_api/schemas.py:80:    prompt: str = Field(min_length=1)
+src/cypherclaw/first_boot.py:23:_DEFAULT_IDENTITY_PATH = Path.home() / ".promptclaw" / "identity.json"
+src/cypherclaw/first_boot.py:24:_DEFAULT_ANNOUNCED_PATH = Path.home() / ".promptclaw" / ".first_boot_announced"
+src/cypherclaw/render/rules/motif_memory.py:20:    "partial fragmentation",
+src/cypherclaw/render/rules/motif_memory.py:406:        if variation == "partial fragmentation":
+src/cypherclaw/render/narrative_envelope.py:23:    arc_phase: str
+src/cypherclaw/render/narrative_envelope.py:98:    phase = beat.arc_phase
+src/cypherclaw/render/narrative_envelope.py:124:    arc_phase: str,
+src/cypherclaw/render/narrative_envelope.py:156:        arc_phase=phase_name,
+src/cypherclaw/render/narrative_envelope.py:168:        arc_phase=phase_name,
+
+codex
+The nearest prompt path is the generation conditioner tests: they already assert static prompt text and mode fragments, so I’ll add the arc overlay there rather than touching unrelated narrative-envelope code.
+exec
+/bin/zsh -lc "sed -n '1,240p' src/senseweave/generation/conditioner.py" in /Users/anthony/Programming/PromptClaw
+ exited 1 in 0ms:
+sed: src/senseweave/generation/conditioner.py: No such file or directory
+
+exec
+/bin/zsh -lc "sed -n '1,240p' tests/test_generation_conditioner.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import sys
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+
+from senseweave.artist_identity import EVENING_REFLECTION, MODES_BY_NAME  # noqa: E402
+from senseweave.generation.conditioner import (  # noqa: E402
+    _MODE_FRAGMENTS,
+    GenerationConditioner,
+)
+from senseweave.generation.request import CLAP_CENTROID_DIM  # noqa: E402
+
+
+CANONICAL_MODE_FRAGMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        "solitary",
+        ("intimate", "sparse", "single voice", "long held tones", "lots of silence"),
+    ),
+    ("companion", ("warm", "harmonic", "supportive", "two-three voices")),
+    ("working_ambience", ("pulse-based", "predictable", "no melody", "minimal")),
+    (
+        "evening_reflection",
+        ("longer phrases", "harmonic tension", "tender", "lyrical"),
+    ),
+    ("storm", ("turbulent", "dense grains", "modal shifts", "fast articulation")),
+)
+
+
+EXPECTED_MODE_FRAGMENTS = {
+    "solitary": (
+        "intimate",
+        "sparse",
+        "single voice",
+        "long held tones",
+        "lots of silence",
+    ),
+    "companion": (
+        "warm",
+        "harmonic",
+        "supportive",
+        "two-three voices",
+    ),
+    "working_ambience": (
+        "pulse-based",
+        "predictable",
+        "no melody",
+        "minimal",
+    ),
+    "evening_reflection": (
+        "longer phrases",
+        "harmonic tension",
+        "tender",
+        "lyrical",
+    ),
+    "storm": (
+        "turbulent",
+        "dense grains",
+        "modal shifts",
+        "fast articulation",
+    ),
+}
+
+
+def _centroid() -> np.ndarray:
+    values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+    return values * 0.25
+
+
+def _expected_seed(
+    *,
+    mode_name: str,
+    arc_phase: str,
+    mood: dict[str, float],
+    normalized_centroid: np.ndarray,
+) -> int:
+    mood_tuple = tuple(sorted((str(key), float(value)) for key, value in mood.items()))
+    hasher = hashlib.sha256()
+    for text in (mode_name, arc_phase):
+        encoded = text.encode("utf-8")
+        hasher.update(len(encoded).to_bytes(4, "big"))
+        hasher.update(encoded)
+
+    mood_blob = json.dumps(mood_tuple, separators=(",", ":")).encode("utf-8")
+    hasher.update(len(mood_blob).to_bytes(4, "big"))
+    hasher.update(mood_blob)
+    hasher.update(np.ascontiguousarray(normalized_centroid, dtype=np.float32).tobytes())
+    return int.from_bytes(hasher.digest(), "big") % (2**32)
+
+
+def test_mode_fragments_match_artist_mode_table() -> None:
+    assert _MODE_FRAGMENTS == EXPECTED_MODE_FRAGMENTS
+    assert set(_MODE_FRAGMENTS) == set(MODES_BY_NAME)
+
+
+@pytest.mark.parametrize(("mode_name", "canonical_fragments"), CANONICAL_MODE_FRAGMENTS)
+def test_mode_fragment_table_includes_canonical_fragments(
+    mode_name: str, canonical_fragments: tuple[str, ...]
+) -> None:
+    fragments = _MODE_FRAGMENTS[mode_name]
+    assert isinstance(fragments, tuple)
+    assert all(isinstance(fragment, str) for fragment in fragments)
+    for fragment in canonical_fragments:
+        assert fragment in fragments, (
+            f"{mode_name} fragments must include {fragment!r}; got {fragments!r}"
+        )
+
+
+def test_build_request_uses_static_prompt_template() -> None:
+    req = GenerationConditioner().build_request(
+        EVENING_REFLECTION,
+        "Emergence",
+        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
+        _centroid(),
+        10.0,
+    )
+
+    assert req.prompt == (
+        "longer phrases harmonic tension tender lyrical, "
+        "opening into new material, warm: "
+        "short loopable sampler material, no vocals, no named artists"
+    )
+    assert req.mode_name == "evening_reflection"
+    assert req.arc_phase == "Emergence"
+    assert req.bpm_target == 64.0
+
+
+def test_build_request_is_pure_and_sorts_mood_for_seed() -> None:
+    conditioner = GenerationConditioner()
+    centroid = _centroid()
+
+    first = conditioner.build_request(
+        "evening_reflection",
+        "Emergence",
+        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
+        centroid,
+        10.0,
+    )
+    second = conditioner.build_request(
+        "evening_reflection",
+        "Emergence",
+        {"valence": 0.7, "arousal": 0.4, "energy": 0.6},
+        centroid.copy(),
+        10.0,
+    )
+
+    assert first == second
+    assert hash(first) == hash(second)
+    np.testing.assert_array_equal(first.clap_centroid, second.clap_centroid)
+
+
+def test_seed_is_sha256_folded_to_32_bits_from_normalized_centroid_bytes() -> None:
+    mood = {"energy": 0.6, "valence": 0.7, "arousal": 0.4}
+    req = GenerationConditioner().build_request(
+        EVENING_REFLECTION,
+        "Emergence",
+        mood,
+        _centroid(),
+        10.0,
+    )
+
+    expected = _expected_seed(
+        mode_name="evening_reflection",
+        arc_phase="Emergence",
+        mood=mood,
+        normalized_centroid=req.clap_centroid,
+    )
+    assert req.seed == expected
+    assert 0 <= req.seed <= 0xFFFFFFFF
+
+
+def test_clap_centroid_is_unit_normalized_before_storage() -> None:
+    req = GenerationConditioner().build_request(
+        EVENING_REFLECTION,
+        "Reflection",
+        {"energy": 0.2, "valence": 0.5, "arousal": 0.2},
+        _centroid(),
+        10.0,
+    )
+
+    assert req.clap_centroid.dtype == np.float32
+    assert req.clap_centroid.shape == (CLAP_CENTROID_DIM,)
+    assert np.isclose(float(np.linalg.norm(req.clap_centroid)), 1.0)
+
+
+def test_conditioner_module_has_no_llm_provider_imports_or_calls() -> None:
+    source = Path("my-claw/tools/senseweave/generation/conditioner.py").read_text()
+
+    for forbidden in ("import openai", "import anthropic", "ollama"):
+        assert forbidden not in source
+
+exec
+/bin/zsh -lc "sed -n '1,220p' src/senseweave/procedural_arc.py" in /Users/anthony/Programming/PromptClaw
+ exited 1 in 0ms:
+sed: src/senseweave/procedural_arc.py: No such file or directory
+
+exec
+/bin/zsh -lc "sed -n '1,140p' tests/test_procedural_arc.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Tests for the EMSD procedural arc layer."""
+from __future__ import annotations
+
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
+
+from senseweave.procedural_arc import ARC_PHASES, directive_for_elapsed, phase_for_elapsed
+
+
+def test_arc_phase_boundaries_follow_the_five_stage_cycle() -> None:
+    assert phase_for_elapsed(0.1).name == "Divination"
+    assert phase_for_elapsed(6.0).name == "Emergence"
+    assert phase_for_elapsed(13.0).name == "Conversation"
+    assert phase_for_elapsed(22.0).name == "Convergence"
+    assert phase_for_elapsed(28.0).name == "Crystallization"
+
+
+def test_cpu_pressure_thins_the_arc_directive() -> None:
+    normal = directive_for_elapsed(13.0, cadence_state="occupied_day", cpu_pressure=0.0)
+    stressed = directive_for_elapsed(13.0, cadence_state="occupied_day", cpu_pressure=0.9)
+
+    assert stressed.density_target < normal.density_target
+    assert stressed.max_active_roles <= normal.max_active_roles
+
+
+def test_arc_exposes_phase_specific_production_metadata() -> None:
+    divination = directive_for_elapsed(2.0, cadence_state="occupied_day")
+    assert divination.dynamic_target == "p"
+    assert divination.harmonic_target == "open"
+    assert divination.rhythm_target == "free"
+    assert divination.timbre_target == "sparse"
+    assert divination.spatial_target == "wide"
+    assert divination.compression_target == 0.1
+    assert divination.senseweave_target == 0.8
+    assert divination.synthesis_target == "spectral"
+
+    emergence = directive_for_elapsed(8.0, cadence_state="occupied_day")
+    assert emergence.dynamic_target == "mp"
+    assert emergence.harmonic_target == "modal"
+    assert emergence.rhythm_target == "pulse"
+    assert emergence.timbre_target == "warm"
+    assert emergence.spatial_target == "clear"
+    assert emergence.compression_target == 0.3
+    assert emergence.senseweave_target == 0.6
+    assert emergence.synthesis_target == "fm"
+
+    conversation = directive_for_elapsed(15.0, cadence_state="occupied_day")
+    assert conversation.dynamic_target == "mf"
+    assert conversation.harmonic_target == "functional"
+    assert conversation.rhythm_target == "groove"
+    assert conversation.timbre_target == "complex"
+    assert conversation.spatial_target == "focused"
+    assert conversation.compression_target == 0.5
+    assert conversation.senseweave_target == 0.4
+    assert conversation.synthesis_target == "subtractive"
+
+    convergence = directive_for_elapsed(23.0, cadence_state="occupied_day")
+    assert convergence.dynamic_target == "f"
+    assert convergence.harmonic_target == "chromatic"
+    assert convergence.rhythm_target == "polyrhythm"
+    assert convergence.timbre_target == "bright"
+    assert convergence.spatial_target == "intimate"
+    assert convergence.compression_target == 0.6
+    assert convergence.senseweave_target == 0.2
+    assert convergence.synthesis_target == "additive"
+
+    crystallization = directive_for_elapsed(28.0, cadence_state="occupied_day")
+    assert crystallization.dynamic_target == "pp"
+    assert crystallization.harmonic_target == "static"
+    assert crystallization.rhythm_target == "drone"
+    assert crystallization.timbre_target == "pure"
+    assert crystallization.spatial_target == "expansive"
+    assert crystallization.compression_target == 0.2
+    assert crystallization.senseweave_target == 0.9
+    assert crystallization.synthesis_target == "granular"
+
+
+def test_arc_phases_expose_production_target_payloads() -> None:
+    targets = [phase.production_targets() for phase in ARC_PHASES]
+
+    assert [target["phase"] for target in targets] == [
+        "Divination",
+        "Emergence",
+        "Conversation",
+        "Convergence",
+        "Crystallization",
+    ]
+    assert targets[0] == {
+        "phase": "Divination",
+        "density": 0.24,
+        "dynamic": "p",
+        "harmonic": "open",
+        "rhythm": "free",
+        "timbre": "sparse",
+        "spatial": "wide",
+        "compression": 0.1,
+        "senseweave": 0.8,
+        "synthesis": "spectral",
+    }
+
+
+def test_five_minute_proxy_cycle_maps_all_phases() -> None:
+    phase_names = [
+        phase_for_elapsed(m, cycle_minutes=5.0).name
+        for m in (0.5, 1.2, 2.5, 3.8, 4.5)
+    ]
+    assert phase_names == [
+        "Divination", "Emergence", "Conversation", "Convergence", "Crystallization",
+    ]
+    d = directive_for_elapsed(0.5, cadence_state="occupied_day", cycle_minutes=5.0)
+    assert d.phase.name == "Divination"
+    assert d.dynamic_target == "p"
+
+exec
+/bin/zsh -lc "sed -n '1,260p' my-claw/tools/senseweave/generation/conditioner.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Pure conditioning from listening state to generation requests."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+from collections.abc import Mapping
+from typing import Any, Final
+
+import numpy as np
+
+from senseweave.generation.request import CLAP_CENTROID_DIM, GenerationRequest
+
+
+_MODE_FRAGMENTS: Final[dict[str, tuple[str, ...]]] = {
+    "solitary": (
+        "intimate",
+        "sparse",
+        "single voice",
+        "long held tones",
+        "lots of silence",
+    ),
+    "companion": (
+        "warm",
+        "harmonic",
+        "supportive",
+        "two-three voices",
+    ),
+    "working_ambience": (
+        "pulse-based",
+        "predictable",
+        "no melody",
+        "minimal",
+    ),
+    "evening_reflection": (
+        "longer phrases",
+        "harmonic tension",
+        "tender",
+        "lyrical",
+    ),
+    "storm": (
+        "turbulent",
+        "dense grains",
+        "modal shifts",
+        "fast articulation",
+    ),
+}
+
+_ARC_FRAGMENTS: Final[dict[str, str]] = {
+    "Emergence": "opening into new material",
+    "Crystallization": "settling into clear form",
+    "Divination": "searching through uncertain signals",
+    "Convergence": "gathering threads into focus",
+    "Conversation": "responsive call and answer",
+    "Reflection": "returning to memory",
+}
+
+_MODE_BPM_TARGETS: Final[dict[str, float]] = {
+    "solitary": 61.0,
+    "companion": 72.0,
+    "working_ambience": 81.0,
+    "evening_reflection": 64.0,
+    "storm": 93.0,
+}
+
+_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress material"
+_CONSTRAINT_FRAGMENT: Final[str] = (
+    "short loopable sampler material, no vocals, no named artists"
+)
+_UINT32_MODULUS: Final[int] = 2**32
+
+
+class GenerationConditioner:
+    """Build deterministic generation requests from composer/listener state."""
+
+    def build_request(
+        self,
+        mode: Any,
+        arc_phase: str,
+        mood: Mapping[str, float],
+        clap_centroid: object,
+        duration_sec: float,
+    ) -> GenerationRequest:
+        """Return a deterministic request for the given musical state."""
+        mode_name = _mode_name(mode)
+        if mode_name not in _MODE_FRAGMENTS:
+            raise ValueError(
+                f"mode must be one of {sorted(_MODE_FRAGMENTS)}, got {mode_name!r}"
+            )
+
+        normalized_centroid = _normalized_centroid(clap_centroid)
+        prompt = _prompt(mode_name, arc_phase, mood)
+        seed = _seed(
+            mode_name=mode_name,
+            arc_phase=arc_phase,
+            mood=mood,
+            normalized_centroid=normalized_centroid,
+        )
+        return GenerationRequest(
+            prompt=prompt,
+            clap_centroid=normalized_centroid,
+            duration_sec=float(duration_sec),
+            seed=seed,
+            bpm_target=_bpm_target(mode, mode_name),
+            mode_name=mode_name,
+            arc_phase=str(arc_phase),
+        )
+
+
+def _mode_name(mode: Any) -> str:
+    value = getattr(mode, "name", mode)
+    return str(value)
+
+
+def _prompt(mode_name: str, arc_phase: str, mood: Mapping[str, float]) -> str:
+    mode_fragment = " ".join(_MODE_FRAGMENTS[mode_name])
+    arc_fragment = _ARC_FRAGMENTS.get(str(arc_phase), _DEFAULT_ARC_FRAGMENT)
+    return (
+        f"{mode_fragment}, {arc_fragment}, "
+        f"{_mood_adjective(mood)}: {_CONSTRAINT_FRAGMENT}"
+    )
+
+
+def _mood_adjective(mood: Mapping[str, float]) -> str:
+    energy = _mood_value(mood, "energy")
+    valence = _mood_value(mood, "valence")
+    arousal = _mood_value(mood, "arousal")
+
+    if arousal >= 0.75 or energy >= 0.8:
+        return "charged"
+    if valence >= 0.65:
+        return "warm"
+    if valence <= 0.3:
+        return "shadowed"
+    if energy <= 0.25 and arousal <= 0.3:
+        return "hushed"
+    return "balanced"
+
+
+def _mood_value(mood: Mapping[str, float], key: str) -> float:
+    try:
+        return float(mood.get(key, 0.5))
+    except (TypeError, ValueError):
+        return 0.5
+
+
+def _normalized_centroid(clap_centroid: object) -> np.ndarray:
+    centroid = np.asarray(clap_centroid, dtype=np.float32)
+    if centroid.shape != (CLAP_CENTROID_DIM,):
+        raise ValueError(
+            f"clap_centroid must have shape ({CLAP_CENTROID_DIM},), "
+            f"got {centroid.shape}"
+        )
+
+    centroid = np.ascontiguousarray(centroid)
+    if not np.isfinite(centroid).all():
+        raise ValueError("clap_centroid must contain only finite values")
+
+    norm = float(np.linalg.norm(centroid.astype(np.float64)))
+    if norm <= 0.0:
+        raise ValueError("clap_centroid must be non-zero")
+
+    return np.ascontiguousarray((centroid / norm).astype(np.float32))
+
+
+def _seed(
+    *,
+    mode_name: str,
+    arc_phase: str,
+    mood: Mapping[str, float],
+    normalized_centroid: np.ndarray,
+) -> int:
+    mood_tuple = tuple(sorted((str(key), float(value)) for key, value in mood.items()))
+    hasher = hashlib.sha256()
+    for text in (mode_name, str(arc_phase)):
+        encoded = text.encode("utf-8")
+        hasher.update(len(encoded).to_bytes(4, "big"))
+        hasher.update(encoded)
+
+    mood_blob = json.dumps(mood_tuple, separators=(",", ":")).encode("utf-8")
+    hasher.update(len(mood_blob).to_bytes(4, "big"))
+    hasher.update(mood_blob)
+    hasher.update(np.ascontiguousarray(normalized_centroid, dtype=np.float32).tobytes())
+    return int.from_bytes(hasher.digest(), "big") % _UINT32_MODULUS
+
+
+def _bpm_target(mode: Any, mode_name: str) -> float:
+    tempo_band = getattr(mode, "tempo_band", None)
+    if isinstance(tempo_band, tuple) and len(tempo_band) == 2:
+        try:
+            low, high = tempo_band
+            return round((float(low) + float(high)) / 2.0, 1)
+        except (TypeError, ValueError):
+            pass
+    return _MODE_BPM_TARGETS[mode_name]
+
+
+__all__ = ("GenerationConditioner",)
+
+exec
+/bin/zsh -lc "sed -n '1,260p' my-claw/tools/senseweave/procedural_arc.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+"""Long-form procedural arc helpers for CypherClaw."""
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class ArcPhase:
+    name: str
+    start_minute: float
+    end_minute: float
+    density: float
+    mutation_rate: float
+    transition_intent: str
+    dynamic: str
+    harmonic: str
+    rhythm: str
+    timbre: str
+    spatial: str
+    compression: float
+    senseweave: float
+    synthesis: str
+
+    def production_targets(self) -> dict[str, float | str]:
+        return {
+            "phase": self.name,
+            "density": self.density,
+            "dynamic": self.dynamic,
+            "harmonic": self.harmonic,
+            "rhythm": self.rhythm,
+            "timbre": self.timbre,
+            "spatial": self.spatial,
+            "compression": self.compression,
+            "senseweave": self.senseweave,
+            "synthesis": self.synthesis,
+        }
+
+
+@dataclass(frozen=True)
+class ArcDirective:
+    phase: ArcPhase
+    density_target: float
+    mutation_rate: float
+    max_active_roles: int
+    recovery_bias: float
+    dynamic_target: str
+    harmonic_target: str
+    rhythm_target: str
+    timbre_target: str
+    spatial_target: str
+    compression_target: float
+    senseweave_target: float
+    synthesis_target: str
+
+
+ARC_PHASES: tuple[ArcPhase, ...] = (
+    ArcPhase("Divination", 0.0, 5.0, 0.24, 0.18, "listen before speaking", "p", "open", "free", "sparse", "wide", 0.1, 0.8, "spectral"),
+    ArcPhase("Emergence", 5.0, 12.0, 0.42, 0.32, "let pattern appear", "mp", "modal", "pulse", "warm", "clear", 0.3, 0.6, "fm"),
+    ArcPhase("Conversation", 12.0, 20.0, 0.78, 0.56, "hold the ensemble in dialogue", "mf", "functional", "groove", "complex", "focused", 0.5, 0.4, "subtractive"),
+    ArcPhase("Convergence", 20.0, 26.0, 0.54, 0.34, "return transformed material", "f", "chromatic", "polyrhythm", "bright", "intimate", 0.6, 0.2, "additive"),
+    ArcPhase("Crystallization", 26.0, 30.0, 0.28, 0.16, "leave the distilled residue", "pp", "static", "drone", "pure", "expansive", 0.2, 0.9, "granular"),
+)
+
+
+def phase_for_elapsed(elapsed_minutes: float, *, cycle_minutes: float = 30.0) -> ArcPhase:
+    wrapped = elapsed_minutes % cycle_minutes
+    scaled = wrapped * (30.0 / cycle_minutes)
+    for phase in ARC_PHASES:
+        if phase.start_minute <= scaled < phase.end_minute:
+            return phase
+    return ARC_PHASES[-1]
+
+
+def directive_for_elapsed(
+    elapsed_minutes: float,
+    *,
+    cadence_state: str,
+    cpu_pressure: float = 0.0,
+    audience_attention: float = 0.0,
+    cycle_minutes: float = 30.0,
+) -> ArcDirective:
+    phase = phase_for_elapsed(elapsed_minutes, cycle_minutes=cycle_minutes)
+    density = phase.density
+    mutation = phase.mutation_rate
+    if cadence_state in {"sleep", "wind_down"}:
+        density *= 0.7
+        mutation *= 0.65
+    if cadence_state == "away_practice":
+        mutation *= 1.25
+    if audience_attention > 0.65 and phase.name == "Conversation":
+        density *= 1.08
+    recovery_bias = min(1.0, max(0.0, cpu_pressure))
+    density *= max(0.45, 1.0 - recovery_bias * 0.5)
+    mutation *= max(0.5, 1.0 - recovery_bias * 0.35)
+    max_roles = 4 if phase.name == "Conversation" else 3 if phase.name in {"Emergence", "Convergence"} else 2
+    if recovery_bias >= 0.75:
+        max_roles = max(1, max_roles - 1)
+    return ArcDirective(
+        phase=phase,
+        density_target=round(density, 3),
+        mutation_rate=round(mutation, 3),
+        max_active_roles=max_roles,
+        recovery_bias=round(recovery_bias, 3),
+        dynamic_target=phase.dynamic,
+        harmonic_target=phase.harmonic,
+        rhythm_target=phase.rhythm,
+        timbre_target=phase.timbre,
+        spatial_target=phase.spatial,
+        compression_target=phase.compression,
+        senseweave_target=phase.senseweave,
+        synthesis_target=phase.synthesis,
+    )
+
+codex
+The conditioner already has the runtime hook for `_ARC_FRAGMENTS`; the missing piece is regression coverage for the complete phase table and unknown-phase fallback. I’ll add focused tests against the existing fragments and prompt composition.
+exec
+/bin/zsh -lc 'rg -n "Reflection|ARC_PHASES|class ArcPhase" my-claw/tools tests/test_generation_conditioner.py tests/test_procedural_arc.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_generation_conditioner.py:182:        "Reflection",
+tests/test_procedural_arc.py:10:from senseweave.procedural_arc import ARC_PHASES, directive_for_elapsed, phase_for_elapsed
+tests/test_procedural_arc.py:82:    targets = [phase.production_targets() for phase in ARC_PHASES]
+my-claw/tools/nightly_reflection.py:1:"""Nightly Reflection — deep self-reflection using qwen3.5:9b during quiet hours.
+my-claw/tools/nightly_reflection.py:119:                    print(f"Reflection saved: {reflection[:80]}", flush=True)
+my-claw/tools/nightly_reflection.py:122:                print(f"Reflection failed: {e}", flush=True)
+my-claw/tools/sample_capture_daemon.py:495:ARC_PHASES: frozenset[str] = frozenset({"build", "rise", "climax", "resolve", "rest"})
+my-claw/tools/sample_capture_daemon.py:558:        if candidate in ARC_PHASES:
+my-claw/tools/inner_life/main.py:121:                            log.info("Reflection: %s", reflection[:60])
+my-claw/tools/senseweave/generation/conditioner.py:55:    "Reflection": "returning to memory",
+my-claw/tools/senseweave/procedural_arc.py:8:class ArcPhase:
+my-claw/tools/senseweave/procedural_arc.py:56:ARC_PHASES: tuple[ArcPhase, ...] = (
+my-claw/tools/senseweave/procedural_arc.py:68:    for phase in ARC_PHASES:
+my-claw/tools/senseweave/procedural_arc.py:71:    return ARC_PHASES[-1]
+my-claw/tools/senseweave/production_course.py:7:from .procedural_arc import ARC_PHASES
+my-claw/tools/senseweave/production_course.py:51:class ArcPhaseProfile:
+my-claw/tools/senseweave/production_course.py:346:    for phase in ARC_PHASES
+my-claw/tools/senseweave/artist_identity.py:354:    4. Evening / night → EveningReflection.
+my-claw/tools/senseweave/capstone_engine.py:10:from .procedural_arc import ARC_PHASES, ArcDirective, directive_for_elapsed
+my-claw/tools/senseweave/capstone_engine.py:68:    for phase in ARC_PHASES:
+
+exec
+/bin/zsh -lc pwd in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+/Users/anthony/Programming/PromptClaw
+
+codex
+I’m going to update only `tests/test_generation_conditioner.py` and the fallback string in the conditioner so the unknown-arc behavior is asserted with the exact neutral `in-progress` fragment.
+apply patch
+patch: completed
+/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/generation/conditioner.py
+/Users/anthony/Programming/PromptClaw/tests/test_generation_conditioner.py
+diff --git a/my-claw/tools/senseweave/generation/conditioner.py b/my-claw/tools/senseweave/generation/conditioner.py
+index aa6c4b6a4324992f2472deabd91d7df387cae065..365bba71910480502834f2f8dda73892863ea1c6
+--- a/my-claw/tools/senseweave/generation/conditioner.py
++++ b/my-claw/tools/senseweave/generation/conditioner.py
+@@ -63,7 +63,7 @@
+     "storm": 93.0,
+ }
+ 
+-_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress material"
++_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress"
+ _CONSTRAINT_FRAGMENT: Final[str] = (
+     "short loopable sampler material, no vocals, no named artists"
+ )
+diff --git a/tests/test_generation_conditioner.py b/tests/test_generation_conditioner.py
+index 58d6bcc358b1cccea2e2a5417598f1dba5297c83..54527c3650b5e250fffb3c5cb34e5c8700ecbca4
+--- a/tests/test_generation_conditioner.py
++++ b/tests/test_generation_conditioner.py
+@@ -13,10 +13,12 @@
+ 
+ from senseweave.artist_identity import EVENING_REFLECTION, MODES_BY_NAME  # noqa: E402
+ from senseweave.generation.conditioner import (  # noqa: E402
++    _ARC_FRAGMENTS,
+     _MODE_FRAGMENTS,
+     GenerationConditioner,
+ )
+ from senseweave.generation.request import CLAP_CENTROID_DIM  # noqa: E402
++from senseweave.procedural_arc import ARC_PHASES  # noqa: E402
+ 
+ 
+ CANONICAL_MODE_FRAGMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+@@ -68,6 +70,15 @@
+     ),
+ }
+ 
++EXPECTED_ARC_FRAGMENTS = {
++    "Divination": "searching through uncertain signals",
++    "Emergence": "opening into new material",
++    "Conversation": "responsive call and answer",
++    "Convergence": "gathering threads into focus",
++    "Crystallization": "settling into clear form",
++    "Reflection": "returning to memory",
++}
++
+ 
+ def _centroid() -> np.ndarray:
+     values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+@@ -113,6 +124,38 @@
+         )
+ 
+ 
++def test_arc_fragments_cover_procedural_arc_phase_names() -> None:
++    assert _ARC_FRAGMENTS == EXPECTED_ARC_FRAGMENTS
++    assert {phase.name for phase in ARC_PHASES} <= set(_ARC_FRAGMENTS)
++
++
++@pytest.mark.parametrize(("arc_phase", "canonical_fragment"), EXPECTED_ARC_FRAGMENTS.items())
++def test_arc_fragment_table_contributes_canonical_fragment_to_prompt(
++    arc_phase: str, canonical_fragment: str
++) -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        arc_phase,
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert f", {canonical_fragment}, " in req.prompt
++
++
++def test_unknown_arc_phase_uses_in_progress_prompt_fragment() -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        "UnknownArc",
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert ", in-progress, " in req.prompt
++
++
+ def test_build_request_uses_static_prompt_template() -> None:
+     req = GenerationConditioner().build_request(
+         EVENING_REFLECTION,
+
+diff --git a/my-claw/tools/senseweave/generation/conditioner.py b/my-claw/tools/senseweave/generation/conditioner.py
+index aa6c4b6a4324992f2472deabd91d7df387cae065..365bba71910480502834f2f8dda73892863ea1c6
+--- a/my-claw/tools/senseweave/generation/conditioner.py
++++ b/my-claw/tools/senseweave/generation/conditioner.py
+@@ -63,7 +63,7 @@
+     "storm": 93.0,
+ }
+ 
+-_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress material"
++_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress"
+ _CONSTRAINT_FRAGMENT: Final[str] = (
+     "short loopable sampler material, no vocals, no named artists"
+ )
+diff --git a/tests/test_generation_conditioner.py b/tests/test_generation_conditioner.py
+index 58d6bcc358b1cccea2e2a5417598f1dba5297c83..54527c3650b5e250fffb3c5cb34e5c8700ecbca4
+--- a/tests/test_generation_conditioner.py
++++ b/tests/test_generation_conditioner.py
+@@ -13,10 +13,12 @@
+ 
+ from senseweave.artist_identity import EVENING_REFLECTION, MODES_BY_NAME  # noqa: E402
+ from senseweave.generation.conditioner import (  # noqa: E402
++    _ARC_FRAGMENTS,
+     _MODE_FRAGMENTS,
+     GenerationConditioner,
+ )
+ from senseweave.generation.request import CLAP_CENTROID_DIM  # noqa: E402
++from senseweave.procedural_arc import ARC_PHASES  # noqa: E402
+ 
+ 
+ CANONICAL_MODE_FRAGMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+@@ -68,6 +70,15 @@
+     ),
+ }
+ 
++EXPECTED_ARC_FRAGMENTS = {
++    "Divination": "searching through uncertain signals",
++    "Emergence": "opening into new material",
++    "Conversation": "responsive call and answer",
++    "Convergence": "gathering threads into focus",
++    "Crystallization": "settling into clear form",
++    "Reflection": "returning to memory",
++}
++
+ 
+ def _centroid() -> np.ndarray:
+     values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+@@ -113,6 +124,38 @@
+         )
+ 
+ 
++def test_arc_fragments_cover_procedural_arc_phase_names() -> None:
++    assert _ARC_FRAGMENTS == EXPECTED_ARC_FRAGMENTS
++    assert {phase.name for phase in ARC_PHASES} <= set(_ARC_FRAGMENTS)
++
++
++@pytest.mark.parametrize(("arc_phase", "canonical_fragment"), EXPECTED_ARC_FRAGMENTS.items())
++def test_arc_fragment_table_contributes_canonical_fragment_to_prompt(
++    arc_phase: str, canonical_fragment: str
++) -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        arc_phase,
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert f", {canonical_fragment}, " in req.prompt
++
++
++def test_unknown_arc_phase_uses_in_progress_prompt_fragment() -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        "UnknownArc",
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert ", in-progress, " in req.prompt
++
++
+ def test_build_request_uses_static_prompt_template() -> None:
+     req = GenerationConditioner().build_request(
+         EVENING_REFLECTION,
+
+codex
+The test coverage now checks the fragment table itself, every canonical fragment in the composed prompt, and the unknown-arc fallback. I’ll run the focused conditioner tests first before the full requested validation.
+exec
+/bin/zsh -lc 'pytest tests/test_generation_conditioner.py -x --tb=short' in /Users/anthony/Programming/PromptClaw
+diff --git a/my-claw/tools/senseweave/generation/conditioner.py b/my-claw/tools/senseweave/generation/conditioner.py
+index aa6c4b6a4324992f2472deabd91d7df387cae065..365bba71910480502834f2f8dda73892863ea1c6
+--- a/my-claw/tools/senseweave/generation/conditioner.py
++++ b/my-claw/tools/senseweave/generation/conditioner.py
+@@ -63,7 +63,7 @@
+     "storm": 93.0,
+ }
+ 
+-_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress material"
++_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress"
+ _CONSTRAINT_FRAGMENT: Final[str] = (
+     "short loopable sampler material, no vocals, no named artists"
+ )
+diff --git a/tests/test_generation_conditioner.py b/tests/test_generation_conditioner.py
+index 58d6bcc358b1cccea2e2a5417598f1dba5297c83..54527c3650b5e250fffb3c5cb34e5c8700ecbca4
+--- a/tests/test_generation_conditioner.py
++++ b/tests/test_generation_conditioner.py
+@@ -13,10 +13,12 @@
+ 
+ from senseweave.artist_identity import EVENING_REFLECTION, MODES_BY_NAME  # noqa: E402
+ from senseweave.generation.conditioner import (  # noqa: E402
++    _ARC_FRAGMENTS,
+     _MODE_FRAGMENTS,
+     GenerationConditioner,
+ )
+ from senseweave.generation.request import CLAP_CENTROID_DIM  # noqa: E402
++from senseweave.procedural_arc import ARC_PHASES  # noqa: E402
+ 
+ 
+ CANONICAL_MODE_FRAGMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+@@ -68,6 +70,15 @@
+     ),
+ }
+ 
++EXPECTED_ARC_FRAGMENTS = {
++    "Divination": "searching through uncertain signals",
++    "Emergence": "opening into new material",
++    "Conversation": "responsive call and answer",
++    "Convergence": "gathering threads into focus",
++    "Crystallization": "settling into clear form",
++    "Reflection": "returning to memory",
++}
++
+ 
+ def _centroid() -> np.ndarray:
+     values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+@@ -113,6 +124,38 @@
+         )
+ 
+ 
++def test_arc_fragments_cover_procedural_arc_phase_names() -> None:
++    assert _ARC_FRAGMENTS == EXPECTED_ARC_FRAGMENTS
++    assert {phase.name for phase in ARC_PHASES} <= set(_ARC_FRAGMENTS)
++
++
++@pytest.mark.parametrize(("arc_phase", "canonical_fragment"), EXPECTED_ARC_FRAGMENTS.items())
++def test_arc_fragment_table_contributes_canonical_fragment_to_prompt(
++    arc_phase: str, canonical_fragment: str
++) -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        arc_phase,
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert f", {canonical_fragment}, " in req.prompt
++
++
++def test_unknown_arc_phase_uses_in_progress_prompt_fragment() -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        "UnknownArc",
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert ", in-progress, " in req.prompt
++
++
+ def test_build_request_uses_static_prompt_template() -> None:
+     req = GenerationConditioner().build_request(
+         EVENING_REFLECTION,
+
+ succeeded in 1086ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 19 items
+
+tests/test_generation_conditioner.py ...................                 [100%]
+
+============================== 19 passed in 0.24s ==============================
+
+codex
+Focused tests pass. I’ll check the exact diff, then run the full validation sequence the task requested.
+exec
+/bin/zsh -lc 'git diff -- my-claw/tools/senseweave/generation/conditioner.py tests/test_generation_conditioner.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+diff --git a/my-claw/tools/senseweave/generation/conditioner.py b/my-claw/tools/senseweave/generation/conditioner.py
+index aa6c4b6..365bba7 100644
+--- a/my-claw/tools/senseweave/generation/conditioner.py
++++ b/my-claw/tools/senseweave/generation/conditioner.py
+@@ -63,7 +63,7 @@ _MODE_BPM_TARGETS: Final[dict[str, float]] = {
+     "storm": 93.0,
+ }
+ 
+-_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress material"
++_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress"
+ _CONSTRAINT_FRAGMENT: Final[str] = (
+     "short loopable sampler material, no vocals, no named artists"
+ )
+diff --git a/tests/test_generation_conditioner.py b/tests/test_generation_conditioner.py
+index 58d6bcc..54527c3 100644
+--- a/tests/test_generation_conditioner.py
++++ b/tests/test_generation_conditioner.py
+@@ -13,10 +13,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "too
+ 
+ from senseweave.artist_identity import EVENING_REFLECTION, MODES_BY_NAME  # noqa: E402
+ from senseweave.generation.conditioner import (  # noqa: E402
++    _ARC_FRAGMENTS,
+     _MODE_FRAGMENTS,
+     GenerationConditioner,
+ )
+ from senseweave.generation.request import CLAP_CENTROID_DIM  # noqa: E402
++from senseweave.procedural_arc import ARC_PHASES  # noqa: E402
+ 
+ 
+ CANONICAL_MODE_FRAGMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+@@ -68,6 +70,15 @@ EXPECTED_MODE_FRAGMENTS = {
+     ),
+ }
+ 
++EXPECTED_ARC_FRAGMENTS = {
++    "Divination": "searching through uncertain signals",
++    "Emergence": "opening into new material",
++    "Conversation": "responsive call and answer",
++    "Convergence": "gathering threads into focus",
++    "Crystallization": "settling into clear form",
++    "Reflection": "returning to memory",
++}
++
+ 
+ def _centroid() -> np.ndarray:
+     values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+@@ -113,6 +124,38 @@ def test_mode_fragment_table_includes_canonical_fragments(
+         )
+ 
+ 
++def test_arc_fragments_cover_procedural_arc_phase_names() -> None:
++    assert _ARC_FRAGMENTS == EXPECTED_ARC_FRAGMENTS
++    assert {phase.name for phase in ARC_PHASES} <= set(_ARC_FRAGMENTS)
++
++
++@pytest.mark.parametrize(("arc_phase", "canonical_fragment"), EXPECTED_ARC_FRAGMENTS.items())
++def test_arc_fragment_table_contributes_canonical_fragment_to_prompt(
++    arc_phase: str, canonical_fragment: str
++) -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        arc_phase,
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert f", {canonical_fragment}, " in req.prompt
++
++
++def test_unknown_arc_phase_uses_in_progress_prompt_fragment() -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        "UnknownArc",
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert ", in-progress, " in req.prompt
++
++
+ def test_build_request_uses_static_prompt_template() -> None:
+     req = GenerationConditioner().build_request(
+         EVENING_REFLECTION,
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M my-claw/tools/senseweave/generation/conditioner.py
+ M progress.md
+ M sdp/logs/Lead_T-023_20260427T001208Zc_1777267823.log
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M sdp/runner.log
+ M tests/test_generation_conditioner.py
+?? sdp/logs/Lead_T-026_20260427T001208Z_1777268108.log
+?? sdp/logs/Verify_T-023_20260427T001208Zc_1777267925.log
+?? sdp/verification/t-023@20260427t001208zc-verify.md
+
+diff --git a/my-claw/tools/senseweave/generation/conditioner.py b/my-claw/tools/senseweave/generation/conditioner.py
+index aa6c4b6a4324992f2472deabd91d7df387cae065..365bba71910480502834f2f8dda73892863ea1c6
+--- a/my-claw/tools/senseweave/generation/conditioner.py
++++ b/my-claw/tools/senseweave/generation/conditioner.py
+@@ -63,7 +63,7 @@
+     "storm": 93.0,
+ }
+ 
+-_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress material"
++_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress"
+ _CONSTRAINT_FRAGMENT: Final[str] = (
+     "short loopable sampler material, no vocals, no named artists"
+ )
+diff --git a/tests/test_generation_conditioner.py b/tests/test_generation_conditioner.py
+index 58d6bcc358b1cccea2e2a5417598f1dba5297c83..54527c3650b5e250fffb3c5cb34e5c8700ecbca4
+--- a/tests/test_generation_conditioner.py
++++ b/tests/test_generation_conditioner.py
+@@ -13,10 +13,12 @@
+ 
+ from senseweave.artist_identity import EVENING_REFLECTION, MODES_BY_NAME  # noqa: E402
+ from senseweave.generation.conditioner import (  # noqa: E402
++    _ARC_FRAGMENTS,
+     _MODE_FRAGMENTS,
+     GenerationConditioner,
+ )
+ from senseweave.generation.request import CLAP_CENTROID_DIM  # noqa: E402
++from senseweave.procedural_arc import ARC_PHASES  # noqa: E402
+ 
+ 
+ CANONICAL_MODE_FRAGMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+@@ -68,6 +70,15 @@
+     ),
+ }
+ 
++EXPECTED_ARC_FRAGMENTS = {
++    "Divination": "searching through uncertain signals",
++    "Emergence": "opening into new material",
++    "Conversation": "responsive call and answer",
++    "Convergence": "gathering threads into focus",
++    "Crystallization": "settling into clear form",
++    "Reflection": "returning to memory",
++}
++
+ 
+ def _centroid() -> np.ndarray:
+     values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+@@ -113,6 +124,38 @@
+         )
+ 
+ 
++def test_arc_fragments_cover_procedural_arc_phase_names() -> None:
++    assert _ARC_FRAGMENTS == EXPECTED_ARC_FRAGMENTS
++    assert {phase.name for phase in ARC_PHASES} <= set(_ARC_FRAGMENTS)
++
++
++@pytest.mark.parametrize(("arc_phase", "canonical_fragment"), EXPECTED_ARC_FRAGMENTS.items())
++def test_arc_fragment_table_contributes_canonical_fragment_to_prompt(
++    arc_phase: str, canonical_fragment: str
++) -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        arc_phase,
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert f", {canonical_fragment}, " in req.prompt
++
++
++def test_unknown_arc_phase_uses_in_progress_prompt_fragment() -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        "UnknownArc",
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert ", in-progress, " in req.prompt
++
++
+ def test_build_request_uses_static_prompt_template() -> None:
+     req = GenerationConditioner().build_request(
+         EVENING_REFLECTION,
+
+exec
+/bin/zsh -lc "pip install -e '.[dev]'" in /Users/anthony/Programming/PromptClaw
+diff --git a/my-claw/tools/senseweave/generation/conditioner.py b/my-claw/tools/senseweave/generation/conditioner.py
+index aa6c4b6a4324992f2472deabd91d7df387cae065..365bba71910480502834f2f8dda73892863ea1c6
+--- a/my-claw/tools/senseweave/generation/conditioner.py
++++ b/my-claw/tools/senseweave/generation/conditioner.py
+@@ -63,7 +63,7 @@
+     "storm": 93.0,
+ }
+ 
+-_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress material"
++_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress"
+ _CONSTRAINT_FRAGMENT: Final[str] = (
+     "short loopable sampler material, no vocals, no named artists"
+ )
+diff --git a/tests/test_generation_conditioner.py b/tests/test_generation_conditioner.py
+index 58d6bcc358b1cccea2e2a5417598f1dba5297c83..54527c3650b5e250fffb3c5cb34e5c8700ecbca4
+--- a/tests/test_generation_conditioner.py
++++ b/tests/test_generation_conditioner.py
+@@ -13,10 +13,12 @@
+ 
+ from senseweave.artist_identity import EVENING_REFLECTION, MODES_BY_NAME  # noqa: E402
+ from senseweave.generation.conditioner import (  # noqa: E402
++    _ARC_FRAGMENTS,
+     _MODE_FRAGMENTS,
+     GenerationConditioner,
+ )
+ from senseweave.generation.request import CLAP_CENTROID_DIM  # noqa: E402
++from senseweave.procedural_arc import ARC_PHASES  # noqa: E402
+ 
+ 
+ CANONICAL_MODE_FRAGMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+@@ -68,6 +70,15 @@
+     ),
+ }
+ 
++EXPECTED_ARC_FRAGMENTS = {
++    "Divination": "searching through uncertain signals",
++    "Emergence": "opening into new material",
++    "Conversation": "responsive call and answer",
++    "Convergence": "gathering threads into focus",
++    "Crystallization": "settling into clear form",
++    "Reflection": "returning to memory",
++}
++
+ 
+ def _centroid() -> np.ndarray:
+     values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+@@ -113,6 +124,38 @@
+         )
+ 
+ 
++def test_arc_fragments_cover_procedural_arc_phase_names() -> None:
++    assert _ARC_FRAGMENTS == EXPECTED_ARC_FRAGMENTS
++    assert {phase.name for phase in ARC_PHASES} <= set(_ARC_FRAGMENTS)
++
++
++@pytest.mark.parametrize(("arc_phase", "canonical_fragment"), EXPECTED_ARC_FRAGMENTS.items())
++def test_arc_fragment_table_contributes_canonical_fragment_to_prompt(
++    arc_phase: str, canonical_fragment: str
++) -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        arc_phase,
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert f", {canonical_fragment}, " in req.prompt
++
++
++def test_unknown_arc_phase_uses_in_progress_prompt_fragment() -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        "UnknownArc",
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert ", in-progress, " in req.prompt
++
++
+ def test_build_request_uses_static_prompt_template() -> None:
+     req = GenerationConditioner().build_request(
+         EVENING_REFLECTION,
+
+ succeeded in 3714ms:
+Obtaining file:///Users/anthony/Programming/PromptClaw
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: partitura<2,>=1.8 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.8.0)
+Requirement already satisfied: librosa<1,>=0.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.11.0)
+Requirement already satisfied: mypy>=1.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.19.1)
+Requirement already satisfied: pytest>=8.0 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (8.3.5)
+Requirement already satisfied: ruff>=0.9 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.9.2)
+Requirement already satisfied: audioread>=2.1.9 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (3.1.0)
+Requirement already satisfied: numba>=0.51.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.59.0)
+Requirement already satisfied: numpy>=1.22.3 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.26.0)
+Requirement already satisfied: scipy>=1.6.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.11.4)
+Requirement already satisfied: scikit-learn>=1.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.2)
+Requirement already satisfied: joblib>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.0)
+Requirement already satisfied: decorator>=4.3.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (5.1.1)
+Requirement already satisfied: soundfile>=0.12.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.13.1)
+Requirement already satisfied: pooch>=1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.9.0)
+Requirement already satisfied: soxr>=0.3.2 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: typing_extensions>=4.1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (4.15.0)
+Requirement already satisfied: lazy_loader>=0.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.3)
+Requirement already satisfied: msgpack>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.3)
+Requirement already satisfied: lxml in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.9.3)
+Requirement already satisfied: lark-parser in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (0.12.0)
+Requirement already satisfied: xmlschema in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.3.1)
+Requirement already satisfied: mido in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (1.3.3)
+Requirement already satisfied: mypy_extensions>=1.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: pathspec>=0.9.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.10.3)
+Requirement already satisfied: librt>=0.6.2 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.8.1)
+Requirement already satisfied: llvmlite<0.43,>=0.42.0dev0 in /opt/anaconda3/lib/python3.11/site-packages (from numba>=0.51.0->librosa<1,>=0.10->promptclaw==3.0.0) (0.42.0)
+Requirement already satisfied: platformdirs>=2.5.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (4.5.1)
+Requirement already satisfied: packaging>=20.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (23.2)
+Requirement already satisfied: requests>=2.19.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.32.3)
+Requirement already satisfied: iniconfig in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.1.1)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.5.0)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.4)
+Requirement already satisfied: idna<4,>=2.5 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (3.4)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.6.3)
+Requirement already satisfied: certifi>=2017.4.17 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2026.1.4)
+Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from scikit-learn>=1.1.0->librosa<1,>=0.10->promptclaw==3.0.0) (2.2.0)
+Requirement already satisfied: cffi>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.0)
+Requirement already satisfied: pycparser in /opt/anaconda3/lib/python3.11/site-packages (from cffi>=1.0->soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.21)
+Requirement already satisfied: elementpath<6.0.0,>=5.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from xmlschema->partitura<2,>=1.8->promptclaw==3.0.0) (5.1.1)
+Building wheels for collected packages: promptclaw
+  Building editable for promptclaw (pyproject.toml): started
+  Building editable for promptclaw (pyproject.toml): finished with status 'done'
+  Created wheel for promptclaw: filename=promptclaw-3.0.0-0.editable-py3-none-any.whl size=5894 sha256=9bcba7158a1307a72e3bcbf832218ca9aad236b710255bd8f49784d4a98eb865
+  Stored in directory: /private/var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/pip-ephem-wheel-cache-h9a5cqbp/wheels/ab/f4/89/0cacd29874f6252d7c6bef0fca4c14839da91ab6a8d842965e
+Successfully built promptclaw
+Installing collected packages: promptclaw
+  Attempting uninstall: promptclaw
+    Found existing installation: promptclaw 3.0.0
+    Uninstalling promptclaw-3.0.0:
+      Successfully uninstalled promptclaw-3.0.0
+Successfully installed promptclaw-3.0.0
+
+codex
+Dependency install completed cleanly. I’m starting the full test suite now; if it fails outside this change, I’ll separate that from the T-026 diff rather than masking it.
+exec
+/bin/zsh -lc 'pytest tests/ -x --tb=short' in /Users/anthony/Programming/PromptClaw
+diff --git a/my-claw/tools/senseweave/generation/conditioner.py b/my-claw/tools/senseweave/generation/conditioner.py
+index aa6c4b6a4324992f2472deabd91d7df387cae065..365bba71910480502834f2f8dda73892863ea1c6
+--- a/my-claw/tools/senseweave/generation/conditioner.py
++++ b/my-claw/tools/senseweave/generation/conditioner.py
+@@ -63,7 +63,7 @@
+     "storm": 93.0,
+ }
+ 
+-_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress material"
++_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress"
+ _CONSTRAINT_FRAGMENT: Final[str] = (
+     "short loopable sampler material, no vocals, no named artists"
+ )
+diff --git a/tests/test_generation_conditioner.py b/tests/test_generation_conditioner.py
+index 58d6bcc358b1cccea2e2a5417598f1dba5297c83..54527c3650b5e250fffb3c5cb34e5c8700ecbca4
+--- a/tests/test_generation_conditioner.py
++++ b/tests/test_generation_conditioner.py
+@@ -13,10 +13,12 @@
+ 
+ from senseweave.artist_identity import EVENING_REFLECTION, MODES_BY_NAME  # noqa: E402
+ from senseweave.generation.conditioner import (  # noqa: E402
++    _ARC_FRAGMENTS,
+     _MODE_FRAGMENTS,
+     GenerationConditioner,
+ )
+ from senseweave.generation.request import CLAP_CENTROID_DIM  # noqa: E402
++from senseweave.procedural_arc import ARC_PHASES  # noqa: E402
+ 
+ 
+ CANONICAL_MODE_FRAGMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+@@ -68,6 +70,15 @@
+     ),
+ }
+ 
++EXPECTED_ARC_FRAGMENTS = {
++    "Divination": "searching through uncertain signals",
++    "Emergence": "opening into new material",
++    "Conversation": "responsive call and answer",
++    "Convergence": "gathering threads into focus",
++    "Crystallization": "settling into clear form",
++    "Reflection": "returning to memory",
++}
++
+ 
+ def _centroid() -> np.ndarray:
+     values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+@@ -113,6 +124,38 @@
+         )
+ 
+ 
++def test_arc_fragments_cover_procedural_arc_phase_names() -> None:
++    assert _ARC_FRAGMENTS == EXPECTED_ARC_FRAGMENTS
++    assert {phase.name for phase in ARC_PHASES} <= set(_ARC_FRAGMENTS)
++
++
++@pytest.mark.parametrize(("arc_phase", "canonical_fragment"), EXPECTED_ARC_FRAGMENTS.items())
++def test_arc_fragment_table_contributes_canonical_fragment_to_prompt(
++    arc_phase: str, canonical_fragment: str
++) -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        arc_phase,
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert f", {canonical_fragment}, " in req.prompt
++
++
++def test_unknown_arc_phase_uses_in_progress_prompt_fragment() -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        "UnknownArc",
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert ", in-progress, " in req.prompt
++
++
+ def test_build_request_uses_static_prompt_template() -> None:
+     req = GenerationConditioner().build_request(
+         EVENING_REFLECTION,
+
+codex
+The full test run is more than halfway through and has passed the conditioner/procedural-arc area. I’ll let it finish before moving to lint and typing.
+diff --git a/my-claw/tools/senseweave/generation/conditioner.py b/my-claw/tools/senseweave/generation/conditioner.py
+index aa6c4b6a4324992f2472deabd91d7df387cae065..365bba71910480502834f2f8dda73892863ea1c6
+--- a/my-claw/tools/senseweave/generation/conditioner.py
++++ b/my-claw/tools/senseweave/generation/conditioner.py
+@@ -63,7 +63,7 @@
+     "storm": 93.0,
+ }
+ 
+-_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress material"
++_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress"
+ _CONSTRAINT_FRAGMENT: Final[str] = (
+     "short loopable sampler material, no vocals, no named artists"
+ )
+diff --git a/tests/test_generation_conditioner.py b/tests/test_generation_conditioner.py
+index 58d6bcc358b1cccea2e2a5417598f1dba5297c83..54527c3650b5e250fffb3c5cb34e5c8700ecbca4
+--- a/tests/test_generation_conditioner.py
++++ b/tests/test_generation_conditioner.py
+@@ -13,10 +13,12 @@
+ 
+ from senseweave.artist_identity import EVENING_REFLECTION, MODES_BY_NAME  # noqa: E402
+ from senseweave.generation.conditioner import (  # noqa: E402
++    _ARC_FRAGMENTS,
+     _MODE_FRAGMENTS,
+     GenerationConditioner,
+ )
+ from senseweave.generation.request import CLAP_CENTROID_DIM  # noqa: E402
++from senseweave.procedural_arc import ARC_PHASES  # noqa: E402
+ 
+ 
+ CANONICAL_MODE_FRAGMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+@@ -68,6 +70,15 @@
+     ),
+ }
+ 
++EXPECTED_ARC_FRAGMENTS = {
++    "Divination": "searching through uncertain signals",
++    "Emergence": "opening into new material",
++    "Conversation": "responsive call and answer",
++    "Convergence": "gathering threads into focus",
++    "Crystallization": "settling into clear form",
++    "Reflection": "returning to memory",
++}
++
+ 
+ def _centroid() -> np.ndarray:
+     values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+@@ -113,6 +124,38 @@
+         )
+ 
+ 
++def test_arc_fragments_cover_procedural_arc_phase_names() -> None:
++    assert _ARC_FRAGMENTS == EXPECTED_ARC_FRAGMENTS
++    assert {phase.name for phase in ARC_PHASES} <= set(_ARC_FRAGMENTS)
++
++
++@pytest.mark.parametrize(("arc_phase", "canonical_fragment"), EXPECTED_ARC_FRAGMENTS.items())
++def test_arc_fragment_table_contributes_canonical_fragment_to_prompt(
++    arc_phase: str, canonical_fragment: str
++) -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        arc_phase,
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert f", {canonical_fragment}, " in req.prompt
++
++
++def test_unknown_arc_phase_uses_in_progress_prompt_fragment() -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        "UnknownArc",
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert ", in-progress, " in req.prompt
++
++
+ def test_build_request_uses_static_prompt_template() -> None:
+     req = GenerationConditioner().build_request(
+         EVENING_REFLECTION,
+
+ succeeded in 33534ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, hypothesis-6.151.9, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3721 items
+
+tests/test_accompaniment.py ...........................                  [  0%]
+tests/test_acoustic_ecology.py .................................         [  1%]
+tests/test_agent_runtime.py ..                                           [  1%]
+tests/test_agent_selector_defaults.py .                                  [  1%]
+tests/test_agent_selector_quota.py ........                              [  1%]
+tests/test_agogic_rule.py ...                                            [  1%]
+tests/test_antenna_to_skin.py .................................          [  2%]
+tests/test_archive_daemon_runtime.py .                                   [  2%]
+tests/test_archive_paths.py .....                                        [  3%]
+tests/test_arrangement_engine.py ....................................... [  4%]
+                                                                         [  4%]
+tests/test_art_engine_runtime.py ....                                    [  4%]
+tests/test_articulation.py ......                                        [  4%]
+tests/test_artist_identity.py .......................................... [  5%]
+.........                                                                [  5%]
+tests/test_artistic_identity.py .                                        [  5%]
+tests/test_audio_analysis.py .....................................       [  6%]
+tests/test_audio_novelty.py ....                                         [  6%]
+tests/test_bootstrap.py ..                                               [  6%]
+tests/test_breath_to_filter.py .............................             [  7%]
+tests/test_cadence_engine.py .......                                     [  7%]
+tests/test_call_response.py ..........                                   [  8%]
+tests/test_capstone_engine.py ...                                        [  8%]
+tests/test_capture_alias.py ..                                           [  8%]
+tests/test_cast_planner.py .............                                 [  8%]
+tests/test_character_registry.py ......                                  [  8%]
+tests/test_check_status_runtime.py ..                                    [  8%]
+tests/test_client_local.py ..                                            [  8%]
+tests/test_client_modal.py ..                                            [  8%]
+tests/test_coherence_engine.py ..............                            [  9%]
+tests/test_coherence_integration.py ............                         [  9%]
+tests/test_collaborative_canvas.py ......................                [ 10%]
+tests/test_commission_context.py ..                                      [ 10%]
+tests/test_composer_quote_verify.py .....                                [ 10%]
+tests/test_config.py ..                                                  [ 10%]
+tests/test_constitution.py .......................                       [ 11%]
+tests/test_contact_listener_runtime.py ....                              [ 11%]
+tests/test_contact_mic_calibration_runtime.py ....                       [ 11%]
+tests/test_context_pulse_runtime.py .                                    [ 11%]
+tests/test_continuous_learner.py ......................                  [ 11%]
+tests/test_counterpoint_pipeline.py ...........................          [ 12%]
+tests/test_counterpoint_rules.py ....................................... [ 13%]
+......................                                                   [ 14%]
+tests/test_course_critique.py ...............................            [ 15%]
+tests/test_cypherclaw_audio_runtime.py .....                             [ 15%]
+tests/test_cypherclaw_av_stack_service.py ...                            [ 15%]
+tests/test_cypherclaw_boot_runtime.py ......                             [ 15%]
+tests/test_cypherclaw_musicianship_roadmap.py ..                         [ 15%]
+tests/test_cypherclaw_runtime.py .....                                   [ 15%]
+tests/test_cypherclaw_sampler_architecture.py .......                    [ 15%]
+tests/test_cypherclaw_sampler_artistic_intent.py .....                   [ 16%]
+tests/test_daemon_concurrency_compat.py ...                              [ 16%]
+tests/test_daemon_fallback.py ...............                            [ 16%]
+tests/test_daemon_scheduler.py ..                                        [ 16%]
+tests/test_daemon_status_ollama.py .......                               [ 16%]
+tests/test_dashboard_generator.py ...................................... [ 17%]
+.......                                                                  [ 17%]
+tests/test_dashboard_generator_runtime.py ...                            [ 18%]
+tests/test_decision_store.py .........                                   [ 18%]
+tests/test_doctor.py ...                                                 [ 18%]
+tests/test_dsp_scene_lab.py ................                             [ 18%]
+tests/test_duration_contrast_rule.py .......                             [ 18%]
+tests/test_ear_engine.py ............                                    [ 19%]
+tests/test_emsd_curriculum.py ...............                            [ 19%]
+tests/test_emsd_performance.py ....                                      [ 19%]
+tests/test_emsd_runtime.py ...                                           [ 19%]
+tests/test_event_store.py .......                                        [ 20%]
+tests/test_executable_curriculum.py ...                                  [ 20%]
+tests/test_face_display_sample_status.py ....                            [ 20%]
+tests/test_federation_discovery.py ........                              [ 20%]
+tests/test_final_rit.py ...                                              [ 20%]
+tests/test_first_boot.py ...................................             [ 21%]
+tests/test_form_grammar.py ..                                            [ 21%]
+tests/test_fractal_form.py ...............                               [ 21%]
+tests/test_functional_harmony.py ...............................         [ 22%]
+tests/test_gallery.py ..........................                         [ 23%]
+tests/test_gallery_x11_runtime.py ...                                    [ 23%]
+tests/test_garden_watcher.py ........................................... [ 24%]
+.                                                                        [ 24%]
+tests/test_gemini_image_runtime.py ...                                   [ 24%]
+tests/test_generation_composer_hook.py ....                              [ 24%]
+tests/test_generation_conditioner.py ...................                 [ 25%]
+tests/test_generation_e2e_cypherclaw.py s                                [ 25%]
+tests/test_generation_live_modal.py s                                    [ 25%]
+tests/test_generation_live_replicate.py s                                [ 25%]
+tests/test_generation_queue.py .....................                     [ 26%]
+tests/test_generation_replicate_retry.py ............................... [ 26%]
+..................                                                       [ 27%]
+tests/test_generation_request.py .....................                   [ 27%]
+tests/test_generation_storage.py ....                                    [ 28%]
+tests/test_generative_scores.py ........................................ [ 29%]
+.............................................                            [ 30%]
+tests/test_genre_literacy.py ............                                [ 30%]
+tests/test_glyphweave_cli.py ....                                        [ 30%]
+tests/test_glyphweave_runtime.py ....                                    [ 30%]
+tests/test_governor_integration.py ..............                        [ 31%]
+tests/test_graduation.py ......................                          [ 31%]
+tests/test_groove_engine.py ............................................ [ 33%]
+......................................                                   [ 34%]
+tests/test_harmonic_planner.py .........                                 [ 34%]
+tests/test_healer_runtime.py .....                                       [ 34%]
+tests/test_healthcheck_script_runtime.py ...                             [ 34%]
+tests/test_hook_engine.py .................                              [ 34%]
+tests/test_human_phrase_capture_verify.py .                              [ 35%]
+tests/test_image_api_app.py ........                                     [ 35%]
+tests/test_image_api_jobs_db.py ............                             [ 35%]
+tests/test_image_api_s3_uploader.py ....                                 [ 35%]
+tests/test_image_api_spec_parser.py ...................                  [ 36%]
+tests/test_image_api_worker.py ........                                  [ 36%]
+tests/test_inkplate_display.py ....                                      [ 36%]
+tests/test_inner_life.py ...................................             [ 37%]
+tests/test_instrument_patches.py ........                                [ 37%]
+tests/test_ixml_chunk_writer.py .......                                  [ 37%]
+tests/test_keyboard_chat.py ..............................               [ 38%]
+tests/test_lifeimprover_bridge_runtime.py .....                          [ 38%]
+tests/test_listener_review.py .....                                      [ 38%]
+tests/test_live_buffer.py ...                                            [ 38%]
+tests/test_local_command_runtime.py ....                                 [ 39%]
+tests/test_lung_capacity_rule.py .......                                 [ 39%]
+tests/test_macbook_codex_monitor.py ....                                 [ 39%]
+tests/test_maintenance_mode.py .....                                     [ 39%]
+tests/test_master_bus.py ......                                          [ 39%]
+tests/test_master_smooth_scd.py ...                                      [ 39%]
+tests/test_melodic_mind.py ............................................. [ 40%]
+..........................................................               [ 42%]
+tests/test_metric_accent_rule.py ....                                    [ 42%]
+tests/test_microtiming.py .....................                          [ 43%]
+tests/test_midi_keyboard_listener_runtime.py .....                       [ 43%]
+tests/test_midi_state.py .......................................         [ 44%]
+tests/test_mix_engine.py ..............................                  [ 45%]
+tests/test_mix_verify.py ............................................... [ 46%]
+                                                                         [ 46%]
+tests/test_mood_mirror.py .....................................          [ 47%]
+tests/test_motif_lifecycle.py ............................               [ 48%]
+tests/test_motif_memory.py ...............                               [ 48%]
+tests/test_music_theory.py ............................................. [ 49%]
+........................................                                 [ 50%]
+tests/test_music_tracker.py ..........................................   [ 52%]
+tests/test_music_tracker_runtime.py .................................... [ 52%]
+........                                                                 [ 53%]
+tests/test_musical_integration_runtime.py .                              [ 53%]
+tests/test_musical_marathon_integration.py ..                            [ 53%]
+tests/test_narrative_envelope.py ..............                          [ 53%]
+tests/test_observatory_authority.py .....                                [ 53%]
+tests/test_observatory_runtime.py ..                                     [ 53%]
+tests/test_observatory_verification.py ..                                [ 53%]
+tests/test_observer_vision_runtime.py ..............                     [ 54%]
+tests/test_ollama_daemon_health.py ...                                   [ 54%]
+tests/test_ollama_health.py ......                                       [ 54%]
+tests/test_ollama_invoke.py ...                                          [ 54%]
+tests/test_ollama_routing.py ...................                         [ 55%]
+tests/test_ollama_run_agent.py .......                                   [ 55%]
+tests/test_operator_diagnostics.py ...............                       [ 55%]
+tests/test_operator_diagnostics_sample_status.py ....                    [ 55%]
+tests/test_ops_helpers_runtime.py ....                                   [ 55%]
+tests/test_orchestral_form.py ...............................            [ 56%]
+tests/test_orchestrator.py ...                                           [ 56%]
+tests/test_pareidolia_art_engine.py .......                              [ 57%]
+tests/test_pareidolia_characters.py .................................    [ 57%]
+tests/test_pareidolia_color.py ......................................... [ 59%]
+........................................................................ [ 60%]
+....                                                                     [ 61%]
+tests/test_pedals_to_key.py ............................                 [ 61%]
+tests/test_phrase_arch.py ..........                                     [ 62%]
+tests/test_phrase_capture.py ........................                    [ 62%]
+tests/test_phrase_capture_runtime.py ...                                 [ 62%]
+tests/test_phrase_tracker.py ............                                [ 63%]
+tests/test_piece_brief.py ........                                       [ 63%]
+tests/test_piece_commission.py ....                                      [ 63%]
+tests/test_piece_queue.py ..                                             [ 63%]
+tests/test_porch_eye.py ..................................               [ 64%]
+tests/test_portfolio_report.py .........................                 [ 65%]
+tests/test_practice_curriculum.py ..                                     [ 65%]
+tests/test_preflight.py ......                                           [ 65%]
+tests/test_presence_engine.py ............                               [ 65%]
+tests/test_procedural_arc.py .....                                       [ 65%]
+tests/test_production_course_integration.py ..........                   [ 66%]
+tests/test_production_course_knowledge_base.py ...                       [ 66%]
+tests/test_project_scanner_runtime.py ....                               [ 66%]
+tests/test_prosody_engine.py ........                                    [ 66%]
+tests/test_punctuation_rule.py ............                              [ 66%]
+tests/test_quota_monitor.py .....................                        [ 67%]
+tests/test_reharmonizer.py ...                                           [ 67%]
+tests/test_render_ablation.py ....                                       [ 67%]
+tests/test_render_antipatterns.py ......................                 [ 68%]
+tests/test_render_audio_sidecar.py ...                                   [ 68%]
+tests/test_render_debugger.py ..                                         [ 68%]
+tests/test_render_diff.py ................                               [ 68%]
+tests/test_render_events.py ....................                         [ 69%]
+tests/test_render_export.py ......                                       [ 69%]
+tests/test_render_features.py ...                                        [ 69%]
+tests/test_render_metrics.py ..............                              [ 69%]
+tests/test_render_pass.py ....................                           [ 70%]
+tests/test_render_replay.py ..                                           [ 70%]
+tests/test_render_seed.py .............                                  [ 70%]
+tests/test_render_worm.py ..........                                     [ 71%]
+tests/test_repertoire_memory.py .................                        [ 71%]
+tests/test_repertoire_memory_score_tree.py .                             [ 71%]
+tests/test_research_runtime.py .....                                     [ 71%]
+tests/test_resilience_runtime_scripts.py ..............                  [ 72%]
+tests/test_resource_governor.py ..........................               [ 72%]
+tests/test_restraint.py ...                                              [ 72%]
+tests/test_reviewer_runtime.py ...                                       [ 72%]
+tests/test_role_gate_integration.py .................................... [ 73%]
+....                                                                     [ 73%]
+tests/test_room_listener_runtime.py ..................                   [ 74%]
+tests/test_room_presence_daemon.py ......                                [ 74%]
+tests/test_router.py .....                                               [ 74%]
+tests/test_row_automation.py ...........                                 [ 75%]
+tests/test_runtime_checkpoint.py ...                                     [ 75%]
+tests/test_runtime_paths.py ..                                           [ 75%]
+tests/test_sample_capture_daemon.py .................................... [ 76%]
+.............                                                            [ 76%]
+tests/test_sample_capture_service_verify.py ....                         [ 76%]
+tests/test_sample_capture_verify.py ....                                 [ 76%]
+tests/test_sample_dsp_activity.py ...........                            [ 76%]
+tests/test_sample_event_renderer.py .....                                [ 77%]
+tests/test_sample_lab.py ....                                            [ 77%]
+tests/test_sample_library.py ......................                      [ 77%]
+tests/test_sample_library_import.py ...                                  [ 77%]
+tests/test_sample_playback_engine.py .......                             [ 78%]
+tests/test_sample_record_audio_analysis.py .............                 [ 78%]
+tests/test_sample_record_context.py ..........                           [ 78%]
+tests/test_sample_record_json.py ..............                          [ 79%]
+tests/test_sample_record_skeleton.py .........                           [ 79%]
+tests/test_sample_selector.py ..................                         [ 79%]
+tests/test_sample_status.py .....                                        [ 79%]
+tests/test_sampler_buffers.py ...............                            [ 80%]
+tests/test_sampler_dispatch.py ....................................      [ 81%]
+tests/test_sampler_effects.py .......................................... [ 82%]
+.......                                                                  [ 82%]
+tests/test_sampler_fx_mode_verify.py ...                                 [ 82%]
+tests/test_sampler_scheduler.py ...........                              [ 83%]
+tests/test_scene_composer.py ......................................      [ 84%]
+tests/test_score_tree.py .                                               [ 84%]
+tests/test_score_tree_composer.py .......................                [ 84%]
+tests/test_score_tree_pipeline.py .                                      [ 84%]
+tests/test_self_critique.py .........................                    [ 85%]
+tests/test_self_listener_quote_verify.py ......                          [ 85%]
+tests/test_self_listener_tracker_runtime.py ...............              [ 85%]
+tests/test_senseweave_rollout_controls.py .....                          [ 86%]
+tests/test_senseweave_voice.py ..........................                [ 86%]
+tests/test_sensor_fusion.py ...............................              [ 87%]
+tests/test_sensor_intent_rule.py ....                                    [ 87%]
+tests/test_sensory_journal.py ............................               [ 88%]
+tests/test_server_health.py ...                                          [ 88%]
+tests/test_silence_budget_rule.py .................                      [ 89%]
+tests/test_sound_palette_lab.py ..                                       [ 89%]
+tests/test_startle.py ................................                   [ 89%]
+tests/test_supercollider_recipes.py ...                                  [ 90%]
+tests/test_sw_sampler.py .......................................         [ 91%]
+tests/test_syncopation_features.py .........................             [ 91%]
+tests/test_synthdef_registry.py ...................................      [ 92%]
+tests/test_synthesis_architecture_registry.py .......................... [ 93%]
+.......                                                                  [ 93%]
+tests/test_tamagotchi_runtime.py ......                                  [ 93%]
+tests/test_telegram_runtime.py ......                                    [ 93%]
+tests/test_theramini_duet.py ........................................... [ 95%]
+.........                                                                [ 95%]
+tests/test_theramini_listener_runtime.py ............                    [ 95%]
+tests/test_tracker_cadence.py ............                               [ 95%]
+tests/test_tracker_compiler.py ................                          [ 96%]
+tests/test_tracker_variation.py .....                                    [ 96%]
+tests/test_trust.py ................                                     [ 96%]
+tests/test_usage_journal.py ..............                               [ 97%]
+tests/test_usage_journal_integration.py .                                [ 97%]
+tests/test_voice_aliases.py .......                                      [ 97%]
+tests/test_voice_interpretation_rules.py ............................... [ 98%]
+..                                                                       [ 98%]
+tests/test_voice_manager_v2.py ......................................... [ 99%]
+............                                                             [ 99%]
+tests/test_voice_shaping.py ....                                         [ 99%]
+tests/test_wizard.py ...                                                 [100%]
+
+=============================== warnings summary ===============================
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163: DeprecationWarning: module 'sre_parse' is deprecated
+    import sre_parse
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164: DeprecationWarning: module 'sre_constants' is deprecated
+    import sre_constants
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25
+  /opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    from pkg_resources import resource_stream, resource_exists
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google.cloud')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(parent)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('ruamel')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('zope')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:16: DeprecationWarning: 'aifc' is deprecated and slated for removal in Python 3.13
+    import aifc
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:17: DeprecationWarning: 'audioop' is deprecated and slated for removal in Python 3.13
+    import audioop
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:19: DeprecationWarning: 'sunau' is deprecated and slated for removal in Python 3.13
+    import sunau
+
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+  /Users/anthony/Programming/PromptClaw/tests/test_gallery.py:108: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(result.getdata()), list(canvas.getdata()))
+
+tests/test_pareidolia_characters.py: 189 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:85: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pixels = list(img.getdata())
+
+tests/test_pareidolia_characters.py: 21 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:254: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    rendered[name] = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:310: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:314: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:316: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:339: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_low = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:343: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_high = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:326: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:352: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:331: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:333: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:361: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:376: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:366: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:368: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_add_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:429: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:451: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_with_palette
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:443: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:434: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:436: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:481: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_curious_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:554: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_happy_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:542: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_neutral_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:536: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sad_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:548: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sleeping_eyes_no_highlights
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:560: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:571: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_bush
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:621: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:615: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:609: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:585: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_without_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:591: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:597: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:603: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:642: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:661: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:674: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    basalt_pixels = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:678: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pebble_pixels = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:870: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================ 3718 passed, 3 skipped, 296 warnings in 32.01s ================
+
+codex
+Full tests passed: 3718 passed and 3 skipped. Next I’m running `ruff` exactly as requested, then `mypy src/`.
+exec
+/bin/zsh -lc 'ruff check src/ tests/' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+All checks passed!
+
+diff --git a/my-claw/tools/senseweave/generation/conditioner.py b/my-claw/tools/senseweave/generation/conditioner.py
+index aa6c4b6a4324992f2472deabd91d7df387cae065..365bba71910480502834f2f8dda73892863ea1c6
+--- a/my-claw/tools/senseweave/generation/conditioner.py
++++ b/my-claw/tools/senseweave/generation/conditioner.py
+@@ -63,7 +63,7 @@
+     "storm": 93.0,
+ }
+ 
+-_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress material"
++_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress"
+ _CONSTRAINT_FRAGMENT: Final[str] = (
+     "short loopable sampler material, no vocals, no named artists"
+ )
+diff --git a/tests/test_generation_conditioner.py b/tests/test_generation_conditioner.py
+index 58d6bcc358b1cccea2e2a5417598f1dba5297c83..54527c3650b5e250fffb3c5cb34e5c8700ecbca4
+--- a/tests/test_generation_conditioner.py
++++ b/tests/test_generation_conditioner.py
+@@ -13,10 +13,12 @@
+ 
+ from senseweave.artist_identity import EVENING_REFLECTION, MODES_BY_NAME  # noqa: E402
+ from senseweave.generation.conditioner import (  # noqa: E402
++    _ARC_FRAGMENTS,
+     _MODE_FRAGMENTS,
+     GenerationConditioner,
+ )
+ from senseweave.generation.request import CLAP_CENTROID_DIM  # noqa: E402
++from senseweave.procedural_arc import ARC_PHASES  # noqa: E402
+ 
+ 
+ CANONICAL_MODE_FRAGMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+@@ -68,6 +70,15 @@
+     ),
+ }
+ 
++EXPECTED_ARC_FRAGMENTS = {
++    "Divination": "searching through uncertain signals",
++    "Emergence": "opening into new material",
++    "Conversation": "responsive call and answer",
++    "Convergence": "gathering threads into focus",
++    "Crystallization": "settling into clear form",
++    "Reflection": "returning to memory",
++}
++
+ 
+ def _centroid() -> np.ndarray:
+     values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+@@ -113,6 +124,38 @@
+         )
+ 
+ 
++def test_arc_fragments_cover_procedural_arc_phase_names() -> None:
++    assert _ARC_FRAGMENTS == EXPECTED_ARC_FRAGMENTS
++    assert {phase.name for phase in ARC_PHASES} <= set(_ARC_FRAGMENTS)
++
++
++@pytest.mark.parametrize(("arc_phase", "canonical_fragment"), EXPECTED_ARC_FRAGMENTS.items())
++def test_arc_fragment_table_contributes_canonical_fragment_to_prompt(
++    arc_phase: str, canonical_fragment: str
++) -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        arc_phase,
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert f", {canonical_fragment}, " in req.prompt
++
++
++def test_unknown_arc_phase_uses_in_progress_prompt_fragment() -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        "UnknownArc",
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert ", in-progress, " in req.prompt
++
++
+ def test_build_request_uses_static_prompt_template() -> None:
+     req = GenerationConditioner().build_request(
+         EVENING_REFLECTION,
+
+exec
+/bin/zsh -lc 'mypy src/' in /Users/anthony/Programming/PromptClaw
+diff --git a/my-claw/tools/senseweave/generation/conditioner.py b/my-claw/tools/senseweave/generation/conditioner.py
+index aa6c4b6a4324992f2472deabd91d7df387cae065..365bba71910480502834f2f8dda73892863ea1c6
+--- a/my-claw/tools/senseweave/generation/conditioner.py
++++ b/my-claw/tools/senseweave/generation/conditioner.py
+@@ -63,7 +63,7 @@
+     "storm": 93.0,
+ }
+ 
+-_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress material"
++_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress"
+ _CONSTRAINT_FRAGMENT: Final[str] = (
+     "short loopable sampler material, no vocals, no named artists"
+ )
+diff --git a/tests/test_generation_conditioner.py b/tests/test_generation_conditioner.py
+index 58d6bcc358b1cccea2e2a5417598f1dba5297c83..54527c3650b5e250fffb3c5cb34e5c8700ecbca4
+--- a/tests/test_generation_conditioner.py
++++ b/tests/test_generation_conditioner.py
+@@ -13,10 +13,12 @@
+ 
+ from senseweave.artist_identity import EVENING_REFLECTION, MODES_BY_NAME  # noqa: E402
+ from senseweave.generation.conditioner import (  # noqa: E402
++    _ARC_FRAGMENTS,
+     _MODE_FRAGMENTS,
+     GenerationConditioner,
+ )
+ from senseweave.generation.request import CLAP_CENTROID_DIM  # noqa: E402
++from senseweave.procedural_arc import ARC_PHASES  # noqa: E402
+ 
+ 
+ CANONICAL_MODE_FRAGMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+@@ -68,6 +70,15 @@
+     ),
+ }
+ 
++EXPECTED_ARC_FRAGMENTS = {
++    "Divination": "searching through uncertain signals",
++    "Emergence": "opening into new material",
++    "Conversation": "responsive call and answer",
++    "Convergence": "gathering threads into focus",
++    "Crystallization": "settling into clear form",
++    "Reflection": "returning to memory",
++}
++
+ 
+ def _centroid() -> np.ndarray:
+     values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+@@ -113,6 +124,38 @@
+         )
+ 
+ 
++def test_arc_fragments_cover_procedural_arc_phase_names() -> None:
++    assert _ARC_FRAGMENTS == EXPECTED_ARC_FRAGMENTS
++    assert {phase.name for phase in ARC_PHASES} <= set(_ARC_FRAGMENTS)
++
++
++@pytest.mark.parametrize(("arc_phase", "canonical_fragment"), EXPECTED_ARC_FRAGMENTS.items())
++def test_arc_fragment_table_contributes_canonical_fragment_to_prompt(
++    arc_phase: str, canonical_fragment: str
++) -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        arc_phase,
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert f", {canonical_fragment}, " in req.prompt
++
++
++def test_unknown_arc_phase_uses_in_progress_prompt_fragment() -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        "UnknownArc",
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert ", in-progress, " in req.prompt
++
++
+ def test_build_request_uses_static_prompt_template() -> None:
+     req = GenerationConditioner().build_request(
+         EVENING_REFLECTION,
+
+ succeeded in 465ms:
+Success: no issues found in 23 source files
+
+codex
+The requested lint and typing checks passed. Since the changed source lives under `my-claw/tools`, I’ll also run a focused lint on the modified source/test files before committing.
+exec
+/bin/zsh -lc 'ruff check my-claw/tools/senseweave/generation/conditioner.py tests/test_generation_conditioner.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+All checks passed!
+
+diff --git a/my-claw/tools/senseweave/generation/conditioner.py b/my-claw/tools/senseweave/generation/conditioner.py
+index aa6c4b6a4324992f2472deabd91d7df387cae065..365bba71910480502834f2f8dda73892863ea1c6
+--- a/my-claw/tools/senseweave/generation/conditioner.py
++++ b/my-claw/tools/senseweave/generation/conditioner.py
+@@ -63,7 +63,7 @@
+     "storm": 93.0,
+ }
+ 
+-_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress material"
++_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress"
+ _CONSTRAINT_FRAGMENT: Final[str] = (
+     "short loopable sampler material, no vocals, no named artists"
+ )
+diff --git a/tests/test_generation_conditioner.py b/tests/test_generation_conditioner.py
+index 58d6bcc358b1cccea2e2a5417598f1dba5297c83..54527c3650b5e250fffb3c5cb34e5c8700ecbca4
+--- a/tests/test_generation_conditioner.py
++++ b/tests/test_generation_conditioner.py
+@@ -13,10 +13,12 @@
+ 
+ from senseweave.artist_identity import EVENING_REFLECTION, MODES_BY_NAME  # noqa: E402
+ from senseweave.generation.conditioner import (  # noqa: E402
++    _ARC_FRAGMENTS,
+     _MODE_FRAGMENTS,
+     GenerationConditioner,
+ )
+ from senseweave.generation.request import CLAP_CENTROID_DIM  # noqa: E402
++from senseweave.procedural_arc import ARC_PHASES  # noqa: E402
+ 
+ 
+ CANONICAL_MODE_FRAGMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+@@ -68,6 +70,15 @@
+     ),
+ }
+ 
++EXPECTED_ARC_FRAGMENTS = {
++    "Divination": "searching through uncertain signals",
++    "Emergence": "opening into new material",
++    "Conversation": "responsive call and answer",
++    "Convergence": "gathering threads into focus",
++    "Crystallization": "settling into clear form",
++    "Reflection": "returning to memory",
++}
++
+ 
+ def _centroid() -> np.ndarray:
+     values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+@@ -113,6 +124,38 @@
+         )
+ 
+ 
++def test_arc_fragments_cover_procedural_arc_phase_names() -> None:
++    assert _ARC_FRAGMENTS == EXPECTED_ARC_FRAGMENTS
++    assert {phase.name for phase in ARC_PHASES} <= set(_ARC_FRAGMENTS)
++
++
++@pytest.mark.parametrize(("arc_phase", "canonical_fragment"), EXPECTED_ARC_FRAGMENTS.items())
++def test_arc_fragment_table_contributes_canonical_fragment_to_prompt(
++    arc_phase: str, canonical_fragment: str
++) -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        arc_phase,
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert f", {canonical_fragment}, " in req.prompt
++
++
++def test_unknown_arc_phase_uses_in_progress_prompt_fragment() -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        "UnknownArc",
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert ", in-progress, " in req.prompt
++
++
+ def test_build_request_uses_static_prompt_template() -> None:
+     req = GenerationConditioner().build_request(
+         EVENING_REFLECTION,
+
+codex
+Validation is clean, including a focused lint over the modified source path. I’ll stage only the conditioner and its test file, leaving the pre-existing logs/progress files alone.
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M my-claw/tools/senseweave/generation/conditioner.py
+ M progress.md
+ M sdp/logs/Lead_T-023_20260427T001208Zc_1777267823.log
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M sdp/runner.log
+ M tests/test_generation_conditioner.py
+?? sdp/logs/Lead_T-026_20260427T001208Z_1777268108.log
+?? sdp/logs/Verify_T-023_20260427T001208Zc_1777267925.log
+?? sdp/verification/t-023@20260427t001208zc-verify.md
+
+exec
+/bin/zsh -lc 'git diff --check -- my-claw/tools/senseweave/generation/conditioner.py tests/test_generation_conditioner.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+diff --git a/my-claw/tools/senseweave/generation/conditioner.py b/my-claw/tools/senseweave/generation/conditioner.py
+index aa6c4b6a4324992f2472deabd91d7df387cae065..365bba71910480502834f2f8dda73892863ea1c6
+--- a/my-claw/tools/senseweave/generation/conditioner.py
++++ b/my-claw/tools/senseweave/generation/conditioner.py
+@@ -63,7 +63,7 @@
+     "storm": 93.0,
+ }
+ 
+-_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress material"
++_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress"
+ _CONSTRAINT_FRAGMENT: Final[str] = (
+     "short loopable sampler material, no vocals, no named artists"
+ )
+diff --git a/tests/test_generation_conditioner.py b/tests/test_generation_conditioner.py
+index 58d6bcc358b1cccea2e2a5417598f1dba5297c83..54527c3650b5e250fffb3c5cb34e5c8700ecbca4
+--- a/tests/test_generation_conditioner.py
++++ b/tests/test_generation_conditioner.py
+@@ -13,10 +13,12 @@
+ 
+ from senseweave.artist_identity import EVENING_REFLECTION, MODES_BY_NAME  # noqa: E402
+ from senseweave.generation.conditioner import (  # noqa: E402
++    _ARC_FRAGMENTS,
+     _MODE_FRAGMENTS,
+     GenerationConditioner,
+ )
+ from senseweave.generation.request import CLAP_CENTROID_DIM  # noqa: E402
++from senseweave.procedural_arc import ARC_PHASES  # noqa: E402
+ 
+ 
+ CANONICAL_MODE_FRAGMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+@@ -68,6 +70,15 @@
+     ),
+ }
+ 
++EXPECTED_ARC_FRAGMENTS = {
++    "Divination": "searching through uncertain signals",
++    "Emergence": "opening into new material",
++    "Conversation": "responsive call and answer",
++    "Convergence": "gathering threads into focus",
++    "Crystallization": "settling into clear form",
++    "Reflection": "returning to memory",
++}
++
+ 
+ def _centroid() -> np.ndarray:
+     values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+@@ -113,6 +124,38 @@
+         )
+ 
+ 
++def test_arc_fragments_cover_procedural_arc_phase_names() -> None:
++    assert _ARC_FRAGMENTS == EXPECTED_ARC_FRAGMENTS
++    assert {phase.name for phase in ARC_PHASES} <= set(_ARC_FRAGMENTS)
++
++
++@pytest.mark.parametrize(("arc_phase", "canonical_fragment"), EXPECTED_ARC_FRAGMENTS.items())
++def test_arc_fragment_table_contributes_canonical_fragment_to_prompt(
++    arc_phase: str, canonical_fragment: str
++) -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        arc_phase,
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert f", {canonical_fragment}, " in req.prompt
++
++
++def test_unknown_arc_phase_uses_in_progress_prompt_fragment() -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        "UnknownArc",
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert ", in-progress, " in req.prompt
++
++
+ def test_build_request_uses_static_prompt_template() -> None:
+     req = GenerationConditioner().build_request(
+         EVENING_REFLECTION,
+
+exec
+/bin/zsh -lc 'git add my-claw/tools/senseweave/generation/conditioner.py tests/test_generation_conditioner.py && git commit -m "test(generation): cover arc prompt fragments [T-026@20260427T001208Z]"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+[feat/graceful-degradation 90ab15e] test(generation): cover arc prompt fragments [T-026@20260427T001208Z]
+ 2 files changed, 44 insertions(+), 1 deletion(-)
+
+diff --git a/my-claw/tools/senseweave/generation/conditioner.py b/my-claw/tools/senseweave/generation/conditioner.py
+index aa6c4b6a4324992f2472deabd91d7df387cae065..365bba71910480502834f2f8dda73892863ea1c6
+--- a/my-claw/tools/senseweave/generation/conditioner.py
++++ b/my-claw/tools/senseweave/generation/conditioner.py
+@@ -63,7 +63,7 @@
+     "storm": 93.0,
+ }
+ 
+-_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress material"
++_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress"
+ _CONSTRAINT_FRAGMENT: Final[str] = (
+     "short loopable sampler material, no vocals, no named artists"
+ )
+diff --git a/tests/test_generation_conditioner.py b/tests/test_generation_conditioner.py
+index 58d6bcc358b1cccea2e2a5417598f1dba5297c83..54527c3650b5e250fffb3c5cb34e5c8700ecbca4
+--- a/tests/test_generation_conditioner.py
++++ b/tests/test_generation_conditioner.py
+@@ -13,10 +13,12 @@
+ 
+ from senseweave.artist_identity import EVENING_REFLECTION, MODES_BY_NAME  # noqa: E402
+ from senseweave.generation.conditioner import (  # noqa: E402
++    _ARC_FRAGMENTS,
+     _MODE_FRAGMENTS,
+     GenerationConditioner,
+ )
+ from senseweave.generation.request import CLAP_CENTROID_DIM  # noqa: E402
++from senseweave.procedural_arc import ARC_PHASES  # noqa: E402
+ 
+ 
+ CANONICAL_MODE_FRAGMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+@@ -68,6 +70,15 @@
+     ),
+ }
+ 
++EXPECTED_ARC_FRAGMENTS = {
++    "Divination": "searching through uncertain signals",
++    "Emergence": "opening into new material",
++    "Conversation": "responsive call and answer",
++    "Convergence": "gathering threads into focus",
++    "Crystallization": "settling into clear form",
++    "Reflection": "returning to memory",
++}
++
+ 
+ def _centroid() -> np.ndarray:
+     values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+@@ -113,6 +124,38 @@
+         )
+ 
+ 
++def test_arc_fragments_cover_procedural_arc_phase_names() -> None:
++    assert _ARC_FRAGMENTS == EXPECTED_ARC_FRAGMENTS
++    assert {phase.name for phase in ARC_PHASES} <= set(_ARC_FRAGMENTS)
++
++
++@pytest.mark.parametrize(("arc_phase", "canonical_fragment"), EXPECTED_ARC_FRAGMENTS.items())
++def test_arc_fragment_table_contributes_canonical_fragment_to_prompt(
++    arc_phase: str, canonical_fragment: str
++) -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        arc_phase,
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert f", {canonical_fragment}, " in req.prompt
++
++
++def test_unknown_arc_phase_uses_in_progress_prompt_fragment() -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        "UnknownArc",
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert ", in-progress, " in req.prompt
++
++
+ def test_build_request_uses_static_prompt_template() -> None:
+     req = GenerationConditioner().build_request(
+         EVENING_REFLECTION,
+
+codex
+Committed the T-026 change. I’ll do a final status check to confirm only the unrelated pre-existing files remain unstaged.
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+exec
+/bin/zsh -lc 'git show --stat --oneline HEAD' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/logs/Lead_T-023_20260427T001208Zc_1777267823.log
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M sdp/runner.log
+?? sdp/logs/Lead_T-026_20260427T001208Z_1777268108.log
+?? sdp/logs/Verify_T-023_20260427T001208Zc_1777267925.log
+?? sdp/verification/t-023@20260427t001208zc-verify.md
+
+ succeeded in 0ms:
+90ab15e test(generation): cover arc prompt fragments [T-026@20260427T001208Z]
+ my-claw/tools/senseweave/generation/conditioner.py |  2 +-
+ tests/test_generation_conditioner.py               | 43 ++++++++++++++++++++++
+ 2 files changed, 44 insertions(+), 1 deletion(-)
+
+diff --git a/my-claw/tools/senseweave/generation/conditioner.py b/my-claw/tools/senseweave/generation/conditioner.py
+index aa6c4b6a4324992f2472deabd91d7df387cae065..365bba71910480502834f2f8dda73892863ea1c6
+--- a/my-claw/tools/senseweave/generation/conditioner.py
++++ b/my-claw/tools/senseweave/generation/conditioner.py
+@@ -63,7 +63,7 @@
+     "storm": 93.0,
+ }
+ 
+-_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress material"
++_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress"
+ _CONSTRAINT_FRAGMENT: Final[str] = (
+     "short loopable sampler material, no vocals, no named artists"
+ )
+diff --git a/tests/test_generation_conditioner.py b/tests/test_generation_conditioner.py
+index 58d6bcc358b1cccea2e2a5417598f1dba5297c83..54527c3650b5e250fffb3c5cb34e5c8700ecbca4
+--- a/tests/test_generation_conditioner.py
++++ b/tests/test_generation_conditioner.py
+@@ -13,10 +13,12 @@
+ 
+ from senseweave.artist_identity import EVENING_REFLECTION, MODES_BY_NAME  # noqa: E402
+ from senseweave.generation.conditioner import (  # noqa: E402
++    _ARC_FRAGMENTS,
+     _MODE_FRAGMENTS,
+     GenerationConditioner,
+ )
+ from senseweave.generation.request import CLAP_CENTROID_DIM  # noqa: E402
++from senseweave.procedural_arc import ARC_PHASES  # noqa: E402
+ 
+ 
+ CANONICAL_MODE_FRAGMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+@@ -68,6 +70,15 @@
+     ),
+ }
+ 
++EXPECTED_ARC_FRAGMENTS = {
++    "Divination": "searching through uncertain signals",
++    "Emergence": "opening into new material",
++    "Conversation": "responsive call and answer",
++    "Convergence": "gathering threads into focus",
++    "Crystallization": "settling into clear form",
++    "Reflection": "returning to memory",
++}
++
+ 
+ def _centroid() -> np.ndarray:
+     values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+@@ -113,6 +124,38 @@
+         )
+ 
+ 
++def test_arc_fragments_cover_procedural_arc_phase_names() -> None:
++    assert _ARC_FRAGMENTS == EXPECTED_ARC_FRAGMENTS
++    assert {phase.name for phase in ARC_PHASES} <= set(_ARC_FRAGMENTS)
++
++
++@pytest.mark.parametrize(("arc_phase", "canonical_fragment"), EXPECTED_ARC_FRAGMENTS.items())
++def test_arc_fragment_table_contributes_canonical_fragment_to_prompt(
++    arc_phase: str, canonical_fragment: str
++) -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        arc_phase,
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert f", {canonical_fragment}, " in req.prompt
++
++
++def test_unknown_arc_phase_uses_in_progress_prompt_fragment() -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        "UnknownArc",
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert ", in-progress, " in req.prompt
++
++
+ def test_build_request_uses_static_prompt_template() -> None:
+     req = GenerationConditioner().build_request(
+         EVENING_REFLECTION,
+
+exec
+/bin/zsh -lc "nl -ba my-claw/tools/senseweave/generation/conditioner.py | sed -n '42,76p'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+    42	        "turbulent",
+    43	        "dense grains",
+    44	        "modal shifts",
+    45	        "fast articulation",
+    46	    ),
+    47	}
+    48	
+    49	_ARC_FRAGMENTS: Final[dict[str, str]] = {
+    50	    "Emergence": "opening into new material",
+    51	    "Crystallization": "settling into clear form",
+    52	    "Divination": "searching through uncertain signals",
+    53	    "Convergence": "gathering threads into focus",
+    54	    "Conversation": "responsive call and answer",
+    55	    "Reflection": "returning to memory",
+    56	}
+    57	
+    58	_MODE_BPM_TARGETS: Final[dict[str, float]] = {
+    59	    "solitary": 61.0,
+    60	    "companion": 72.0,
+    61	    "working_ambience": 81.0,
+    62	    "evening_reflection": 64.0,
+    63	    "storm": 93.0,
+    64	}
+    65	
+    66	_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress"
+    67	_CONSTRAINT_FRAGMENT: Final[str] = (
+    68	    "short loopable sampler material, no vocals, no named artists"
+    69	)
+    70	_UINT32_MODULUS: Final[int] = 2**32
+    71	
+    72	
+    73	class GenerationConditioner:
+    74	    """Build deterministic generation requests from composer/listener state."""
+    75	
+    76	    def build_request(
+
+exec
+/bin/zsh -lc "nl -ba tests/test_generation_conditioner.py | sed -n '70,160p'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+    70	    ),
+    71	}
+    72	
+    73	EXPECTED_ARC_FRAGMENTS = {
+    74	    "Divination": "searching through uncertain signals",
+    75	    "Emergence": "opening into new material",
+    76	    "Conversation": "responsive call and answer",
+    77	    "Convergence": "gathering threads into focus",
+    78	    "Crystallization": "settling into clear form",
+    79	    "Reflection": "returning to memory",
+    80	}
+    81	
+    82	
+    83	def _centroid() -> np.ndarray:
+    84	    values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+    85	    return values * 0.25
+    86	
+    87	
+    88	def _expected_seed(
+    89	    *,
+    90	    mode_name: str,
+    91	    arc_phase: str,
+    92	    mood: dict[str, float],
+    93	    normalized_centroid: np.ndarray,
+    94	) -> int:
+    95	    mood_tuple = tuple(sorted((str(key), float(value)) for key, value in mood.items()))
+    96	    hasher = hashlib.sha256()
+    97	    for text in (mode_name, arc_phase):
+    98	        encoded = text.encode("utf-8")
+    99	        hasher.update(len(encoded).to_bytes(4, "big"))
+   100	        hasher.update(encoded)
+   101	
+   102	    mood_blob = json.dumps(mood_tuple, separators=(",", ":")).encode("utf-8")
+   103	    hasher.update(len(mood_blob).to_bytes(4, "big"))
+   104	    hasher.update(mood_blob)
+   105	    hasher.update(np.ascontiguousarray(normalized_centroid, dtype=np.float32).tobytes())
+   106	    return int.from_bytes(hasher.digest(), "big") % (2**32)
+   107	
+   108	
+   109	def test_mode_fragments_match_artist_mode_table() -> None:
+   110	    assert _MODE_FRAGMENTS == EXPECTED_MODE_FRAGMENTS
+   111	    assert set(_MODE_FRAGMENTS) == set(MODES_BY_NAME)
+   112	
+   113	
+   114	@pytest.mark.parametrize(("mode_name", "canonical_fragments"), CANONICAL_MODE_FRAGMENTS)
+   115	def test_mode_fragment_table_includes_canonical_fragments(
+   116	    mode_name: str, canonical_fragments: tuple[str, ...]
+   117	) -> None:
+   118	    fragments = _MODE_FRAGMENTS[mode_name]
+   119	    assert isinstance(fragments, tuple)
+   120	    assert all(isinstance(fragment, str) for fragment in fragments)
+   121	    for fragment in canonical_fragments:
+   122	        assert fragment in fragments, (
+   123	            f"{mode_name} fragments must include {fragment!r}; got {fragments!r}"
+   124	        )
+   125	
+   126	
+   127	def test_arc_fragments_cover_procedural_arc_phase_names() -> None:
+   128	    assert _ARC_FRAGMENTS == EXPECTED_ARC_FRAGMENTS
+   129	    assert {phase.name for phase in ARC_PHASES} <= set(_ARC_FRAGMENTS)
+   130	
+   131	
+   132	@pytest.mark.parametrize(("arc_phase", "canonical_fragment"), EXPECTED_ARC_FRAGMENTS.items())
+   133	def test_arc_fragment_table_contributes_canonical_fragment_to_prompt(
+   134	    arc_phase: str, canonical_fragment: str
+   135	) -> None:
+   136	    req = GenerationConditioner().build_request(
+   137	        EVENING_REFLECTION,
+   138	        arc_phase,
+   139	        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
+   140	        _centroid(),
+   141	        10.0,
+   142	    )
+   143	
+   144	    assert f", {canonical_fragment}, " in req.prompt
+   145	
+   146	
+   147	def test_unknown_arc_phase_uses_in_progress_prompt_fragment() -> None:
+   148	    req = GenerationConditioner().build_request(
+   149	        EVENING_REFLECTION,
+   150	        "UnknownArc",
+   151	        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
+   152	        _centroid(),
+   153	        10.0,
+   154	    )
+   155	
+   156	    assert ", in-progress, " in req.prompt
+   157	
+   158	
+   159	def test_build_request_uses_static_prompt_template() -> None:
+   160	    req = GenerationConditioner().build_request(
+
+diff --git a/my-claw/tools/senseweave/generation/conditioner.py b/my-claw/tools/senseweave/generation/conditioner.py
+index aa6c4b6a4324992f2472deabd91d7df387cae065..365bba71910480502834f2f8dda73892863ea1c6
+--- a/my-claw/tools/senseweave/generation/conditioner.py
++++ b/my-claw/tools/senseweave/generation/conditioner.py
+@@ -63,7 +63,7 @@
+     "storm": 93.0,
+ }
+ 
+-_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress material"
++_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress"
+ _CONSTRAINT_FRAGMENT: Final[str] = (
+     "short loopable sampler material, no vocals, no named artists"
+ )
+diff --git a/tests/test_generation_conditioner.py b/tests/test_generation_conditioner.py
+index 58d6bcc358b1cccea2e2a5417598f1dba5297c83..54527c3650b5e250fffb3c5cb34e5c8700ecbca4
+--- a/tests/test_generation_conditioner.py
++++ b/tests/test_generation_conditioner.py
+@@ -13,10 +13,12 @@
+ 
+ from senseweave.artist_identity import EVENING_REFLECTION, MODES_BY_NAME  # noqa: E402
+ from senseweave.generation.conditioner import (  # noqa: E402
++    _ARC_FRAGMENTS,
+     _MODE_FRAGMENTS,
+     GenerationConditioner,
+ )
+ from senseweave.generation.request import CLAP_CENTROID_DIM  # noqa: E402
++from senseweave.procedural_arc import ARC_PHASES  # noqa: E402
+ 
+ 
+ CANONICAL_MODE_FRAGMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+@@ -68,6 +70,15 @@
+     ),
+ }
+ 
++EXPECTED_ARC_FRAGMENTS = {
++    "Divination": "searching through uncertain signals",
++    "Emergence": "opening into new material",
++    "Conversation": "responsive call and answer",
++    "Convergence": "gathering threads into focus",
++    "Crystallization": "settling into clear form",
++    "Reflection": "returning to memory",
++}
++
+ 
+ def _centroid() -> np.ndarray:
+     values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+@@ -113,6 +124,38 @@
+         )
+ 
+ 
++def test_arc_fragments_cover_procedural_arc_phase_names() -> None:
++    assert _ARC_FRAGMENTS == EXPECTED_ARC_FRAGMENTS
++    assert {phase.name for phase in ARC_PHASES} <= set(_ARC_FRAGMENTS)
++
++
++@pytest.mark.parametrize(("arc_phase", "canonical_fragment"), EXPECTED_ARC_FRAGMENTS.items())
++def test_arc_fragment_table_contributes_canonical_fragment_to_prompt(
++    arc_phase: str, canonical_fragment: str
++) -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        arc_phase,
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert f", {canonical_fragment}, " in req.prompt
++
++
++def test_unknown_arc_phase_uses_in_progress_prompt_fragment() -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        "UnknownArc",
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert ", in-progress, " in req.prompt
++
++
+ def test_build_request_uses_static_prompt_template() -> None:
+     req = GenerationConditioner().build_request(
+         EVENING_REFLECTION,
+
+codex
+Implemented and committed T-026.
+
+Commit: `90ab15e test(generation): cover arc prompt fragments [T-026@20260427T001208Z]`
+
+Changed:
+- Set unknown arc fallback to exact neutral `in-progress` in [conditioner.py](/Users/anthony/Programming/PromptClaw/my-claw/tools/senseweave/generation/conditioner.py:66).
+- Added regression coverage for canonical `_ARC_FRAGMENTS`, procedural arc coverage, prompt contribution per arc, and fallback behavior in [test_generation_conditioner.py](/Users/anthony/Programming/PromptClaw/tests/test_generation_conditioner.py:73).
+
+Validation passed:
+- `pip install -e '.[dev]'`
+- `pytest tests/test_generation_conditioner.py -x --tb=short`
+- `pytest tests/ -x --tb=short` → `3718 passed, 3 skipped`
+- `ruff check src/ tests/`
+- `mypy src/`
+- `ruff check my-claw/tools/senseweave/generation/conditioner.py tests/test_generation_conditioner.py`
+
+Only pre-existing unrelated workspace changes remain unstaged.
+diff --git a/my-claw/tools/senseweave/generation/conditioner.py b/my-claw/tools/senseweave/generation/conditioner.py
+index aa6c4b6a4324992f2472deabd91d7df387cae065..365bba71910480502834f2f8dda73892863ea1c6
+--- a/my-claw/tools/senseweave/generation/conditioner.py
++++ b/my-claw/tools/senseweave/generation/conditioner.py
+@@ -63,7 +63,7 @@
+     "storm": 93.0,
+ }
+ 
+-_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress material"
++_DEFAULT_ARC_FRAGMENT: Final[str] = "in-progress"
+ _CONSTRAINT_FRAGMENT: Final[str] = (
+     "short loopable sampler material, no vocals, no named artists"
+ )
+diff --git a/tests/test_generation_conditioner.py b/tests/test_generation_conditioner.py
+index 58d6bcc358b1cccea2e2a5417598f1dba5297c83..54527c3650b5e250fffb3c5cb34e5c8700ecbca4
+--- a/tests/test_generation_conditioner.py
++++ b/tests/test_generation_conditioner.py
+@@ -13,10 +13,12 @@
+ 
+ from senseweave.artist_identity import EVENING_REFLECTION, MODES_BY_NAME  # noqa: E402
+ from senseweave.generation.conditioner import (  # noqa: E402
++    _ARC_FRAGMENTS,
+     _MODE_FRAGMENTS,
+     GenerationConditioner,
+ )
+ from senseweave.generation.request import CLAP_CENTROID_DIM  # noqa: E402
++from senseweave.procedural_arc import ARC_PHASES  # noqa: E402
+ 
+ 
+ CANONICAL_MODE_FRAGMENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+@@ -68,6 +70,15 @@
+     ),
+ }
+ 
++EXPECTED_ARC_FRAGMENTS = {
++    "Divination": "searching through uncertain signals",
++    "Emergence": "opening into new material",
++    "Conversation": "responsive call and answer",
++    "Convergence": "gathering threads into focus",
++    "Crystallization": "settling into clear form",
++    "Reflection": "returning to memory",
++}
++
+ 
+ def _centroid() -> np.ndarray:
+     values = np.arange(1, CLAP_CENTROID_DIM + 1, dtype=np.float32)
+@@ -113,6 +124,38 @@
+         )
+ 
+ 
++def test_arc_fragments_cover_procedural_arc_phase_names() -> None:
++    assert _ARC_FRAGMENTS == EXPECTED_ARC_FRAGMENTS
++    assert {phase.name for phase in ARC_PHASES} <= set(_ARC_FRAGMENTS)
++
++
++@pytest.mark.parametrize(("arc_phase", "canonical_fragment"), EXPECTED_ARC_FRAGMENTS.items())
++def test_arc_fragment_table_contributes_canonical_fragment_to_prompt(
++    arc_phase: str, canonical_fragment: str
++) -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        arc_phase,
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert f", {canonical_fragment}, " in req.prompt
++
++
++def test_unknown_arc_phase_uses_in_progress_prompt_fragment() -> None:
++    req = GenerationConditioner().build_request(
++        EVENING_REFLECTION,
++        "UnknownArc",
++        {"energy": 0.6, "valence": 0.7, "arousal": 0.4},
++        _centroid(),
++        10.0,
++    )
++
++    assert ", in-progress, " in req.prompt
++
++
+ def test_build_request_uses_static_prompt_template() -> None:
+     req = GenerationConditioner().build_request(
+         EVENING_REFLECTION,
+
+2026-04-27T05:38:11.370119Z ERROR codex_core::session: failed to record rollout items: thread 019dcd6f-30e6-7933-8c92-fd2815f60581 not found
+tokens used
+73,824

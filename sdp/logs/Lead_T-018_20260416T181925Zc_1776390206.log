@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1299 chars)
+---
+
+Done. Created `render/export.py` with `export_audio()` that:
+
+1. Extracts rule-stack provenance from `PerformedPart` (or explicit params)
+2. Writes the JSON `.meta.json` sidecar via `write_audio_metadata_sidecar`
+3. Serializes provenance as iXML key-values (`rule_stack` as comma-separated IDs, `rule_quantities` as compact JSON) and embeds them in the WAV via `write_ixml`
+4. Returns an `ExportResult` with both paths and the iXML keys written
+
+6 integration tests cover: PerformedPart path, explicit rule_stack path, ixml_extra merging, empty stack, WAV readability after export, and event rule_stack inheritance. All 2827 tests pass, ruff and mypy clean.

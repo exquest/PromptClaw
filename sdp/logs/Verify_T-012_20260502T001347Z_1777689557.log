@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2808 chars)
+---
+
+**Verdict: PASS**
+
+All acceptance criteria satisfied:
+
+- `GET /world/entities?domain=deniable` returns only deniable + shared entities — confirmed by `test_entities_domain_deniable`
+- No-domain defaults to `shared` — confirmed by `test_entities_no_domain`
+- `type` filter, pagination, unknown domain, and auth gate all covered by 6 passing tests
+- Full suite: **3876 passed, 3 skipped**, zero regressions
+- All candidate hardening items addressed: `bootstrap_identity()` fires in `main()` before `create_app()`, startup test asserts it, identity persistence tested across boots in both standalone and federated modes
+
+One minor open item: the `limit * 5` fetch multiplier in `list_world_entities` can silently under-deliver if a store has >80% of entities excluded by domain filtering. Not blocking, but worth a docstring or test documenting the known tradeoff.

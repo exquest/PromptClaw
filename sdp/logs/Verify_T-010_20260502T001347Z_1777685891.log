@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2889 chars)
+---
+
+**Verdict: PASS**
+
+38/38 tests pass. All acceptance criteria are met:
+
+- **Auth disabled** (no env var): requests succeed without header
+- **Auth enabled, missing/wrong header**: 401 returned with `"invalid or missing narrative auth token"` detail
+- **Auth enabled, correct header**: requests succeed on all three protected endpoints
+- **Startup warning**: fires in `create_app()` when `auth_token` is falsy
+- **Bootstrap hardening**: `bootstrap_identity()` is called in `main()` before `create_app()` and is verified by both an AST-walking test and an integration stub
+
+Three minor issues flagged (non-blocking): no `caplog` assertion on the startup warning, plain `!=` instead of `hmac.compare_digest`, and missing wrong-token coverage for the events endpoints. Report committed to `sdp/verification/t-010@20260502t001347z-verify.md`.

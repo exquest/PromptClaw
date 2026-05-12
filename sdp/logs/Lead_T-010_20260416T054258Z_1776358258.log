@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1617 chars)
+---
+
+Done. Here's what changed across 5 files:
+
+**`score_tree.py`** — Added `PRODUCTION_COURSE_KEYS` tuple (10 dimensions) and `production_course: dict[str, str]` field to `SectionNode`, with `from_dict` deserialization.
+
+**`recursive_composer.py`** — Added `_production_course_for_section()` that derives all 10 vocabulary dimensions from arc metadata + section properties (counterpoint from function, mix role from function, genre strategy from groove identity, transition type from adjacent section comparison). Wired into `compose_score_tree`.
+
+**`tracker_compiler.py`** — In `_section_score`, writes each production_course entry as `production_*` metadata on the per-section score. In `compile_score_tree_to_tracker`, adds `section_production_courses` JSON summary to the top-level score metadata.
+
+**`music_tracker.py`** — Added `_PRODUCTION_COURSE_METADATA_KEYS` tuple and forwarding loop in `build_korsakov_tracker_song` so production_* keys land in scene metadata.
+
+**`test_tracker_compiler.py`** — New `test_production_course_metadata_survives_compose_compile_schedule` verifying all 10 keys present on every section, survive to tracker scenes, last scene is `terminal`, and non-terminal scenes have valid transition types.

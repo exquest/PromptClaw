@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3700 chars)
+---
+
+T-014 complete. Implemented `POST /world/entities`:
+
+- **`schemas.py`**: new `EntityCreateRequest` with strip-non-empty validators on `type`/`name` and a domain validator pinning `{shared, cypherclaw, deniable}` (PRD CN-008).
+- **`entities.py`**: new `create_world_entity()` helper duck-typing `create_entity`/`add_entity`/`record_entity`/`upsert_entity`/`save_entity` across both kwarg and single-mapping signatures, normalized through the shared entity pipeline with request-input fallback for partial responses.
+- **`app.py`**: `/world/entities` POST route returning 201 with the store-assigned ID, 422 on validation, 502 on downstream failure or missing-ID, 503 on store construction failure.
+- **`tests/test_narrative_api_entities.py`**: 11 new `TestCreateEntityEndpoint` tests pinning all 8 spec acceptance criteria.
+
+Validation: 3894/3894 tests pass, ruff clean, mypy clean. Committed as `2811e08`.

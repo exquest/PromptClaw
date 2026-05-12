@@ -1,0 +1,19 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2975 chars)
+---
+
+**Verdict: PASS**
+
+All checks clean:
+
+- **9/9 spec acceptance criteria** pass (`tests/test_rewrite_hook_depth.py`)
+- **Full suite: 4198 passed, 3 skipped** — no regressions
+- **Ruff + mypy**: clean on both `rewrite_hook.py` and the full `src/` + `tests/` trees
+- **Fractal depth**: confirmed >= 2 (4 real functions, 78 lines)
+
+Key findings:
+- The refactored `rewrite_hook.py` is a correct idempotent depth-2 module — `apply_field_renames` is pure, `migrate_file` only writes on change (mtime preserved on no-op), and `apply_hook_rewrites` walks in declared order
+- The ESCALATED working-tree corruption (caused by re-running the old non-idempotent script on already-migrated files) is precisely the failure mode this refactor prevents, and it's validated by two tests
+- The auto-generated `bootstrap_identity` hardening items don't apply to this utility module — that wiring was addressed in frac-0039 and confirmed passing (44 tests)
+
+Verification report committed as `sdp/verification/frac-0044-verify.md`.

@@ -1,0 +1,34 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (1540 chars)
+---
+
+Done. Committed as `d439dc5`. Here's what was built:
+
+**New file: `my-claw/tools/senseweave/groove_engine.py`** (321 lines)
+- `GrooveProfile` frozen dataclass with: groove_type, swing_ratio, push_pull_ms, microtiming_depth, polyrhythm, polymeter, entrainment_bpm, breath_points, section_identity
+- 16 pre-mapped groove profiles covering all existing identities (drift, dance, procession, drive, rolling, suspended, study, etc.)
+- `groove_for_section()` -- resolves profile from groove_identity > groove_state > groove_family priority
+- `swing_ioi_pair()` -- computes long/short IOI pairs preserving total duration
+- `apply_groove_to_ioi()` -- swing + push/pull offset per note
+- `microtiming_offset_ms()` -- deterministic per-note jitter via SHA-256 hash
+- `breath_points_for_phrase()` / `is_breath_beat()` -- phrase breathing
+- `polyrhythm_accent_mask()` -- superimposed pulse grids (e.g. 3-against-4)
+- `polymeter_phase_offset()` -- cross-meter phase drift
+- `entrainment_tempo_nudge()` -- body/room pulse tempo pull
+- `groove_metadata_for_step()` -- stamps all groove data as string metadata
+
+**Modified: `my-claw/tools/senseweave/music_tracker.py`** (+50 lines)
+- Added `_apply_groove_to_lanes()` helper
+- Integrated groove profile resolution and step stamping into `build_scene_from_score()`
+- Scene-level metadata includes groove_type, section_identity, and swing_ratio
+
+**New tests: `tests/test_groove_engine.py`** (54 tests)
+- IOI ratio preservation, swing pair correctness
+- Push/pull offset direction and clamping
+- Deterministic microtiming with depth scaling
+- Breath point filtering and detection
+- Polyrhythm accent masks (3:4, 5:4)
+- Polymeter phase alignment/drift
+- Entrainment nudge toward harmonic targets
+- Full metadata string typing validation
+- Integration tests verifying groove flows through `build_scene_from_score`

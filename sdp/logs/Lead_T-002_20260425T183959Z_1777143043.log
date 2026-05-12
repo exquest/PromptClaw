@@ -1,0 +1,20 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2012 chars)
+---
+
+T-002 is already implemented and committed in `46bfc82`. Source `.scd`, Python static tests, and SC runtime test all landed. There's no work to do here — but I want to flag one gap before closing out:
+
+**Status of T-002:**
+- `my-claw/tools/senseweave/synthesis/sampler_effects.scd` — defines `sw_sampler_fx` with all 7 args at the required defaults, range-clipped, chain order delay → reverb → freeze → comb@61.74Hz, defaults to bus 16, writes via `.writeDefFile("synthdefs/")` ✅
+- `tests/test_sampler_effects.py` — pins SynthDef name, all defaults, range clipping, every chain stage, and stage ordering (220 lines, runs without sclang) ✅
+- `my-claw/supercollider/test_sampler_effects.scd` — runtime impulse + 61.74 Hz comb-peak FFT check, runs on cypherclaw ✅
+
+**Gap:** AC says "compiled `sw_sampler_fx.scsyndef` lives in `synthesis/synthdefs/`" — the binary isn't there yet. The other 10 SynthDefs in that dir are committed binaries (built April 8). sclang isn't installed on this Mac, so the .scd hasn't been run. The `.writeDefFile` line will produce it the first time someone runs the .scd on cypherclaw.
+
+The git status is dirty with **unrelated** workspace changes (cast_planner, groove_engine, music_tracker, sdp/*, etc.) that I'm explicitly told not to touch.
+
+Two ways to close the AC gap:
+1. SSH to cypherclaw, run the .scd, scp the .scsyndef back, commit it as a follow-up
+2. Note the gap in ESCALATIONS.md and let the next deploy generate it on cypherclaw
+
+Want me to do (1)? Otherwise this task is effectively complete and ready for verification.

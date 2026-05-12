@@ -1,0 +1,19 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1299 chars)
+---
+
+T-012@20260425T183959Za done.
+
+**End-to-end verification on cypherclaw:**
+- Deployed `sample_capture_daemon.py` and `sample_capture_verify.py` to `~/cypherclaw/tools/`
+- Synthesized a known 220 Hz / 4 s / 0.4-amplitude tone, persisted via `save_capture(source="room", …)`
+- Descriptor row at `/home/user/cypherclaw-data/samples/index.sqlite`:
+  - context: `arc_phase=rest, mood_label=content, presence=solo, time_of_day=afternoon, someone_here=1`
+  - acoustic features: `acoustic_tags=["warm","sustained"]`, full `tags_json` with mode + extra_tags
+  - WAV at `/home/user/cypherclaw-data/samples/room/room_*.wav`
+
+**Change committed (`0113207`):**
+- `my-claw/tools/sample_capture_verify.py` — deterministic smoke verifier (CLI: `python sample_capture_verify.py`)
+- `tests/test_sample_capture_verify.py` — 4 tests covering synth determinism, full descriptor write, CLI exit, and missing-tags rejection
+
+**Validation:** 46 tests pass, `ruff check src/ tests/` clean, `mypy src/` clean. (Pre-existing mypy warnings on `sample_capture_daemon.py:25,96` for optional `cypherclaw.first_boot` / `jack` imports are unchanged.)

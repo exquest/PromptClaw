@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1574 chars)
+---
+
+T-023 done in commit `f8ee6a8`.
+
+**Changes**
+- `render/metrics.py:71` — `sampler_event_count_per_piece` (diagnostic) and `sampler_library_vs_self_ratio` (last-50-piece window, gate band 1.5..3.0); NaN inputs skip the gate cleanly via new `_within_band`.
+- `senseweave/operator_diagnostics.py:50` — new `sampler_metrics` field formatted from composer_state with `events/piece=N library:self=R.RR ok|out-of-band`.
+- `tests/test_render_metrics.py` — 7 new tests: count aliasing, ratio computation/window/edge cases (no history, only-library, in/out-of-band gate), NaN gate skip.
+- `tests/test_operator_diagnostics.py` — 3 new tests: in-band surface, out-of-band flag, missing-state fallback.
+
+**Validation** — pytest 3356 passed; ruff and mypy show only pre-existing issues (verified via stash; same counts before/after).

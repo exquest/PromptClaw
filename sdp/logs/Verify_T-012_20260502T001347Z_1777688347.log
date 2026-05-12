@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2808 chars)
+---
+
+**Verdict: FAIL**
+
+Report written to `sdp/verification/t-012@20260502t001347z-verify.md` and committed.
+
+**One blocking issue:** No test file was written for `GET /world/entities`. The entire acceptance criterion ("domain=deniable returns only deniable + shared entities") has zero automated coverage. TDD is mandatory for this project.
+
+The implementation itself looks correct — domain filtering logic, shared-domain injection, auth gating, schema definitions, and `bootstrap_identity()` startup call all check out. The full suite still passes (3870 tests, no regressions). But the endpoint is unverifiable by the test suite until `tests/test_narrative_api_entities.py` is added.
+
+**Lead agent needs to add tests covering:** domain filter, no-domain default, type filter, limit/offset pagination, empty-result edge case, and auth rejection.

@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2743 chars)
+---
+
+Verification complete. **Verdict: PASS.**
+
+Independent second-pass confirmed:
+
+- `_submit_prediction` correctly calls `replicate.predictions.create` with `version` (priority) or `model` plus derived `input`
+- Both httpx-style (`exc.response.status_code`) and replicate-SDK-style (`exc.status`) HTTP failures are mapped to `ReplicateAPIError`, engaging the existing retry loop
+- Non-HTTP exceptions propagate unmodified
+- 8 new tests cover all branches; end-to-end retry integration test passes
+- All hardening checks (bootstrap_identity in both daemon entrypoints before FirstBootAnnouncer, integration test in `test_governor_integration.py`) confirmed present and unchanged
+- Full suite: **3632 passed, 2 skipped**

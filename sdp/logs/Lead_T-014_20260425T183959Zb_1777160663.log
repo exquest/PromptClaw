@@ -1,0 +1,22 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (4511 chars)
+---
+
+Task T-014@20260425T183959Zb complete.
+
+**Deployment performed on CypherClaw:**
+- `scp` → `sudo install -m 0644 -o root -g root` of `my-claw/systemd/cypherclaw-sample-capture.service` to `/etc/systemd/system/cypherclaw-sample-capture.service`
+- `sudo systemctl daemon-reload`
+- `sudo systemctl enable --now cypherclaw-sample-capture.service`
+
+**Verified state on host:**
+- `systemctl is-enabled` → `enabled` (symlinked into `multi-user.target.wants`)
+- `systemctl is-active` → `active (running)` since 16:45:23 PDT, PID 1677354
+- Daemon journal shows clean start: minted identity `29b1a8dc-eba4-48a0-a080-e4f52b912c37 (blazing-glyph)`
+- `cypherclaw-jack.service` dependency satisfied (active)
+
+**Repo change:** single CHANGELOG entry recording the live rollout, committed as `725948d` with the task-scoped message. No code changes were needed — the unit file itself was committed under T-014@…Za (`d9a3789`); this sub-task was purely operational.
+
+**Note on out-of-scope dirty state:** `progress.md`, `sdp/run-log.md`, `sdp/notifications.log`, and the `sdp/logs/*` files are SDP runner-managed artifacts from prior tasks (T-012@…Zc, T-014@…Za) and were intentionally not bundled into this commit.
+
+**Note on the auto-generated "Candidate Hardening" items at the end of the task brief:** those reference `senseweave/self_critique`, `tracker_compiler.py`, `duet_composer.py`, `cypherclaw_daemon.py`, and `resource_governor.py` — none of which are touched by a systemd-deployment task. They appear to be recurring-failure boilerplate carried in from unrelated tracker/composer tasks and don't apply here; flagging rather than silently ignoring.

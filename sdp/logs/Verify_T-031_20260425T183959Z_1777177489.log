@@ -1,0 +1,9 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3085 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+3462 tests pass including all 6 new ones. The `voice_sampler` character is correctly registered with all required fields (`synth=sw_sampler`, `role=sampler`, `register=[36,84]`, grain params, per-mode gain overrides) and is selectable through `select_cast_ids` when `sw_sampler` is in `preferred_synths`.
+
+One advisory note for Lead: `sampler` isn't in `SUPPORT_ROLES`, so selection flows through the unconstrained fallback fill loop rather than the role-aware path. Not a current defect, but worth adding `"sampler"` to `SUPPORT_ROLES` in a follow-up to protect against future tightening of that loop. The auto-generated `bootstrap_identity` hardening items are not applicable to this task.

@@ -8,17 +8,27 @@ version = "3.0.0"
 description = "An orchestrated multi-agent prompt scaffold with artifact-based handoffs."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["partitura>=1.8,<2", "librosa>=0.10,<1"]
 
 [project.optional-dependencies]
 coherence-pg = ["psycopg2-binary>=2.9", "pgvector>=0.2", "redis>=5.0"]
 coherence-full = ["psycopg2-binary>=2.9", "pgvector>=0.2", "redis>=5.0", "pyyaml>=6.0"]
+narrative-api = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "pydantic-settings>=2.5",
+    "structlog>=24.1",
+]
+dev = ["mypy>=1.10", "pytest>=8.0", "ruff>=0.9"]
 
 [project.scripts]
 promptclaw = "promptclaw.cli:main"
+glyphweave = "promptclaw.glyphweave_cli:main"
+narrative-api = "cypherclaw.narrative_api.__main__:main"
 
 [tool.setuptools.packages.find]
-include = ["promptclaw*"]
+where = [".", "src"]
+include = ["promptclaw*", "cypherclaw*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

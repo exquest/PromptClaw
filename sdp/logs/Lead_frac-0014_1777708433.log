@@ -1,0 +1,22 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3773 chars)
+---
+
+frac-0014 is complete. Production course is now depth 2.
+
+**Summary**
+- `specs/frac-0014-spec.md` — full ADP spec with 10 acceptance criteria + VERIFY commands
+- `my-claw/tools/senseweave/production_course.py` — added 4 frozen dataclasses (`CourseSummary`, `ChapterDigest`, `ArcPhaseSnapshot`, `CourseArcPlan`) and 8 pure helpers (`summarize_course`, `chapter_digest`, `catalog_digest`, `arc_phase_snapshot`, `arc_phase_snapshots`, `course_titles`, `plan_course_arc`, `validate_course`); existing API preserved
+- `tests/test_production_course_depth.py` — 10 tests (Red → Green) including density bucketing, end-to-end arc plan, validator, and fractal depth check
+- `CHANGELOG.md` — Unreleased entry added
+
+**Verification**
+- `pytest tests/ -x` → 4001 passed, 3 skipped
+- `ruff check src/ tests/` → clean
+- `mypy src/` → clean
+- `classify_depth` → depth 2 (`substantial`)
+- Startup identity anchors (`TestStartupIdentityPersistence`, `TestStartupIdentityWiring`) → green
+
+**Commits**
+- `453408c` docs(specs): frac-0014 production_course depth-2 specification
+- `54aa7fc` feat(production-course): deepen production course knowledge base to depth 2

@@ -1,0 +1,17 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2752 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+All 3909 tests pass. The core deliverables are correct:
+- `NarrativeSettings` in `settings.py` with all three fields (`bind_host`, `bind_port`, `auth_token`), `NARRATIVE_` prefix, `.env` support
+- Module-level `settings` instance wired into `main.py`
+- `pydantic-settings>=2.5` pinned in `pyproject.toml`
+- 4 tests covering defaults, env-var override, dotenv loading, and wiring
+
+Two notes for the Lead agent:
+
+1. **Minor — dual code path:** `__main__.py` still uses raw `os.environ.get()` for host/port rather than `NarrativeSettings`, so `.env` files are silently ignored in the CLI entry path.
+
+2. **Hardening (recurring blocking pattern) — ASGI bootstrap_identity gap:** When systemd starts the service via `uvicorn main:app`, `__main__.py:main()` is never called, so `bootstrap_identity()` is never invoked. The fix is a FastAPI lifespan hook in `main.py`. The existing AST test only validates the `__main__` path, not the ASGI path. No behavioral integration test for identity persistence exists.

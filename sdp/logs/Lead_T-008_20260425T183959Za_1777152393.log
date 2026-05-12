@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1372 chars)
+---
+
+Committed `230471f`. Pre-existing SDP workspace state (progress.md, sdp/logs/) left untouched per task rules.
+
+**T-008@20260425T183959Za complete.** Added to `my-claw/tools/sample_capture_daemon.py`:
+- `SampleTags` frozen dataclass — schema for normalized contextual tags (arc_phase, mood label/valence/arousal, presence + confidence, someone_here, time_of_day, captured_at_iso/unix)
+- `extract_context_tags(context, captured_at=...)` — reads merged organism + room_presence snapshot, clamps and validates against documented vocabularies (`ARC_PHASES`, `PRESENCE_LABELS`, `MOOD_LABELS`), falls back to top-level keys, defaults missing values to "unknown"/"neutral"/0.0
+- `time_of_day_from_timestamp` — coarse local-time bucketing
+
+6 new tests (full snapshot, invalid/missing values, top-level fallback, `as_dict` shape, time-of-day buckets, label-set contracts). All 19 sample_capture tests pass; ruff and mypy clean for new code (the 2 pre-existing warnings on lines 21 and 662 are out of scope).

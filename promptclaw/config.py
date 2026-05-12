@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import json
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any
 
 from .coherence.models import CoherenceConfig
 from .models import (
@@ -16,6 +16,20 @@ from .models import (
 from .utils import read_json, write_json
 
 CONFIG_FILENAME = "promptclaw.json"
+
+
+@dataclass(frozen=True)
+class ConfigStatusReport:
+    project_name: str
+    artifact_root: str
+    control_plane_mode: str
+    control_plane_agent: str
+    default_task_type: str
+    agent_count: int
+    enabled_agent_names: tuple[str, ...]
+    disabled_agent_names: tuple[str, ...]
+    is_valid: bool
+    issues: tuple[str, ...]
 
 def default_project_config(project_name: str = "New PromptClaw") -> PromptClawConfig:
     return PromptClawConfig(
@@ -103,3 +117,57 @@ def validate_config(config: PromptClawConfig) -> list[str]:
         if agent.kind == "command" and not (agent.shell_command or agent.command):
             issues.append(f"agent '{name}' is command mode but has no command")
     return issues
+
+def enabled_agents(config: PromptClawConfig) -> tuple[str, ...]:
+    names: list[str] = []
+    for name, agent in config.agents.items():
+        if agent.enabled:
+            names.append(name)
+    names.sort()
+    return tuple(names)
+
+def config_status_report(config: PromptClawConfig) -> ConfigStatusReport:
+    enabled: list[str] = []
+    disabled: list[str] = []
+    for name, agent in config.agents.items():
+        if agent.enabled:
+            enabled.append(name)
+        else:
+            disabled.append(name)
+    enabled.sort()
+    disabled.sort()
+    issues = tuple(validate_config(config))
+    return ConfigStatusReport(
+        project_name=config.project.name,
+        artifact_root=config.artifacts.root,
+        control_plane_mode=config.control_plane.mode,
+        control_plane_agent=config.control_plane.agent or "",
+        default_task_type=config.routing.default_task_type,
+        agent_count=len(config.agents),
+        enabled_agent_names=tuple(enabled),
+        disabled_agent_names=tuple(disabled),
+        is_valid=not issues,
+        issues=issues,
+    )
+
+def summarize_config(config: PromptClawConfig) -> dict[str, Any]:
+    report = config_status_report(config)
+    return {
+        "project_name": report.project_name,
+        "artifact_root": report.artifact_root,
+        "control_plane_mode": report.control_plane_mode,
+        "control_plane_agent": report.control_plane_agent,
+        "default_task_type": report.default_task_type,
+        "agent_count": report.agent_count,
+        "enabled_agent_names": list(report.enabled_agent_names),
+        "disabled_agent_names": list(report.disabled_agent_names),
+        "is_valid": report.is_valid,
+        "issues": list(report.issues),
+    }
+
+def load_or_default(
+    project_root: Path, project_name: str = "New PromptClaw"
+) -> PromptClawConfig:
+    if config_path(project_root).exists():
+        return load_config(project_root)
+    return default_project_config(project_name)

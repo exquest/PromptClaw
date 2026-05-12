@@ -1,0 +1,19 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-6 --effort high -p -
+Prompt delivered via: stdin (2102 chars)
+---
+
+Done. Here's what was fixed:
+
+**Problem:** `bootstrap_identity()` was never called during daemon startup, so `identity.json` was never auto-created on first boot. `FirstBootAnnouncer.maybe_announce()` would find no identity file and silently skip.
+
+**Fix (2 changes):**
+1. **`my-claw/tools/daemon.py:102`** — Added `bootstrap_identity` to the import from `cypherclaw.first_boot`
+2. **`my-claw/tools/daemon.py:2447`** — Call `bootstrap_identity()` before `FirstBootAnnouncer` in `poll_loop()`, ensuring identity exists for both standalone and federated modes
+
+**Tests added** (`tests/test_first_boot.py`):
+- `TestStartupIdentityPersistence` — 3 tests simulating the real startup flow:
+  - First boot creates identity then announcer can find and use it
+  - Identity persists across multiple reboots without regeneration
+  - Standalone startup creates identity but does not announce
+
+**Validation:** 1451 tests pass, ruff clean, mypy clean.

@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1331 chars)
+---
+
+Done. Committed as `05fb6aa`.
+
+**Changes:**
+- `my-claw/tools/sample_capture_daemon.py` — added `AcousticTagThresholds` (frozen dataclass of threshold knobs), `derive_acoustic_tags(features, *, thresholds=None) -> tuple[str, ...]` mapping `AcousticFeatures` to descriptors via threshold rules (warm: centroid<800Hz; bright: centroid≥2000Hz; metallic: bright + bandwidth<600Hz; percussive: transient_density≥3.0; sustained: transient_density≤0.5), an `acoustic_tags: tuple[str, ...]` field on `SampleTags`, and `build_sample_tags(samples, sample_rate, *, context, captured_at, …)` that fuses context tags from subtask (a) with acoustic descriptors from subtask (b) into one unified record. Tags are emitted in canonical order so records compare deterministically.
+- `tests/test_sample_capture_daemon.py` — 8 new tests: silent/empty input → no tags, low-centroid+low-transient → warm+sustained, narrow-band high centroid → bright+metallic (and order check), broadband high centroid → bright but not metallic, high transient density → percussive (suppresses sustained), custom thresholds change classification, `build_sample_tags` merges context arc_phase with derived acoustic_tags, and silent input through `build_sample_tags` yields empty acoustic_tags. Also updated `test_sample_tags_as_dict_round_trips_all_fields` to cover the new `acoustic_tags` key.
+
+**Validation:** 32/32 pytest pass. `mypy --ignore-missing-imports` clean on the daemon. Ruff shows only the two pre-existing errors flagged in Zb's verify report (unused `jack` TYPE_CHECKING import, `F841` on the `daemon` local in `main()`); no new lint issues.
