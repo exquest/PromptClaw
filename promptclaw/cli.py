@@ -11,6 +11,7 @@ from .diagnostics import diagnose, format_diagnosis
 from .doctor import run_doctor
 from .orchestrator import PromptClawOrchestrator
 from .pal_client import PALRouterClient
+from .pal_smoke import run_pal_smoke, write_smoke_report
 from .paths import ProjectPaths
 from .state_store import StateStore
 from .ui import banner, status_line
@@ -67,6 +68,11 @@ def build_parser() -> argparse.ArgumentParser:
     pal_query_parser.add_argument("--model")
     pal_query_parser.add_argument("--temperature", type=float, default=0.7)
     pal_query_parser.add_argument("--text", action="store_true", help="Print only the response text")
+
+    pal_smoke_parser = pal_sub.add_parser("smoke", help="Run the PAL restart smoke suite")
+    pal_smoke_parser.add_argument("project_root", type=Path)
+    pal_smoke_parser.add_argument("--output", type=Path)
+    pal_smoke_parser.add_argument("--json", action="store_true", help="Print the full smoke report JSON")
 
     # --- coherence subcommand group ---
     coherence_parser = subparsers.add_parser("coherence", help="Coherence engine commands")
@@ -508,6 +514,28 @@ def cmd_pal_query(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_pal_smoke(args: argparse.Namespace) -> int:
+    config = load_config(args.project_root)
+    client = PALRouterClient.from_config(config)
+    report = run_pal_smoke(client)
+    report_path = write_smoke_report(args.project_root, report, output=args.output)
+    if args.json:
+        payload = dict(report)
+        payload["report_path"] = str(report_path)
+        print(json.dumps(payload, indent=2))
+    else:
+        summary = report["summary"]
+        print(
+            "PAL smoke: "
+            f"{report['status'].upper()} "
+            f"passed={summary['passed']} "
+            f"failed={summary['failed']} "
+            f"total_latency_s={summary['total_latency_s']} "
+            f"report={report_path}"
+        )
+    return 0 if report["status"] == "pass" else 1
+
+
 def _dispatch(args: argparse.Namespace) -> int:
     if args.command == "init":
         return cmd_init(args)
@@ -537,6 +565,8 @@ def _dispatch_pal(args: argparse.Namespace) -> int:
         return cmd_pal_health(args)
     if args.pal_command == "query":
         return cmd_pal_query(args)
+    if args.pal_command == "smoke":
+        return cmd_pal_smoke(args)
     return 2
 
 

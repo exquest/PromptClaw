@@ -144,12 +144,18 @@ Call a configured PAL 2026 router from local tools.
 promptclaw pal health PROJECT_ROOT
 promptclaw pal query PROJECT_ROOT --prompt "Confirm reachability."
 promptclaw pal query PROJECT_ROOT --prompt "Confirm reachability." --text
+promptclaw pal smoke PROJECT_ROOT
 ```
 
 The command reads the `pal` section from `promptclaw.json`, calls `/health` or
 `/query`, and prints JSON unless `--text` is passed to `pal query`.
 When `pal.enabled` is true, `promptclaw doctor PROJECT_ROOT` also checks router
 health.
+
+`pal smoke` runs a fixed restart validation suite: health check, reachability
+prompt, configuration prompt, and operational-triage prompt. It records latency,
+router timing metadata, responses, and any errors to
+`.promptclaw/pal-smoke/pal-smoke-<timestamp>.json`.
 
 ## CypherClaw runtime utilities
 
