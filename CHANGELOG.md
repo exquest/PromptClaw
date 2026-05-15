@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added PAL knowledge source discovery (T-004@20260515T214233Z): `PALConfig` now carries `knowledge_sources`, `promptclaw.pal_knowledge.discover_pal_source_files(...)` expands configured file/glob sources deterministically without network calls or runtime writes, and `pal-2026/promptclaw.json` declares the initial docs/ops/smoke/run-artifact inputs for later PAL KB chunking and indexing.
+
 - Added PAL 2026 Agent Runtime v0: `promptclaw pal agent triage PROJECT_ROOT` lets PAL propose a diagnostic plan, executes only read-only allow-listed local tools, writes the plan/observations/final summary into the standard `.promptclaw/runs/<run-id>/` handoff structure, and documents approval gates for any infrastructure mutation.
 
 - Added PAL approval-gated actions: `promptclaw pal agent actions PROJECT_ROOT [--approve ACTION_ID]` gathers read-only diagnostic context, lets PAL propose fixed playbook actions, executes only explicitly approved allow-listed action ids, and records proposed, pending, executed, ignored, and approved actions in run artifacts.

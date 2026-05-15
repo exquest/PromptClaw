@@ -143,6 +143,7 @@ class PALConfigTests(unittest.TestCase):
             default_model="llama3.3:70b-instruct-q4_K_M",
             timeout_s=250.0,
             health_timeout_s=8.0,
+            knowledge_sources=["docs/**/*.md", "ops/*.md"],
         )
 
         save_config(project_root, config)
@@ -152,6 +153,7 @@ class PALConfigTests(unittest.TestCase):
         self.assertEqual(loaded.pal.default_model, "llama3.3:70b-instruct-q4_K_M")
         self.assertEqual(loaded.pal.timeout_s, 250.0)
         self.assertEqual(loaded.pal.health_timeout_s, 8.0)
+        self.assertEqual(loaded.pal.knowledge_sources, ["docs/**/*.md", "ops/*.md"])
         self.assertEqual(validate_config(loaded), [])
 
     def test_pal_config_validation_reports_bad_timeouts(self) -> None:

@@ -32,6 +32,7 @@ class PALConfig:
     default_model: str = "llama3.3:70b-instruct-q4_K_M"
     timeout_s: float = 300.0
     health_timeout_s: float = 10.0
+    knowledge_sources: list[str] = field(default_factory=list)
 
 @dataclass
 class AgentConfig:

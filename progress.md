@@ -436,7 +436,7 @@ Progress: [███████████████████████
 - **T-001@20260515T214233Z**: pending — Pending.
 - **T-002@20260515T214233Z**: pending — Pending.
 - **T-003@20260515T214233Z**: pending — Pending.
-- **T-004@20260515T214233Z**: pending — Pending.
+- **T-004@20260515T214233Z**: complete — Completed with verdict PASS. PAL source discovery now returns configured sample files and the full validation gate passed.
 - **T-005@20260515T214233Z**: pending — Pending.
 - **T-006@20260515T214233Z**: pending — Pending.
 - **T-007@20260515T214233Z**: pending — Pending.

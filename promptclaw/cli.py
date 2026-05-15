@@ -517,6 +517,7 @@ def cmd_show_config(args: argparse.Namespace) -> int:
             "default_model": config.pal.default_model,
             "timeout_s": config.pal.timeout_s,
             "health_timeout_s": config.pal.health_timeout_s,
+            "knowledge_sources": config.pal.knowledge_sources,
         },
         "agents": {
             name: {

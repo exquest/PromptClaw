@@ -110,6 +110,9 @@ def validate_config(config: PromptClawConfig) -> list[str]:
         issues.append("pal.timeout_s must be > 0")
     if config.pal.health_timeout_s <= 0:
         issues.append("pal.health_timeout_s must be > 0")
+    for source in config.pal.knowledge_sources:
+        if not str(source).strip():
+            issues.append("pal.knowledge_sources must not contain empty entries")
     if not config.agents:
         issues.append("at least one agent must be defined")
     enabled_agents = [agent for agent in config.agents.values() if agent.enabled]

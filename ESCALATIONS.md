@@ -1,5 +1,12 @@
 # Escalations
 
+## T-004@20260515T214233Z (2026-05-15T21:42:33Z)
+
+- **Reason:** PAL source-discovery scope and startup-hardening assumptions
+- **Details:** Exploration found the affected PAL-013 surface is the local PAL knowledge-base input seam, with existing patterns in `promptclaw/models.py`, `promptclaw/config.py`, `promptclaw/pal_client.py`, `promptclaw/pal_smoke.py`, `promptclaw/pal_agent.py`, and the PAL tests. The new source discovery function will be stdlib-only, side-effect free, and driven by configured `pal.knowledge_sources` entries so future chunking/index tasks can reuse it without model calls or live PAL access. The task prompt's generated startup hardening bullets are already covered by existing startup identity anchors: CLI startup calls `bootstrap_identity()`, daemon wiring checks assert `bootstrap_identity()` before `FirstBootAnnouncer`, and standalone/federated persistence is covered in first-boot and narrative ASGI tests. Those tests will be re-run as mandatory regression anchors rather than broadening PAL source discovery into startup rewiring. No new dependencies, migrations, provider secrets, database columns, runtime writes, HTTP routes, or approval-gated actions are required.
+- **Reason:** Red phase, implementation verification, and hardening-anchor results
+- **Details:** Red phase was confirmed with `pytest tests/test_pal_knowledge.py -q` failing on the missing `promptclaw.pal_knowledge` module and `pytest tests/test_pal_client.py::PALConfigTests::test_pal_config_round_trips_through_project_config -q` failing because `PALConfig` did not accept `knowledge_sources`. After implementation, `pytest tests/test_pal_knowledge.py -q` passed with `2 passed`, the focused PAL PRD suite passed with `34 passed`, and the mandatory startup identity hardening anchors passed with `10 passed`. The required validation command `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` passed with `4716 passed, 10 skipped`, Ruff clean, and mypy clean. No new dependencies or migrations were introduced.
+
 ## frac-0121 (2026-05-03)
 
 - **Reason:** Wizard test-depth scope and startup-hardening assumptions
