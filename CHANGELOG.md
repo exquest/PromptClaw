@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added PAL workflow knowledge-context prompt injection (T-008@20260515T214233Z): `promptclaw pal agent triage` and `promptclaw pal agent actions` now include a bounded `Knowledge Context` section in their plan and summary prompt artifacts, populated from the local `.promptclaw/pal-kb/index.jsonl` query path when available and downgraded to a non-blocking unavailable-context note when the index has not been built.
+
 - Added PAL KB query command (T-007@20260515T214233Z): `promptclaw.pal_knowledge.query_pal_knowledge_index(...)` and `promptclaw pal kb query PROJECT_ROOT --query ...` now read `.promptclaw/pal-kb/index.jsonl` locally and return deterministic ranked snippets with source paths, line ranges, scores, and chunk ids without contacting the PAL router.
 
 - Added PAL KB index writer (T-006@20260515T214233Z): `promptclaw.pal_knowledge.write_pal_knowledge_index(...)` now materializes configured PAL source chunks into `.promptclaw/pal-kb/index.jsonl`, and `promptclaw pal kb build PROJECT_ROOT` exposes the local JSONL build path without contacting the PAL router.

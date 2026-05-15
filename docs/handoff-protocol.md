@@ -73,7 +73,10 @@ the run records:
 In this PAL path, the model-authored plan is advisory. PromptClaw executes only
 the local allow-list and records any unknown or destructive requested tools as
 ignored. Infrastructure changes remain operator approvals, not implicit
-handoffs.
+handoffs. The `triage-plan.md` and `triage-summary.md` prompt artifacts include
+a bounded `Knowledge Context` section sourced from the local PAL KB index when
+available, or a bounded unavailable-context note when the index has not been
+built.
 
 For `promptclaw pal agent actions`, the action layer records the approval gate
 explicitly:
@@ -98,7 +101,9 @@ explicitly:
 `action-results.json` is the authority for what happened: proposed action ids,
 approved action ids, ignored approvals, executed action results, and pending
 approvals. A proposed action with no matching `--approve ACTION_ID` remains
-`pending_approval`.
+`pending_approval`. The `action-plan.md` and `action-summary.md` prompt
+artifacts carry the same bounded `Knowledge Context` section as triage prompts,
+without expanding the action allow-list.
 
 ## Benefits
 

@@ -12,6 +12,7 @@ from .artifacts import ArtifactManager
 from .config import load_config
 from .models import Event, RunState
 from .pal_client import PALClientError, PALQueryResult, PALRouterClient
+from .pal_knowledge import PALKnowledgeQueryResult, query_pal_knowledge_index
 from .pal_smoke import load_smoke_reports, run_pal_smoke, summarize_smoke_reports, write_smoke_report
 from .paths import ProjectPaths
 from .state_store import StateStore
@@ -81,6 +82,10 @@ PAL_AGENT_SYSTEM_PROMPT = (
     "approval gates."
 )
 
+PAL_KNOWLEDGE_CONTEXT_LIMIT = 3
+PAL_KNOWLEDGE_CONTEXT_MAX_CHARS = 1600
+PAL_KNOWLEDGE_SNIPPET_MAX_CHARS = 240
+
 
 def run_pal_ops_triage(
     project_root: Path,
@@ -131,7 +136,8 @@ def run_pal_ops_triage(
         agent="pal",
     )
 
-    plan_prompt = _render_plan_prompt(task, tools)
+    knowledge_context = _build_knowledge_context(project_root, task)
+    plan_prompt = _render_plan_prompt(task, tools, knowledge_context=knowledge_context)
     plan_prompt_path = artifacts.write_prompt("triage-plan.md", plan_prompt)
     plan_result = pal_client.query(
         plan_prompt,
@@ -192,7 +198,11 @@ def run_pal_ops_triage(
     artifacts.write_output("tool-observations.json", _json_dumps(observations_payload))
 
     state.current_phase = "summary"
-    summary_prompt = _render_summary_prompt(task, observations_payload)
+    summary_prompt = _render_summary_prompt(
+        task,
+        observations_payload,
+        knowledge_context=knowledge_context,
+    )
     artifacts.write_prompt("triage-summary.md", summary_prompt)
     try:
         summary_result = pal_client.query(
@@ -311,7 +321,13 @@ def run_pal_ops_actions(
     artifacts.write_output("action-context.json", _json_dumps(context_payload))
 
     state.current_phase = "planning"
-    plan_prompt = _render_action_plan_prompt(task, context_payload, actions)
+    knowledge_context = _build_knowledge_context(project_root, task)
+    plan_prompt = _render_action_plan_prompt(
+        task,
+        context_payload,
+        actions,
+        knowledge_context=knowledge_context,
+    )
     plan_prompt_path = artifacts.write_prompt("action-plan.md", plan_prompt)
     plan_result = pal_client.query(
         plan_prompt,
@@ -395,7 +411,11 @@ def run_pal_ops_actions(
     artifacts.write_output("action-results.json", _json_dumps(action_payload))
 
     state.current_phase = "summary"
-    summary_prompt = _render_action_summary_prompt(task, action_payload)
+    summary_prompt = _render_action_summary_prompt(
+        task,
+        action_payload,
+        knowledge_context=knowledge_context,
+    )
     artifacts.write_prompt("action-summary.md", summary_prompt)
     try:
         summary_result = pal_client.query(
@@ -847,13 +867,79 @@ def _redact_args(args: list[str]) -> list[str]:
     return redacted
 
 
-def _render_plan_prompt(task: str, tools: dict[str, PALOpsTool]) -> str:
+def _build_knowledge_context(project_root: Path, query: str) -> str:
+    normalized_query = " ".join(query.split())
+    if not normalized_query:
+        return _render_knowledge_context(
+            (),
+            note="No local PAL KB query was available for this workflow task.",
+        )
+    try:
+        results = query_pal_knowledge_index(
+            project_root,
+            normalized_query,
+            limit=PAL_KNOWLEDGE_CONTEXT_LIMIT,
+        )
+    except FileNotFoundError:
+        return _render_knowledge_context(
+            (),
+            note=(
+                "No local PAL KB index is available. Run "
+                "`promptclaw pal kb build PROJECT_ROOT` to populate this section."
+            ),
+        )
+    except (OSError, ValueError):
+        return _render_knowledge_context(
+            (),
+            note="Local PAL KB context could not be loaded safely for this workflow.",
+        )
+    if not results:
+        return _render_knowledge_context(
+            (),
+            note="No local PAL KB matches were found for this workflow task.",
+        )
+    return _render_knowledge_context(results)
+
+
+def _render_knowledge_context(
+    results: tuple[PALKnowledgeQueryResult, ...],
+    *,
+    note: str = "",
+) -> str:
+    lines = ["## Knowledge Context", ""]
+    if results:
+        lines.append(
+            f"Local PAL KB matches (max {PAL_KNOWLEDGE_CONTEXT_LIMIT}; bounded snippets):"
+        )
+        for result in results[:PAL_KNOWLEDGE_CONTEXT_LIMIT]:
+            snippet = truncate(
+                " ".join(result.snippet.split()),
+                PAL_KNOWLEDGE_SNIPPET_MAX_CHARS,
+            )
+            lines.append(
+                "- "
+                f"{result.source_path}:{result.start_line}-{result.end_line} "
+                f"(score={result.score:g}, chunk={result.chunk_id}): {snippet}"
+            )
+    else:
+        lines.append(note or "No local PAL KB matches were available for this workflow task.")
+    return truncate("\n".join(lines).rstrip(), PAL_KNOWLEDGE_CONTEXT_MAX_CHARS)
+
+
+def _render_plan_prompt(
+    task: str,
+    tools: dict[str, PALOpsTool],
+    *,
+    knowledge_context: str = "",
+) -> str:
     tool_lines = "\n".join(
         f"- {name}: {tool.description}" for name, tool in sorted(tools.items())
     )
+    context = knowledge_context or _render_knowledge_context(())
     return (
         "# PAL Ops Triage Tool Plan\n\n"
         f"Task:\n{task}\n\n"
+        f"{context}\n\n"
         "Available diagnostic tools:\n"
         f"{tool_lines}\n\n"
         "Return only a JSON object with this shape:\n"
@@ -864,10 +950,17 @@ def _render_plan_prompt(task: str, tools: dict[str, PALOpsTool]) -> str:
     )
 
 
-def _render_summary_prompt(task: str, observations_payload: dict[str, Any]) -> str:
+def _render_summary_prompt(
+    task: str,
+    observations_payload: dict[str, Any],
+    *,
+    knowledge_context: str = "",
+) -> str:
+    context = knowledge_context or _render_knowledge_context(())
     return (
         "# PAL Ops Triage Summary\n\n"
         f"Task:\n{task}\n\n"
+        f"{context}\n\n"
         "Tool observations JSON:\n"
         f"```json\n{_json_dumps(observations_payload)}\n```\n\n"
         "Write a concise operator summary with: status, evidence, risks, and next actions. "
@@ -881,6 +974,8 @@ def _render_action_plan_prompt(
     task: str,
     context_payload: dict[str, Any],
     actions: dict[str, PALOpsAction],
+    *,
+    knowledge_context: str = "",
 ) -> str:
     action_lines = "\n".join(
         "- "
@@ -888,9 +983,11 @@ def _render_action_plan_prompt(
         f"(approval_required={str(action.approval_required).lower()}, mutating={str(action.mutating).lower()})"
         for name, action in sorted(actions.items())
     )
+    context = knowledge_context or _render_knowledge_context(())
     return (
         "# PAL Ops Action Plan\n\n"
         f"Task:\n{task}\n\n"
+        f"{context}\n\n"
         "Current diagnostic context:\n"
         f"```json\n{_json_dumps(context_payload)}\n```\n\n"
         "Available fixed actions:\n"
@@ -903,10 +1000,17 @@ def _render_action_plan_prompt(
     )
 
 
-def _render_action_summary_prompt(task: str, action_payload: dict[str, Any]) -> str:
+def _render_action_summary_prompt(
+    task: str,
+    action_payload: dict[str, Any],
+    *,
+    knowledge_context: str = "",
+) -> str:
+    context = knowledge_context or _render_knowledge_context(())
     return (
         "# PAL Ops Action Summary\n\n"
         f"Task:\n{task}\n\n"
+        f"{context}\n\n"
         "Action results JSON:\n"
         f"```json\n{_json_dumps(action_payload)}\n```\n\n"
         "Write a concise operator summary with: what was proposed, what was executed, "

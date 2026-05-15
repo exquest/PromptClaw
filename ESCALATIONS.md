@@ -1,5 +1,12 @@
 # Escalations
 
+## T-008@20260515T214233Z (2026-05-15T21:42:33Z)
+
+- **Reason:** PAL prompt-injection scope and startup-hardening assumptions
+- **Details:** Exploration found PAL-017 builds directly on the PAL-013 through PAL-016 local KB path in `promptclaw/pal_knowledge.py` and the workflow prompt artifacts written by `promptclaw/pal_agent.py`: `triage-plan.md`, `triage-summary.md`, `action-plan.md`, and `action-summary.md`. The implementation is assumed to be stdlib-only prompt enrichment from the existing JSONL index, with missing or malformed indexes treated as unavailable local context rather than workflow failures. The generated startup hardening bullets target the existing identity startup subsystem; current CLI, first-boot, daemon-ordering, and narrative ASGI tests already cover `bootstrap_identity()` persistence and ordering before `FirstBootAnnouncer`, so those remain mandatory regression anchors rather than broadening this PAL prompt-injection task into startup rewiring. No new dependencies, migrations, provider secrets, database columns, HTTP routes, remote writes, or approval-gated actions are required.
+- **Reason:** Red phase, implementation verification, and hardening-anchor results
+- **Details:** Red phase was confirmed with `pytest tests/test_pal_agent.py::test_pal_ops_triage_prompt_artifacts_include_bounded_knowledge_context tests/test_pal_agent.py::test_pal_ops_triage_prompt_artifacts_include_knowledge_context_when_index_is_missing tests/test_pal_agent.py::test_pal_ops_actions_prompt_artifacts_include_bounded_knowledge_context -q` failing because existing PAL prompt artifacts lacked `## Knowledge Context`. After implementation, those three tests passed, `pytest tests/test_pal_agent.py -q` passed with `16 passed`, the focused PAL PRD suite passed with `50 passed`, and the mandatory startup identity hardening anchors passed with `7 passed`. The required validation command `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` passed with `4732 passed, 10 skipped`, Ruff clean, and mypy clean. No new dependencies or migrations were introduced.
+
 ## T-007@20260515T214233Z (2026-05-15T21:42:33Z)
 
 - **Reason:** PAL KB query scope and startup-hardening assumptions

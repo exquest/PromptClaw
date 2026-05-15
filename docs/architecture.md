@@ -111,9 +111,11 @@ The local PAL knowledge-base path is file-first. Source discovery reads
 `promptclaw pal kb build` materializes those chunks into
 `.promptclaw/pal-kb/index.jsonl` without contacting the router. `promptclaw pal
 kb query` reads that local JSONL index, ranks lexical matches deterministically,
-and returns bounded snippets with source paths and line ranges. Later PAL
-prompt-injection work can consume the same artifact while preserving the
-configured source list and repeatable chunk metadata.
+and returns bounded snippets with source paths and line ranges. PAL workflow
+prompt artifacts now consume the same local index through a bounded `Knowledge
+Context` section, so plans and summaries can cite local runbook/deployment
+snippets without giving PAL any new execution authority. If the index is absent
+or unreadable, workflows still run and record that local context was unavailable.
 
 The first agentic PAL workflow is `promptclaw pal agent triage`. In that mode,
 PAL is the reasoning agent but not the executor. PAL receives the operator task

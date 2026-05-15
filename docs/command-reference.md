@@ -186,12 +186,17 @@ diagnostic plan, PromptClaw executes only the local allow-listed tools
 set), then PAL summarizes the observations. The workflow writes a normal run
 under `.promptclaw/runs/<run-id>/` and treats restarts, shutdowns, rental
 changes, key changes, firewall edits, and config writes as human-approval gates.
+Its plan and summary prompt artifacts include a bounded `Knowledge Context`
+section from `.promptclaw/pal-kb/index.jsonl` when the local KB exists; missing
+KB context is recorded as a non-blocking note.
 
 `pal agent actions` adds the approval-gated action layer. It first gathers the
 same read-only diagnostic context, asks PAL to propose fixed playbook actions,
 and writes an action plan plus results into `.promptclaw/runs/<run-id>/`. By
 default it executes no proposed actions. To execute an action, pass
-`--approve ACTION_ID`; repeat the flag to approve more than one action.
+`--approve ACTION_ID`; repeat the flag to approve more than one action. Action
+plan and summary prompts carry the same bounded local `Knowledge Context`
+section without changing what actions may execute.
 
 Current action ids:
 

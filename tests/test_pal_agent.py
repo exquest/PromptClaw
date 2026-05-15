@@ -11,6 +11,7 @@ from promptclaw.cli import cmd_pal_agent_actions, cmd_pal_agent_triage
 from promptclaw.config import default_project_config, save_config
 from promptclaw.pal_agent import PALOpsAction, PALOpsTool, run_pal_ops_actions, run_pal_ops_triage
 from promptclaw.pal_client import PALQueryResult
+from promptclaw.pal_knowledge import write_pal_knowledge_index
 
 
 class FakePALClient:
@@ -118,6 +119,106 @@ def test_pal_ops_triage_falls_back_to_default_plan_when_pal_plan_is_invalid(tmp_
     assert executed == ["pal_health", "pal_smoke_baseline"]
     assert result["plan_source"] == "fallback"
     assert result["ignored_tools"] == []
+
+
+def test_pal_ops_triage_prompt_artifacts_include_bounded_knowledge_context(tmp_path: Path) -> None:
+    config = default_project_config("PAL Triage Knowledge Context")
+    save_config(tmp_path, config)
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "a-router.md").write_text(
+        "# A Router\nrouter restart health runbook alpha marker.\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "docs" / "b-router.md").write_text(
+        "# B Router\nrouter restart health smoke beta marker.\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "docs" / "c-router.md").write_text(
+        "# C Router\nrouter restart health process gamma marker.\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "docs" / "z-router.md").write_text(
+        "# Z Router\nrouter restart health overflow zeta marker.\n",
+        encoding="utf-8",
+    )
+    write_pal_knowledge_index(tmp_path, max_chars=400)
+
+    executed: list[str] = []
+    tool_registry = {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Check PAL router health.",
+            run=lambda: _recorded_tool_result(executed, "pal_health"),
+        )
+    }
+    client = FakePALClient([
+        json.dumps({"tools": ["pal_health"], "rationale": "Check router health."}),
+        "PAL triage summary with local KB context.",
+    ])
+
+    result = run_pal_ops_triage(
+        tmp_path,
+        task="Diagnose router restart health.",
+        client=client,
+        tool_registry=tool_registry,
+        default_tools=("pal_health",),
+        now=_fake_now(),
+    )
+
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    plan_prompt = (run_root / "prompts" / "triage-plan.md").read_text(encoding="utf-8")
+    summary_prompt = (run_root / "prompts" / "triage-summary.md").read_text(encoding="utf-8")
+    for prompt, next_marker in (
+        (plan_prompt, "Available diagnostic tools:"),
+        (summary_prompt, "Tool observations JSON:"),
+    ):
+        section = _knowledge_context_section(prompt, next_marker)
+        assert section.startswith("## Knowledge Context")
+        assert section.count("\n- ") == 3
+        assert len(section) <= 1600
+        assert "docs/a-router.md:1-2" in section
+        assert "docs/b-router.md:1-2" in section
+        assert "docs/c-router.md:1-2" in section
+        assert "zeta marker" not in section
+        assert "chunk=pal-kb:" in section
+
+
+def test_pal_ops_triage_prompt_artifacts_include_knowledge_context_when_index_is_missing(
+    tmp_path: Path,
+) -> None:
+    config = default_project_config("PAL Missing Knowledge Context")
+    save_config(tmp_path, config)
+    executed: list[str] = []
+    tool_registry = {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Check PAL router health.",
+            run=lambda: _recorded_tool_result(executed, "pal_health"),
+        )
+    }
+    client = FakePALClient([
+        json.dumps({"tools": ["pal_health"], "rationale": "Check router health."}),
+        "PAL triage summary without local KB index.",
+    ])
+
+    result = run_pal_ops_triage(
+        tmp_path,
+        task="Diagnose router restart health.",
+        client=client,
+        tool_registry=tool_registry,
+        default_tools=("pal_health",),
+        now=_fake_now(),
+    )
+
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    plan_prompt = (run_root / "prompts" / "triage-plan.md").read_text(encoding="utf-8")
+    section = _knowledge_context_section(plan_prompt, "Available diagnostic tools:")
+    assert section.startswith("## Knowledge Context")
+    assert section.count("\n- ") == 0
+    assert len(section) <= 1600
+    assert "No local PAL KB index is available" in section
+    assert result["status"] == "complete"
+    assert executed == ["pal_health"]
 
 
 def test_pal_agent_cli_triage_prints_run_summary(monkeypatch, tmp_path: Path) -> None:
@@ -249,6 +350,76 @@ def test_pal_ops_actions_executes_only_approved_allowlisted_actions(tmp_path: Pa
     assert result["ignored_approvals"] == ["destroy_instance"]
 
 
+def test_pal_ops_actions_prompt_artifacts_include_bounded_knowledge_context(tmp_path: Path) -> None:
+    config = default_project_config("PAL Action Knowledge Context")
+    save_config(tmp_path, config)
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "actions.md").write_text(
+        "# Actions\nrouter restart action planning should inspect logs before mutation.\n",
+        encoding="utf-8",
+    )
+    write_pal_knowledge_index(tmp_path, max_chars=400)
+
+    executed: list[str] = []
+    tool_registry = {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Check PAL router health.",
+            run=lambda: _recorded_tool_result(executed, "pal_health"),
+        ),
+    }
+    action_registry = {
+        "inspect_logs_deep": PALOpsAction(
+            name="inspect_logs_deep",
+            description="Inspect PAL logs.",
+            approval_required=True,
+            mutating=False,
+            run=lambda: _recorded_tool_result(executed, "inspect_logs_deep"),
+        ),
+        "restart_router": PALOpsAction(
+            name="restart_router",
+            description="Restart the PAL router.",
+            approval_required=True,
+            mutating=True,
+            run=lambda: _recorded_tool_result(executed, "restart_router"),
+        ),
+    }
+    client = FakePALClient([
+        json.dumps({
+            "actions": ["inspect_logs_deep", "restart_router"],
+            "rationale": "Inspect logs before restart.",
+        }),
+        "PAL action summary with local KB context.",
+    ])
+
+    result = run_pal_ops_actions(
+        tmp_path,
+        task="Plan router restart action.",
+        client=client,
+        tool_registry=tool_registry,
+        action_registry=action_registry,
+        default_tools=("pal_health",),
+        now=_fake_now(),
+    )
+
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    plan_prompt = (run_root / "prompts" / "action-plan.md").read_text(encoding="utf-8")
+    summary_prompt = (run_root / "prompts" / "action-summary.md").read_text(encoding="utf-8")
+    for prompt, next_marker in (
+        (plan_prompt, "Current diagnostic context:"),
+        (summary_prompt, "Action results JSON:"),
+    ):
+        section = _knowledge_context_section(prompt, next_marker)
+        assert section.startswith("## Knowledge Context")
+        assert section.count("\n- ") == 1
+        assert len(section) <= 1600
+        assert "docs/actions.md:1-2" in section
+        assert "inspect logs before mutation" in section
+        assert "chunk=pal-kb:" in section
+    assert executed == ["pal_health"]
+    assert result["pending_approval"] == ["inspect_logs_deep", "restart_router"]
+
+
 def test_pal_agent_cli_actions_prints_approval_summary(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr("promptclaw.cli.run_pal_ops_actions", lambda project_root, task, approved_actions: {
         "run_id": "20260515t191000z-pal-ops-actions",
@@ -277,6 +448,12 @@ def test_pal_agent_cli_actions_prints_approval_summary(monkeypatch, tmp_path: Pa
 def _recorded_tool_result(executed: list[str], name: str) -> dict[str, Any]:
     executed.append(name)
     return {"status": "ok", "summary": f"{name} ran"}
+
+
+def _knowledge_context_section(prompt: str, next_marker: str) -> str:
+    start = prompt.index("## Knowledge Context")
+    end = prompt.index(f"\n\n{next_marker}", start)
+    return prompt[start:end]
 
 
 def _fake_now():
