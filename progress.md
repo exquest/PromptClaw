@@ -437,7 +437,7 @@ Progress: [███████████████████████
 - **T-002@20260515T214233Z**: pending — Pending.
 - **T-003@20260515T214233Z**: pending — Pending.
 - **T-004@20260515T214233Z**: complete — Completed with verdict PASS. PAL source discovery now returns configured sample files and the full validation gate passed.
-- **T-005@20260515T214233Z**: pending — Pending.
+- **T-005@20260515T214233Z**: complete — Deterministic PAL knowledge chunking is implemented with stable `pal-kb:` chunk ids for unchanged input files; focused PAL tests, startup identity hardening anchors, and the full validation gate passed.
 - **T-006@20260515T214233Z**: pending — Pending.
 - **T-007@20260515T214233Z**: pending — Pending.
 - **T-008@20260515T214233Z**: pending — Pending.

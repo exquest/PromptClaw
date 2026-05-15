@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added deterministic PAL knowledge chunking (T-005@20260515T214233Z): `promptclaw.pal_knowledge.PALKnowledgeChunk` and `chunk_pal_source_files(...)` now turn configured PAL source files into stable, bounded, source-relative chunks with repeatable `pal-kb:` ids for unchanged input files, without writing runtime KB artifacts.
+
 - Added PAL knowledge source discovery (T-004@20260515T214233Z): `PALConfig` now carries `knowledge_sources`, `promptclaw.pal_knowledge.discover_pal_source_files(...)` expands configured file/glob sources deterministically without network calls or runtime writes, and `pal-2026/promptclaw.json` declares the initial docs/ops/smoke/run-artifact inputs for later PAL KB chunking and indexing.
 
 - Added PAL 2026 Agent Runtime v0: `promptclaw pal agent triage PROJECT_ROOT` lets PAL propose a diagnostic plan, executes only read-only allow-listed local tools, writes the plan/observations/final summary into the standard `.promptclaw/runs/<run-id>/` handoff structure, and documents approval gates for any infrastructure mutation.
