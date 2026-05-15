@@ -51,6 +51,30 @@ The operator-facing health check now follows the same split: `promptclaw doctor`
 └── logs/events.jsonl
 ```
 
+PAL agent workflows use the same transport. For `promptclaw pal agent triage`,
+the run records:
+
+```text
+.promptclaw/runs/<run-id>/
+├── input/task.md
+├── routing/route.json
+├── routing/route.md
+├── prompts/triage-plan.md
+├── outputs/triage-plan.raw.txt
+├── outputs/triage-plan.json
+├── outputs/tool-observations.json
+├── prompts/triage-summary.md
+├── handoffs/pal-to-operator.md
+├── summary/final-summary.md
+├── logs/events.jsonl
+└── state.json
+```
+
+In this PAL path, the model-authored plan is advisory. PromptClaw executes only
+the local allow-list and records any unknown or destructive requested tools as
+ignored. Infrastructure changes remain operator approvals, not implicit
+handoffs.
+
 ## Benefits
 
 - deterministic transfer point

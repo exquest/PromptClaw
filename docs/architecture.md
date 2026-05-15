@@ -18,6 +18,7 @@ PromptClaw v2.1 is organized around one principle:
 - `resume`
 - `status`
 - `show-config`
+- `pal`
 
 ### 2. Startup wizard
 
@@ -99,7 +100,31 @@ In CypherClaw-style live command deployments, command routing can consult `sdp-c
 
 The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
 
-### 7. CypherClaw resilience layer
+### 7. PAL 2026 agent runtime
+
+PAL 2026 starts as a configured router under the `pal` section of
+`promptclaw.json`. The router commands can check health, run direct queries, run
+the fixed smoke suite, and summarize saved smoke baselines.
+
+The first agentic PAL workflow is `promptclaw pal agent triage`. In that mode,
+PAL is the reasoning agent but not the executor. PAL receives the operator task
+and the diagnostic tool descriptions, returns a JSON tool plan, and PromptClaw
+executes only allow-listed local tools. The v0 allow-list is intentionally
+read-only:
+
+- `pal_health`: call the configured router `/health` endpoint
+- `pal_smoke_baseline`: summarize saved PAL smoke reports
+- `tailscale_status`: run a fixed local Tailscale status check
+- `ssh_process_check`: run a fixed read-only remote process/log check only when
+  `PAL_SSH_HOST`, `PAL_SSH_PORT`, and `PAL_SSH_KEY` are set
+
+Unknown or destructive requested tools are ignored and recorded. Restarts,
+shutdowns, rental changes, key rotation, firewall edits, and config writes are
+human-approval gates, not PAL-executable actions. Every PAL agent run uses the
+standard `.promptclaw/runs/<run-id>/` layout so the plan, observations, summary,
+events, and state remain reproducible.
+
+### 8. CypherClaw resilience layer
 
 CypherClaw live deployments add a runtime safety layer around the orchestrator:
 
@@ -177,7 +202,7 @@ High-note playback shaping is also more explicit now. `voice_shaping.py` still s
 The tracker orchestration path now also preserves a wider instrument palette, but with lane-aware and cadence-aware safety. Cast planning keeps at least one non-core support role on stage even during lower-energy songs, direct character synths can pass through the tracker runtime when they match the lane semantics, and quiet `wind_down` or sleep scenes automatically soften chirpy `pluck`/`kotekan`/`grain` choices toward bowed, breath, choir, or gong voices so the late-night organism does not sound like daytime birds. `sw_grain` is also quarantined at tracker runtime for now because the live SynthDef was leaking nodes and accumulating into broadband static overnight, and the runtime aliases `tabla_ge` to `tabla_tin` until a real `sw_tabla_ge` SynthDef exists in the deployed bundle. Primary tracker-role gains are now deliberately hotter too: bass, melody, and rhythm lanes carry a higher live floor than the earlier sketch-era defaults so a valid running piece cannot hide under the room noise floor merely because the new score-tree layer chose a restrained opening. That role floor is now balanced rather than just louder: bass no longer dominates by default, texture lanes carry a meaningful minimum presence, and EMSD note-level mix shaping no longer hard-clamps normal daytime bass/melody material at the top of its amp range.
 For the same reason, runtime `gong` playback is now aliased to a tuned bowed voice on the live box; the old inharmonic gong body was too detached from the harmonic planner's western/modal pitch center.
 
-### 7. Memory
+### 9. Memory
 
 Rolling memory lives in:
 

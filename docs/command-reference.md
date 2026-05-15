@@ -146,6 +146,7 @@ promptclaw pal query PROJECT_ROOT --prompt "Confirm reachability."
 promptclaw pal query PROJECT_ROOT --prompt "Confirm reachability." --text
 promptclaw pal smoke PROJECT_ROOT
 promptclaw pal baseline PROJECT_ROOT
+promptclaw pal agent triage PROJECT_ROOT
 ```
 
 The command reads the `pal` section from `promptclaw.json`, calls `/health` or
@@ -159,6 +160,14 @@ router timing metadata, responses, and any errors to
 `.promptclaw/pal-smoke/pal-smoke-<timestamp>.json`.
 `pal baseline` summarizes those saved smoke reports so stabilization runs can be
 compared across restarts and days.
+
+`pal agent triage` is the first bounded PAL agent workflow. PAL proposes a
+diagnostic plan, PromptClaw executes only the local allow-listed tools
+(`pal_health`, `pal_smoke_baseline`, `tailscale_status`, and optionally
+`ssh_process_check` when `PAL_SSH_HOST`, `PAL_SSH_PORT`, and `PAL_SSH_KEY` are
+set), then PAL summarizes the observations. The workflow writes a normal run
+under `.promptclaw/runs/<run-id>/` and treats restarts, shutdowns, rental
+changes, key changes, firewall edits, and config writes as human-approval gates.
 
 ## CypherClaw runtime utilities
 

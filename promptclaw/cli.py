@@ -10,6 +10,7 @@ from .config import load_config
 from .diagnostics import diagnose, format_diagnosis
 from .doctor import run_doctor
 from .orchestrator import PromptClawOrchestrator
+from .pal_agent import DEFAULT_TRIAGE_TASK, run_pal_ops_triage
 from .pal_client import PALRouterClient
 from .pal_smoke import (
     format_baseline_summary,
@@ -83,6 +84,20 @@ def build_parser() -> argparse.ArgumentParser:
     pal_baseline_parser = pal_sub.add_parser("baseline", help="Summarize saved PAL smoke reports")
     pal_baseline_parser.add_argument("project_root", type=Path)
     pal_baseline_parser.add_argument("--json", action="store_true", help="Print baseline summary JSON")
+
+    pal_agent_parser = pal_sub.add_parser("agent", help="Run bounded PAL agent workflows")
+    pal_agent_sub = pal_agent_parser.add_subparsers(dest="pal_agent_command", required=True)
+    pal_agent_triage_parser = pal_agent_sub.add_parser(
+        "triage",
+        help="Run a bounded PAL ops triage workflow",
+    )
+    pal_agent_triage_parser.add_argument("project_root", type=Path)
+    pal_agent_triage_parser.add_argument(
+        "--task",
+        default=DEFAULT_TRIAGE_TASK,
+        help="Operator task for PAL to triage",
+    )
+    pal_agent_triage_parser.add_argument("--json", action="store_true", help="Print triage result JSON")
 
     # --- coherence subcommand group ---
     coherence_parser = subparsers.add_parser("coherence", help="Coherence engine commands")
@@ -556,6 +571,25 @@ def cmd_pal_baseline(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_pal_agent_triage(args: argparse.Namespace) -> int:
+    result = run_pal_ops_triage(args.project_root, task=args.task)
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        executed_tools = ",".join(result["executed_tools"]) or "none"
+        ignored_tools = ",".join(result["ignored_tools"]) or "none"
+        print(
+            "PAL agent triage: "
+            f"{result['status'].upper()} "
+            f"run_id={result['run_id']} "
+            f"plan_source={result['plan_source']} "
+            f"executed_tools={executed_tools} "
+            f"ignored_tools={ignored_tools} "
+            f"summary={result['summary_path']}"
+        )
+    return 0 if result["status"] == "complete" else 1
+
+
 def _dispatch(args: argparse.Namespace) -> int:
     if args.command == "init":
         return cmd_init(args)
@@ -589,6 +623,8 @@ def _dispatch_pal(args: argparse.Namespace) -> int:
         return cmd_pal_smoke(args)
     if args.pal_command == "baseline":
         return cmd_pal_baseline(args)
+    if args.pal_command == "agent" and args.pal_agent_command == "triage":
+        return cmd_pal_agent_triage(args)
     return 2
 
 
