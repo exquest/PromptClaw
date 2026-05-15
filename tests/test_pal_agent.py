@@ -288,3 +288,20 @@ def _fake_now():
         return f"2026-05-15T19:00:{seconds:02d}+00:00"
 
     return now
+
+def test_restart_router_action_prefers_start_router_sh(monkeypatch) -> None:
+    from promptclaw.pal_agent import _restart_router_action
+    
+    captured_command = ""
+    def mock_run_ssh_command(remote_command: str, *, timeout_s: int) -> dict:
+        nonlocal captured_command
+        captured_command = remote_command
+        return {"exit_code": 0, "stdout": "", "stderr": ""}
+
+    monkeypatch.setattr("promptclaw.pal_agent._run_ssh_command", mock_run_ssh_command)
+    
+    result = _restart_router_action()
+    
+    assert result["status"] == "ok"
+    assert "/opt/pal/scripts/start_router.sh" in captured_command
+    assert captured_command.startswith("if [ -x /opt/pal/scripts/start_router.sh ]; then /opt/pal/scripts/start_router.sh")
