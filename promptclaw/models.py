@@ -27,6 +27,7 @@ class RoutingConfig:
 
 @dataclass
 class PALConfig:
+    enabled: bool = False
     base_url: str = "http://pal-cloud-a6000:8000"
     default_model: str = "llama3.3:70b-instruct-q4_K_M"
     timeout_s: float = 300.0

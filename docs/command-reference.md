@@ -148,6 +148,8 @@ promptclaw pal query PROJECT_ROOT --prompt "Confirm reachability." --text
 
 The command reads the `pal` section from `promptclaw.json`, calls `/health` or
 `/query`, and prints JSON unless `--text` is passed to `pal query`.
+When `pal.enabled` is true, `promptclaw doctor PROJECT_ROOT` also checks router
+health.
 
 ## CypherClaw runtime utilities
 

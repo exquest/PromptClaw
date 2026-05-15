@@ -463,6 +463,7 @@ def cmd_show_config(args: argparse.Namespace) -> int:
             "default_task_type": config.routing.default_task_type,
         },
         "pal": {
+            "enabled": config.pal.enabled,
             "base_url": config.pal.base_url,
             "default_model": config.pal.default_model,
             "timeout_s": config.pal.timeout_s,

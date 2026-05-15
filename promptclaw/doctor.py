@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Any
 
 from .config import load_config, validate_config
+from .models import PromptClawConfig
+from .pal_client import PALRouterClient
 from .utils import executable_exists
 
 
@@ -110,8 +112,43 @@ def _runtime_preflight_check(project_root: Path) -> DoctorCheck:
     )
 
 
+def _pal_router_check(config: PromptClawConfig) -> DoctorCheck:
+    if not config.pal.enabled:
+        return DoctorCheck(status="skipped", message="PAL router check disabled")
+
+    try:
+        health = PALRouterClient.from_config(config).health()
+    except Exception as exc:
+        return DoctorCheck(status="fail", message=f"PAL router health check failed: {exc}")
+
+    router_status = str(health.get("status", "unknown"))
+    phase = str(health.get("phase", "unknown"))
+    ollama_available = bool(health.get("ollama_available", False))
+    loaded_models = health.get("loaded_models", [])
+    model_details: list[str] = []
+    if isinstance(loaded_models, list):
+        model_details = [str(model) for model in loaded_models]
+
+    details = [f"base_url={config.pal.base_url}"]
+    details.extend(model_details)
+
+    if router_status == "green" and ollama_available:
+        return DoctorCheck(
+            status="pass",
+            message=f"PAL router green ({phase})",
+            details=details,
+        )
+
+    return DoctorCheck(
+        status="fail",
+        message=f"PAL router unhealthy: status={router_status}, ollama_available={ollama_available}",
+        details=details,
+    )
+
+
 def run_doctor(project_root: Path) -> DoctorReport:
     checks: dict[str, dict[str, Any]] = {}
+    config = load_config(project_root)
 
     config_issues = _validate_command_agents(project_root)
     if config_issues:
@@ -127,5 +164,6 @@ def run_doctor(project_root: Path) -> DoctorReport:
         )
     checks["config"] = config_check.as_dict()
 
+    checks["pal_router"] = _pal_router_check(config).as_dict()
     checks["runtime_preflight"] = _runtime_preflight_check(project_root).as_dict()
     return DoctorReport(checks=checks)

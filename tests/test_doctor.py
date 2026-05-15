@@ -6,6 +6,7 @@ from pathlib import Path
 
 from promptclaw.cli import cmd_doctor
 from promptclaw.config import default_project_config, save_config
+from promptclaw.models import PALConfig
 from promptclaw.doctor import run_doctor
 
 
@@ -46,7 +47,69 @@ def test_run_doctor_passes_and_skips_runtime_preflight_for_plain_project(tmp_pat
 
     assert report.ok is True
     assert report.checks["config"]["ok"] is True
+    assert report.checks["pal_router"]["status"] == "skipped"
     assert report.checks["runtime_preflight"]["status"] == "skipped"
+
+
+def test_run_doctor_checks_enabled_pal_router(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    project_root = tmp_path / "project"
+    _init_project(project_root)
+    config = default_project_config("PAL Doctor Test")
+    config.pal = PALConfig(enabled=True, base_url="http://pal-cloud-a6000:8000")
+    save_config(project_root, config)
+
+    class FakeClient:
+        @classmethod
+        def from_config(cls, loaded_config):
+            assert loaded_config.pal.enabled is True
+            return cls()
+
+        def health(self):
+            return {
+                "status": "green",
+                "ollama_available": True,
+                "phase": "phase-1-a6000",
+                "loaded_models": ["llama3.3:70b-instruct-q4_K_M"],
+            }
+
+    monkeypatch.setattr("promptclaw.doctor.PALRouterClient", FakeClient)
+
+    report = run_doctor(project_root)
+
+    assert report.ok is True
+    assert report.checks["pal_router"]["status"] == "pass"
+    assert "phase-1-a6000" in report.checks["pal_router"]["message"]
+    assert "llama3.3:70b-instruct-q4_K_M" in report.checks["pal_router"]["details"]
+
+
+def test_run_doctor_fails_when_enabled_pal_router_is_unreachable(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    project_root = tmp_path / "project"
+    _init_project(project_root)
+    config = default_project_config("PAL Doctor Failure Test")
+    config.pal.enabled = True
+    save_config(project_root, config)
+
+    class FakeClient:
+        @classmethod
+        def from_config(cls, loaded_config):
+            return cls()
+
+        def health(self):
+            raise RuntimeError("connection refused")
+
+    monkeypatch.setattr("promptclaw.doctor.PALRouterClient", FakeClient)
+
+    report = run_doctor(project_root)
+
+    assert report.ok is False
+    assert report.checks["pal_router"]["status"] == "fail"
+    assert "connection refused" in report.checks["pal_router"]["message"]
 
 
 def test_run_doctor_runs_runtime_preflight_when_runtime_root_present(tmp_path: Path) -> None:
