@@ -11,7 +11,14 @@ from .config import load_config
 from .diagnostics import diagnose, format_diagnosis
 from .doctor import run_doctor
 from .orchestrator import PromptClawOrchestrator
-from .pal_agent import DEFAULT_ACTION_TASK, DEFAULT_TRIAGE_TASK, run_pal_ops_actions, run_pal_ops_triage
+from .pal_agent import (
+    DEFAULT_ACTION_TASK,
+    DEFAULT_SLOW_INFERENCE_DIAGNOSIS_TASK,
+    DEFAULT_TRIAGE_TASK,
+    run_pal_ops_actions,
+    run_pal_ops_triage,
+    run_pal_slow_inference_diagnosis,
+)
 from .pal_client import PALRouterClient
 from .pal_knowledge import query_pal_knowledge_index, write_pal_knowledge_index
 from .pal_smoke import (
@@ -86,6 +93,20 @@ def build_parser() -> argparse.ArgumentParser:
     pal_baseline_parser = pal_sub.add_parser("baseline", help="Summarize saved PAL smoke reports")
     pal_baseline_parser.add_argument("project_root", type=Path)
     pal_baseline_parser.add_argument("--json", action="store_true", help="Print baseline summary JSON")
+
+    pal_diagnose_parser = pal_sub.add_parser("diagnose", help="Run read-only PAL diagnosis workflows")
+    pal_diagnose_sub = pal_diagnose_parser.add_subparsers(dest="pal_diagnose_command", required=True)
+    pal_diagnose_slow_parser = pal_diagnose_sub.add_parser(
+        "slow-inference",
+        help="Diagnose PAL slow inference without mutating infrastructure",
+    )
+    pal_diagnose_slow_parser.add_argument("project_root", type=Path)
+    pal_diagnose_slow_parser.add_argument(
+        "--task",
+        default=DEFAULT_SLOW_INFERENCE_DIAGNOSIS_TASK,
+        help="Operator task for the slow-inference diagnosis",
+    )
+    pal_diagnose_slow_parser.add_argument("--json", action="store_true", help="Print diagnosis result JSON")
 
     pal_kb_parser = pal_sub.add_parser("kb", help="PAL local knowledge-base commands")
     pal_kb_sub = pal_kb_parser.add_subparsers(dest="pal_kb_command", required=True)
@@ -606,6 +627,27 @@ def cmd_pal_baseline(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_pal_diagnose_slow_inference(args: argparse.Namespace) -> int:
+    result = run_pal_slow_inference_diagnosis(args.project_root, task=args.task)
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        executed_tools = ",".join(result["executed_tools"]) or "none"
+        mutating_actions = ",".join(result["mutating_actions"]) or "none"
+        print(
+            "PAL slow-inference diagnosis: "
+            f"{result['status'].upper()} "
+            f"run_id={result['run_id']} "
+            f"severity={result['severity']} "
+            f"findings={result['finding_count']} "
+            f"executed_tools={executed_tools} "
+            f"mutating_actions={mutating_actions} "
+            f"diagnosis={result['diagnosis_path']} "
+            f"summary={result['summary_path']}"
+        )
+    return 0 if result["status"] == "complete" else 1
+
+
 def cmd_pal_kb_build(args: argparse.Namespace) -> int:
     result = write_pal_knowledge_index(
         args.project_root,
@@ -727,6 +769,8 @@ def _dispatch_pal(args: argparse.Namespace) -> int:
         return cmd_pal_smoke(args)
     if args.pal_command == "baseline":
         return cmd_pal_baseline(args)
+    if args.pal_command == "diagnose" and args.pal_diagnose_command == "slow-inference":
+        return cmd_pal_diagnose_slow_inference(args)
     if args.pal_command == "kb" and args.pal_kb_command == "build":
         return cmd_pal_kb_build(args)
     if args.pal_command == "kb" and args.pal_kb_command == "query":

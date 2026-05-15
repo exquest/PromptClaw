@@ -7,6 +7,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from typing import Any
 
+from promptclaw import cli as promptclaw_cli
 from promptclaw.cli import cmd_pal_agent_actions, cmd_pal_agent_triage
 from promptclaw.config import default_project_config, save_config
 from promptclaw.pal_agent import PALOpsAction, PALOpsTool, run_pal_ops_actions, run_pal_ops_triage
@@ -514,6 +515,231 @@ def test_pal_slow_inference_context_skips_optional_remote_hints_without_ssh(
     assert "SSH diagnostics skipped" in observations["slow_inference_logs"]["summary"]
 
 
+def test_pal_slow_inference_diagnosis_writes_artifact_and_declares_no_mutation(
+    tmp_path: Path,
+) -> None:
+    from promptclaw.pal_agent import run_pal_slow_inference_diagnosis
+
+    config = default_project_config("PAL Slow Inference Diagnosis")
+    save_config(tmp_path, config)
+    executed: list[str] = []
+    tool_registry = {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Check PAL router health.",
+            run=lambda: _slow_tool_result(
+                executed,
+                "pal_health",
+                {"health": {"status": "green"}},
+            ),
+        ),
+        "pal_smoke_baseline": PALOpsTool(
+            name="pal_smoke_baseline",
+            description="Summarize PAL smoke baselines.",
+            run=lambda: _slow_tool_result(
+                executed,
+                "pal_smoke_baseline",
+                {"baseline_tokens_per_second": 12.0},
+            ),
+        ),
+        "gpu_hints": PALOpsTool(
+            name="gpu_hints",
+            description="Collect read-only GPU hints.",
+            run=lambda: _slow_tool_result(executed, "gpu_hints", {}),
+        ),
+        "slow_inference_logs": PALOpsTool(
+            name="slow_inference_logs",
+            description="Collect read-only PAL logs.",
+            run=lambda: _slow_tool_result(executed, "slow_inference_logs", {}),
+        ),
+    }
+
+    result = run_pal_slow_inference_diagnosis(
+        tmp_path,
+        task="Diagnose PAL slow inference without changing services.",
+        client=FakePALClient([]),
+        tool_registry=tool_registry,
+        now=_fake_now(),
+    )
+
+    assert result["status"] == "complete"
+    assert result["workflow_id"] == "slow_inference_diagnosis"
+    assert result["mutating_actions"] == []
+    assert result["executed_tools"] == [
+        "pal_health",
+        "pal_smoke_baseline",
+        "gpu_hints",
+        "slow_inference_logs",
+    ]
+    assert executed == result["executed_tools"]
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    payload = json.loads((run_root / "outputs" / "slow-inference-diagnosis.json").read_text())
+    route = json.loads((run_root / "routing" / "route.json").read_text())
+    state = json.loads((run_root / "state.json").read_text())
+    events = (run_root / "logs" / "events.jsonl").read_text()
+    assert payload["workflow_id"] == "slow_inference_diagnosis"
+    assert payload["mutating_actions"] == []
+    assert payload["diagnosis"]["baseline_tokens_per_second"] == 12.0
+    assert route["workflow_id"] == "slow_inference_diagnosis"
+    assert route["mutating_actions"] == []
+    assert "Mutating actions: none" in (run_root / "routing" / "route.md").read_text()
+    assert "PAL Slow-Inference Diagnosis" in (run_root / "summary" / "final-summary.md").read_text()
+    assert (run_root / "handoffs" / "slow-inference-diagnosis.md").exists()
+    assert "slow_inference_diagnosis_started" in events
+    assert "slow_inference_diagnosis_completed" in events
+    assert state["status"] == "complete"
+    assert state["lead_agent"] == "local-allowlist"
+    assert state["verifier_agent"] == "local-allowlist"
+
+
+def test_pal_slow_inference_diagnosis_derives_findings_from_context(
+    tmp_path: Path,
+) -> None:
+    from promptclaw.pal_agent import run_pal_slow_inference_diagnosis
+
+    config = default_project_config("PAL Slow Inference Diagnosis Findings")
+    save_config(tmp_path, config)
+    executed: list[str] = []
+    tool_registry = {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Check PAL router health.",
+            run=lambda: _slow_tool_result(
+                executed,
+                "pal_health",
+                {"health": {"status": "green"}},
+            ),
+        ),
+        "pal_smoke_baseline": PALOpsTool(
+            name="pal_smoke_baseline",
+            description="Summarize PAL smoke baselines.",
+            run=lambda: _slow_tool_result(
+                executed,
+                "pal_smoke_baseline",
+                {
+                    "baseline_tokens_per_second": 4.0,
+                    "baseline": {"report_count": 2, "pass_rate": 1.0},
+                },
+            ),
+        ),
+        "gpu_hints": PALOpsTool(
+            name="gpu_hints",
+            description="Collect read-only GPU hints.",
+            run=lambda: _slow_tool_result(
+                executed,
+                "gpu_hints",
+                {
+                    "command": {
+                        "stdout": "NVIDIA RTX A6000, 12000, 49140, 97, 70, 280\npython, 4321",
+                        "stderr": "",
+                    }
+                },
+            ),
+        ),
+        "slow_inference_logs": PALOpsTool(
+            name="slow_inference_logs",
+            description="Collect read-only PAL logs.",
+            run=lambda: _slow_tool_result(
+                executed,
+                "slow_inference_logs",
+                {
+                    "command": {
+                        "stdout": "ollama eval_count=12 eval_duration=6000000000",
+                        "stderr": "",
+                    }
+                },
+            ),
+        ),
+    }
+
+    result = run_pal_slow_inference_diagnosis(
+        tmp_path,
+        task="PAL is answering at roughly two tokens per second.",
+        client=FakePALClient([]),
+        tool_registry=tool_registry,
+        now=_fake_now(),
+    )
+
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    payload = json.loads((run_root / "outputs" / "slow-inference-diagnosis.json").read_text())
+    diagnosis = payload["diagnosis"]
+    finding_codes = {finding["code"] for finding in diagnosis["findings"]}
+    assert diagnosis["severity"] == "critical"
+    assert diagnosis["baseline_tokens_per_second"] == 4.0
+    assert diagnosis["observed_tokens_per_second"] == 2.0
+    assert diagnosis["gpu_utilization_percent"] == 97
+    assert {
+        "low_baseline_tokens_per_second",
+        "log_throughput_regression",
+        "gpu_saturation",
+    } <= finding_codes
+    assert diagnosis["recommendations"]
+
+
+def test_pal_diagnose_slow_inference_cli_prints_summary(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    parser = promptclaw_cli.build_parser()
+    parsed = parser.parse_args([
+        "pal",
+        "diagnose",
+        "slow-inference",
+        str(tmp_path),
+        "--task",
+        "Diagnose slow PAL.",
+        "--json",
+    ])
+    assert parsed.pal_command == "diagnose"
+    assert parsed.pal_diagnose_command == "slow-inference"
+    assert parsed.project_root == tmp_path
+    assert parsed.task == "Diagnose slow PAL."
+    assert parsed.json is True
+
+    result = {
+        "run_id": "20260515t191500z-pal-slow-inference-diagnosis",
+        "workflow_id": "slow_inference_diagnosis",
+        "status": "complete",
+        "summary_path": ".promptclaw/runs/20260515t191500z-pal-slow-inference-diagnosis/summary/final-summary.md",
+        "diagnosis_path": ".promptclaw/runs/20260515t191500z-pal-slow-inference-diagnosis/outputs/slow-inference-diagnosis.json",
+        "executed_tools": ["pal_health", "pal_smoke_baseline"],
+        "severity": "critical",
+        "finding_count": 2,
+        "mutating_actions": [],
+    }
+    calls: list[dict[str, Any]] = []
+
+    def fake_run(project_root: Path, *, task: str) -> dict[str, Any]:
+        calls.append({"project_root": project_root, "task": task})
+        return dict(result)
+
+    monkeypatch.setattr("promptclaw.cli.run_pal_slow_inference_diagnosis", fake_run)
+
+    text_output = io.StringIO()
+    args = argparse.Namespace(project_root=tmp_path, task="Diagnose slow PAL.", json=False)
+    with redirect_stdout(text_output):
+        rc = promptclaw_cli.cmd_pal_diagnose_slow_inference(args)
+
+    assert rc == 0
+    rendered = text_output.getvalue()
+    assert "PAL slow-inference diagnosis: COMPLETE" in rendered
+    assert "severity=critical" in rendered
+    assert "executed_tools=pal_health,pal_smoke_baseline" in rendered
+    assert "mutating_actions=none" in rendered
+    assert calls == [{"project_root": tmp_path, "task": "Diagnose slow PAL."}]
+
+    json_output = io.StringIO()
+    args = argparse.Namespace(project_root=tmp_path, task="Diagnose slow PAL.", json=True)
+    with redirect_stdout(json_output):
+        rc = promptclaw_cli.cmd_pal_diagnose_slow_inference(args)
+
+    assert rc == 0
+    payload = json.loads(json_output.getvalue())
+    assert payload["workflow_id"] == "slow_inference_diagnosis"
+    assert payload["severity"] == "critical"
+    assert payload["mutating_actions"] == []
+
+
 def test_pal_agent_cli_actions_prints_approval_summary(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr("promptclaw.cli.run_pal_ops_actions", lambda project_root, task, approved_actions: {
         "run_id": "20260515t191000z-pal-ops-actions",
@@ -542,6 +768,17 @@ def test_pal_agent_cli_actions_prints_approval_summary(monkeypatch, tmp_path: Pa
 def _recorded_tool_result(executed: list[str], name: str) -> dict[str, Any]:
     executed.append(name)
     return {"status": "ok", "summary": f"{name} ran"}
+
+
+def _slow_tool_result(
+    executed: list[str],
+    name: str,
+    extra: dict[str, Any],
+) -> dict[str, Any]:
+    executed.append(name)
+    result = {"tool": name, "status": "ok", "summary": f"{name} ran"}
+    result.update(extra)
+    return result
 
 
 def _knowledge_context_section(prompt: str, next_marker: str) -> str:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -82,12 +83,23 @@ DEFAULT_SLOW_INFERENCE_TASK = (
 
 SLOW_INFERENCE_WORKFLOW_ID = "slow_inference_context"
 
+DEFAULT_SLOW_INFERENCE_DIAGNOSIS_TASK = (
+    "Diagnose PAL 2026 slow inference from fixed read-only evidence. Capture "
+    "health, saved smoke baseline token throughput, optional GPU hints, and "
+    "optional router/Ollama logs, then write a local diagnosis artifact without "
+    "changing infrastructure."
+)
+
+SLOW_INFERENCE_DIAGNOSIS_WORKFLOW_ID = "slow_inference_diagnosis"
+
 DEFAULT_SLOW_INFERENCE_CONTEXT_TOOL_ORDER: tuple[str, ...] = (
     "pal_health",
     "pal_smoke_baseline",
     "gpu_hints",
     "slow_inference_logs",
 )
+
+DEFAULT_SLOW_INFERENCE_DIAGNOSIS_TOOL_ORDER = DEFAULT_SLOW_INFERENCE_CONTEXT_TOOL_ORDER
 
 PAL_AGENT_SYSTEM_PROMPT = (
     "You are PAL 2026 operating through PromptClaw's bounded agent runtime. "
@@ -597,6 +609,135 @@ def run_pal_slow_inference_context(
     }
 
 
+def run_pal_slow_inference_diagnosis(
+    project_root: Path,
+    *,
+    task: str = DEFAULT_SLOW_INFERENCE_DIAGNOSIS_TASK,
+    client: PALAgentClient | None = None,
+    tool_registry: dict[str, PALOpsTool] | None = None,
+    default_tools: tuple[str, ...] = DEFAULT_SLOW_INFERENCE_DIAGNOSIS_TOOL_ORDER,
+    now: Callable[[], str] = utc_now,
+) -> dict[str, Any]:
+    project_root = project_root.resolve()
+    config = load_config(project_root)
+    paths = ProjectPaths(project_root=project_root, config=config)
+    pal_client = client or PALRouterClient.from_config(config)
+    tools = tool_registry or build_slow_inference_context_tool_registry(project_root, pal_client)
+
+    created_at = now()
+    run_id = _build_run_id(created_at, "pal-slow-inference-diagnosis")
+    artifacts = ArtifactManager(paths, run_id)
+    artifacts.create_run_layout()
+    artifacts.write_task(task)
+
+    state = RunState(
+        run_id=run_id,
+        title="PAL Slow Inference Diagnosis",
+        status="running",
+        current_phase="diagnosis",
+        created_at=created_at,
+        updated_at=created_at,
+        task_text=task,
+        lead_agent="local-allowlist",
+        verifier_agent="local-allowlist",
+        route_decision={
+            "task_type": SLOW_INFERENCE_DIAGNOSIS_WORKFLOW_ID,
+            "workflow_id": SLOW_INFERENCE_DIAGNOSIS_WORKFLOW_ID,
+            "lead_agent": "local-allowlist",
+            "verifier_agent": "local-allowlist",
+            "reason": "PromptClaw derives a deterministic diagnosis from fixed read-only diagnostics.",
+            "mutating_actions": [],
+        },
+    )
+
+    _record_event(
+        artifacts,
+        state,
+        now,
+        event_type="pal_agent.slow_inference_diagnosis_started",
+        message="PAL slow-inference diagnosis started.",
+        phase="diagnosis",
+        agent="local-allowlist",
+        role="verifier",
+    )
+
+    context_tools = [name for name in default_tools if name in tools]
+    observations: list[dict[str, Any]] = []
+    for tool_name in context_tools:
+        observation = _run_tool(tools[tool_name])
+        observations.append(observation)
+        _record_event(
+            artifacts,
+            state,
+            now,
+            event_type="pal_agent.slow_inference_diagnosis_observed",
+            message=f"{tool_name} returned {observation['status']}.",
+            phase="diagnosis",
+            agent="local-allowlist",
+            role="verifier",
+            extra={"tool": tool_name, "status": observation["status"]},
+        )
+
+    diagnosis = _diagnose_slow_inference_observations(observations)
+    payload = {
+        "workflow_id": SLOW_INFERENCE_DIAGNOSIS_WORKFLOW_ID,
+        "task": task,
+        "executed_tools": context_tools,
+        "mutating_actions": [],
+        "observations": observations,
+        "diagnosis": diagnosis,
+    }
+    diagnosis_path = artifacts.write_output("slow-inference-diagnosis.json", _json_dumps(payload))
+    artifacts.write_route_json({
+        "lead_agent": "local-allowlist",
+        "verifier_agent": "local-allowlist",
+        "task_type": SLOW_INFERENCE_DIAGNOSIS_WORKFLOW_ID,
+        "workflow_id": SLOW_INFERENCE_DIAGNOSIS_WORKFLOW_ID,
+        "tools": context_tools,
+        "mutating_actions": [],
+        "output_path": _relative_path(project_root, diagnosis_path),
+    })
+    artifacts.write_route_markdown(_render_slow_inference_diagnosis_route_markdown(context_tools))
+
+    state.current_phase = "summary"
+    summary_text = _render_slow_inference_diagnosis_summary(payload)
+    summary_path = artifacts.write_summary("final-summary.md", summary_text)
+    artifacts.write_handoff(
+        "slow-inference-diagnosis.md",
+        _render_slow_inference_diagnosis_handoff(payload),
+    )
+
+    state.status = "complete"
+    state.current_phase = "complete"
+    state.updated_at = now()
+    state.final_summary_path = _relative_path(project_root, summary_path)
+    _record_event(
+        artifacts,
+        state,
+        now,
+        event_type="pal_agent.slow_inference_diagnosis_completed",
+        message="PAL slow-inference diagnosis completed.",
+        phase="complete",
+        agent="local-allowlist",
+        role="verifier",
+        extra={"summary_path": state.final_summary_path},
+    )
+    StateStore(paths).save(state)
+
+    return {
+        "run_id": run_id,
+        "workflow_id": SLOW_INFERENCE_DIAGNOSIS_WORKFLOW_ID,
+        "status": state.status,
+        "summary_path": state.final_summary_path,
+        "diagnosis_path": _relative_path(project_root, diagnosis_path),
+        "executed_tools": context_tools,
+        "tool_count": len(context_tools),
+        "severity": diagnosis["severity"],
+        "finding_count": len(diagnosis["findings"]),
+        "mutating_actions": [],
+    }
+
+
 def build_default_tool_registry(project_root: Path, client: PALAgentClient) -> dict[str, PALOpsTool]:
     return {
         "pal_health": PALOpsTool(
@@ -797,6 +938,163 @@ def _baseline_tokens_per_second_from_observations(
         if isinstance(value, int | float):
             return float(value)
     return None
+
+
+def _diagnose_slow_inference_observations(observations: list[dict[str, Any]]) -> dict[str, Any]:
+    rows = {str(row.get("tool", "")): row for row in observations}
+    baseline_tps = _baseline_tokens_per_second_from_observations(observations)
+    observed_tps = _observed_tokens_per_second_from_logs(rows.get("slow_inference_logs"))
+    gpu_utilization = _gpu_utilization_percent_from_observation(rows.get("gpu_hints"))
+    router_status = _router_health_status(rows.get("pal_health"))
+
+    findings: list[dict[str, Any]] = []
+    if router_status and router_status not in {"green", "ok", "healthy"}:
+        findings.append({
+            "code": "router_health_not_green",
+            "severity": "warning",
+            "summary": f"PAL router health is {router_status}.",
+        })
+
+    if baseline_tps is None:
+        findings.append({
+            "code": "baseline_tokens_per_second_unavailable",
+            "severity": "info",
+            "summary": "No saved PAL smoke token/s baseline is available.",
+        })
+    elif baseline_tps < 5.0:
+        findings.append({
+            "code": "low_baseline_tokens_per_second",
+            "severity": "critical",
+            "summary": f"Saved PAL smoke baseline is low at {baseline_tps:g} tokens/s.",
+        })
+    elif baseline_tps < 10.0:
+        findings.append({
+            "code": "low_baseline_tokens_per_second",
+            "severity": "warning",
+            "summary": f"Saved PAL smoke baseline is below target at {baseline_tps:g} tokens/s.",
+        })
+
+    if observed_tps is not None and baseline_tps is not None and observed_tps <= baseline_tps * 0.5:
+        findings.append({
+            "code": "log_throughput_regression",
+            "severity": "critical" if observed_tps < 5.0 else "warning",
+            "summary": (
+                f"Recent log throughput is {observed_tps:g} tokens/s versus "
+                f"{baseline_tps:g} tokens/s baseline."
+            ),
+        })
+    elif observed_tps is None and _observation_status(rows.get("slow_inference_logs")) == "skipped":
+        findings.append({
+            "code": "remote_logs_unavailable",
+            "severity": "info",
+            "summary": "PAL SSH logs were unavailable, so live token/s could not be inferred.",
+        })
+
+    if gpu_utilization is not None and gpu_utilization >= 90:
+        findings.append({
+            "code": "gpu_saturation",
+            "severity": "critical" if gpu_utilization >= 95 else "warning",
+            "summary": f"Read-only GPU hints show {gpu_utilization}% utilization.",
+        })
+    elif gpu_utilization is None and _observation_status(rows.get("gpu_hints")) == "skipped":
+        findings.append({
+            "code": "gpu_hints_unavailable",
+            "severity": "info",
+            "summary": "PAL SSH GPU hints were unavailable.",
+        })
+
+    severity = _max_finding_severity(findings)
+    return {
+        "severity": severity,
+        "router_status": router_status,
+        "baseline_tokens_per_second": baseline_tps,
+        "observed_tokens_per_second": observed_tps,
+        "gpu_utilization_percent": gpu_utilization,
+        "findings": findings,
+        "recommendations": _slow_inference_recommendations(findings),
+    }
+
+
+def _router_health_status(observation: dict[str, Any] | None) -> str:
+    if not observation:
+        return ""
+    health = observation.get("health")
+    if not isinstance(health, dict):
+        return ""
+    return str(health.get("status", "")).lower()
+
+
+def _observation_status(observation: dict[str, Any] | None) -> str:
+    if not observation:
+        return ""
+    return str(observation.get("status", ""))
+
+
+def _observed_tokens_per_second_from_logs(observation: dict[str, Any] | None) -> float | None:
+    if not observation:
+        return None
+    command = observation.get("command")
+    if not isinstance(command, dict):
+        return None
+    text = f"{command.get('stdout', '')}\n{command.get('stderr', '')}"
+    match = re.search(r"eval_count=(\d+(?:\.\d+)?)\s+eval_duration=(\d+(?:\.\d+)?)", text)
+    if not match:
+        return None
+    eval_count = float(match.group(1))
+    eval_duration_ns = float(match.group(2))
+    if eval_duration_ns <= 0:
+        return None
+    return round(eval_count / (eval_duration_ns / 1_000_000_000), 3)
+
+
+def _gpu_utilization_percent_from_observation(observation: dict[str, Any] | None) -> int | None:
+    if not observation:
+        return None
+    command = observation.get("command")
+    if not isinstance(command, dict):
+        return None
+    stdout = str(command.get("stdout", ""))
+    for line in stdout.splitlines():
+        parts = [part.strip() for part in line.split(",")]
+        if len(parts) < 4:
+            continue
+        try:
+            value = float(parts[3])
+        except ValueError:
+            continue
+        if 0.0 <= value <= 100.0:
+            return int(round(value))
+    return None
+
+
+def _max_finding_severity(findings: list[dict[str, Any]]) -> str:
+    rank = {"ok": 0, "info": 1, "warning": 2, "critical": 3}
+    severity = "ok"
+    for finding in findings:
+        candidate = str(finding.get("severity", "info"))
+        if rank.get(candidate, 1) > rank[severity]:
+            severity = candidate
+    return severity
+
+
+def _slow_inference_recommendations(findings: list[dict[str, Any]]) -> list[str]:
+    codes = {str(finding.get("code", "")) for finding in findings}
+    recommendations: list[str] = []
+    if "baseline_tokens_per_second_unavailable" in codes:
+        recommendations.append("Run `promptclaw pal smoke PROJECT_ROOT` to create a baseline report.")
+    if "low_baseline_tokens_per_second" in codes or "log_throughput_regression" in codes:
+        recommendations.append(
+            "Compare against a fresh smoke run after any approved remediation to confirm token/s recovery."
+        )
+    if "gpu_saturation" in codes:
+        recommendations.append("Review competing GPU processes before approving restart or instance changes.")
+    if "router_health_not_green" in codes:
+        recommendations.append("Inspect router health details before approving any service action.")
+    if "remote_logs_unavailable" in codes or "gpu_hints_unavailable" in codes:
+        recommendations.append("Set PAL_SSH_HOST, PAL_SSH_PORT, and PAL_SSH_KEY to include remote evidence.")
+    if not recommendations:
+        recommendations.append("No slow-inference fault was detected from the available read-only evidence.")
+    return recommendations
 
 
 def _tailscale_status_tool() -> dict[str, Any]:
@@ -1427,6 +1725,18 @@ def _render_slow_inference_route_markdown(context_tools: list[str]) -> str:
     )
 
 
+def _render_slow_inference_diagnosis_route_markdown(context_tools: list[str]) -> str:
+    tools = ", ".join(context_tools) if context_tools else "none"
+    return (
+        "# PAL Slow-Inference Diagnosis Route\n\n"
+        f"- Workflow id: {SLOW_INFERENCE_DIAGNOSIS_WORKFLOW_ID}\n"
+        f"- Lead agent: local allow-list\n"
+        f"- Verifier/executor: local allow-list\n"
+        f"- Tools: {tools}\n"
+        "- Mutating actions: none\n"
+    )
+
+
 def _render_slow_inference_context_summary(context_payload: dict[str, Any]) -> str:
     lines = ["# PAL Slow-Inference Context", ""]
     baseline_tps = context_payload.get("baseline_tokens_per_second")
@@ -1442,6 +1752,40 @@ def _render_slow_inference_context_summary(context_payload: dict[str, Any]) -> s
     return "\n".join(lines).rstrip() + "\n"
 
 
+def _render_slow_inference_diagnosis_summary(payload: dict[str, Any]) -> str:
+    diagnosis = payload["diagnosis"]
+    lines = ["# PAL Slow-Inference Diagnosis", ""]
+    lines.append(f"Workflow id: {payload['workflow_id']}")
+    lines.append(f"Severity: {diagnosis['severity']}")
+    lines.append(
+        "Baseline tokens/s: "
+        f"{diagnosis['baseline_tokens_per_second'] if diagnosis['baseline_tokens_per_second'] is not None else 'unavailable'}"
+    )
+    lines.append(
+        "Observed tokens/s: "
+        f"{diagnosis['observed_tokens_per_second'] if diagnosis['observed_tokens_per_second'] is not None else 'unavailable'}"
+    )
+    lines.append(
+        "GPU utilization: "
+        f"{diagnosis['gpu_utilization_percent']}%" if diagnosis["gpu_utilization_percent"] is not None else "GPU utilization: unavailable"
+    )
+    lines.append("Mutating actions: none")
+    lines.append("")
+    lines.append("Findings:")
+    if diagnosis["findings"]:
+        for finding in diagnosis["findings"]:
+            lines.append(
+                f"- {finding['code']} ({finding['severity']}): {finding['summary']}"
+            )
+    else:
+        lines.append("- none")
+    lines.append("")
+    lines.append("Recommendations:")
+    for recommendation in diagnosis["recommendations"]:
+        lines.append(f"- {recommendation}")
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def _render_slow_inference_context_handoff(context_payload: dict[str, Any]) -> str:
     executed = ", ".join(context_payload["executed_tools"]) or "none"
     return (
@@ -1450,6 +1794,20 @@ def _render_slow_inference_context_handoff(context_payload: dict[str, Any]) -> s
         f"Executed diagnostics: {executed}\n\n"
         f"Baseline tokens/s: {context_payload.get('baseline_tokens_per_second')}\n\n"
         "This artifact is read-only context for a later slow-inference diagnosis. "
+        "It does not approve or execute infrastructure changes.\n"
+    )
+
+
+def _render_slow_inference_diagnosis_handoff(payload: dict[str, Any]) -> str:
+    diagnosis = payload["diagnosis"]
+    executed = ", ".join(payload["executed_tools"]) or "none"
+    return (
+        "# PAL Slow-Inference Diagnosis Handoff\n\n"
+        f"Workflow id: {payload['workflow_id']}\n\n"
+        f"Executed diagnostics: {executed}\n\n"
+        "Mutating actions: none\n\n"
+        f"Severity: {diagnosis['severity']}\n\n"
+        "This diagnosis is read-only except for local PromptClaw run artifacts. "
         "It does not approve or execute infrastructure changes.\n"
     )
 
