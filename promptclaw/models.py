@@ -26,6 +26,13 @@ class RoutingConfig:
     default_task_type: str = "general"
 
 @dataclass
+class PALConfig:
+    base_url: str = "http://pal-cloud-a6000:8000"
+    default_model: str = "llama3.3:70b-instruct-q4_K_M"
+    timeout_s: float = 300.0
+    health_timeout_s: float = 10.0
+
+@dataclass
 class AgentConfig:
     name: str
     enabled: bool = True
@@ -42,6 +49,7 @@ class PromptClawConfig:
     artifacts: ArtifactConfig
     control_plane: ControlPlaneConfig
     routing: RoutingConfig
+    pal: PALConfig = field(default_factory=PALConfig)
     agents: dict[str, AgentConfig] = field(default_factory=dict)
     coherence: Any = None  # CoherenceConfig, typed as Any to avoid circular import
 

@@ -49,6 +49,22 @@ The startup wizard updates `description` from your project pitch.
 
 The startup wizard may update `verification_enabled` and `ask_user_on_ambiguity`.
 
+### `pal`
+
+```json
+{
+  "base_url": "http://pal-cloud-a6000:8000",
+  "default_model": "llama3.3:70b-instruct-q4_K_M",
+  "timeout_s": 300.0,
+  "health_timeout_s": 10.0
+}
+```
+
+- `base_url`: FastAPI router endpoint, usually the Tailscale hostname.
+- `default_model`: model sent to `/query` when a command does not override it.
+- `timeout_s`: request timeout for inference calls.
+- `health_timeout_s`: request timeout for `/health` checks.
+
 ### `agents`
 
 Each agent has:

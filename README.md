@@ -119,6 +119,8 @@ promptclaw run PROJECT_ROOT --task "free text task"
 promptclaw resume PROJECT_ROOT --run-id RUN_ID --answer "answer"
 promptclaw status PROJECT_ROOT [--run-id RUN_ID]
 promptclaw show-config PROJECT_ROOT
+promptclaw pal health PROJECT_ROOT
+promptclaw pal query PROJECT_ROOT --prompt "Confirm reachability."
 
 # Coherence
 promptclaw coherence status PROJECT_ROOT

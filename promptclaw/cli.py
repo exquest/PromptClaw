@@ -10,6 +10,7 @@ from .config import load_config
 from .diagnostics import diagnose, format_diagnosis
 from .doctor import run_doctor
 from .orchestrator import PromptClawOrchestrator
+from .pal_client import PALRouterClient
 from .paths import ProjectPaths
 from .state_store import StateStore
 from .ui import banner, status_line
@@ -52,6 +53,20 @@ def build_parser() -> argparse.ArgumentParser:
 
     show_config_parser = subparsers.add_parser("show-config", help="Print resolved config")
     show_config_parser.add_argument("project_root", type=Path)
+
+    pal_parser = subparsers.add_parser("pal", help="PAL router commands")
+    pal_sub = pal_parser.add_subparsers(dest="pal_command", required=True)
+
+    pal_health_parser = pal_sub.add_parser("health", help="Check the configured PAL router")
+    pal_health_parser.add_argument("project_root", type=Path)
+
+    pal_query_parser = pal_sub.add_parser("query", help="Send a prompt to the configured PAL router")
+    pal_query_parser.add_argument("project_root", type=Path)
+    pal_query_parser.add_argument("--prompt", required=True)
+    pal_query_parser.add_argument("--system")
+    pal_query_parser.add_argument("--model")
+    pal_query_parser.add_argument("--temperature", type=float, default=0.7)
+    pal_query_parser.add_argument("--text", action="store_true", help="Print only the response text")
 
     # --- coherence subcommand group ---
     coherence_parser = subparsers.add_parser("coherence", help="Coherence engine commands")
@@ -447,6 +462,12 @@ def cmd_show_config(args: argparse.Namespace) -> int:
             "ask_user_on_ambiguity": config.routing.ask_user_on_ambiguity,
             "default_task_type": config.routing.default_task_type,
         },
+        "pal": {
+            "base_url": config.pal.base_url,
+            "default_model": config.pal.default_model,
+            "timeout_s": config.pal.timeout_s,
+            "health_timeout_s": config.pal.health_timeout_s,
+        },
         "agents": {
             name: {
                 "enabled": agent.enabled,
@@ -460,6 +481,29 @@ def cmd_show_config(args: argparse.Namespace) -> int:
             for name, agent in config.agents.items()
         },
     }, indent=2))
+    return 0
+
+
+def cmd_pal_health(args: argparse.Namespace) -> int:
+    config = load_config(args.project_root)
+    client = PALRouterClient.from_config(config)
+    print(json.dumps(client.health(), indent=2))
+    return 0
+
+
+def cmd_pal_query(args: argparse.Namespace) -> int:
+    config = load_config(args.project_root)
+    client = PALRouterClient.from_config(config)
+    result = client.query(
+        prompt=args.prompt,
+        system=args.system,
+        model=args.model,
+        temperature=args.temperature,
+    )
+    if args.text:
+        print(result.text)
+    else:
+        print(json.dumps(result.raw, indent=2))
     return 0
 
 
@@ -480,8 +524,18 @@ def _dispatch(args: argparse.Namespace) -> int:
         return cmd_status(args)
     if args.command == "show-config":
         return cmd_show_config(args)
+    if args.command == "pal":
+        return _dispatch_pal(args)
     if args.command == "coherence":
         return _dispatch_coherence(args)
+    return 2
+
+
+def _dispatch_pal(args: argparse.Namespace) -> int:
+    if args.pal_command == "health":
+        return cmd_pal_health(args)
+    if args.pal_command == "query":
+        return cmd_pal_query(args)
     return 2
 
 

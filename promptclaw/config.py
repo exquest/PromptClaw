@@ -9,6 +9,7 @@ from .models import (
     AgentConfig,
     ArtifactConfig,
     ControlPlaneConfig,
+    PALConfig,
     ProjectConfig,
     PromptClawConfig,
     RoutingConfig,
@@ -36,6 +37,7 @@ def default_project_config(project_name: str = "New PromptClaw") -> PromptClawCo
         project=ProjectConfig(name=project_name, description="Orchestrated multi-agent claw."),
         artifacts=ArtifactConfig(root=".promptclaw"),
         control_plane=ControlPlaneConfig(mode="heuristic", agent="claude", allow_fallback=True),
+        pal=PALConfig(),
         routing=RoutingConfig(
             verification_enabled=True,
             max_retries=1,
@@ -85,6 +87,7 @@ def load_config(project_root: Path) -> PromptClawConfig:
         artifacts=ArtifactConfig(**raw.get("artifacts", {})),
         control_plane=ControlPlaneConfig(**raw.get("control_plane", {})),
         routing=RoutingConfig(**raw.get("routing", {})),
+        pal=PALConfig(**raw.get("pal", {})),
         agents=agents,
         coherence=coherence,
     )
@@ -101,6 +104,12 @@ def validate_config(config: PromptClawConfig) -> list[str]:
         issues.append("control_plane.mode must be 'heuristic' or 'agent'")
     if config.routing.max_retries < 0:
         issues.append("routing.max_retries must be >= 0")
+    if not config.pal.base_url.strip():
+        issues.append("pal.base_url must not be empty")
+    if config.pal.timeout_s <= 0:
+        issues.append("pal.timeout_s must be > 0")
+    if config.pal.health_timeout_s <= 0:
+        issues.append("pal.health_timeout_s must be > 0")
     if not config.agents:
         issues.append("at least one agent must be defined")
     enabled_agents = [agent for agent in config.agents.values() if agent.enabled]
@@ -158,6 +167,8 @@ def summarize_config(config: PromptClawConfig) -> dict[str, Any]:
         "control_plane_mode": report.control_plane_mode,
         "control_plane_agent": report.control_plane_agent,
         "default_task_type": report.default_task_type,
+        "pal_base_url": config.pal.base_url,
+        "pal_default_model": config.pal.default_model,
         "agent_count": report.agent_count,
         "enabled_agent_names": list(report.enabled_agent_names),
         "disabled_agent_names": list(report.disabled_agent_names),

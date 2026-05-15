@@ -136,6 +136,19 @@ promptclaw show-config PROJECT_ROOT
 The resolved config still comes from `promptclaw.json`; the model summary path
 is an internal diagnostic projection and does not replace the source file.
 
+## `promptclaw pal`
+
+Call a configured PAL 2026 router from local tools.
+
+```bash
+promptclaw pal health PROJECT_ROOT
+promptclaw pal query PROJECT_ROOT --prompt "Confirm reachability."
+promptclaw pal query PROJECT_ROOT --prompt "Confirm reachability." --text
+```
+
+The command reads the `pal` section from `promptclaw.json`, calls `/health` or
+`/query`, and prints JSON unless `--text` is passed to `pal query`.
+
 ## CypherClaw runtime utilities
 
 These are repo-managed operational tools for the live CypherClaw home:
