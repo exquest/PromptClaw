@@ -289,37 +289,58 @@ def _fake_now():
 
     return now
 
+class FakeSSHRunner:
+    """Stand-in for promptclaw.pal_agent._run_ssh_command.
+
+    Install via ``monkeypatch.setattr("promptclaw.pal_agent._run_ssh_command", runner)``
+    to exercise remote-action code paths without opening a real SSH connection.
+    Returns canned responses in order, or ``default`` once the queue is empty.
+    """
+
+    def __init__(
+        self,
+        responses: list[dict[str, Any]] | None = None,
+        *,
+        default: dict[str, Any] | None = None,
+    ) -> None:
+        self.responses: list[dict[str, Any]] = list(responses or [])
+        self.default: dict[str, Any] = default or {"exit_code": 0, "stdout": "", "stderr": ""}
+        self.calls: list[dict[str, Any]] = []
+
+    def __call__(self, remote_command: str, *, timeout_s: int) -> dict[str, Any]:
+        self.calls.append({"remote_command": remote_command, "timeout_s": timeout_s})
+        if self.responses:
+            return dict(self.responses.pop(0))
+        return dict(self.default)
+
+    @property
+    def last_command(self) -> str:
+        return self.calls[-1]["remote_command"] if self.calls else ""
+
+
 def test_restart_router_action_prefers_start_router_sh(monkeypatch) -> None:
     from promptclaw.pal_agent import _restart_router_action
-    
-    captured_command = ""
-    def mock_run_ssh_command(remote_command: str, *, timeout_s: int) -> dict:
-        nonlocal captured_command
-        captured_command = remote_command
-        return {"exit_code": 0, "stdout": "", "stderr": ""}
 
-    monkeypatch.setattr("promptclaw.pal_agent._run_ssh_command", mock_run_ssh_command)
-    
+    runner = FakeSSHRunner()
+    monkeypatch.setattr("promptclaw.pal_agent._run_ssh_command", runner)
+
     result = _restart_router_action()
-    
+
     assert result["status"] == "ok"
-    assert "/opt/pal/scripts/start_router.sh" in captured_command
-    assert captured_command.startswith("if [ -x /opt/pal/scripts/start_router.sh ]; then /opt/pal/scripts/start_router.sh")
+    assert "/opt/pal/scripts/start_router.sh" in runner.last_command
+    assert runner.last_command.startswith(
+        "if [ -x /opt/pal/scripts/start_router.sh ]; then /opt/pal/scripts/start_router.sh"
+    )
 
 
 def test_restart_router_action_uses_docker_only_when_host_script_absent(monkeypatch) -> None:
     from promptclaw.pal_agent import _restart_router_action
 
-    captured_command = ""
-
-    def mock_run_ssh_command(remote_command: str, *, timeout_s: int) -> dict:
-        nonlocal captured_command
-        captured_command = remote_command
-        return {"exit_code": 0, "stdout": "", "stderr": ""}
-
-    monkeypatch.setattr("promptclaw.pal_agent._run_ssh_command", mock_run_ssh_command)
+    runner = FakeSSHRunner()
+    monkeypatch.setattr("promptclaw.pal_agent._run_ssh_command", runner)
     _restart_router_action()
 
+    captured_command = runner.last_command
     host_check = "[ -x /opt/pal/scripts/start_router.sh ]"
     docker_guard = "elif command -v docker"
     assert host_check in captured_command
@@ -330,3 +351,75 @@ def test_restart_router_action_uses_docker_only_when_host_script_absent(monkeypa
     assert "docker" not in captured_command.split(docker_guard)[0], (
         "Docker must not be referenced before the host-script check"
     )
+
+
+def test_inspect_logs_deep_action_runs_remote_diagnostic_via_fake_ssh(monkeypatch) -> None:
+    from promptclaw.pal_agent import _inspect_logs_deep_action
+
+    runner = FakeSSHRunner([{"exit_code": 0, "stdout": "logs ok", "stderr": ""}])
+    monkeypatch.setattr("promptclaw.pal_agent._run_ssh_command", runner)
+
+    result = _inspect_logs_deep_action()
+
+    assert result["status"] == "ok"
+    assert runner.calls and runner.calls[0]["timeout_s"] == 30
+    assert "/opt/pal/logs/router.log" in runner.last_command
+
+
+def test_pause_shutdown_once_action_creates_override_flag_via_fake_ssh(monkeypatch) -> None:
+    from promptclaw.pal_agent import _pause_shutdown_once_action
+
+    runner = FakeSSHRunner()
+    monkeypatch.setattr("promptclaw.pal_agent._run_ssh_command", runner)
+
+    result = _pause_shutdown_once_action()
+
+    assert result["status"] == "ok"
+    assert "touch /opt/pal/config/override.flag" in runner.last_command
+
+
+def test_resume_shutdown_action_removes_override_flag_via_fake_ssh(monkeypatch) -> None:
+    from promptclaw.pal_agent import _resume_shutdown_action
+
+    runner = FakeSSHRunner()
+    monkeypatch.setattr("promptclaw.pal_agent._run_ssh_command", runner)
+
+    result = _resume_shutdown_action()
+
+    assert result["status"] == "ok"
+    assert "rm -f /opt/pal/config/override.flag" in runner.last_command
+
+
+def test_ssh_process_check_tool_reports_warn_on_nonzero_exit_via_fake_ssh(monkeypatch) -> None:
+    from promptclaw.pal_agent import _ssh_process_check_tool
+
+    runner = FakeSSHRunner([{"exit_code": 1, "stdout": "", "stderr": "boom"}])
+    monkeypatch.setattr("promptclaw.pal_agent._run_ssh_command", runner)
+
+    result = _ssh_process_check_tool()
+
+    assert result["status"] == "warn"
+    assert "[t]ailscaled" in runner.last_command
+    assert "/opt/pal/logs/shutdown.log" in runner.last_command
+
+
+def test_action_propagates_skipped_response_from_fake_ssh(monkeypatch) -> None:
+    from promptclaw.pal_agent import _restart_router_action
+
+    runner = FakeSSHRunner(
+        [
+            {
+                "args": ["ssh", "<PAL_SSH_HOST>", "<remote-command>"],
+                "exit_code": 78,
+                "stdout": "",
+                "stderr": "SSH diagnostics skipped because PAL_SSH_HOST, PAL_SSH_PORT, and PAL_SSH_KEY are not all set.",
+                "skipped": True,
+            }
+        ]
+    )
+    monkeypatch.setattr("promptclaw.pal_agent._run_ssh_command", runner)
+
+    result = _restart_router_action()
+
+    assert result["status"] == "skipped"
+    assert "skipped" in result["summary"].lower()
