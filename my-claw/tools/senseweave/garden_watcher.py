@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
@@ -197,7 +198,11 @@ def build_garden_state(brightness: float, observed_at: datetime) -> GardenState:
 
 def update_garden_state(brightness: float) -> GardenState:
     """Combine all functions into a single GardenState using current time."""
-    return build_garden_state(brightness, datetime.now())
+    observed_ts = time.time()
+    observed_at = datetime.fromtimestamp(observed_ts)
+    state = build_garden_state(brightness, observed_at)
+    state.last_update = observed_ts
+    return state
 
 
 def summarize_garden_state(state: GardenState) -> dict[str, object]:
