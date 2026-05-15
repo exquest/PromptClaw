@@ -147,6 +147,8 @@ promptclaw pal query PROJECT_ROOT --prompt "Confirm reachability." --text
 promptclaw pal smoke PROJECT_ROOT
 promptclaw pal baseline PROJECT_ROOT
 promptclaw pal agent triage PROJECT_ROOT
+promptclaw pal agent actions PROJECT_ROOT
+promptclaw pal agent actions PROJECT_ROOT --approve inspect_logs_deep
 ```
 
 The command reads the `pal` section from `promptclaw.json`, calls `/health` or
@@ -168,6 +170,22 @@ diagnostic plan, PromptClaw executes only the local allow-listed tools
 set), then PAL summarizes the observations. The workflow writes a normal run
 under `.promptclaw/runs/<run-id>/` and treats restarts, shutdowns, rental
 changes, key changes, firewall edits, and config writes as human-approval gates.
+
+`pal agent actions` adds the approval-gated action layer. It first gathers the
+same read-only diagnostic context, asks PAL to propose fixed playbook actions,
+and writes an action plan plus results into `.promptclaw/runs/<run-id>/`. By
+default it executes no proposed actions. To execute an action, pass
+`--approve ACTION_ID`; repeat the flag to approve more than one action.
+
+Current action ids:
+
+- `rerun_smoke`: run the PAL smoke suite and save a fresh local report
+- `inspect_logs_deep`: run a fixed read-only SSH log/resource inspection
+- `restart_router`: restart only the PAL FastAPI router service
+- `pause_shutdown_once`: create `/opt/pal/config/override.flag`
+- `resume_shutdown`: remove `/opt/pal/config/override.flag`
+
+Unknown proposed actions and unknown approvals are ignored and recorded.
 
 ## CypherClaw runtime utilities
 

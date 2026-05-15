@@ -10,7 +10,7 @@ from .config import load_config
 from .diagnostics import diagnose, format_diagnosis
 from .doctor import run_doctor
 from .orchestrator import PromptClawOrchestrator
-from .pal_agent import DEFAULT_TRIAGE_TASK, run_pal_ops_triage
+from .pal_agent import DEFAULT_ACTION_TASK, DEFAULT_TRIAGE_TASK, run_pal_ops_actions, run_pal_ops_triage
 from .pal_client import PALRouterClient
 from .pal_smoke import (
     format_baseline_summary,
@@ -98,6 +98,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Operator task for PAL to triage",
     )
     pal_agent_triage_parser.add_argument("--json", action="store_true", help="Print triage result JSON")
+    pal_agent_actions_parser = pal_agent_sub.add_parser(
+        "actions",
+        help="Propose and optionally execute approval-gated PAL actions",
+    )
+    pal_agent_actions_parser.add_argument("project_root", type=Path)
+    pal_agent_actions_parser.add_argument(
+        "--task",
+        default=DEFAULT_ACTION_TASK,
+        help="Operator task for PAL action planning",
+    )
+    pal_agent_actions_parser.add_argument(
+        "--approve",
+        action="append",
+        default=[],
+        metavar="ACTION_ID",
+        help="Approve one proposed allow-listed action for execution; repeat for multiple actions",
+    )
+    pal_agent_actions_parser.add_argument("--json", action="store_true", help="Print action result JSON")
 
     # --- coherence subcommand group ---
     coherence_parser = subparsers.add_parser("coherence", help="Coherence engine commands")
@@ -590,6 +608,30 @@ def cmd_pal_agent_triage(args: argparse.Namespace) -> int:
     return 0 if result["status"] == "complete" else 1
 
 
+def cmd_pal_agent_actions(args: argparse.Namespace) -> int:
+    result = run_pal_ops_actions(args.project_root, task=args.task, approved_actions=tuple(args.approve))
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        executed_actions = ",".join(result["executed_actions"]) or "none"
+        pending_approval = ",".join(result["pending_approval"]) or "none"
+        ignored_actions = ",".join(result["ignored_actions"]) or "none"
+        ignored_approvals = ",".join(result["ignored_approvals"]) or "none"
+        print(
+            "PAL agent actions: "
+            f"{result['status'].upper()} "
+            f"run_id={result['run_id']} "
+            f"plan_source={result['plan_source']} "
+            f"proposed_actions={','.join(result['proposed_actions']) or 'none'} "
+            f"executed_actions={executed_actions} "
+            f"pending_approval={pending_approval} "
+            f"ignored_actions={ignored_actions} "
+            f"ignored_approvals={ignored_approvals} "
+            f"summary={result['summary_path']}"
+        )
+    return 0 if result["status"] == "complete" else 1
+
+
 def _dispatch(args: argparse.Namespace) -> int:
     if args.command == "init":
         return cmd_init(args)
@@ -625,6 +667,8 @@ def _dispatch_pal(args: argparse.Namespace) -> int:
         return cmd_pal_baseline(args)
     if args.pal_command == "agent" and args.pal_agent_command == "triage":
         return cmd_pal_agent_triage(args)
+    if args.pal_command == "agent" and args.pal_agent_command == "actions":
+        return cmd_pal_agent_actions(args)
     return 2
 
 

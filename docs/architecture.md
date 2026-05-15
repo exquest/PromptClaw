@@ -109,8 +109,8 @@ the fixed smoke suite, and summarize saved smoke baselines.
 The first agentic PAL workflow is `promptclaw pal agent triage`. In that mode,
 PAL is the reasoning agent but not the executor. PAL receives the operator task
 and the diagnostic tool descriptions, returns a JSON tool plan, and PromptClaw
-executes only allow-listed local tools. The v0 allow-list is intentionally
-read-only:
+executes only allow-listed local tools. The diagnostic allow-list is
+intentionally read-only:
 
 - `pal_health`: call the configured router `/health` endpoint
 - `pal_smoke_baseline`: summarize saved PAL smoke reports
@@ -118,11 +118,18 @@ read-only:
 - `ssh_process_check`: run a fixed read-only remote process/log check only when
   `PAL_SSH_HOST`, `PAL_SSH_PORT`, and `PAL_SSH_KEY` are set
 
-Unknown or destructive requested tools are ignored and recorded. Restarts,
-shutdowns, rental changes, key rotation, firewall edits, and config writes are
-human-approval gates, not PAL-executable actions. Every PAL agent run uses the
-standard `.promptclaw/runs/<run-id>/` layout so the plan, observations, summary,
-events, and state remain reproducible.
+`promptclaw pal agent actions` is the approval-gated action layer. It gathers
+diagnostic context, asks PAL to propose action ids from a second fixed
+allow-list, and executes nothing unless the operator passes `--approve
+ACTION_ID`. The current action allow-list covers `rerun_smoke`,
+`inspect_logs_deep`, `restart_router`, `pause_shutdown_once`, and
+`resume_shutdown`. Unknown proposed actions and unknown approvals are ignored
+and recorded. Restarts, shutdown overrides, and other mutating playbooks remain
+human-approved action ids, not open-ended shell authority.
+
+Every PAL agent run uses the standard `.promptclaw/runs/<run-id>/` layout so the
+plan, observations, approvals, results, summary, events, and state remain
+reproducible.
 
 ### 8. CypherClaw resilience layer
 

@@ -12,7 +12,7 @@ from .artifacts import ArtifactManager
 from .config import load_config
 from .models import Event, RunState
 from .pal_client import PALClientError, PALQueryResult, PALRouterClient
-from .pal_smoke import load_smoke_reports, summarize_smoke_reports
+from .pal_smoke import load_smoke_reports, run_pal_smoke, summarize_smoke_reports, write_smoke_report
 from .paths import ProjectPaths
 from .state_store import StateStore
 from .utils import extract_json_object, slugify, truncate, utc_now
@@ -43,6 +43,15 @@ class PALOpsTool:
     run: Callable[[], dict[str, Any]]
 
 
+@dataclass(frozen=True)
+class PALOpsAction:
+    name: str
+    description: str
+    approval_required: bool
+    mutating: bool
+    run: Callable[[], dict[str, Any]]
+
+
 DEFAULT_TRIAGE_TASK = (
     "Diagnose PAL 2026 operational health from the local PromptClaw control plane. "
     "Confirm router health, recent smoke baseline, local Tailscale visibility, and "
@@ -55,6 +64,13 @@ DEFAULT_TOOL_ORDER: tuple[str, ...] = (
     "pal_smoke_baseline",
     "tailscale_status",
     "ssh_process_check",
+)
+
+DEFAULT_ACTION_TASK = (
+    "Review the current PAL 2026 diagnostic context and propose the next bounded "
+    "operator actions. Use the fixed action allow-list only. Prefer read-only "
+    "evidence gathering before mutating actions, and keep every mutating action "
+    "behind explicit human approval."
 )
 
 PAL_AGENT_SYSTEM_PROMPT = (
@@ -217,6 +233,212 @@ def run_pal_ops_triage(
     }
 
 
+def run_pal_ops_actions(
+    project_root: Path,
+    *,
+    task: str = DEFAULT_ACTION_TASK,
+    approved_actions: tuple[str, ...] = (),
+    client: PALAgentClient | None = None,
+    tool_registry: dict[str, PALOpsTool] | None = None,
+    action_registry: dict[str, PALOpsAction] | None = None,
+    default_tools: tuple[str, ...] = DEFAULT_TOOL_ORDER,
+    now: Callable[[], str] = utc_now,
+) -> dict[str, Any]:
+    project_root = project_root.resolve()
+    config = load_config(project_root)
+    paths = ProjectPaths(project_root=project_root, config=config)
+    pal_client = client or PALRouterClient.from_config(config)
+    tools = tool_registry or build_default_tool_registry(project_root, pal_client)
+    actions = action_registry or build_default_action_registry(project_root, pal_client)
+    approved = tuple(dict.fromkeys(str(action_id) for action_id in approved_actions))
+
+    created_at = now()
+    run_id = _build_run_id(created_at, "pal-ops-actions")
+    artifacts = ArtifactManager(paths, run_id)
+    artifacts.create_run_layout()
+    artifacts.write_task(task)
+
+    state = RunState(
+        run_id=run_id,
+        title="PAL Ops Actions",
+        status="running",
+        current_phase="context",
+        created_at=created_at,
+        updated_at=created_at,
+        task_text=task,
+        lead_agent="pal",
+        verifier_agent="local-approval-gate",
+        route_decision={
+            "task_type": "pal_ops_actions",
+            "lead_agent": "pal",
+            "verifier_agent": "local-approval-gate",
+            "reason": "PAL proposes fixed actions; PromptClaw executes only allow-listed actions with explicit approval.",
+        },
+    )
+
+    _record_event(
+        artifacts,
+        state,
+        now,
+        event_type="pal_agent.actions_started",
+        message="PAL ops action run started.",
+        phase="context",
+        agent="pal",
+    )
+
+    context_tools = [name for name in default_tools if name in tools]
+    observations: list[dict[str, Any]] = []
+    for tool_name in context_tools:
+        observation = _run_tool(tools[tool_name])
+        observations.append(observation)
+        _record_event(
+            artifacts,
+            state,
+            now,
+            event_type="pal_agent.action_context_observed",
+            message=f"{tool_name} returned {observation['status']}.",
+            phase="context",
+            agent="local-allowlist",
+            role="verifier",
+            extra={"tool": tool_name, "status": observation["status"]},
+        )
+
+    context_payload = {
+        "task": task,
+        "context_tools": context_tools,
+        "observations": observations,
+    }
+    artifacts.write_output("action-context.json", _json_dumps(context_payload))
+
+    state.current_phase = "planning"
+    plan_prompt = _render_action_plan_prompt(task, context_payload, actions)
+    plan_prompt_path = artifacts.write_prompt("action-plan.md", plan_prompt)
+    plan_result = pal_client.query(
+        plan_prompt,
+        system=PAL_AGENT_SYSTEM_PROMPT,
+        temperature=0.1,
+    )
+    artifacts.write_output("action-plan.raw.txt", plan_result.text)
+    plan = _parse_action_plan(plan_result.text, actions=actions)
+    plan_output_path = artifacts.write_output("action-plan.json", _json_dumps(plan))
+    artifacts.write_route_json({
+        "lead_agent": "pal",
+        "verifier_agent": "local-approval-gate",
+        "task_type": "pal_ops_actions",
+        "plan_source": plan["source"],
+        "actions": plan["actions"],
+        "ignored_actions": plan["ignored_actions"],
+        "approved_actions": list(approved),
+        "prompt_path": _relative_path(project_root, plan_prompt_path),
+        "output_path": _relative_path(project_root, plan_output_path),
+    })
+    artifacts.write_route_markdown(_render_action_route_markdown(plan, approved))
+    _record_event(
+        artifacts,
+        state,
+        now,
+        event_type="pal_agent.actions_selected",
+        message=f"PAL proposed {len(plan['actions'])} bounded actions.",
+        phase="planning",
+        agent="pal",
+        extra={"actions": plan["actions"], "ignored_actions": plan["ignored_actions"], "source": plan["source"]},
+    )
+
+    state.current_phase = "approval"
+    approved_set = set(approved)
+    proposed_set = set(plan["actions"])
+    ignored_approvals = [action_id for action_id in approved if action_id not in actions or action_id not in proposed_set]
+    action_rows: list[dict[str, Any]] = []
+    executed_actions: list[str] = []
+    pending_approval: list[str] = []
+
+    for action_id in plan["actions"]:
+        action = actions[action_id]
+        if action.approval_required and action_id not in approved_set:
+            pending_approval.append(action_id)
+            action_rows.append({
+                "action": action_id,
+                "status": "pending_approval",
+                "summary": "Action was proposed by PAL but was not approved for execution.",
+                "approval_required": action.approval_required,
+                "mutating": action.mutating,
+            })
+            continue
+        result = _run_action(action)
+        executed_actions.append(action_id)
+        action_rows.append(result)
+        _record_event(
+            artifacts,
+            state,
+            now,
+            event_type="pal_agent.action_executed",
+            message=f"{action_id} returned {result['status']}.",
+            phase="approval",
+            agent="local-approval-gate",
+            role="verifier",
+            extra={"action": action_id, "status": result["status"], "mutating": action.mutating},
+        )
+
+    action_payload = {
+        "task": task,
+        "plan_source": plan["source"],
+        "rationale": plan["rationale"],
+        "proposed_actions": plan["actions"],
+        "ignored_actions": plan["ignored_actions"],
+        "approved_actions": list(approved),
+        "ignored_approvals": ignored_approvals,
+        "executed_actions": executed_actions,
+        "pending_approval": pending_approval,
+        "context": context_payload,
+        "actions": action_rows,
+    }
+    artifacts.write_output("action-results.json", _json_dumps(action_payload))
+
+    state.current_phase = "summary"
+    summary_prompt = _render_action_summary_prompt(task, action_payload)
+    artifacts.write_prompt("action-summary.md", summary_prompt)
+    try:
+        summary_result = pal_client.query(
+            summary_prompt,
+            system=PAL_AGENT_SYSTEM_PROMPT,
+            temperature=0.2,
+        )
+        summary_text = summary_result.text.strip() or _fallback_action_summary(action_payload)
+    except (PALClientError, RuntimeError, OSError) as exc:
+        summary_text = _fallback_action_summary(action_payload, error=str(exc))
+    summary_path = artifacts.write_summary("final-summary.md", summary_text.rstrip() + "\n")
+    artifacts.write_handoff("pal-action-request.md", _render_action_handoff(summary_text, action_payload))
+
+    state.status = "complete"
+    state.current_phase = "complete"
+    state.updated_at = now()
+    state.final_summary_path = _relative_path(project_root, summary_path)
+    _record_event(
+        artifacts,
+        state,
+        now,
+        event_type="pal_agent.actions_completed",
+        message="PAL ops action run completed.",
+        phase="complete",
+        agent="pal",
+        extra={"summary_path": state.final_summary_path},
+    )
+    StateStore(paths).save(state)
+
+    return {
+        "run_id": run_id,
+        "status": state.status,
+        "summary_path": state.final_summary_path,
+        "proposed_actions": list(plan["actions"]),
+        "executed_actions": executed_actions,
+        "pending_approval": pending_approval,
+        "ignored_actions": list(plan["ignored_actions"]),
+        "ignored_approvals": ignored_approvals,
+        "plan_source": plan["source"],
+        "action_count": len(plan["actions"]),
+    }
+
+
 def build_default_tool_registry(project_root: Path, client: PALAgentClient) -> dict[str, PALOpsTool]:
     return {
         "pal_health": PALOpsTool(
@@ -242,6 +464,46 @@ def build_default_tool_registry(project_root: Path, client: PALAgentClient) -> d
     }
 
 
+def build_default_action_registry(project_root: Path, client: PALAgentClient) -> dict[str, PALOpsAction]:
+    return {
+        "rerun_smoke": PALOpsAction(
+            name="rerun_smoke",
+            description="Run the PAL smoke suite again and save a fresh local smoke report.",
+            approval_required=True,
+            mutating=False,
+            run=lambda: _rerun_smoke_action(project_root, client),
+        ),
+        "inspect_logs_deep": PALOpsAction(
+            name="inspect_logs_deep",
+            description="Run a fixed read-only SSH command for deeper PAL service logs and resource hints.",
+            approval_required=True,
+            mutating=False,
+            run=_inspect_logs_deep_action,
+        ),
+        "restart_router": PALOpsAction(
+            name="restart_router",
+            description="Restart only the PAL FastAPI router container/service on the cloud instance.",
+            approval_required=True,
+            mutating=True,
+            run=_restart_router_action,
+        ),
+        "pause_shutdown_once": PALOpsAction(
+            name="pause_shutdown_once",
+            description="Create /opt/pal/config/override.flag so the scheduled shutdown is skipped.",
+            approval_required=True,
+            mutating=True,
+            run=_pause_shutdown_once_action,
+        ),
+        "resume_shutdown": PALOpsAction(
+            name="resume_shutdown",
+            description="Remove /opt/pal/config/override.flag so scheduled shutdown resumes.",
+            approval_required=True,
+            mutating=True,
+            run=_resume_shutdown_action,
+        ),
+    }
+
+
 def _run_tool(tool: PALOpsTool) -> dict[str, Any]:
     try:
         result = tool.run()
@@ -262,6 +524,35 @@ def _run_tool(tool: PALOpsTool) -> dict[str, Any]:
     payload.setdefault("tool", tool.name)
     payload.setdefault("status", "ok")
     payload.setdefault("summary", "")
+    return payload
+
+
+def _run_action(action: PALOpsAction) -> dict[str, Any]:
+    try:
+        result = action.run()
+    except Exception as exc:
+        return {
+            "action": action.name,
+            "status": "error",
+            "summary": f"{action.name} raised {type(exc).__name__}: {exc}",
+            "approval_required": action.approval_required,
+            "mutating": action.mutating,
+        }
+    if not isinstance(result, dict):
+        return {
+            "action": action.name,
+            "status": "error",
+            "summary": f"{action.name} returned non-object result",
+            "raw": repr(result),
+            "approval_required": action.approval_required,
+            "mutating": action.mutating,
+        }
+    payload = dict(result)
+    payload.setdefault("action", action.name)
+    payload.setdefault("status", "ok")
+    payload.setdefault("summary", "")
+    payload.setdefault("approval_required", action.approval_required)
+    payload.setdefault("mutating", action.mutating)
     return payload
 
 
@@ -317,47 +608,142 @@ def _tailscale_status_tool() -> dict[str, Any]:
 
 
 def _ssh_process_check_tool() -> dict[str, Any]:
-    host = os.getenv("PAL_SSH_HOST", "").strip()
-    port = os.getenv("PAL_SSH_PORT", "").strip()
-    key = os.getenv("PAL_SSH_KEY", "").strip()
-    user = os.getenv("PAL_SSH_USER", "root").strip() or "root"
-    if not (host and port and key):
-        return {
-            "status": "skipped",
-            "summary": "SSH diagnostics skipped because PAL_SSH_HOST, PAL_SSH_PORT, and PAL_SSH_KEY are not all set.",
-            "required_env": ["PAL_SSH_HOST", "PAL_SSH_PORT", "PAL_SSH_KEY"],
-        }
-    ssh = shutil.which("ssh")
-    if ssh is None:
-        return {"status": "skipped", "summary": "ssh executable not found on this machine."}
-
     remote_command = (
         'ps -eo pid,comm,args | grep -E "[t]ailscaled|[o]llama serve|[u]vicorn|[c]ron" || true; '
         "printf '\\n--- shutdown log ---\\n'; "
         "tail -n 12 /opt/pal/logs/shutdown.log 2>/dev/null || true"
     )
-    result = _run_command(
-        [
-            ssh,
-            "-i",
-            key,
-            "-p",
-            port,
-            "-o",
-            "BatchMode=yes",
-            "-o",
-            "ConnectTimeout=8",
-            f"{user}@{host}",
-            remote_command,
-        ],
-        timeout_s=20,
-    )
+    result = _run_ssh_command(remote_command, timeout_s=20)
+    if result.get("skipped"):
+        return {
+            "status": "skipped",
+            "summary": str(result["stderr"]),
+            "command": result,
+        }
     status = "ok" if result["exit_code"] == 0 else "warn"
     return {
         "status": status,
         "summary": "Read-only SSH process/log diagnostic completed."
         if status == "ok"
         else "Read-only SSH process/log diagnostic returned a non-zero exit.",
+        "command": result,
+    }
+
+
+def _rerun_smoke_action(project_root: Path, client: PALAgentClient) -> dict[str, Any]:
+    report = run_pal_smoke(client)
+    report_path = write_smoke_report(project_root, report)
+    return {
+        "status": "ok" if report["status"] == "pass" else "warn",
+        "summary": (
+            f"PAL smoke suite {report['status']} with "
+            f"{report['summary']['passed']} passed and {report['summary']['failed']} failed checks."
+        ),
+        "report_path": str(report_path),
+        "report": report,
+    }
+
+
+def _inspect_logs_deep_action() -> dict[str, Any]:
+    remote_command = (
+        "printf '%s\\n' '--- processes ---'; "
+        'ps -eo pid,comm,args | grep -E "[t]ailscaled|[o]llama serve|[u]vicorn|[c]ron|[d]ockerd" || true; '
+        "printf '%s\\n' '--- pal logs ---'; "
+        "for f in /opt/pal/logs/router.log /opt/pal/logs/ollama.log /opt/pal/logs/start_all.log; do "
+        "test -f \"$f\" && printf '%s\\n' \"--- $f ---\" && tail -n 80 \"$f\"; "
+        "done; "
+        "printf '%s\\n' '--- docker ps ---'; "
+        "if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then "
+        "docker ps --format 'table {{.Names}}\\t{{.Status}}\\t{{.Ports}}'; "
+        "printf '%s\\n' '--- router container logs ---'; docker logs pal-router --tail 120 2>&1 || true; "
+        "printf '%s\\n' '--- ollama container logs ---'; docker logs pal-ollama --tail 120 2>&1 || true; "
+        "else printf '%s\\n' 'docker unavailable or not running; PAL may be host-managed'; fi; "
+        "printf '%s\\n' '--- shutdown log ---'; "
+        "tail -n 80 /opt/pal/logs/shutdown.log 2>/dev/null || true; "
+        "printf '%s\\n' '--- disk ---'; "
+        "df -h /opt/pal 2>/dev/null || true; "
+        "printf '%s\\n' '--- gpu ---'; "
+        "nvidia-smi --query-gpu=name,memory.used,memory.total,utilization.gpu --format=csv,noheader 2>/dev/null || true"
+    )
+    result = _run_ssh_command(remote_command, timeout_s=30)
+    if result.get("skipped"):
+        status = "skipped"
+    else:
+        status = "ok" if result["exit_code"] == 0 else "warn"
+    return {
+        "status": status,
+        "summary": _action_status_summary(
+            status,
+            ok="Deep read-only PAL logs/resource inspection completed.",
+            skipped=str(result["stderr"]),
+            problem="Deep read-only PAL logs/resource inspection returned a non-zero exit.",
+        ),
+        "command": result,
+    }
+
+
+def _restart_router_action() -> dict[str, Any]:
+    remote_command = (
+        "if [ -x /opt/pal/scripts/start_router.sh ]; then "
+        "/opt/pal/scripts/start_router.sh && sleep 2 && "
+        "curl --max-time 10 -fsS http://localhost:8000/health && "
+        'printf "\\n--- router process ---\\n" && '
+        'ps -eo pid,comm,args | grep -E "[u]vicorn.*app:app"; '
+        "elif command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then "
+        "cd /opt/pal && docker compose restart router && docker compose ps router; "
+        "else printf '%s\\n' 'No supported PAL router restart path found.' >&2; exit 78; fi"
+    )
+    result = _run_ssh_command(remote_command, timeout_s=45)
+    if result.get("skipped"):
+        status = "skipped"
+    else:
+        status = "ok" if result["exit_code"] == 0 else "error"
+    return {
+        "status": status,
+        "summary": _action_status_summary(
+            status,
+            ok="PAL router restart completed.",
+            skipped=str(result["stderr"]),
+            problem="PAL router restart failed.",
+        ),
+        "command": result,
+    }
+
+
+def _pause_shutdown_once_action() -> dict[str, Any]:
+    remote_command = "touch /opt/pal/config/override.flag && ls -l /opt/pal/config/override.flag"
+    result = _run_ssh_command(remote_command, timeout_s=20)
+    if result.get("skipped"):
+        status = "skipped"
+    else:
+        status = "ok" if result["exit_code"] == 0 else "error"
+    return {
+        "status": status,
+        "summary": _action_status_summary(
+            status,
+            ok="Auto-shutdown override flag is present.",
+            skipped=str(result["stderr"]),
+            problem="Could not create auto-shutdown override flag.",
+        ),
+        "command": result,
+    }
+
+
+def _resume_shutdown_action() -> dict[str, Any]:
+    remote_command = "rm -f /opt/pal/config/override.flag && test ! -e /opt/pal/config/override.flag"
+    result = _run_ssh_command(remote_command, timeout_s=20)
+    if result.get("skipped"):
+        status = "skipped"
+    else:
+        status = "ok" if result["exit_code"] == 0 else "error"
+    return {
+        "status": status,
+        "summary": _action_status_summary(
+            status,
+            ok="Auto-shutdown override flag is absent.",
+            skipped=str(result["stderr"]),
+            problem="Could not remove auto-shutdown override flag.",
+        ),
         "command": result,
     }
 
@@ -369,6 +755,50 @@ def _tailscale_executable() -> str | None:
     if app_path.exists():
         return str(app_path)
     return None
+
+
+def _run_ssh_command(remote_command: str, *, timeout_s: int) -> dict[str, Any]:
+    args_or_error = _ssh_args(remote_command)
+    if isinstance(args_or_error, dict):
+        return args_or_error
+    return _run_command(args_or_error, timeout_s=timeout_s)
+
+
+def _ssh_args(remote_command: str) -> list[str] | dict[str, Any]:
+    host = os.getenv("PAL_SSH_HOST", "").strip()
+    port = os.getenv("PAL_SSH_PORT", "").strip()
+    key = os.getenv("PAL_SSH_KEY", "").strip()
+    user = os.getenv("PAL_SSH_USER", "root").strip() or "root"
+    if not (host and port and key):
+        return {
+            "args": ["ssh", "<PAL_SSH_HOST>", "<remote-command>"],
+            "exit_code": 78,
+            "stdout": "",
+            "stderr": "SSH diagnostics skipped because PAL_SSH_HOST, PAL_SSH_PORT, and PAL_SSH_KEY are not all set.",
+            "skipped": True,
+        }
+    ssh = shutil.which("ssh")
+    if ssh is None:
+        return {
+            "args": ["ssh", "<missing>", "<remote-command>"],
+            "exit_code": 78,
+            "stdout": "",
+            "stderr": "ssh executable not found on this machine.",
+            "skipped": True,
+        }
+    return [
+        ssh,
+        "-i",
+        key,
+        "-p",
+        port,
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "ConnectTimeout=8",
+        f"{user}@{host}",
+        remote_command,
+    ]
 
 
 def _run_command(args: list[str], *, timeout_s: int) -> dict[str, Any]:
@@ -393,6 +823,14 @@ def _run_command(args: list[str], *, timeout_s: int) -> dict[str, Any]:
         "stdout": truncate(completed.stdout, 4000),
         "stderr": truncate(completed.stderr, 4000),
     }
+
+
+def _action_status_summary(status: str, *, ok: str, skipped: str, problem: str) -> str:
+    if status == "ok":
+        return ok
+    if status == "skipped":
+        return skipped
+    return problem
 
 
 def _redact_args(args: list[str]) -> list[str]:
@@ -436,6 +874,45 @@ def _render_summary_prompt(task: str, observations_payload: dict[str, Any]) -> s
         "Do not describe an unexecuted tool as failed or unconfigured; only summarize evidence "
         "from the observations. "
         "Any restart, shutdown, rental, key, firewall, or config change must be phrased as requiring human approval."
+    )
+
+
+def _render_action_plan_prompt(
+    task: str,
+    context_payload: dict[str, Any],
+    actions: dict[str, PALOpsAction],
+) -> str:
+    action_lines = "\n".join(
+        "- "
+        f"{name}: {action.description} "
+        f"(approval_required={str(action.approval_required).lower()}, mutating={str(action.mutating).lower()})"
+        for name, action in sorted(actions.items())
+    )
+    return (
+        "# PAL Ops Action Plan\n\n"
+        f"Task:\n{task}\n\n"
+        "Current diagnostic context:\n"
+        f"```json\n{_json_dumps(context_payload)}\n```\n\n"
+        "Available fixed actions:\n"
+        f"{action_lines}\n\n"
+        "Return only a JSON object with this shape:\n"
+        '{"actions":["inspect_logs_deep"],"rationale":"short reason"}\n\n'
+        "Choose only actions from the list. Do not invent shell commands. Prefer "
+        "read-only evidence gathering before mutating actions. PromptClaw will not "
+        "execute any proposed action unless the operator explicitly approves its action id."
+    )
+
+
+def _render_action_summary_prompt(task: str, action_payload: dict[str, Any]) -> str:
+    return (
+        "# PAL Ops Action Summary\n\n"
+        f"Task:\n{task}\n\n"
+        "Action results JSON:\n"
+        f"```json\n{_json_dumps(action_payload)}\n```\n\n"
+        "Write a concise operator summary with: what was proposed, what was executed, "
+        "what still needs approval, evidence from action results, and next commands if useful. "
+        "Do not imply that pending actions have run. Any restart, shutdown, rental, key, "
+        "firewall, or config change must remain tied to explicit human approval."
     )
 
 
@@ -487,6 +964,45 @@ def _parse_tool_plan(
     }
 
 
+def _parse_action_plan(text: str, *, actions: dict[str, PALOpsAction]) -> dict[str, Any]:
+    parsed: dict[str, Any] | None = None
+    json_text = extract_json_object(text)
+    if json_text:
+        try:
+            raw = json.loads(json_text)
+            if isinstance(raw, dict):
+                parsed = raw
+        except json.JSONDecodeError:
+            parsed = None
+
+    if parsed is None or not isinstance(parsed.get("actions"), list):
+        return {
+            "source": "fallback",
+            "rationale": "PAL did not return a valid action plan; no actions were proposed.",
+            "actions": [],
+            "ignored_actions": [],
+            "raw_text": text,
+        }
+
+    selected: list[str] = []
+    ignored: list[str] = []
+    for item in parsed["actions"]:
+        name = str(item)
+        if name in actions:
+            if name not in selected:
+                selected.append(name)
+        elif name not in ignored:
+            ignored.append(name)
+
+    return {
+        "source": "pal",
+        "rationale": str(parsed.get("rationale", "")),
+        "actions": selected,
+        "ignored_actions": ignored,
+        "raw_text": text,
+    }
+
+
 def _render_route_markdown(plan: dict[str, Any]) -> str:
     tools = ", ".join(plan["tools"]) if plan["tools"] else "none"
     ignored = ", ".join(plan["ignored_tools"]) if plan["ignored_tools"] else "none"
@@ -497,6 +1013,22 @@ def _render_route_markdown(plan: dict[str, Any]) -> str:
         f"- Plan source: {plan['source']}\n"
         f"- Tools: {tools}\n"
         f"- Ignored requested tools: {ignored}\n"
+        f"- Rationale: {plan.get('rationale', '')}\n"
+    )
+
+
+def _render_action_route_markdown(plan: dict[str, Any], approved: tuple[str, ...]) -> str:
+    actions = ", ".join(plan["actions"]) if plan["actions"] else "none"
+    ignored = ", ".join(plan["ignored_actions"]) if plan["ignored_actions"] else "none"
+    approvals = ", ".join(approved) if approved else "none"
+    return (
+        "# PAL Ops Action Route\n\n"
+        f"- Lead agent: PAL\n"
+        f"- Verifier/executor: local approval gate\n"
+        f"- Plan source: {plan['source']}\n"
+        f"- Proposed actions: {actions}\n"
+        f"- Approved actions: {approvals}\n"
+        f"- Ignored requested actions: {ignored}\n"
         f"- Rationale: {plan.get('rationale', '')}\n"
     )
 
@@ -513,6 +1045,22 @@ def _render_operator_handoff(summary_text: str, observations_payload: dict[str, 
     )
 
 
+def _render_action_handoff(summary_text: str, action_payload: dict[str, Any]) -> str:
+    proposed = ", ".join(action_payload["proposed_actions"]) or "none"
+    executed = ", ".join(action_payload["executed_actions"]) or "none"
+    pending = ", ".join(action_payload["pending_approval"]) or "none"
+    ignored = ", ".join(action_payload["ignored_actions"]) or "none"
+    return (
+        "# PAL Action Request Handoff\n\n"
+        f"Proposed actions: {proposed}\n\n"
+        f"Executed actions: {executed}\n\n"
+        f"Pending approval: {pending}\n\n"
+        f"Ignored non-allow-listed actions: {ignored}\n\n"
+        "## Summary\n\n"
+        f"{summary_text.rstrip()}\n"
+    )
+
+
 def _fallback_summary(observations_payload: dict[str, Any], *, error: str = "") -> str:
     lines = ["# PAL Ops Triage Summary", ""]
     if error:
@@ -524,6 +1072,22 @@ def _fallback_summary(observations_payload: dict[str, Any], *, error: str = "") 
     lines.append("Observations:")
     for observation in observations_payload["observations"]:
         lines.append(f"- {observation.get('tool', 'unknown')}: {observation.get('status', 'unknown')} - {observation.get('summary', '')}")
+    return "\n".join(lines)
+
+
+def _fallback_action_summary(action_payload: dict[str, Any], *, error: str = "") -> str:
+    lines = ["# PAL Ops Action Summary", ""]
+    if error:
+        lines.append(f"PAL action summary generation failed: {error}")
+        lines.append("")
+    lines.append(f"Proposed actions: {', '.join(action_payload['proposed_actions']) or 'none'}")
+    lines.append(f"Executed actions: {', '.join(action_payload['executed_actions']) or 'none'}")
+    lines.append(f"Pending approval: {', '.join(action_payload['pending_approval']) or 'none'}")
+    lines.append(f"Ignored actions: {', '.join(action_payload['ignored_actions']) or 'none'}")
+    lines.append("")
+    lines.append("Action results:")
+    for row in action_payload["actions"]:
+        lines.append(f"- {row.get('action', 'unknown')}: {row.get('status', 'unknown')} - {row.get('summary', '')}")
     return "\n".join(lines)
 
 

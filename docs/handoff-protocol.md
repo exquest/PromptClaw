@@ -75,6 +75,31 @@ the local allow-list and records any unknown or destructive requested tools as
 ignored. Infrastructure changes remain operator approvals, not implicit
 handoffs.
 
+For `promptclaw pal agent actions`, the action layer records the approval gate
+explicitly:
+
+```text
+.promptclaw/runs/<run-id>/
+├── input/task.md
+├── routing/route.json
+├── routing/route.md
+├── prompts/action-plan.md
+├── outputs/action-context.json
+├── outputs/action-plan.raw.txt
+├── outputs/action-plan.json
+├── outputs/action-results.json
+├── prompts/action-summary.md
+├── handoffs/pal-action-request.md
+├── summary/final-summary.md
+├── logs/events.jsonl
+└── state.json
+```
+
+`action-results.json` is the authority for what happened: proposed action ids,
+approved action ids, ignored approvals, executed action results, and pending
+approvals. A proposed action with no matching `--approve ACTION_ID` remains
+`pending_approval`.
+
 ## Benefits
 
 - deterministic transfer point

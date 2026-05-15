@@ -7,9 +7,9 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from typing import Any
 
-from promptclaw.cli import cmd_pal_agent_triage
+from promptclaw.cli import cmd_pal_agent_actions, cmd_pal_agent_triage
 from promptclaw.config import default_project_config, save_config
-from promptclaw.pal_agent import PALOpsTool, run_pal_ops_triage
+from promptclaw.pal_agent import PALOpsAction, PALOpsTool, run_pal_ops_actions, run_pal_ops_triage
 from promptclaw.pal_client import PALQueryResult
 
 
@@ -140,6 +140,138 @@ def test_pal_agent_cli_triage_prints_run_summary(monkeypatch, tmp_path: Path) ->
     assert "PAL agent triage: COMPLETE" in rendered
     assert "run_id=20260515t190000z-pal-ops-triage" in rendered
     assert "executed_tools=pal_health" in rendered
+
+
+def test_pal_ops_actions_requires_explicit_approval_before_executing_actions(tmp_path: Path) -> None:
+    config = default_project_config("PAL Actions Proposal")
+    save_config(tmp_path, config)
+    executed: list[str] = []
+    tool_registry = {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Check PAL router health.",
+            run=lambda: _recorded_tool_result(executed, "pal_health"),
+        ),
+    }
+    action_registry = {
+        "inspect_logs_deep": PALOpsAction(
+            name="inspect_logs_deep",
+            description="Inspect PAL logs.",
+            approval_required=True,
+            mutating=False,
+            run=lambda: _recorded_tool_result(executed, "inspect_logs_deep"),
+        ),
+        "restart_router": PALOpsAction(
+            name="restart_router",
+            description="Restart the PAL router.",
+            approval_required=True,
+            mutating=True,
+            run=lambda: _recorded_tool_result(executed, "restart_router"),
+        ),
+    }
+    client = FakePALClient([
+        json.dumps({
+            "actions": ["inspect_logs_deep", "restart_router", "destroy_instance"],
+            "rationale": "Gather deeper evidence before restarting anything.",
+        }),
+        "Proposal only: no actions were approved.",
+    ])
+
+    result = run_pal_ops_actions(
+        tmp_path,
+        client=client,
+        tool_registry=tool_registry,
+        action_registry=action_registry,
+        default_tools=("pal_health",),
+        now=_fake_now(),
+    )
+
+    assert result["status"] == "complete"
+    assert executed == ["pal_health"]
+    assert result["pending_approval"] == ["inspect_logs_deep", "restart_router"]
+    assert result["executed_actions"] == []
+    assert result["ignored_actions"] == ["destroy_instance"]
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    action_results = json.loads((run_root / "outputs" / "action-results.json").read_text())
+    assert action_results["actions"][0]["status"] == "pending_approval"
+    assert action_results["actions"][1]["status"] == "pending_approval"
+    assert "no actions were approved" in (run_root / "summary" / "final-summary.md").read_text()
+
+
+def test_pal_ops_actions_executes_only_approved_allowlisted_actions(tmp_path: Path) -> None:
+    config = default_project_config("PAL Actions Approved")
+    save_config(tmp_path, config)
+    executed: list[str] = []
+    tool_registry = {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Check PAL router health.",
+            run=lambda: _recorded_tool_result(executed, "pal_health"),
+        ),
+    }
+    action_registry = {
+        "inspect_logs_deep": PALOpsAction(
+            name="inspect_logs_deep",
+            description="Inspect PAL logs.",
+            approval_required=True,
+            mutating=False,
+            run=lambda: _recorded_tool_result(executed, "inspect_logs_deep"),
+        ),
+        "restart_router": PALOpsAction(
+            name="restart_router",
+            description="Restart the PAL router.",
+            approval_required=True,
+            mutating=True,
+            run=lambda: _recorded_tool_result(executed, "restart_router"),
+        ),
+    }
+    client = FakePALClient([
+        json.dumps({
+            "actions": ["inspect_logs_deep", "restart_router"],
+            "rationale": "Inspect logs first.",
+        }),
+        "Executed approved log inspection; restart still needs approval.",
+    ])
+
+    result = run_pal_ops_actions(
+        tmp_path,
+        client=client,
+        tool_registry=tool_registry,
+        action_registry=action_registry,
+        approved_actions=("inspect_logs_deep", "destroy_instance"),
+        default_tools=("pal_health",),
+        now=_fake_now(),
+    )
+
+    assert executed == ["pal_health", "inspect_logs_deep"]
+    assert result["executed_actions"] == ["inspect_logs_deep"]
+    assert result["pending_approval"] == ["restart_router"]
+    assert result["ignored_approvals"] == ["destroy_instance"]
+
+
+def test_pal_agent_cli_actions_prints_approval_summary(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setattr("promptclaw.cli.run_pal_ops_actions", lambda project_root, task, approved_actions: {
+        "run_id": "20260515t191000z-pal-ops-actions",
+        "status": "complete",
+        "summary_path": ".promptclaw/runs/20260515t191000z-pal-ops-actions/summary/final-summary.md",
+        "proposed_actions": ["inspect_logs_deep", "restart_router"],
+        "executed_actions": ["inspect_logs_deep"],
+        "pending_approval": ["restart_router"],
+        "ignored_actions": [],
+        "ignored_approvals": [],
+        "plan_source": "pal",
+    })
+
+    output = io.StringIO()
+    args = argparse.Namespace(project_root=tmp_path, task="Act on PAL.", approve=["inspect_logs_deep"], json=False)
+    with redirect_stdout(output):
+        rc = cmd_pal_agent_actions(args)
+
+    assert rc == 0
+    rendered = output.getvalue()
+    assert "PAL agent actions: COMPLETE" in rendered
+    assert "executed_actions=inspect_logs_deep" in rendered
+    assert "pending_approval=restart_router" in rendered
 
 
 def _recorded_tool_result(executed: list[str], name: str) -> dict[str, Any]:
