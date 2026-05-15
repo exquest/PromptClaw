@@ -43,7 +43,7 @@ def get_world():
     global _world
     if _world is not None:
         return _world
-    from cypherclaw.narrative.world import WorldState
+    from cypherclaw.narrative.world import WorldState  # type: ignore[import-not-found]
 
     ws = WorldState(db_path=_resolve_db_path())
     ws.initialize()
@@ -56,7 +56,7 @@ def get_engine():
     global _engine
     if _engine is not None:
         return _engine
-    from cypherclaw.narrative.engine import NarrativeEngine
+    from cypherclaw.narrative.engine import NarrativeEngine  # type: ignore[import-not-found]
 
     eng = NarrativeEngine(db_path=_resolve_db_path())
     try:
@@ -80,7 +80,7 @@ def get_memory():
     global _memory
     if _memory is not None:
         return _memory
-    from cypherclaw.narrative.memory import NarrativeMemory
+    from cypherclaw.narrative.memory import NarrativeMemory  # type: ignore[import-not-found]
 
     ollama_url = os.environ.get("OLLAMA_URL", "http://localhost:11434")
     embed_model = os.environ.get("NARRATIVE_EMBED_MODEL", "nomic-embed-text:latest")

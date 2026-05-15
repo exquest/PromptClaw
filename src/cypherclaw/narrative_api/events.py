@@ -1,7 +1,6 @@
 """Narrative event log invocation and result normalization."""
 from __future__ import annotations
 
-import importlib
 import inspect
 from dataclasses import asdict, is_dataclass
 from typing import Any, Iterable, Mapping
@@ -28,7 +27,7 @@ def build_default_event_store() -> Any:
         return get_world_adapter()
     except Exception as exc:  # noqa: BLE001
         raise EventStoreUnavailableError(
-            f"cypherclaw narrative WorldState unavailable: {exc}"
+            f"NarrativeEventStore unavailable (cypherclaw narrative WorldState): {exc}"
         ) from exc
 
 

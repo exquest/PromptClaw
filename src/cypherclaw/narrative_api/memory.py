@@ -1,7 +1,6 @@
 """NarrativeMemory invocation and result normalization."""
 from __future__ import annotations
 
-import importlib
 import inspect
 from dataclasses import asdict, is_dataclass
 from typing import Any, Iterable, Mapping

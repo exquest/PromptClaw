@@ -7,6 +7,10 @@ import sys
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+import tempfile
+
+os.environ["PROMPTCLAW_PETS_FILE"] = os.path.join(tempfile.gettempdir(), "promptclaw_pets.json")
+os.environ["NUMBA_CACHE_DIR"] = os.path.join(tempfile.gettempdir(), "numba_cache")
 
 import pytest
 
