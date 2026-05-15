@@ -1,23 +1,52 @@
-# Requirements Register — Cypherclaw Narrative-Engine HTTP Service PRD (PromptClaw queue addendum)
+# Requirements Register — PAL 2026 Agentic Operations Platform PRD
 
-**Extracted:** 2026-05-02T00:13:47.318942+00:00
-**Total requirements:** 16
+**Extracted:** 2026-05-15T21:42:33.417472+00:00
+**Total requirements:** 45
 
 | ID | Description | Priority | Tier | Section |
 |----|-------------|----------|------|---------|
-| CN-001 | Domain-column migration: additive `ALTER TABLE entities ADD COLUMN domain TEXT DEFAULT 'shared'` and same on `events` table per `deniable_narrative_integration_v1.md` §3; non-breaking, existing rows default to 'shared'; runs as a `narrative/migrations/` Alembic step or equivalent | MUST | T1 |  |
-| CN-002 | FastAPI scaffold at `~/cypherclaw/src/cypherclaw/narrative_api/` with Pydantic settings (binding address, port, auth token from .env), uvicorn entry point, structured logging via structlog | MUST | T1 |  |
-| CN-003 | `GET /health` endpoint returning JSON `{status, narrative_engine_importable, world_db_reachable, ollama_reachable, version, uptime_seconds}` | MUST | T1 |  |
-| CN-004 | Shared-secret auth: optional `X-Narrative-Auth` header validated against env-var token; if `NARRATIVE_AUTH_TOKEN` is unset, auth is disabled (warning logged); if set, mismatched/missing token returns 401 | MUST | T1 |  |
-| CN-005 | `POST /beats/next` — wraps `NarrativeEngine.next_beat()` per integration spec §6; accepts `{cycle_number, domain_filter, arc_position_target?, force_arc_event?}`, returns serialized `StoryBeat` JSON | MUST | T2 |  |
-| CN-006 | `GET /world/entities?domain=…&type=…` — returns entities filtered by domain (defaults to 'shared') and optional type; pagination via `limit + offset` | MUST | T1 |  |
-| CN-007 | `GET /world/entities/{entity_id}` — returns single entity with full properties JSON; 404 if not found | MUST | T1 |  |
-| CN-008 | `POST /world/entities` — create new entity with `{type, name, domain, properties}`; validates domain in `{shared, cypherclaw, deniable}`; returns created entity with assigned ID | MUST | T2 |  |
-| CN-009 | `PATCH /world/entities/{entity_id}` — apply state mutations to entity per integration spec `StateMutation` shape (set/increment/decrement/append/remove on field path); returns updated entity | MUST | T2 |  |
-| CN-010 | `POST /memory/search` — wraps `NarrativeMemory` semantic search; accepts `{query, k, domain_filter}`, returns ranked results | MUST | T2 |  |
-| CN-011 | `GET /events?since_event_id=…&domain=…` — paginated event log read; supports incremental tail-reading from a known event ID | MUST | T1 |  |
-| CN-012 | `POST /events` — append a narrative event to the world state event log; used by Deniable to record raid outcomes that should propagate via shared narrative state | MUST | T2 |  |
-| CN-013 | systemd user service `cypherclaw-narrative-api.service` enabled and started; survives reboot; logs to journal | MUST | T1 |  |
-| CN-014 | Pytest test suite covering each endpoint with at least: success path, auth failure (when enabled), bad input validation, downstream-engine error handling | MUST | T2 |  |
-| CN-015 | Update PromptClaw `ESCALATIONS.md` with operator action items: enable systemd user-service lingering (`loginctl enable-linger user`) so the service runs without an active SSH session; configure `NARRATIVE_AUTH_TOKEN` if defense-in-depth desired; document Deniable Mac's Tailscale IP in firewall allowlist (if any) | MUST | T1 |  |
-| CN-016 | Smoke test from Deniable: a small CLI script (`scripts/smoke_narrative.py` in the cypherclaw repo) that calls each endpoint and confirms reachability; documented in README so the Deniable operator can validate from the Mac after Tailscale connection | SHOULD | T1 |  |
+| PAL-001 | Document the current PAL product surface. | MUST | T1 |  |
+| PAL-002 | Add JSON export for PAL action metadata. | MUST | T1 |  |
+| PAL-003 | Add `promptclaw pal agent approve` parser wiring. | MUST | T1 |  |
+| PAL-004 | Load saved PAL action plans by run id. | MUST | T1 |  |
+| PAL-005 | Reject approvals for actions absent from the saved plan. | MUST | T1 |  |
+| PAL-006 | Reject approvals for unknown action ids. | MUST | T1 |  |
+| PAL-007 | Execute an approved saved action without a model call. | MUST | T1 |  |
+| PAL-008 | Write approval execution artifacts. | MUST | T1 |  |
+| PAL-009 | Link approval execution artifacts to the source plan. | MUST | T1 |  |
+| PAL-010 | Harden `restart_router` for host-managed PAL. | MUST | T1 |  |
+| PAL-011 | Keep Docker restart as fallback only. | MUST | T1 |  |
+| PAL-012 | Add fake SSH runner support for PAL tests. | MUST | T1 |  |
+| PAL-013 | Create PAL source discovery function. | MUST | T2 |  |
+| PAL-014 | Add deterministic PAL knowledge chunking. | MUST | T2 |  |
+| PAL-015 | Add PAL knowledge index writer. | MUST | T2 |  |
+| PAL-016 | Add PAL knowledge query command. | MUST | T2 |  |
+| PAL-017 | Inject PAL knowledge into workflow prompts. | MUST | T2 |  |
+| PAL-018 | Add slow-inference context collection. | MUST | T2 |  |
+| PAL-019 | Add slow-inference diagnosis CLI. | MUST | T2 |  |
+| PAL-020 | Add restart-validation workflow. | MUST | T2 |  |
+| PAL-021 | Add shutdown-audit workflow. | MUST | T2 |  |
+| PAL-022 | Add Phase 2 readiness workflow. | MUST | T2 |  |
+| PAL-023 | Standardize PAL workflow `run-summary.json`. | MUST | T1 |  |
+| PAL-024 | Add PAL workflow artifact verifier. | MUST | T1 |  |
+| PAL-025 | Add PAL secret redaction verifier. | MUST | T1 |  |
+| PAL-026 | Add PAL escalation artifact helper. | MUST | T1 |  |
+| PAL-027 | Create repo-managed PAL deployment manifest. | MUST | T2 |  |
+| PAL-028 | Implement deploy diff model. | MUST | T2 |  |
+| PAL-029 | Implement deploy-plan CLI. | MUST | T2 |  |
+| PAL-030 | Implement deploy backup primitive. | SHOULD | T2 |  |
+| PAL-031 | Implement approved deploy-apply CLI. | SHOULD | T2 |  |
+| PAL-032 | Implement rollback primitive. | SHOULD | T2 |  |
+| PAL-033 | Add `promptclaw pal deploy rollback --approve-rollback`. | SHOULD | T2 |  |
+| PAL-034 | Add PAL deployment metadata model. | SHOULD | T1 |  |
+| PAL-035 | Add `promptclaw pal cost`. | SHOULD | T1 |  |
+| PAL-036 | Add Vast connector stub boundary. | MUST | T2 |  |
+| PAL-037 | Add Vast secret redaction tests. | MUST | T1 |  |
+| PAL-038 | Update architecture documentation. | MUST | T1 |  |
+| PAL-039 | Update command reference documentation. | MUST | T1 |  |
+| PAL-040 | Update PAL project guide. | MUST | T1 |  |
+| PAL-041 | Add fake-client CLI tests for PAL workflows. | MUST | T2 |  |
+| PAL-042 | Add opt-in live PAL verification marker or script. | MUST | T1 |  |
+| PAL-043 | Document live PAL verification commands. | MUST | T1 |  |
+| PAL-044 | Create SDP handoff page. | MUST | T1 |  |
+| PAL-045 | Update changelog for PAL agentic ops. | MUST | T1 |  |

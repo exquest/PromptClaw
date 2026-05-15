@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~28m remaining (3 tasks, low confidence, calibrating)
-Expected completion: 3:45 AM today.
-Progress: [██████████████████████████████████████] 99%  389 / 392 tasks complete
-  completed: 389, pending: 0, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
+ETC: ~8h 9m remaining (48 tasks, low confidence, calibrating)
+Expected completion: 10:52 PM today.
+Progress: [██████████████████████████████████░░░░] 89%  389 / 437 tasks complete
+  completed: 389, pending: 45, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -433,3 +433,48 @@ Progress: [███████████████████████
 - **frac-0119**: complete — Completed with verdict PASS.
 - **frac-0120**: complete — Completed with verdict PASS.
 - **frac-0121**: complete — Completed with verdict PASS.
+- **T-001@20260515T214233Z**: pending — Pending.
+- **T-002@20260515T214233Z**: pending — Pending.
+- **T-003@20260515T214233Z**: pending — Pending.
+- **T-004@20260515T214233Z**: pending — Pending.
+- **T-005@20260515T214233Z**: pending — Pending.
+- **T-006@20260515T214233Z**: pending — Pending.
+- **T-007@20260515T214233Z**: pending — Pending.
+- **T-008@20260515T214233Z**: pending — Pending.
+- **T-009@20260515T214233Z**: pending — Pending.
+- **T-010@20260515T214233Z**: pending — Pending.
+- **T-011@20260515T214233Z**: pending — Pending.
+- **T-012@20260515T214233Z**: pending — Pending.
+- **T-013@20260515T214233Z**: pending — Pending.
+- **T-014@20260515T214233Z**: pending — Pending.
+- **T-015@20260515T214233Z**: pending — Pending.
+- **T-016@20260515T214233Z**: pending — Pending.
+- **T-017@20260515T214233Z**: pending — Pending.
+- **T-018@20260515T214233Z**: pending — Pending.
+- **T-019@20260515T214233Z**: pending — Pending.
+- **T-020@20260515T214233Z**: pending — Pending.
+- **T-021@20260515T214233Z**: pending — Pending.
+- **T-022@20260515T214233Z**: pending — Pending.
+- **T-023@20260515T214233Z**: pending — Pending.
+- **T-024@20260515T214233Z**: pending — Pending.
+- **T-025@20260515T214233Z**: pending — Pending.
+- **T-026@20260515T214233Z**: pending — Pending.
+- **T-027@20260515T214233Z**: pending — Pending.
+- **T-028@20260515T214233Z**: pending — Pending.
+- **T-029@20260515T214233Z**: pending — Pending.
+- **T-030@20260515T214233Z**: pending — Pending.
+- **T-031@20260515T214233Z**: pending — Pending.
+- **T-032@20260515T214233Z**: pending — Pending.
+- **T-033@20260515T214233Z**: pending — Pending.
+- **T-034@20260515T214233Z**: pending — Pending.
+- **T-035@20260515T214233Z**: pending — Pending.
+- **T-036@20260515T214233Z**: pending — Pending.
+- **T-037@20260515T214233Z**: pending — Pending.
+- **T-038@20260515T214233Z**: pending — Pending.
+- **T-039@20260515T214233Z**: pending — Pending.
+- **T-040@20260515T214233Z**: pending — Pending.
+- **T-041@20260515T214233Z**: pending — Pending.
+- **T-042@20260515T214233Z**: pending — Pending.
+- **T-043@20260515T214233Z**: pending — Pending.
+- **T-044@20260515T214233Z**: pending — Pending.
+- **T-045@20260515T214233Z**: pending — Pending.

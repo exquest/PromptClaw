@@ -222,8 +222,8 @@ Do not assume Docker is running on the PAL host. Docker support can remain as a 
 | PAL-033 | Add `promptclaw pal deploy rollback --approve-rollback`. | SHOULD | T2 | Command refuses rollback without approval flag. |
 | PAL-034 | Add PAL deployment metadata model. | SHOULD | T1 | Metadata stores hourly rate, runtime estimate, and optional Vast instance id. |
 | PAL-035 | Add `promptclaw pal cost`. | SHOULD | T1 | Command prints hourly, daily, and monthly burn estimates. |
-| PAL-036 | Add Vast connector stub boundary. | SHOULD | T2 | No rent/destroy/start/stop action is callable by default. |
-| PAL-037 | Add Vast secret redaction tests. | SHOULD | T1 | Tests reject persisted Vast API key values. |
+| PAL-036 | Add Vast connector stub boundary. | MUST | T2 | No rent/destroy/start/stop action is callable by default. |
+| PAL-037 | Add Vast secret redaction tests. | MUST | T1 | Tests reject persisted Vast API key values. |
 | PAL-038 | Update architecture documentation. | MUST | T1 | Docs include a PAL platform section. |
 | PAL-039 | Update command reference documentation. | MUST | T1 | Docs list all new `promptclaw pal` commands. |
 | PAL-040 | Update PAL project guide. | MUST | T1 | `pal-2026/docs/PROJECT_GUIDE.md` names the new operator loop. |
@@ -332,13 +332,13 @@ The deploy implementation must support the current host-managed PAL runtime. It 
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| SDP agents assume Docker because older guide used Docker | High | Medium | PRD explicitly states current PAL is host-managed; tests must verify host-managed command paths. |
+| SDP agents assume Docker because older guide used Docker | High | Medium | PAL-010 and PAL-011 require host-managed restart selection tests and Docker fallback-only behavior. |
 | Approval replay accidentally re-plans with model and executes a different action | Medium | High | PAL-002 forbids model calls during replay; tests must assert fake client is not called. |
-| Knowledge index grows with noisy run artifacts | Medium | Low | Chunking must skip raw huge logs by default and prefer summaries; include source count and skipped files. |
-| Live deployment apply breaks the PAL router | Medium | High | Dry-run first, backup before write, restart only approved service, live health and smoke after deploy. |
+| Knowledge index grows with noisy run artifacts | Medium | Low | PAL-013 through PAL-015 bind source discovery, chunking, and index writing to deterministic tests. |
+| Live deployment apply breaks the PAL router | Medium | High | PAL-029 through PAL-031 require deploy plan, backup primitive, and explicit apply approval. |
 | Secrets leak into artifacts | Medium | High | Verifier gate scans artifacts for env var names, key paths, and token-like values. |
-| PAL recommends Phase 2 too early | Medium | Medium | Phase 2 workflow is report-only and checks prerequisites; no Phase 2 action registry entries. |
-| Vast API connector causes spend or destructive actions | Low | High | API connector is docs/stub only unless later explicitly approved; no spend actions callable by default. |
+| PAL recommends Phase 2 too early | Medium | Medium | PAL-022 requires a report-only workflow with no Phase 2 execution action. |
+| Vast API connector causes spend or destructive actions | Low | High | PAL-036 and PAL-037 require stub-only Vast boundary and secret redaction tests. |
 
 ---
 
