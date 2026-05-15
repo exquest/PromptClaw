@@ -420,6 +420,100 @@ def test_pal_ops_actions_prompt_artifacts_include_bounded_knowledge_context(tmp_
     assert result["pending_approval"] == ["inspect_logs_deep", "restart_router"]
 
 
+def test_pal_slow_inference_context_captures_health_baseline_gpu_and_logs(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from promptclaw.pal_agent import run_pal_slow_inference_context
+
+    config = default_project_config("PAL Slow Inference Context")
+    save_config(tmp_path, config)
+    reports_dir = tmp_path / ".promptclaw" / "pal-smoke"
+    reports_dir.mkdir(parents=True)
+    (reports_dir / "pal-smoke-20260515T180000Z.json").write_text(json.dumps({
+        "status": "pass",
+        "started_at": "2026-05-15T18:00:00+00:00",
+        "summary": {"passed": 3, "failed": 0, "total_latency_s": 30.0},
+        "checks": [
+            {"id": "reachability", "status": "pass", "latency_s": 10.0, "tokens_per_second": 8.0},
+            {"id": "configuration", "status": "pass", "latency_s": 9.0, "tokens_per_second": 12.0},
+            {"id": "operational_triage", "status": "pass", "latency_s": 11.0, "tokens_per_second": 16.0},
+        ],
+    }))
+    runner = FakeSSHRunner(
+        [
+            {
+                "exit_code": 0,
+                "stdout": "NVIDIA RTX A6000, 12000, 49140, 97\npython, 4321",
+                "stderr": "",
+            },
+            {
+                "exit_code": 0,
+                "stdout": "router total_duration=9000000000\nollama eval_count=12 eval_duration=6000000000",
+                "stderr": "",
+            },
+        ]
+    )
+    monkeypatch.setattr("promptclaw.pal_agent._run_ssh_command", runner)
+
+    result = run_pal_slow_inference_context(
+        tmp_path,
+        task="Diagnose PAL slow inference at 2 tokens per second.",
+        client=FakePALClient([]),
+        now=_fake_now(),
+    )
+
+    assert result["status"] == "complete"
+    assert result["workflow_id"] == "slow_inference_context"
+    assert result["executed_tools"] == [
+        "pal_health",
+        "pal_smoke_baseline",
+        "gpu_hints",
+        "slow_inference_logs",
+    ]
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    context = json.loads((run_root / "outputs" / "slow-inference-context.json").read_text())
+    observations = {row["tool"]: row for row in context["observations"]}
+    assert context["workflow_id"] == "slow_inference_context"
+    assert context["baseline_tokens_per_second"] == 12.0
+    assert observations["pal_health"]["health"]["status"] == "green"
+    assert observations["pal_smoke_baseline"]["baseline_tokens_per_second"] == 12.0
+    assert "NVIDIA RTX A6000" in observations["gpu_hints"]["command"]["stdout"]
+    assert "ollama eval_count=12" in observations["slow_inference_logs"]["command"]["stdout"]
+    assert "nvidia-smi --query-gpu" in runner.calls[0]["remote_command"]
+    assert "/opt/pal/logs/router.log" in runner.calls[1]["remote_command"]
+    assert (run_root / "handoffs" / "slow-inference-context.md").exists()
+
+
+def test_pal_slow_inference_context_skips_optional_remote_hints_without_ssh(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from promptclaw.pal_agent import run_pal_slow_inference_context
+
+    config = default_project_config("PAL Slow Inference No SSH")
+    save_config(tmp_path, config)
+    for key in ("PAL_SSH_HOST", "PAL_SSH_PORT", "PAL_SSH_KEY"):
+        monkeypatch.delenv(key, raising=False)
+
+    result = run_pal_slow_inference_context(
+        tmp_path,
+        client=FakePALClient([]),
+        now=_fake_now(),
+    )
+
+    assert result["status"] == "complete"
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    context = json.loads((run_root / "outputs" / "slow-inference-context.json").read_text())
+    observations = {row["tool"]: row for row in context["observations"]}
+    assert context["baseline_tokens_per_second"] is None
+    assert observations["pal_smoke_baseline"]["status"] == "skipped"
+    assert observations["gpu_hints"]["status"] == "skipped"
+    assert observations["slow_inference_logs"]["status"] == "skipped"
+    assert "SSH diagnostics skipped" in observations["gpu_hints"]["summary"]
+    assert "SSH diagnostics skipped" in observations["slow_inference_logs"]["summary"]
+
+
 def test_pal_agent_cli_actions_prints_approval_summary(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr("promptclaw.cli.run_pal_ops_actions", lambda project_root, task, approved_actions: {
         "run_id": "20260515t191000z-pal-ops-actions",
