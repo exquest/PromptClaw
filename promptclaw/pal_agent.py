@@ -74,6 +74,21 @@ DEFAULT_ACTION_TASK = (
     "behind explicit human approval."
 )
 
+DEFAULT_SLOW_INFERENCE_TASK = (
+    "Collect read-only PAL 2026 slow-inference context. Capture router health, "
+    "saved smoke baseline token throughput, GPU resource hints, and recent PAL "
+    "router/Ollama logs when SSH diagnostics are configured."
+)
+
+SLOW_INFERENCE_WORKFLOW_ID = "slow_inference_context"
+
+DEFAULT_SLOW_INFERENCE_CONTEXT_TOOL_ORDER: tuple[str, ...] = (
+    "pal_health",
+    "pal_smoke_baseline",
+    "gpu_hints",
+    "slow_inference_logs",
+)
+
 PAL_AGENT_SYSTEM_PROMPT = (
     "You are PAL 2026 operating through PromptClaw's bounded agent runtime. "
     "You may choose diagnostics from the provided allow-list only. You cannot run "
@@ -459,6 +474,129 @@ def run_pal_ops_actions(
     }
 
 
+def run_pal_slow_inference_context(
+    project_root: Path,
+    *,
+    task: str = DEFAULT_SLOW_INFERENCE_TASK,
+    client: PALAgentClient | None = None,
+    tool_registry: dict[str, PALOpsTool] | None = None,
+    default_tools: tuple[str, ...] = DEFAULT_SLOW_INFERENCE_CONTEXT_TOOL_ORDER,
+    now: Callable[[], str] = utc_now,
+) -> dict[str, Any]:
+    project_root = project_root.resolve()
+    config = load_config(project_root)
+    paths = ProjectPaths(project_root=project_root, config=config)
+    pal_client = client or PALRouterClient.from_config(config)
+    tools = tool_registry or build_slow_inference_context_tool_registry(project_root, pal_client)
+
+    created_at = now()
+    run_id = _build_run_id(created_at, "pal-slow-inference-context")
+    artifacts = ArtifactManager(paths, run_id)
+    artifacts.create_run_layout()
+    artifacts.write_task(task)
+
+    state = RunState(
+        run_id=run_id,
+        title="PAL Slow Inference Context",
+        status="running",
+        current_phase="context",
+        created_at=created_at,
+        updated_at=created_at,
+        task_text=task,
+        lead_agent="local-allowlist",
+        verifier_agent="local-allowlist",
+        route_decision={
+            "task_type": SLOW_INFERENCE_WORKFLOW_ID,
+            "workflow_id": SLOW_INFERENCE_WORKFLOW_ID,
+            "lead_agent": "local-allowlist",
+            "verifier_agent": "local-allowlist",
+            "reason": "PromptClaw collects fixed read-only slow-inference diagnostics.",
+        },
+    )
+
+    _record_event(
+        artifacts,
+        state,
+        now,
+        event_type="pal_agent.slow_inference_context_started",
+        message="PAL slow-inference context collection started.",
+        phase="context",
+        agent="local-allowlist",
+        role="verifier",
+    )
+
+    context_tools = [name for name in default_tools if name in tools]
+    observations: list[dict[str, Any]] = []
+    for tool_name in context_tools:
+        observation = _run_tool(tools[tool_name])
+        observations.append(observation)
+        _record_event(
+            artifacts,
+            state,
+            now,
+            event_type="pal_agent.slow_inference_context_observed",
+            message=f"{tool_name} returned {observation['status']}.",
+            phase="context",
+            agent="local-allowlist",
+            role="verifier",
+            extra={"tool": tool_name, "status": observation["status"]},
+        )
+
+    baseline_tokens_per_second = _baseline_tokens_per_second_from_observations(observations)
+    context_payload = {
+        "workflow_id": SLOW_INFERENCE_WORKFLOW_ID,
+        "task": task,
+        "executed_tools": context_tools,
+        "baseline_tokens_per_second": baseline_tokens_per_second,
+        "observations": observations,
+    }
+    context_path = artifacts.write_output("slow-inference-context.json", _json_dumps(context_payload))
+    artifacts.write_route_json({
+        "lead_agent": "local-allowlist",
+        "verifier_agent": "local-allowlist",
+        "task_type": SLOW_INFERENCE_WORKFLOW_ID,
+        "workflow_id": SLOW_INFERENCE_WORKFLOW_ID,
+        "tools": context_tools,
+        "output_path": _relative_path(project_root, context_path),
+    })
+    artifacts.write_route_markdown(_render_slow_inference_route_markdown(context_tools))
+
+    state.current_phase = "summary"
+    summary_text = _render_slow_inference_context_summary(context_payload)
+    summary_path = artifacts.write_summary("final-summary.md", summary_text)
+    artifacts.write_handoff(
+        "slow-inference-context.md",
+        _render_slow_inference_context_handoff(context_payload),
+    )
+
+    state.status = "complete"
+    state.current_phase = "complete"
+    state.updated_at = now()
+    state.final_summary_path = _relative_path(project_root, summary_path)
+    _record_event(
+        artifacts,
+        state,
+        now,
+        event_type="pal_agent.slow_inference_context_completed",
+        message="PAL slow-inference context collection completed.",
+        phase="complete",
+        agent="local-allowlist",
+        role="verifier",
+        extra={"summary_path": state.final_summary_path},
+    )
+    StateStore(paths).save(state)
+
+    return {
+        "run_id": run_id,
+        "workflow_id": SLOW_INFERENCE_WORKFLOW_ID,
+        "status": state.status,
+        "summary_path": state.final_summary_path,
+        "executed_tools": context_tools,
+        "tool_count": len(context_tools),
+        "baseline_tokens_per_second": baseline_tokens_per_second,
+    }
+
+
 def build_default_tool_registry(project_root: Path, client: PALAgentClient) -> dict[str, PALOpsTool]:
     return {
         "pal_health": PALOpsTool(
@@ -480,6 +618,34 @@ def build_default_tool_registry(project_root: Path, client: PALAgentClient) -> d
             name="ssh_process_check",
             description="If PAL_SSH_* env vars are configured, run a fixed read-only remote process/log check.",
             run=_ssh_process_check_tool,
+        ),
+    }
+
+
+def build_slow_inference_context_tool_registry(
+    project_root: Path,
+    client: PALAgentClient,
+) -> dict[str, PALOpsTool]:
+    return {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Call the configured PAL router /health endpoint.",
+            run=lambda: _pal_health_tool(client),
+        ),
+        "pal_smoke_baseline": PALOpsTool(
+            name="pal_smoke_baseline",
+            description="Summarize saved PAL smoke reports and baseline token throughput.",
+            run=lambda: _pal_smoke_baseline_tool(project_root),
+        ),
+        "gpu_hints": PALOpsTool(
+            name="gpu_hints",
+            description="Collect fixed read-only GPU utilization and process hints over configured SSH.",
+            run=_gpu_hints_tool,
+        ),
+        "slow_inference_logs": PALOpsTool(
+            name="slow_inference_logs",
+            description="Collect fixed read-only PAL router/Ollama log tails over configured SSH.",
+            run=_slow_inference_logs_tool,
         ),
     }
 
@@ -588,6 +754,7 @@ def _pal_health_tool(client: PALAgentClient) -> dict[str, Any]:
 def _pal_smoke_baseline_tool(project_root: Path) -> dict[str, Any]:
     reports = load_smoke_reports(project_root)
     summary = summarize_smoke_reports(reports)
+    baseline_tokens_per_second = _baseline_tokens_per_second_from_summary(summary)
     status = "ok"
     if summary["report_count"] == 0:
         status = "skipped"
@@ -600,7 +767,36 @@ def _pal_smoke_baseline_tool(project_root: Path) -> dict[str, Any]:
             f"{float(summary['pass_rate']) * 100:.1f}% pass rate."
         ),
         "baseline": summary,
+        "baseline_tokens_per_second": baseline_tokens_per_second,
     }
+
+
+def _baseline_tokens_per_second_from_summary(summary: dict[str, Any]) -> float | None:
+    prompts = summary.get("prompts", {})
+    if not isinstance(prompts, dict):
+        return None
+    values: list[float] = []
+    for prompt_summary in prompts.values():
+        if not isinstance(prompt_summary, dict):
+            continue
+        value = prompt_summary.get("avg_tokens_per_second")
+        if isinstance(value, int | float):
+            values.append(float(value))
+    if not values:
+        return None
+    return round(sum(values) / len(values), 3)
+
+
+def _baseline_tokens_per_second_from_observations(
+    observations: list[dict[str, Any]],
+) -> float | None:
+    for observation in observations:
+        if observation.get("tool") != "pal_smoke_baseline":
+            continue
+        value = observation.get("baseline_tokens_per_second")
+        if isinstance(value, int | float):
+            return float(value)
+    return None
 
 
 def _tailscale_status_tool() -> dict[str, Any]:
@@ -646,6 +842,60 @@ def _ssh_process_check_tool() -> dict[str, Any]:
         "summary": "Read-only SSH process/log diagnostic completed."
         if status == "ok"
         else "Read-only SSH process/log diagnostic returned a non-zero exit.",
+        "command": result,
+    }
+
+
+def _gpu_hints_tool() -> dict[str, Any]:
+    remote_command = (
+        "printf '%s\\n' '--- gpu summary ---'; "
+        "if command -v nvidia-smi >/dev/null 2>&1; then "
+        "nvidia-smi --query-gpu=name,memory.used,memory.total,utilization.gpu,temperature.gpu,power.draw "
+        "--format=csv,noheader,nounits; "
+        "printf '%s\\n' '--- gpu processes ---'; "
+        "nvidia-smi --query-compute-apps=pid,process_name,used_gpu_memory "
+        "--format=csv,noheader,nounits 2>/dev/null || true; "
+        "else printf '%s\\n' 'nvidia-smi unavailable'; fi"
+    )
+    result = _run_ssh_command(remote_command, timeout_s=20)
+    if result.get("skipped"):
+        status = "skipped"
+    else:
+        status = "ok" if result["exit_code"] == 0 else "warn"
+    return {
+        "status": status,
+        "summary": _action_status_summary(
+            status,
+            ok="Read-only GPU hint diagnostic completed.",
+            skipped=str(result["stderr"]),
+            problem="Read-only GPU hint diagnostic returned a non-zero exit.",
+        ),
+        "command": result,
+    }
+
+
+def _slow_inference_logs_tool() -> dict[str, Any]:
+    remote_command = (
+        "printf '%s\\n' '--- pal router log ---'; "
+        "tail -n 120 /opt/pal/logs/router.log 2>/dev/null || true; "
+        "printf '%s\\n' '--- pal ollama log ---'; "
+        "tail -n 120 /opt/pal/logs/ollama.log 2>/dev/null || true; "
+        "printf '%s\\n' '--- pal startup log ---'; "
+        "tail -n 80 /opt/pal/logs/start_all.log 2>/dev/null || true"
+    )
+    result = _run_ssh_command(remote_command, timeout_s=25)
+    if result.get("skipped"):
+        status = "skipped"
+    else:
+        status = "ok" if result["exit_code"] == 0 else "warn"
+    return {
+        "status": status,
+        "summary": _action_status_summary(
+            status,
+            ok="Read-only PAL slow-inference log collection completed.",
+            skipped=str(result["stderr"]),
+            problem="Read-only PAL slow-inference log collection returned a non-zero exit.",
+        ),
         "command": result,
     }
 
@@ -1162,6 +1412,45 @@ def _render_action_handoff(summary_text: str, action_payload: dict[str, Any]) ->
         f"Ignored non-allow-listed actions: {ignored}\n\n"
         "## Summary\n\n"
         f"{summary_text.rstrip()}\n"
+    )
+
+
+def _render_slow_inference_route_markdown(context_tools: list[str]) -> str:
+    tools = ", ".join(context_tools) if context_tools else "none"
+    return (
+        "# PAL Slow-Inference Context Route\n\n"
+        f"- Workflow id: {SLOW_INFERENCE_WORKFLOW_ID}\n"
+        f"- Lead agent: local allow-list\n"
+        f"- Verifier/executor: local allow-list\n"
+        f"- Tools: {tools}\n"
+        "- Mutating actions: none\n"
+    )
+
+
+def _render_slow_inference_context_summary(context_payload: dict[str, Any]) -> str:
+    lines = ["# PAL Slow-Inference Context", ""]
+    baseline_tps = context_payload.get("baseline_tokens_per_second")
+    lines.append(f"Workflow id: {context_payload['workflow_id']}")
+    lines.append(f"Baseline tokens/s: {baseline_tps if baseline_tps is not None else 'unavailable'}")
+    lines.append("")
+    lines.append("Observations:")
+    for observation in context_payload["observations"]:
+        lines.append(
+            f"- {observation.get('tool', 'unknown')}: "
+            f"{observation.get('status', 'unknown')} - {observation.get('summary', '')}"
+        )
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _render_slow_inference_context_handoff(context_payload: dict[str, Any]) -> str:
+    executed = ", ".join(context_payload["executed_tools"]) or "none"
+    return (
+        "# PAL Slow-Inference Context Handoff\n\n"
+        f"Workflow id: {context_payload['workflow_id']}\n\n"
+        f"Executed diagnostics: {executed}\n\n"
+        f"Baseline tokens/s: {context_payload.get('baseline_tokens_per_second')}\n\n"
+        "This artifact is read-only context for a later slow-inference diagnosis. "
+        "It does not approve or execute infrastructure changes.\n"
     )
 
 
