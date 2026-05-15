@@ -150,6 +150,8 @@ promptclaw pal kb build PROJECT_ROOT
 promptclaw pal kb build PROJECT_ROOT --max-chars 4000 --json
 promptclaw pal kb query PROJECT_ROOT --query "router restart"
 promptclaw pal kb query PROJECT_ROOT --query "router restart" --limit 3 --json
+promptclaw pal diagnose slow-inference PROJECT_ROOT
+promptclaw pal diagnose slow-inference PROJECT_ROOT --json
 promptclaw pal agent triage PROJECT_ROOT
 promptclaw pal agent actions PROJECT_ROOT
 promptclaw pal agent actions PROJECT_ROOT --approve inspect_logs_deep
@@ -199,10 +201,20 @@ plan and summary prompts carry the same bounded local `Knowledge Context`
 section without changing what actions may execute.
 
 The slow-inference context workflow currently exists as a read-only internal PAL
-workflow primitive rather than a `promptclaw` command. It writes
+workflow primitive. It writes
 `.promptclaw/runs/<run-id>/outputs/slow-inference-context.json` with health,
 baseline token/s, optional GPU hints, and optional router/Ollama logs; PAL-019
-will add the operator-facing diagnosis CLI.
+adds the operator-facing diagnosis CLI.
+
+`pal diagnose slow-inference` runs the same fixed read-only evidence collectors
+and writes a diagnosis run under `.promptclaw/runs/<run-id>/`, including
+`outputs/slow-inference-diagnosis.json`, route metadata, events, a summary, and a
+handoff. The command derives local findings such as low saved token/s baseline,
+log-observed throughput regression, non-green router health, or GPU saturation
+when those signals are available. It exposes no action ids and records
+`mutating_actions: []`; any restart, shutdown, rental, key, firewall, or config
+change remains outside this command and requires a separate approval-gated
+workflow.
 
 Current action ids:
 

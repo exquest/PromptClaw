@@ -123,8 +123,28 @@ read-only context collection rather than a PAL-authored plan. It records:
 `slow-inference-context.json` captures router health, smoke baseline token/s,
 GPU hints, and PAL router/Ollama logs when available. The GPU and log tools are
 fixed read-only SSH diagnostics; if SSH is not configured they record `skipped`
-observations instead of failing or prompting for credentials. CLI wiring for a
-user-facing diagnosis command remains future PAL-019 work.
+observations instead of failing or prompting for credentials.
+
+The slow-inference diagnosis CLI uses the same artifact transport:
+
+```text
+.promptclaw/runs/<run-id>/
+├── input/task.md
+├── routing/route.json
+├── routing/route.md
+├── outputs/slow-inference-diagnosis.json
+├── handoffs/slow-inference-diagnosis.md
+├── summary/final-summary.md
+├── logs/events.jsonl
+└── state.json
+```
+
+`promptclaw pal diagnose slow-inference PROJECT_ROOT` reuses fixed read-only
+health, baseline, GPU, and log diagnostics, then derives local findings for
+baseline token/s, live log token/s, router health, and GPU utilization. The
+diagnosis payload and route metadata both record `mutating_actions: []`; the
+command writes only local PromptClaw run artifacts and does not approve or
+execute infrastructure changes.
 
 ## Benefits
 

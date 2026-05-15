@@ -144,8 +144,16 @@ latency investigations. It is callable from code as
 `outputs/slow-inference-context.json` with router health, saved smoke baseline
 token/s, optional GPU hints, and optional router/Ollama log tails. GPU and log
 collection use fixed SSH diagnostics and report `skipped` when PAL SSH
-environment variables are absent. There is no operator-facing CLI for this
-workflow yet; the diagnosis command is reserved for the PAL-019 follow-up.
+environment variables are absent.
+
+The operator-facing slow-inference diagnosis command is
+`promptclaw pal diagnose slow-inference PROJECT_ROOT`. It reuses those same
+fixed read-only collectors, writes `outputs/slow-inference-diagnosis.json`, and
+derives deterministic findings for low baseline token/s, log-observed throughput
+regression, non-green router health, missing evidence, and GPU saturation. The
+route and diagnosis artifacts record `mutating_actions: []`; the command has no
+approval surface and does not restart services, change config, alter cloud
+rentals, or write remote files.
 
 Every PAL agent run uses the standard `.promptclaw/runs/<run-id>/` layout so the
 plan, observations, approvals, results, summary, events, and state remain

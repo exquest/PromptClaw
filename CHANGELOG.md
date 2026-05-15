@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added PAL slow-inference diagnosis CLI (T-010@20260515T214233Z):
+  `promptclaw pal diagnose slow-inference PROJECT_ROOT` now writes a read-only
+  `.promptclaw/runs/<run-id>/outputs/slow-inference-diagnosis.json` artifact
+  with health, baseline token/s, optional GPU/log evidence, deterministic
+  findings, and `mutating_actions: []`.
+
 - Added PAL slow-inference context collection (T-009@20260515T214233Z): `run_pal_slow_inference_context(...)` now writes a read-only `.promptclaw/runs/<run-id>/outputs/slow-inference-context.json` artifact with router health, saved smoke baseline token/s, optional GPU hints, and optional PAL router/Ollama logs, skipping SSH-backed hints safely when PAL SSH environment is not configured.
 
 - Added PAL workflow knowledge-context prompt injection (T-008@20260515T214233Z): `promptclaw pal agent triage` and `promptclaw pal agent actions` now include a bounded `Knowledge Context` section in their plan and summary prompt artifacts, populated from the local `.promptclaw/pal-kb/index.jsonl` query path when available and downgraded to a non-blocking unavailable-context note when the index has not been built.
