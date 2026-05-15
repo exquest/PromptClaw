@@ -105,6 +105,27 @@ approvals. A proposed action with no matching `--approve ACTION_ID` remains
 artifacts carry the same bounded `Knowledge Context` section as triage prompts,
 without expanding the action allow-list.
 
+The slow-inference context workflow uses the same artifact transport, but it is
+read-only context collection rather than a PAL-authored plan. It records:
+
+```text
+.promptclaw/runs/<run-id>/
+├── input/task.md
+├── routing/route.json
+├── routing/route.md
+├── outputs/slow-inference-context.json
+├── handoffs/slow-inference-context.md
+├── summary/final-summary.md
+├── logs/events.jsonl
+└── state.json
+```
+
+`slow-inference-context.json` captures router health, smoke baseline token/s,
+GPU hints, and PAL router/Ollama logs when available. The GPU and log tools are
+fixed read-only SSH diagnostics; if SSH is not configured they record `skipped`
+observations instead of failing or prompting for credentials. CLI wiring for a
+user-facing diagnosis command remains future PAL-019 work.
+
 ## Benefits
 
 - deterministic transfer point

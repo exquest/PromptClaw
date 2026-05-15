@@ -138,6 +138,15 @@ ACTION_ID`. The current action allow-list covers `rerun_smoke`,
 and recorded. Restarts, shutdown overrides, and other mutating playbooks remain
 human-approved action ids, not open-ended shell authority.
 
+The slow-inference context workflow is a read-only PAL workflow primitive for
+latency investigations. It is callable from code as
+`run_pal_slow_inference_context(...)` and writes
+`outputs/slow-inference-context.json` with router health, saved smoke baseline
+token/s, optional GPU hints, and optional router/Ollama log tails. GPU and log
+collection use fixed SSH diagnostics and report `skipped` when PAL SSH
+environment variables are absent. There is no operator-facing CLI for this
+workflow yet; the diagnosis command is reserved for the PAL-019 follow-up.
+
 Every PAL agent run uses the standard `.promptclaw/runs/<run-id>/` layout so the
 plan, observations, approvals, results, summary, events, and state remain
 reproducible.

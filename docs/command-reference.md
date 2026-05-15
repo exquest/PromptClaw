@@ -198,6 +198,12 @@ default it executes no proposed actions. To execute an action, pass
 plan and summary prompts carry the same bounded local `Knowledge Context`
 section without changing what actions may execute.
 
+The slow-inference context workflow currently exists as a read-only internal PAL
+workflow primitive rather than a `promptclaw` command. It writes
+`.promptclaw/runs/<run-id>/outputs/slow-inference-context.json` with health,
+baseline token/s, optional GPU hints, and optional router/Ollama logs; PAL-019
+will add the operator-facing diagnosis CLI.
+
 Current action ids:
 
 - `rerun_smoke`: run the PAL smoke suite and save a fresh local report
