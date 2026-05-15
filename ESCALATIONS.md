@@ -1,5 +1,10 @@
 # Escalations
 
+## T-010@20260515T214233Z (2026-05-15T21:42:33Z)
+
+- **Reason:** PAL slow-inference diagnosis CLI scope and startup-hardening assumptions
+- **Details:** Exploration found PAL-019 builds directly on the PAL-018 read-only slow-inference context workflow in `promptclaw/pal_agent.py`, with CLI integration in `promptclaw/cli.py` and artifact contracts documented in `docs/handoff-protocol.md`. The active ADP process is the task prompt's Explore -> Specify -> Test -> Implement -> Verify -> Document workflow; no separate ADP file was found beyond `sdp/templates/candidates/lead_t2/v006.md`. The implementation is assumed to be a deterministic local diagnosis command at `promptclaw pal diagnose slow-inference PROJECT_ROOT` that reuses fixed read-only health, baseline, GPU, and log diagnostics, writes a standard run artifact, and exposes no action ids or remote-write path. The generated startup hardening bullets target the existing identity startup subsystem; current CLI, first-boot, daemon-ordering, and narrative ASGI tests already cover `bootstrap_identity()` persistence and ordering before `FirstBootAnnouncer`, so those remain mandatory regression anchors rather than broadening this PAL CLI task into startup rewiring. No new dependencies, migrations, provider secrets, database columns, HTTP routes, or approval-gated actions are required.
+
 ## T-008@20260515T214233Z (2026-05-15T21:42:33Z)
 
 - **Reason:** PAL prompt-injection scope and startup-hardening assumptions

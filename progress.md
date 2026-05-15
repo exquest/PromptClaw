@@ -442,7 +442,7 @@ Progress: [███████████████████████
 - **T-007@20260515T214233Z**: complete — PAL KB query implemented: `promptclaw pal kb query` reads `.promptclaw/pal-kb/index.jsonl` locally and returns deterministic ranked snippets with source paths; red phase, focused PAL tests, startup identity hardening anchors, and the full validation gate passed.
 - **T-008@20260515T214233Z**: complete — PAL workflow prompt artifacts now include a bounded `Knowledge Context` section from the local PAL KB query path when available and a non-blocking unavailable-context note when the index is missing; red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
 - **T-009@20260515T214233Z**: complete — PAL slow-inference context collection now writes a read-only run artifact with router health, saved smoke baseline token/s, optional GPU hints, and optional PAL router/Ollama logs. Red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
-- **T-010@20260515T214233Z**: pending — Pending.
+- **T-010@20260515T214233Z**: in_progress — Exploration complete: PAL-019 builds on the existing PAL-018 read-only slow-inference context workflow; spec will add `promptclaw pal diagnose slow-inference PROJECT_ROOT` as an artifact-writing, non-mutating diagnosis command.
 - **T-011@20260515T214233Z**: pending — Pending.
 - **T-012@20260515T214233Z**: pending — Pending.
 - **T-013@20260515T214233Z**: pending — Pending.
