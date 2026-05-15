@@ -137,10 +137,126 @@ def write_smoke_report(project_root: Path, report: dict[str, Any], output: Path 
     return path
 
 
+def load_smoke_reports(project_root: Path) -> list[dict[str, Any]]:
+    reports_dir = project_root / ".promptclaw" / "pal-smoke"
+    reports: list[dict[str, Any]] = []
+    for path in sorted(reports_dir.glob("pal-smoke-*.json")):
+        try:
+            data = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(data, dict):
+            reports.append(data)
+    return reports
+
+
+def summarize_smoke_reports(reports: list[dict[str, Any]]) -> dict[str, Any]:
+    if not reports:
+        return {
+            "report_count": 0,
+            "pass_count": 0,
+            "fail_count": 0,
+            "pass_rate": 0.0,
+            "latest_started_at": "",
+            "total_latency_s": {"avg": None, "min": None, "max": None},
+            "prompts": {},
+        }
+
+    pass_count = sum(1 for report in reports if report.get("status") == "pass")
+    fail_count = len(reports) - pass_count
+    total_latencies = [
+        float(summary["total_latency_s"])
+        for report in reports
+        if isinstance((summary := report.get("summary")), dict)
+        and isinstance(summary.get("total_latency_s"), int | float)
+    ]
+
+    prompt_rows: dict[str, dict[str, Any]] = {}
+    for report in reports:
+        checks = report.get("checks", [])
+        if not isinstance(checks, list):
+            continue
+        for check in checks:
+            if not isinstance(check, dict):
+                continue
+            prompt_id = str(check.get("id", "unknown"))
+            row = prompt_rows.setdefault(
+                prompt_id,
+                {
+                    "runs": 0,
+                    "failures": 0,
+                    "latencies": [],
+                    "tokens_per_second": [],
+                },
+            )
+            row["runs"] += 1
+            if check.get("status") != "pass":
+                row["failures"] += 1
+            if isinstance(check.get("latency_s"), int | float):
+                row["latencies"].append(float(check["latency_s"]))
+            if isinstance(check.get("tokens_per_second"), int | float):
+                row["tokens_per_second"].append(float(check["tokens_per_second"]))
+
+    prompts: dict[str, dict[str, Any]] = {}
+    for prompt_id, row in sorted(prompt_rows.items()):
+        prompts[prompt_id] = {
+            "runs": row["runs"],
+            "failures": row["failures"],
+            "avg_latency_s": _avg(row["latencies"]),
+            "avg_tokens_per_second": _avg(row["tokens_per_second"]),
+        }
+
+    started_values = [str(report.get("started_at", "")) for report in reports]
+    return {
+        "report_count": len(reports),
+        "pass_count": pass_count,
+        "fail_count": fail_count,
+        "pass_rate": round(pass_count / len(reports), 4),
+        "latest_started_at": max(started_values),
+        "total_latency_s": {
+            "avg": _avg(total_latencies),
+            "min": min(total_latencies) if total_latencies else None,
+            "max": max(total_latencies) if total_latencies else None,
+        },
+        "prompts": prompts,
+    }
+
+
+def format_baseline_summary(summary: dict[str, Any]) -> str:
+    if summary.get("report_count", 0) == 0:
+        return "PAL baseline: no smoke reports found"
+
+    total_latency = summary.get("total_latency_s", {})
+    lines = [
+        "PAL baseline: "
+        f"reports={summary['report_count']} "
+        f"pass_rate={float(summary['pass_rate']) * 100:.1f}% "
+        f"latency_avg={total_latency.get('avg')}s "
+        f"latest={summary.get('latest_started_at', '')}"
+    ]
+    prompts = summary.get("prompts", {})
+    if isinstance(prompts, dict):
+        for prompt_id, prompt_summary in prompts.items():
+            lines.append(
+                f"{prompt_id}: "
+                f"runs={prompt_summary['runs']} "
+                f"failures={prompt_summary['failures']} "
+                f"avg_latency_s={prompt_summary['avg_latency_s']} "
+                f"avg_tps={prompt_summary['avg_tokens_per_second']}"
+            )
+    return "\n".join(lines)
+
+
 def _default_report_path(project_root: Path, started_at: str) -> Path:
     stamp = started_at.replace("-", "").replace(":", "")
     stamp = stamp.replace("+0000", "Z").replace("+00:00", "Z")
     return project_root / ".promptclaw" / "pal-smoke" / f"pal-smoke-{stamp}.json"
+
+
+def _avg(values: list[float]) -> float | None:
+    if not values:
+        return None
+    return round(sum(values) / len(values), 3)
 
 
 def _ns_to_seconds(value: Any) -> float | None:

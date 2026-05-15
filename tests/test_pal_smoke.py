@@ -7,10 +7,17 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from typing import Any
 
-from promptclaw.cli import cmd_pal_smoke
+from promptclaw.cli import cmd_pal_baseline, cmd_pal_smoke
 from promptclaw.config import default_project_config, save_config
 from promptclaw.pal_client import PALQueryResult
-from promptclaw.pal_smoke import DEFAULT_SMOKE_PROMPTS, run_pal_smoke, write_smoke_report
+from promptclaw.pal_smoke import (
+    DEFAULT_SMOKE_PROMPTS,
+    format_baseline_summary,
+    load_smoke_reports,
+    run_pal_smoke,
+    summarize_smoke_reports,
+    write_smoke_report,
+)
 
 
 class FakeClient:
@@ -133,6 +140,88 @@ def test_pal_smoke_cli_writes_report_and_prints_summary(
     assert "report=" in rendered
     report_paths = list((tmp_path / ".promptclaw" / "pal-smoke").glob("*.json"))
     assert len(report_paths) == 1
+
+
+def test_load_and_summarize_smoke_reports_builds_prompt_baseline(tmp_path: Path) -> None:
+    reports_dir = tmp_path / ".promptclaw" / "pal-smoke"
+    reports_dir.mkdir(parents=True)
+    (reports_dir / "pal-smoke-20260515T180000Z.json").write_text(json.dumps({
+        "status": "pass",
+        "started_at": "2026-05-15T18:00:00+00:00",
+        "summary": {"passed": 3, "failed": 0, "total_latency_s": 15.0},
+        "checks": [
+            {"id": "reachability", "status": "pass", "latency_s": 5.0, "tokens_per_second": 14.0},
+            {"id": "configuration", "status": "pass", "latency_s": 4.0, "tokens_per_second": 16.0},
+            {"id": "operational_triage", "status": "pass", "latency_s": 6.0, "tokens_per_second": 15.0},
+        ],
+    }))
+    (reports_dir / "pal-smoke-20260516T180000Z.json").write_text(json.dumps({
+        "status": "fail",
+        "started_at": "2026-05-16T18:00:00+00:00",
+        "summary": {"passed": 2, "failed": 1, "total_latency_s": 20.0},
+        "checks": [
+            {"id": "reachability", "status": "pass", "latency_s": 7.0, "tokens_per_second": 13.0},
+            {"id": "configuration", "status": "fail", "latency_s": 8.0, "error": "timeout"},
+            {"id": "operational_triage", "status": "pass", "latency_s": 5.0, "tokens_per_second": 17.0},
+        ],
+    }))
+
+    reports = load_smoke_reports(tmp_path)
+    summary = summarize_smoke_reports(reports)
+
+    assert len(reports) == 2
+    assert summary["report_count"] == 2
+    assert summary["pass_rate"] == 0.5
+    assert summary["total_latency_s"]["avg"] == 17.5
+    assert summary["prompts"]["reachability"]["avg_latency_s"] == 6.0
+    assert summary["prompts"]["reachability"]["avg_tokens_per_second"] == 13.5
+    assert summary["prompts"]["configuration"]["failures"] == 1
+
+
+def test_format_baseline_summary_handles_empty_and_populated_reports() -> None:
+    empty = format_baseline_summary(summarize_smoke_reports([]))
+    assert empty == "PAL baseline: no smoke reports found"
+
+    rendered = format_baseline_summary({
+        "report_count": 2,
+        "pass_count": 1,
+        "fail_count": 1,
+        "pass_rate": 0.5,
+        "total_latency_s": {"avg": 17.5, "min": 15.0, "max": 20.0},
+        "latest_started_at": "2026-05-16T18:00:00+00:00",
+        "prompts": {
+            "reachability": {
+                "runs": 2,
+                "failures": 0,
+                "avg_latency_s": 6.0,
+                "avg_tokens_per_second": 13.5,
+            }
+        },
+    })
+
+    assert "PAL baseline: reports=2 pass_rate=50.0%" in rendered
+    assert "latency_avg=17.5s" in rendered
+    assert "reachability: runs=2 failures=0 avg_latency_s=6.0 avg_tps=13.5" in rendered
+
+
+def test_pal_baseline_cli_prints_summary(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setattr("promptclaw.cli.load_smoke_reports", lambda project_root: [{"status": "pass"}])
+    monkeypatch.setattr("promptclaw.cli.summarize_smoke_reports", lambda reports: {
+        "report_count": 1,
+        "pass_count": 1,
+        "fail_count": 0,
+        "pass_rate": 1.0,
+        "latest_started_at": "2026-05-15T18:00:00+00:00",
+        "total_latency_s": {"avg": 15.0, "min": 15.0, "max": 15.0},
+        "prompts": {},
+    })
+
+    output = io.StringIO()
+    with redirect_stdout(output):
+        rc = cmd_pal_baseline(argparse.Namespace(project_root=tmp_path, json=False))
+
+    assert rc == 0
+    assert "PAL baseline: reports=1 pass_rate=100.0%" in output.getvalue()
 
 
 def _fake_timer():

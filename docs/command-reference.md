@@ -145,6 +145,7 @@ promptclaw pal health PROJECT_ROOT
 promptclaw pal query PROJECT_ROOT --prompt "Confirm reachability."
 promptclaw pal query PROJECT_ROOT --prompt "Confirm reachability." --text
 promptclaw pal smoke PROJECT_ROOT
+promptclaw pal baseline PROJECT_ROOT
 ```
 
 The command reads the `pal` section from `promptclaw.json`, calls `/health` or
@@ -156,6 +157,8 @@ health.
 prompt, configuration prompt, and operational-triage prompt. It records latency,
 router timing metadata, responses, and any errors to
 `.promptclaw/pal-smoke/pal-smoke-<timestamp>.json`.
+`pal baseline` summarizes those saved smoke reports so stabilization runs can be
+compared across restarts and days.
 
 ## CypherClaw runtime utilities
 

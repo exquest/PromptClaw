@@ -122,6 +122,7 @@ promptclaw show-config PROJECT_ROOT
 promptclaw pal health PROJECT_ROOT
 promptclaw pal query PROJECT_ROOT --prompt "Confirm reachability."
 promptclaw pal smoke PROJECT_ROOT
+promptclaw pal baseline PROJECT_ROOT
 
 # Coherence
 promptclaw coherence status PROJECT_ROOT

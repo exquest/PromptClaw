@@ -11,7 +11,13 @@ from .diagnostics import diagnose, format_diagnosis
 from .doctor import run_doctor
 from .orchestrator import PromptClawOrchestrator
 from .pal_client import PALRouterClient
-from .pal_smoke import run_pal_smoke, write_smoke_report
+from .pal_smoke import (
+    format_baseline_summary,
+    load_smoke_reports,
+    run_pal_smoke,
+    summarize_smoke_reports,
+    write_smoke_report,
+)
 from .paths import ProjectPaths
 from .state_store import StateStore
 from .ui import banner, status_line
@@ -73,6 +79,10 @@ def build_parser() -> argparse.ArgumentParser:
     pal_smoke_parser.add_argument("project_root", type=Path)
     pal_smoke_parser.add_argument("--output", type=Path)
     pal_smoke_parser.add_argument("--json", action="store_true", help="Print the full smoke report JSON")
+
+    pal_baseline_parser = pal_sub.add_parser("baseline", help="Summarize saved PAL smoke reports")
+    pal_baseline_parser.add_argument("project_root", type=Path)
+    pal_baseline_parser.add_argument("--json", action="store_true", help="Print baseline summary JSON")
 
     # --- coherence subcommand group ---
     coherence_parser = subparsers.add_parser("coherence", help="Coherence engine commands")
@@ -536,6 +546,16 @@ def cmd_pal_smoke(args: argparse.Namespace) -> int:
     return 0 if report["status"] == "pass" else 1
 
 
+def cmd_pal_baseline(args: argparse.Namespace) -> int:
+    reports = load_smoke_reports(args.project_root)
+    summary = summarize_smoke_reports(reports)
+    if args.json:
+        print(json.dumps(summary, indent=2))
+    else:
+        print(format_baseline_summary(summary))
+    return 0
+
+
 def _dispatch(args: argparse.Namespace) -> int:
     if args.command == "init":
         return cmd_init(args)
@@ -567,6 +587,8 @@ def _dispatch_pal(args: argparse.Namespace) -> int:
         return cmd_pal_query(args)
     if args.pal_command == "smoke":
         return cmd_pal_smoke(args)
+    if args.pal_command == "baseline":
+        return cmd_pal_baseline(args)
     return 2
 
 
