@@ -122,10 +122,6 @@ def _chunk_text(
         if not current_lines:
             return
         chunk_text = "\n".join(current_lines)
-        if not chunk_text:
-            current_lines = []
-            current_length = 0
-            return
         chunks.append(
             _make_chunk(
                 source_path=source_path,

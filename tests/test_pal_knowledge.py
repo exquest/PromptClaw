@@ -145,6 +145,22 @@ def test_chunk_pal_source_files_handles_empty_and_long_line_edges(tmp_path: Path
     assert all(chunk.end_line == 1 for chunk in chunks)
 
 
+def test_chunk_pal_source_files_preserves_isolated_blank_line_chunks(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "with-blank.md").write_text("abcde\n\nfghij\n")
+    _save_pal_config(tmp_path, ["docs/*.md"])
+
+    first = chunk_pal_source_files(tmp_path, max_chars=5)
+    second = chunk_pal_source_files(tmp_path, max_chars=5)
+
+    assert [chunk.text for chunk in first] == ["abcde", "", "fghij"]
+    assert [chunk.start_line for chunk in first] == [1, 2, 3]
+    assert [chunk.end_line for chunk in first] == [1, 2, 3]
+    assert [chunk.chunk_id for chunk in second] == [chunk.chunk_id for chunk in first]
+
+
 def test_chunk_pal_source_files_rejects_invalid_max_chars(tmp_path: Path) -> None:
     (tmp_path / "docs").mkdir()
     (tmp_path / "docs" / "alpha.md").write_text("# Alpha\n")
