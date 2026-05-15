@@ -1,17 +1,23 @@
 from __future__ import annotations
 
+import argparse
+from contextlib import redirect_stdout
 from dataclasses import asdict
+import io
 import json
 from pathlib import Path
 
 import pytest
 
+from promptclaw.cli import cmd_pal_kb_build
 from promptclaw.config import default_project_config, save_config
 from promptclaw.models import PALConfig
 from promptclaw.pal_knowledge import (
+    PALKnowledgeIndexBuild,
     PALKnowledgeChunk,
     chunk_pal_source_files,
     discover_pal_source_files,
+    write_pal_knowledge_index,
 )
 
 
@@ -168,6 +174,68 @@ def test_chunk_pal_source_files_rejects_invalid_max_chars(tmp_path: Path) -> Non
 
     with pytest.raises(ValueError, match="max_chars"):
         chunk_pal_source_files(tmp_path, max_chars=0)
+
+
+def test_write_pal_knowledge_index_creates_default_jsonl_index(tmp_path: Path) -> None:
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "alpha.md").write_text("# Alpha\nfirst line\nsecond line\n")
+    (tmp_path / "docs" / "beta.md").write_text("# Beta\nthird line\n")
+    _save_pal_config(tmp_path, ["docs/*.md"])
+
+    result = write_pal_knowledge_index(tmp_path, max_chars=24)
+
+    assert isinstance(result, PALKnowledgeIndexBuild)
+    assert result.index_path == tmp_path / ".promptclaw" / "pal-kb" / "index.jsonl"
+    assert result.source_count == 2
+    assert result.chunk_count == 3
+    assert result.max_chars == 24
+    assert result.index_path.exists()
+    rows = [json.loads(line) for line in result.index_path.read_text().splitlines()]
+    chunks = chunk_pal_source_files(tmp_path, max_chars=24)
+    assert rows == [asdict(chunk) for chunk in chunks]
+    assert [row["source_path"] for row in rows] == [
+        "docs/alpha.md",
+        "docs/alpha.md",
+        "docs/beta.md",
+    ]
+    assert all(row["chunk_id"].startswith("pal-kb:") for row in rows)
+
+
+def test_write_pal_knowledge_index_is_stable_and_replaces_stale_content(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "alpha.md").write_text("# Alpha\nfirst line\nsecond line\n")
+    _save_pal_config(tmp_path, ["docs/*.md"])
+
+    first = write_pal_knowledge_index(tmp_path, max_chars=24)
+    first_bytes = first.index_path.read_bytes()
+    first.index_path.write_text("stale content\n", encoding="utf-8")
+
+    second = write_pal_knowledge_index(tmp_path, max_chars=24)
+
+    assert second.index_path == first.index_path
+    assert second.index_path.read_bytes() == first_bytes
+    assert b"stale content" not in second.index_path.read_bytes()
+
+
+def test_pal_kb_build_cli_writes_index_and_prints_summary(tmp_path: Path) -> None:
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "alpha.md").write_text("# Alpha\nfirst line\nsecond line\n")
+    _save_pal_config(tmp_path, ["docs/*.md"])
+
+    output = io.StringIO()
+    args = argparse.Namespace(project_root=tmp_path, max_chars=24, output=None, json=False)
+    with redirect_stdout(output):
+        rc = cmd_pal_kb_build(args)
+
+    assert rc == 0
+    rendered = output.getvalue()
+    assert "PAL KB build:" in rendered
+    assert "sources=1" in rendered
+    assert "chunks=2" in rendered
+    assert ".promptclaw/pal-kb/index.jsonl" in rendered
+    assert (tmp_path / ".promptclaw" / "pal-kb" / "index.jsonl").exists()
 
 
 def _relative_paths(paths: tuple[Path, ...], root: Path) -> list[str]:

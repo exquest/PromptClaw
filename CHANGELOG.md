@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added PAL KB index writer (T-006@20260515T214233Z): `promptclaw.pal_knowledge.write_pal_knowledge_index(...)` now materializes configured PAL source chunks into `.promptclaw/pal-kb/index.jsonl`, and `promptclaw pal kb build PROJECT_ROOT` exposes the local JSONL build path without contacting the PAL router.
+
 - Added deterministic PAL knowledge chunking (T-005@20260515T214233Z): `promptclaw.pal_knowledge.PALKnowledgeChunk` and `chunk_pal_source_files(...)` now turn configured PAL source files into stable, bounded, source-relative chunks with repeatable `pal-kb:` ids for unchanged input files, without writing runtime KB artifacts.
 
 - Added PAL knowledge source discovery (T-004@20260515T214233Z): `PALConfig` now carries `knowledge_sources`, `promptclaw.pal_knowledge.discover_pal_source_files(...)` expands configured file/glob sources deterministically without network calls or runtime writes, and `pal-2026/promptclaw.json` declares the initial docs/ops/smoke/run-artifact inputs for later PAL KB chunking and indexing.

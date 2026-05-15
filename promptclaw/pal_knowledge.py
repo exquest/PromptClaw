@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
+import json
+from dataclasses import asdict, dataclass
 from glob import glob
 from pathlib import Path
 
@@ -32,6 +33,14 @@ class PALKnowledgeChunk:
     start_line: int
     end_line: int
     text: str
+
+
+@dataclass(frozen=True)
+class PALKnowledgeIndexBuild:
+    index_path: Path
+    source_count: int
+    chunk_count: int
+    max_chars: int
 
 
 def discover_pal_source_files(
@@ -84,6 +93,31 @@ def chunk_pal_source_files(
     return tuple(chunks)
 
 
+def write_pal_knowledge_index(
+    project_root: Path,
+    config: PromptClawConfig | None = None,
+    *,
+    max_chars: int = 2000,
+    output_path: Path | None = None,
+) -> PALKnowledgeIndexBuild:
+    """Write the deterministic PAL knowledge chunk stream as JSON Lines."""
+    if max_chars <= 0:
+        raise ValueError("max_chars must be greater than 0")
+
+    root = project_root.resolve()
+    active_config = config or load_config(root)
+    source_paths = discover_pal_source_files(root, config=active_config)
+    chunks = chunk_pal_source_files(root, config=active_config, max_chars=max_chars)
+    index_path = output_path if output_path is not None else _default_index_path(root, active_config)
+    _write_jsonl_index(index_path, chunks)
+    return PALKnowledgeIndexBuild(
+        index_path=index_path,
+        source_count=len(source_paths),
+        chunk_count=len(chunks),
+        max_chars=max_chars,
+    )
+
+
 def _expand_source_pattern(project_root: Path, pattern: str) -> tuple[Path, ...]:
     stripped = pattern.strip()
     if not stripped:
@@ -95,6 +129,25 @@ def _expand_source_pattern(project_root: Path, pattern: str) -> tuple[Path, ...]
 
 def _normalize_text(text: str) -> str:
     return "\n".join(text.splitlines())
+
+
+def _default_index_path(project_root: Path, config: PromptClawConfig) -> Path:
+    return project_root / config.artifacts.root / "pal-kb" / "index.jsonl"
+
+
+def _write_jsonl_index(path: Path, chunks: tuple[PALKnowledgeChunk, ...]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = path.with_name(f".{path.name}.tmp")
+    try:
+        lines = [json.dumps(asdict(chunk), sort_keys=True, ensure_ascii=False) for chunk in chunks]
+        content = "\n".join(lines)
+        if content:
+            content += "\n"
+        temp_path.write_text(content, encoding="utf-8")
+        temp_path.replace(path)
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
 
 
 def _source_reference(project_root: Path, source_path: Path) -> str:

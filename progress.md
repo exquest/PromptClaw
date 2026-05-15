@@ -438,7 +438,7 @@ Progress: [███████████████████████
 - **T-003@20260515T214233Z**: pending — Pending.
 - **T-004@20260515T214233Z**: complete — Completed with verdict PASS. PAL source discovery now returns configured sample files and the full validation gate passed.
 - **T-005@20260515T214233Z**: complete — Deterministic PAL knowledge chunking is implemented with stable `pal-kb:` chunk ids for unchanged input files; focused PAL tests, startup identity hardening anchors, and the full validation gate passed.
-- **T-006@20260515T214233Z**: pending — Pending.
+- **T-006@20260515T214233Z**: complete — PAL KB index writer implemented: `promptclaw pal kb build` writes `.promptclaw/pal-kb/index.jsonl` from deterministic PAL chunks; focused PAL tests, startup identity hardening anchors, and the full validation gate passed.
 - **T-007@20260515T214233Z**: pending — Pending.
 - **T-008@20260515T214233Z**: pending — Pending.
 - **T-009@20260515T214233Z**: pending — Pending.

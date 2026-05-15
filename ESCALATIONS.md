@@ -1,5 +1,12 @@
 # Escalations
 
+## T-006@20260515T214233Z (2026-05-15T21:42:33Z)
+
+- **Reason:** PAL KB index-writer scope and startup-hardening assumptions
+- **Details:** Exploration found PAL-015 builds directly on the PAL-013/PAL-014 local knowledge seam in `promptclaw/pal_knowledge.py`, with CLI integration in `promptclaw/cli.py` and product docs in `docs/architecture.md` / `docs/command-reference.md`. The implementation is assumed to be a stdlib-only JSONL writer at `.promptclaw/pal-kb/index.jsonl` plus a nested `promptclaw pal kb build` command; SQLite is allowed by the acceptance criterion but unnecessary for this first inspectable local index. The generated startup hardening bullets reference the existing identity startup subsystem; current CLI, first-boot, daemon-ordering, and narrative ASGI tests already cover `bootstrap_identity()` persistence and ordering before `FirstBootAnnouncer`, so those remain mandatory regression anchors rather than broadening this PAL KB writer task into startup rewiring. No new dependencies, migrations, provider secrets, database columns, HTTP routes, or approval-gated actions are required.
+- **Reason:** Red phase, implementation verification, and hardening-anchor results
+- **Details:** Red phase was confirmed with `pytest tests/test_pal_knowledge.py -q` failing on the missing `cmd_pal_kb_build` import before production code changed. After implementation, `pytest tests/test_pal_knowledge.py -q` passed with `11 passed`, the focused PAL PRD suite passed with `38 passed`, a parser-level CLI smoke confirmed `promptclaw pal kb build` creates `.promptclaw/pal-kb/index.jsonl`, and the mandatory startup identity hardening anchors passed with `11 passed`. Focused Ruff passed for `promptclaw/pal_knowledge.py`, `promptclaw/cli.py`, and `tests/test_pal_knowledge.py`; direct mypy over `promptclaw/` remains blocked by pre-existing package-level typing issues outside this task, while the required validation command `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` passed with `4725 passed, 10 skipped`, Ruff clean, and mypy clean. No new dependencies or migrations were introduced.
+
 ## T-004@20260515T214233Z (2026-05-15T21:42:33Z)
 
 - **Reason:** PAL source-discovery scope and startup-hardening assumptions

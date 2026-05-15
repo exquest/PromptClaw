@@ -106,6 +106,13 @@ PAL 2026 starts as a configured router under the `pal` section of
 `promptclaw.json`. The router commands can check health, run direct queries, run
 the fixed smoke suite, and summarize saved smoke baselines.
 
+The local PAL knowledge-base path is file-first. Source discovery reads
+`pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
+`promptclaw pal kb build` materializes those chunks into
+`.promptclaw/pal-kb/index.jsonl` without contacting the router. Later PAL
+retrieval and prompt-injection work can consume that JSONL artifact while
+preserving the configured source list and repeatable chunk metadata.
+
 The first agentic PAL workflow is `promptclaw pal agent triage`. In that mode,
 PAL is the reasoning agent but not the executor. PAL receives the operator task
 and the diagnostic tool descriptions, returns a JSON tool plan, and PromptClaw

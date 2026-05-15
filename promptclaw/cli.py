@@ -12,6 +12,7 @@ from .doctor import run_doctor
 from .orchestrator import PromptClawOrchestrator
 from .pal_agent import DEFAULT_ACTION_TASK, DEFAULT_TRIAGE_TASK, run_pal_ops_actions, run_pal_ops_triage
 from .pal_client import PALRouterClient
+from .pal_knowledge import write_pal_knowledge_index
 from .pal_smoke import (
     format_baseline_summary,
     load_smoke_reports,
@@ -84,6 +85,14 @@ def build_parser() -> argparse.ArgumentParser:
     pal_baseline_parser = pal_sub.add_parser("baseline", help="Summarize saved PAL smoke reports")
     pal_baseline_parser.add_argument("project_root", type=Path)
     pal_baseline_parser.add_argument("--json", action="store_true", help="Print baseline summary JSON")
+
+    pal_kb_parser = pal_sub.add_parser("kb", help="PAL local knowledge-base commands")
+    pal_kb_sub = pal_kb_parser.add_subparsers(dest="pal_kb_command", required=True)
+    pal_kb_build_parser = pal_kb_sub.add_parser("build", help="Build the local PAL knowledge index")
+    pal_kb_build_parser.add_argument("project_root", type=Path)
+    pal_kb_build_parser.add_argument("--max-chars", type=int, default=2000)
+    pal_kb_build_parser.add_argument("--output", type=Path)
+    pal_kb_build_parser.add_argument("--json", action="store_true", help="Print build summary JSON")
 
     pal_agent_parser = pal_sub.add_parser("agent", help="Run bounded PAL agent workflows")
     pal_agent_sub = pal_agent_parser.add_subparsers(dest="pal_agent_command", required=True)
@@ -590,6 +599,31 @@ def cmd_pal_baseline(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_pal_kb_build(args: argparse.Namespace) -> int:
+    result = write_pal_knowledge_index(
+        args.project_root,
+        max_chars=args.max_chars,
+        output_path=args.output,
+    )
+    payload = {
+        "index_path": str(result.index_path),
+        "source_count": result.source_count,
+        "chunk_count": result.chunk_count,
+        "max_chars": result.max_chars,
+    }
+    if args.json:
+        print(json.dumps(payload, indent=2))
+    else:
+        print(
+            "PAL KB build: "
+            f"sources={result.source_count} "
+            f"chunks={result.chunk_count} "
+            f"max_chars={result.max_chars} "
+            f"index={_display_path(args.project_root, result.index_path)}"
+        )
+    return 0
+
+
 def cmd_pal_agent_triage(args: argparse.Namespace) -> int:
     result = run_pal_ops_triage(args.project_root, task=args.task)
     if args.json:
@@ -666,6 +700,8 @@ def _dispatch_pal(args: argparse.Namespace) -> int:
         return cmd_pal_smoke(args)
     if args.pal_command == "baseline":
         return cmd_pal_baseline(args)
+    if args.pal_command == "kb" and args.pal_kb_command == "build":
+        return cmd_pal_kb_build(args)
     if args.pal_command == "agent" and args.pal_agent_command == "triage":
         return cmd_pal_agent_triage(args)
     if args.pal_command == "agent" and args.pal_agent_command == "actions":
@@ -717,6 +753,13 @@ def _try_extract_state(args: argparse.Namespace) -> str | None:
         if val is not None:
             return str(val)
     return None
+
+
+def _display_path(project_root: Path, path: Path) -> str:
+    try:
+        return path.relative_to(project_root.resolve()).as_posix()
+    except ValueError:
+        return str(path)
 
 
 if __name__ == "__main__":

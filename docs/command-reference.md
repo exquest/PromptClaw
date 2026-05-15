@@ -146,6 +146,8 @@ promptclaw pal query PROJECT_ROOT --prompt "Confirm reachability."
 promptclaw pal query PROJECT_ROOT --prompt "Confirm reachability." --text
 promptclaw pal smoke PROJECT_ROOT
 promptclaw pal baseline PROJECT_ROOT
+promptclaw pal kb build PROJECT_ROOT
+promptclaw pal kb build PROJECT_ROOT --max-chars 4000 --json
 promptclaw pal agent triage PROJECT_ROOT
 promptclaw pal agent actions PROJECT_ROOT
 promptclaw pal agent actions PROJECT_ROOT --approve inspect_logs_deep
@@ -162,6 +164,12 @@ router timing metadata, responses, and any errors to
 `.promptclaw/pal-smoke/pal-smoke-<timestamp>.json`.
 `pal baseline` summarizes those saved smoke reports so stabilization runs can be
 compared across restarts and days.
+
+`pal kb build` reads local files from the configured `pal.knowledge_sources`
+patterns, chunks them deterministically, and writes
+`.promptclaw/pal-kb/index.jsonl`. The command does not call the PAL router. Use
+`--max-chars` to adjust the chunk bound, `--output` to write a diagnostic index
+elsewhere, and `--json` for a machine-readable build summary.
 
 `pal agent triage` is the first bounded PAL agent workflow. PAL proposes a
 diagnostic plan, PromptClaw executes only the local allow-listed tools
