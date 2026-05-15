@@ -305,3 +305,28 @@ def test_restart_router_action_prefers_start_router_sh(monkeypatch) -> None:
     assert result["status"] == "ok"
     assert "/opt/pal/scripts/start_router.sh" in captured_command
     assert captured_command.startswith("if [ -x /opt/pal/scripts/start_router.sh ]; then /opt/pal/scripts/start_router.sh")
+
+
+def test_restart_router_action_uses_docker_only_when_host_script_absent(monkeypatch) -> None:
+    from promptclaw.pal_agent import _restart_router_action
+
+    captured_command = ""
+
+    def mock_run_ssh_command(remote_command: str, *, timeout_s: int) -> dict:
+        nonlocal captured_command
+        captured_command = remote_command
+        return {"exit_code": 0, "stdout": "", "stderr": ""}
+
+    monkeypatch.setattr("promptclaw.pal_agent._run_ssh_command", mock_run_ssh_command)
+    _restart_router_action()
+
+    host_check = "[ -x /opt/pal/scripts/start_router.sh ]"
+    docker_guard = "elif command -v docker"
+    assert host_check in captured_command
+    assert docker_guard in captured_command
+    assert captured_command.index(host_check) < captured_command.index(docker_guard), (
+        "Docker fallback must be gated behind the host-script check"
+    )
+    assert "docker" not in captured_command.split(docker_guard)[0], (
+        "Docker must not be referenced before the host-script check"
+    )
