@@ -123,6 +123,8 @@ promptclaw pal health PROJECT_ROOT
 promptclaw pal query PROJECT_ROOT --prompt "Confirm reachability."
 promptclaw pal smoke PROJECT_ROOT
 promptclaw pal baseline PROJECT_ROOT
+promptclaw pal kb build PROJECT_ROOT
+promptclaw pal kb query PROJECT_ROOT --query "router restart"
 promptclaw pal agent triage PROJECT_ROOT
 promptclaw pal agent actions PROJECT_ROOT [--approve ACTION_ID]
 

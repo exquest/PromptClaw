@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
+from collections import Counter
 from dataclasses import asdict, dataclass
 from glob import glob
 from pathlib import Path
@@ -41,6 +43,17 @@ class PALKnowledgeIndexBuild:
     source_count: int
     chunk_count: int
     max_chars: int
+
+
+@dataclass(frozen=True)
+class PALKnowledgeQueryResult:
+    rank: int
+    score: float
+    chunk_id: str
+    source_path: str
+    start_line: int
+    end_line: int
+    snippet: str
 
 
 def discover_pal_source_files(
@@ -118,6 +131,65 @@ def write_pal_knowledge_index(
     )
 
 
+def query_pal_knowledge_index(
+    project_root: Path,
+    query: str,
+    *,
+    index_path: Path | None = None,
+    limit: int = 5,
+) -> tuple[PALKnowledgeQueryResult, ...]:
+    """Return ranked local PAL knowledge snippets from a JSONL index."""
+    normalized_query = " ".join(query.split())
+    if not normalized_query:
+        raise ValueError("query must not be empty")
+    if limit <= 0:
+        raise ValueError("limit must be greater than 0")
+
+    root = project_root.resolve()
+    if index_path is None:
+        resolved_index_path = _default_query_index_path(root)
+    else:
+        resolved_index_path = index_path
+    chunks = _read_jsonl_index(resolved_index_path)
+    query_terms = _unique_terms(_tokenize(normalized_query))
+    query_phrase = normalized_query.lower()
+    scored: list[tuple[float, PALKnowledgeChunk]] = []
+
+    for chunk in chunks:
+        score = _score_chunk(chunk.text, query_terms=query_terms, query_phrase=query_phrase)
+        if score <= 0:
+            continue
+        scored.append((score, chunk))
+
+    scored.sort(
+        key=lambda item: (
+            -item[0],
+            item[1].source_path,
+            item[1].start_line,
+            item[1].end_line,
+            item[1].chunk_id,
+        )
+    )
+    results: list[PALKnowledgeQueryResult] = []
+    for rank, (score, chunk) in enumerate(scored[:limit], start=1):
+        results.append(
+            PALKnowledgeQueryResult(
+                rank=rank,
+                score=round(score, 3),
+                chunk_id=chunk.chunk_id,
+                source_path=chunk.source_path,
+                start_line=chunk.start_line,
+                end_line=chunk.end_line,
+                snippet=_make_snippet(
+                    chunk.text,
+                    query_terms=query_terms,
+                    query_phrase=query_phrase,
+                ),
+            )
+        )
+    return tuple(results)
+
+
 def _expand_source_pattern(project_root: Path, pattern: str) -> tuple[Path, ...]:
     stripped = pattern.strip()
     if not stripped:
@@ -135,6 +207,13 @@ def _default_index_path(project_root: Path, config: PromptClawConfig) -> Path:
     return project_root / config.artifacts.root / "pal-kb" / "index.jsonl"
 
 
+def _default_query_index_path(project_root: Path) -> Path:
+    try:
+        return _default_index_path(project_root, load_config(project_root))
+    except FileNotFoundError:
+        return project_root / ".promptclaw" / "pal-kb" / "index.jsonl"
+
+
 def _write_jsonl_index(path: Path, chunks: tuple[PALKnowledgeChunk, ...]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temp_path = path.with_name(f".{path.name}.tmp")
@@ -148,6 +227,35 @@ def _write_jsonl_index(path: Path, chunks: tuple[PALKnowledgeChunk, ...]) -> Non
     finally:
         if temp_path.exists():
             temp_path.unlink()
+
+
+def _read_jsonl_index(path: Path) -> tuple[PALKnowledgeChunk, ...]:
+    if not path.exists():
+        raise FileNotFoundError(f"PAL KB index not found: {path}")
+
+    chunks: list[PALKnowledgeChunk] = []
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Malformed PAL KB index JSONL at {path}: line {line_number}") from exc
+        try:
+            chunks.append(
+                PALKnowledgeChunk(
+                    chunk_id=str(payload["chunk_id"]),
+                    source_path=str(payload["source_path"]),
+                    source_sha256=str(payload["source_sha256"]),
+                    chunk_index=int(payload["chunk_index"]),
+                    start_line=int(payload["start_line"]),
+                    end_line=int(payload["end_line"]),
+                    text=str(payload["text"]),
+                )
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError(f"Malformed PAL KB index row at {path}: line {line_number}") from exc
+    return tuple(chunks)
 
 
 def _source_reference(project_root: Path, source_path: Path) -> str:
@@ -250,3 +358,63 @@ def _make_chunk(
         end_line=end_line,
         text=text,
     )
+
+
+_TOKEN_RE = re.compile(r"[A-Za-z0-9_]+")
+
+
+def _tokenize(text: str) -> tuple[str, ...]:
+    return tuple(match.group(0).lower() for match in _TOKEN_RE.finditer(text))
+
+
+def _unique_terms(terms: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(dict.fromkeys(terms))
+
+
+def _score_chunk(
+    text: str,
+    *,
+    query_terms: tuple[str, ...],
+    query_phrase: str,
+) -> float:
+    text_terms = Counter(_tokenize(text))
+    if not text_terms:
+        return 0.0
+
+    overlap = sum(1 for term in query_terms if term in text_terms)
+    if overlap == 0:
+        return 0.0
+
+    frequency = sum(min(text_terms[term], 3) for term in query_terms)
+    score = float(overlap * 10 + frequency)
+    if query_phrase and query_phrase in " ".join(text.split()).lower():
+        score += 5.0
+    return score
+
+
+def _make_snippet(
+    text: str,
+    *,
+    query_terms: tuple[str, ...],
+    query_phrase: str,
+    max_chars: int = 240,
+) -> str:
+    collapsed = " ".join(text.split())
+    if len(collapsed) <= max_chars:
+        return collapsed
+
+    lower = collapsed.lower()
+    match_index = lower.find(query_phrase) if query_phrase else -1
+    if match_index < 0:
+        term_positions = [lower.find(term) for term in query_terms if lower.find(term) >= 0]
+        match_index = min(term_positions) if term_positions else 0
+
+    start = max(0, match_index - max_chars // 3)
+    end = min(len(collapsed), start + max_chars)
+    start = max(0, end - max_chars)
+    snippet = collapsed[start:end]
+    if start > 0:
+        snippet = "..." + snippet[3:]
+    if end < len(collapsed):
+        snippet = snippet[:-3] + "..."
+    return snippet

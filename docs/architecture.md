@@ -109,9 +109,11 @@ the fixed smoke suite, and summarize saved smoke baselines.
 The local PAL knowledge-base path is file-first. Source discovery reads
 `pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
 `promptclaw pal kb build` materializes those chunks into
-`.promptclaw/pal-kb/index.jsonl` without contacting the router. Later PAL
-retrieval and prompt-injection work can consume that JSONL artifact while
-preserving the configured source list and repeatable chunk metadata.
+`.promptclaw/pal-kb/index.jsonl` without contacting the router. `promptclaw pal
+kb query` reads that local JSONL index, ranks lexical matches deterministically,
+and returns bounded snippets with source paths and line ranges. Later PAL
+prompt-injection work can consume the same artifact while preserving the
+configured source list and repeatable chunk metadata.
 
 The first agentic PAL workflow is `promptclaw pal agent triage`. In that mode,
 PAL is the reasoning agent but not the executor. PAL receives the operator task

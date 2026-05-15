@@ -17,6 +17,24 @@ Agents are configured as `mock` so this project can be validated without
 launching external CLIs. The live deployment guidance happens in the active
 Codex chat unless Anthony later chooses to wire live command agents.
 
+## Operator Loop
+
+Build the local PAL knowledge index after docs, ops files, smoke reports, or run
+artifacts change:
+
+```bash
+promptclaw pal kb build pal-2026
+```
+
+Query the local index before asking PAL to reason about deployment state:
+
+```bash
+promptclaw pal kb query pal-2026 --query "router restart"
+```
+
+The query command returns ranked snippets with source paths and line ranges and
+does not contact the live PAL router.
+
 ## Validation
 
 ```bash

@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from dataclasses import asdict
 from pathlib import Path
 
 from .bootstrap import bootstrap_project, init_project
@@ -12,7 +13,7 @@ from .doctor import run_doctor
 from .orchestrator import PromptClawOrchestrator
 from .pal_agent import DEFAULT_ACTION_TASK, DEFAULT_TRIAGE_TASK, run_pal_ops_actions, run_pal_ops_triage
 from .pal_client import PALRouterClient
-from .pal_knowledge import write_pal_knowledge_index
+from .pal_knowledge import query_pal_knowledge_index, write_pal_knowledge_index
 from .pal_smoke import (
     format_baseline_summary,
     load_smoke_reports,
@@ -93,6 +94,12 @@ def build_parser() -> argparse.ArgumentParser:
     pal_kb_build_parser.add_argument("--max-chars", type=int, default=2000)
     pal_kb_build_parser.add_argument("--output", type=Path)
     pal_kb_build_parser.add_argument("--json", action="store_true", help="Print build summary JSON")
+    pal_kb_query_parser = pal_kb_sub.add_parser("query", help="Query the local PAL knowledge index")
+    pal_kb_query_parser.add_argument("project_root", type=Path)
+    pal_kb_query_parser.add_argument("--query", required=True)
+    pal_kb_query_parser.add_argument("--limit", type=int, default=5)
+    pal_kb_query_parser.add_argument("--index", type=Path)
+    pal_kb_query_parser.add_argument("--json", action="store_true", help="Print query results JSON")
 
     pal_agent_parser = pal_sub.add_parser("agent", help="Run bounded PAL agent workflows")
     pal_agent_sub = pal_agent_parser.add_subparsers(dest="pal_agent_command", required=True)
@@ -624,6 +631,26 @@ def cmd_pal_kb_build(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_pal_kb_query(args: argparse.Namespace) -> int:
+    results = query_pal_knowledge_index(
+        args.project_root,
+        args.query,
+        index_path=args.index,
+        limit=args.limit,
+    )
+    if args.json:
+        print(json.dumps([asdict(result) for result in results], indent=2))
+    else:
+        print(f"PAL KB query: matches={len(results)}")
+        for result in results:
+            print(
+                f"{result.rank}. {result.source_path}:{result.start_line}-{result.end_line} "
+                f"score={result.score:.3f} chunk={result.chunk_id}"
+            )
+            print(f"   {result.snippet}")
+    return 0
+
+
 def cmd_pal_agent_triage(args: argparse.Namespace) -> int:
     result = run_pal_ops_triage(args.project_root, task=args.task)
     if args.json:
@@ -702,6 +729,8 @@ def _dispatch_pal(args: argparse.Namespace) -> int:
         return cmd_pal_baseline(args)
     if args.pal_command == "kb" and args.pal_kb_command == "build":
         return cmd_pal_kb_build(args)
+    if args.pal_command == "kb" and args.pal_kb_command == "query":
+        return cmd_pal_kb_query(args)
     if args.pal_command == "agent" and args.pal_agent_command == "triage":
         return cmd_pal_agent_triage(args)
     if args.pal_command == "agent" and args.pal_agent_command == "actions":

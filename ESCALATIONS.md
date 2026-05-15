@@ -1,5 +1,12 @@
 # Escalations
 
+## T-007@20260515T214233Z (2026-05-15T21:42:33Z)
+
+- **Reason:** PAL KB query scope and startup-hardening assumptions
+- **Details:** Exploration found PAL-016 builds directly on the PAL-013/PAL-014/PAL-015 local knowledge path in `promptclaw/pal_knowledge.py`, with command wiring under the existing nested `promptclaw pal kb` CLI. The implementation is assumed to be a stdlib-only ranked lexical query over the JSONL index written by `promptclaw pal kb build`, returning source paths and snippets without contacting the PAL router. The generated startup hardening bullets target the existing identity startup subsystem; current CLI, first-boot, daemon-ordering, and narrative ASGI tests already cover `bootstrap_identity()` persistence and ordering before `FirstBootAnnouncer`, so those remain mandatory regression anchors rather than broadening this PAL KB query task into startup rewiring. No new dependencies, migrations, provider secrets, database columns, HTTP routes, or approval-gated actions are required.
+- **Reason:** Red phase, implementation verification, and hardening-anchor results
+- **Details:** Red phase was confirmed with `pytest tests/test_pal_knowledge.py -q` failing on the missing `cmd_pal_kb_query` import before production code changed. After implementation, `pytest tests/test_pal_knowledge.py -q` passed with `15 passed`, the focused PAL PRD suite passed with `47 passed`, parser wiring for `promptclaw pal kb query` was confirmed, and the mandatory startup identity hardening anchors passed with `11 passed`. Focused Ruff passed for `promptclaw/pal_knowledge.py`, `promptclaw/cli.py`, and `tests/test_pal_knowledge.py`. The required validation command `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` passed with `4729 passed, 10 skipped`, Ruff clean, and mypy clean. No new dependencies or migrations were introduced.
+
 ## T-006@20260515T214233Z (2026-05-15T21:42:33Z)
 
 - **Reason:** PAL KB index-writer scope and startup-hardening assumptions

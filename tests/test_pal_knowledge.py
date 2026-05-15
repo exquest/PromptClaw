@@ -9,14 +9,16 @@ from pathlib import Path
 
 import pytest
 
-from promptclaw.cli import cmd_pal_kb_build
+from promptclaw.cli import cmd_pal_kb_build, cmd_pal_kb_query
 from promptclaw.config import default_project_config, save_config
 from promptclaw.models import PALConfig
 from promptclaw.pal_knowledge import (
     PALKnowledgeIndexBuild,
     PALKnowledgeChunk,
+    PALKnowledgeQueryResult,
     chunk_pal_source_files,
     discover_pal_source_files,
+    query_pal_knowledge_index,
     write_pal_knowledge_index,
 )
 
@@ -236,6 +238,111 @@ def test_pal_kb_build_cli_writes_index_and_prints_summary(tmp_path: Path) -> Non
     assert "chunks=2" in rendered
     assert ".promptclaw/pal-kb/index.jsonl" in rendered
     assert (tmp_path / ".promptclaw" / "pal-kb" / "index.jsonl").exists()
+
+
+def test_query_pal_knowledge_index_returns_ranked_snippets_with_source_paths(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "router.md").write_text(
+        "# Router\nPAL router restart validates health and smoke evidence.\n"
+    )
+    (tmp_path / "docs" / "deploy.md").write_text(
+        "# Deploy\nRouter deployment uses a host-managed start script.\n"
+    )
+    (tmp_path / "docs" / "shutdown.md").write_text(
+        "# Shutdown\nAudit the override flag before changing shutdown state.\n"
+    )
+    _save_pal_config(tmp_path, ["docs/*.md"])
+    write_pal_knowledge_index(tmp_path, max_chars=200)
+
+    results = query_pal_knowledge_index(tmp_path, "router restart", limit=2)
+
+    assert len(results) == 2
+    assert all(isinstance(result, PALKnowledgeQueryResult) for result in results)
+    assert [result.rank for result in results] == [1, 2]
+    assert results[0].source_path == "docs/router.md"
+    assert results[0].score > results[1].score
+    assert results[0].chunk_id.startswith("pal-kb:")
+    assert results[0].start_line == 1
+    assert results[0].end_line >= results[0].start_line
+    assert "router restart" in results[0].snippet.lower()
+    assert [result.source_path for result in results] == [
+        "docs/router.md",
+        "docs/deploy.md",
+    ]
+    assert all(len(result.snippet) <= 240 for result in results)
+    assert json.dumps([asdict(result) for result in results], sort_keys=True)
+
+
+def test_query_pal_knowledge_index_is_case_insensitive_and_deterministic(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "tailscale.md").write_text(
+        "# Tailscale\nTailscale router checks confirm PAL reachability.\n"
+    )
+    (tmp_path / "docs" / "router.md").write_text(
+        "# Router\nRouter health responses include loaded model state.\n"
+    )
+    (tmp_path / "docs" / "unrelated.md").write_text(
+        "# Garden\nNothing about the operational query appears here.\n"
+    )
+    _save_pal_config(tmp_path, ["docs/*.md"])
+    write_pal_knowledge_index(tmp_path, max_chars=200)
+
+    first = query_pal_knowledge_index(tmp_path, "TAILSCALE ROUTER", limit=5)
+    second = query_pal_knowledge_index(tmp_path, "tailscale router", limit=5)
+
+    assert [asdict(result) for result in first] == [asdict(result) for result in second]
+    assert [result.source_path for result in first] == [
+        "docs/tailscale.md",
+        "docs/router.md",
+    ]
+    assert all("docs/unrelated.md" != result.source_path for result in first)
+
+
+def test_query_pal_knowledge_index_rejects_invalid_inputs(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="query"):
+        query_pal_knowledge_index(tmp_path, " ")
+
+    with pytest.raises(ValueError, match="limit"):
+        query_pal_knowledge_index(tmp_path, "router", limit=0)
+
+    with pytest.raises(FileNotFoundError, match="index.jsonl"):
+        query_pal_knowledge_index(tmp_path, "router")
+
+    malformed_index = tmp_path / "bad-index.jsonl"
+    malformed_index.write_text("{bad json\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="line 1"):
+        query_pal_knowledge_index(tmp_path, "router", index_path=malformed_index)
+
+
+def test_pal_kb_query_cli_prints_ranked_snippets(tmp_path: Path) -> None:
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "router.md").write_text(
+        "# Router\nPAL router restart validates health and smoke evidence.\n"
+    )
+    _save_pal_config(tmp_path, ["docs/*.md"])
+    write_pal_knowledge_index(tmp_path, max_chars=200)
+
+    output = io.StringIO()
+    args = argparse.Namespace(
+        project_root=tmp_path,
+        query="router restart",
+        limit=3,
+        index=None,
+        json=False,
+    )
+    with redirect_stdout(output):
+        rc = cmd_pal_kb_query(args)
+
+    assert rc == 0
+    rendered = output.getvalue()
+    assert "PAL KB query: matches=1" in rendered
+    assert "1. docs/router.md:1-2" in rendered
+    assert "score=" in rendered
+    assert "PAL router restart validates health" in rendered
 
 
 def _relative_paths(paths: tuple[Path, ...], root: Path) -> list[str]:
