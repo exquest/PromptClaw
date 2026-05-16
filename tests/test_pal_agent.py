@@ -10,7 +10,13 @@ from typing import Any
 from promptclaw import cli as promptclaw_cli
 from promptclaw.cli import cmd_pal_agent_actions, cmd_pal_agent_triage
 from promptclaw.config import default_project_config, save_config
-from promptclaw.pal_agent import PALOpsAction, PALOpsTool, run_pal_ops_actions, run_pal_ops_triage
+from promptclaw.pal_agent import (
+    PALOpsAction,
+    PALOpsTool,
+    run_pal_ops_actions,
+    run_pal_ops_triage,
+    verify_pal_workflow_artifacts,
+)
 from promptclaw.pal_client import PALQueryResult
 from promptclaw.pal_knowledge import write_pal_knowledge_index
 
@@ -993,6 +999,12 @@ def test_pal_restart_validation_runs_health_query_smoke_tailscale_and_process_ch
     assert state["status"] == "complete"
     assert state["lead_agent"] == "local-allowlist"
     assert state["verifier_agent"] == "local-allowlist"
+    artifact_verification = verify_pal_workflow_artifacts(run_root)
+    assert artifact_verification.passed is True
+    (run_root / "handoffs" / "restart-validation.md").unlink()
+    artifact_verification = verify_pal_workflow_artifacts(run_root)
+    assert artifact_verification.passed is False
+    assert artifact_verification.missing_artifacts == ("handoffs/restart-validation.md",)
     _assert_run_summary_json(
         run_root,
         workflow="restart_validation",

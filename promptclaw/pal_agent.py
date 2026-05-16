@@ -56,6 +56,27 @@ class PALOpsAction:
     run: Callable[[], dict[str, Any]]
 
 
+@dataclass(frozen=True)
+class PALWorkflowArtifactVerification:
+    run_root: Path
+    workflow_id: str
+    required_artifacts: tuple[str, ...]
+    missing_artifacts: tuple[str, ...]
+
+    @property
+    def passed(self) -> bool:
+        return not self.missing_artifacts
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "run_root": str(self.run_root),
+            "workflow_id": self.workflow_id,
+            "passed": self.passed,
+            "required_artifacts": list(self.required_artifacts),
+            "missing_artifacts": list(self.missing_artifacts),
+        }
+
+
 PAL_OPS_TRIAGE_WORKFLOW_ID = "pal_ops_triage"
 PAL_OPS_ACTIONS_WORKFLOW_ID = "pal_ops_actions"
 
@@ -177,6 +198,107 @@ PAL_AGENT_SYSTEM_PROMPT = (
 PAL_KNOWLEDGE_CONTEXT_LIMIT = 3
 PAL_KNOWLEDGE_CONTEXT_MAX_CHARS = 1600
 PAL_KNOWLEDGE_SNIPPET_MAX_CHARS = 240
+
+PAL_WORKFLOW_COMMON_REQUIRED_ARTIFACTS: tuple[str, ...] = (
+    "input/task.md",
+    "routing/route.json",
+    "routing/route.md",
+    "summary/final-summary.md",
+    "summary/run-summary.json",
+    "logs/events.jsonl",
+    "state.json",
+)
+
+PAL_WORKFLOW_REQUIRED_ARTIFACTS: dict[str, tuple[str, ...]] = {
+    PAL_OPS_TRIAGE_WORKFLOW_ID: (
+        *PAL_WORKFLOW_COMMON_REQUIRED_ARTIFACTS,
+        "prompts/triage-plan.md",
+        "prompts/triage-summary.md",
+        "outputs/triage-plan.raw.txt",
+        "outputs/triage-plan.json",
+        "outputs/tool-observations.json",
+        "handoffs/pal-to-operator.md",
+    ),
+    PAL_OPS_ACTIONS_WORKFLOW_ID: (
+        *PAL_WORKFLOW_COMMON_REQUIRED_ARTIFACTS,
+        "outputs/action-context.json",
+        "prompts/action-plan.md",
+        "prompts/action-summary.md",
+        "outputs/action-plan.raw.txt",
+        "outputs/action-plan.json",
+        "outputs/action-results.json",
+        "handoffs/pal-action-request.md",
+    ),
+    SLOW_INFERENCE_WORKFLOW_ID: (
+        *PAL_WORKFLOW_COMMON_REQUIRED_ARTIFACTS,
+        "outputs/slow-inference-context.json",
+        "handoffs/slow-inference-context.md",
+    ),
+    SLOW_INFERENCE_DIAGNOSIS_WORKFLOW_ID: (
+        *PAL_WORKFLOW_COMMON_REQUIRED_ARTIFACTS,
+        "outputs/slow-inference-diagnosis.json",
+        "handoffs/slow-inference-diagnosis.md",
+    ),
+    RESTART_VALIDATION_WORKFLOW_ID: (
+        *PAL_WORKFLOW_COMMON_REQUIRED_ARTIFACTS,
+        "outputs/restart-validation.json",
+        "handoffs/restart-validation.md",
+    ),
+    SHUTDOWN_AUDIT_WORKFLOW_ID: (
+        *PAL_WORKFLOW_COMMON_REQUIRED_ARTIFACTS,
+        "outputs/shutdown-audit.json",
+        "handoffs/shutdown-audit.md",
+    ),
+    PHASE2_READINESS_WORKFLOW_ID: (
+        *PAL_WORKFLOW_COMMON_REQUIRED_ARTIFACTS,
+        "outputs/phase2-readiness.json",
+        "handoffs/phase2-readiness.md",
+    ),
+}
+
+
+def verify_pal_workflow_artifacts(
+    run_root: Path,
+    *,
+    workflow_id: str | None = None,
+) -> PALWorkflowArtifactVerification:
+    resolved_run_root = run_root.resolve()
+    resolved_workflow_id = workflow_id or _read_pal_workflow_id(resolved_run_root)
+    required_artifacts = PAL_WORKFLOW_REQUIRED_ARTIFACTS.get(resolved_workflow_id)
+    if required_artifacts is None:
+        raise ValueError(f"unsupported PAL workflow: {resolved_workflow_id}")
+    missing_artifacts = tuple(
+        relative_path
+        for relative_path in required_artifacts
+        if not (resolved_run_root / relative_path).is_file()
+    )
+    return PALWorkflowArtifactVerification(
+        run_root=resolved_run_root,
+        workflow_id=resolved_workflow_id,
+        required_artifacts=required_artifacts,
+        missing_artifacts=missing_artifacts,
+    )
+
+
+def _read_pal_workflow_id(run_root: Path) -> str:
+    candidates: tuple[tuple[Path, tuple[str, ...]], ...] = (
+        (run_root / "summary" / "run-summary.json", ("workflow",)),
+        (run_root / "routing" / "route.json", ("workflow_id", "task_type")),
+    )
+    for path, keys in candidates:
+        if not path.is_file():
+            continue
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        for key in keys:
+            value = payload.get(key)
+            if isinstance(value, str) and value.strip():
+                return value
+    raise ValueError("workflow_id required when PAL run artifacts do not identify the workflow")
 
 
 def run_pal_ops_triage(
