@@ -33,8 +33,11 @@ from .pal_deploy import (
     default_pal_deploy_apply_backup_id,
     format_pal_deploy_apply_result,
     format_pal_deploy_plan,
+    format_pal_deploy_rollback_result,
+    load_pal_deployment_backup,
     load_pal_deployment_manifest,
     load_pal_remote_inventory_snapshot,
+    rollback_pal_deployment_backup,
 )
 from .pal_knowledge import query_pal_knowledge_index, write_pal_knowledge_index
 from .pal_smoke import (
@@ -210,6 +213,33 @@ def build_parser() -> argparse.ArgumentParser:
         help="Override the local backup artifact id for deterministic tests",
     )
     pal_deploy_apply_parser.add_argument("--json", action="store_true", help="Print deploy apply JSON")
+    pal_deploy_rollback_parser = pal_deploy_sub.add_parser(
+        "rollback",
+        help="Restore a PAL deploy backup into a local fake remote inventory after approval",
+    )
+    pal_deploy_rollback_parser.add_argument("project_root", type=Path)
+    pal_deploy_rollback_parser.add_argument(
+        "--manifest",
+        type=Path,
+        help="Accepted for deploy CLI consistency; rollback metadata comes from the backup artifact",
+    )
+    pal_deploy_rollback_parser.add_argument(
+        "--remote-inventory",
+        type=Path,
+        required=True,
+        help="Local JSON fake remote inventory snapshot to update; no SSH is performed",
+    )
+    pal_deploy_rollback_parser.add_argument(
+        "--backup-id",
+        required=True,
+        help="Local backup artifact id under .promptclaw/pal-deploy/backups",
+    )
+    pal_deploy_rollback_parser.add_argument(
+        "--approve-rollback",
+        action="store_true",
+        help="Approve writing restored backup content to the supplied fake remote inventory snapshot",
+    )
+    pal_deploy_rollback_parser.add_argument("--json", action="store_true", help="Print deploy rollback JSON")
 
     pal_kb_parser = pal_sub.add_parser("kb", help="PAL local knowledge-base commands")
     pal_kb_sub = pal_kb_parser.add_subparsers(dest="pal_kb_command", required=True)
@@ -911,6 +941,49 @@ def cmd_pal_deploy_apply(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_pal_deploy_rollback(args: argparse.Namespace) -> int:
+    project_root = args.project_root
+    remote_inventory_path = _resolve_project_path(project_root, args.remote_inventory)
+    backup_path = _pal_deploy_backup_path(project_root, args.backup_id)
+    if not args.approve_rollback:
+        payload = {
+            "workflow_id": "pal_deploy_rollback",
+            "status": "rejected",
+            "approved": False,
+            "remote_writes": False,
+            "remote_transport": "fake-remote-inventory",
+            "live_ssh": False,
+            "service_restarts": False,
+            "remote_inventory_path": str(remote_inventory_path),
+            "backup_id": args.backup_id,
+            "backup_path": str(backup_path),
+            "reason": "PAL deploy rollback requires --approve-rollback before fake remote writes",
+        }
+        if args.json:
+            print(json.dumps(payload, indent=2))
+        else:
+            print(
+                "PAL deploy rollback: REJECTED "
+                "approved=false remote_writes=false live_ssh=false "
+                "service_restarts=false reason=missing --approve-rollback"
+            )
+        return 1
+
+    backup = load_pal_deployment_backup(backup_path)
+    remote_inventory = load_pal_remote_inventory_snapshot(remote_inventory_path)
+    result = rollback_pal_deployment_backup(
+        backup,
+        remote_inventory=remote_inventory,
+        remote_inventory_path=remote_inventory_path,
+        approved=True,
+    )
+    if args.json:
+        print(json.dumps(result.to_dict(), indent=2))
+    else:
+        print(format_pal_deploy_rollback_result(result))
+    return 0
+
+
 def cmd_pal_kb_build(args: argparse.Namespace) -> int:
     result = write_pal_knowledge_index(
         args.project_root,
@@ -1123,6 +1196,8 @@ def _dispatch_pal(args: argparse.Namespace) -> int:
         return cmd_pal_deploy_plan(args)
     if args.pal_command == "deploy" and args.pal_deploy_command == "apply":
         return cmd_pal_deploy_apply(args)
+    if args.pal_command == "deploy" and args.pal_deploy_command == "rollback":
+        return cmd_pal_deploy_rollback(args)
     if args.pal_command == "kb" and args.pal_kb_command == "build":
         return cmd_pal_kb_build(args)
     if args.pal_command == "kb" and args.pal_kb_command == "query":
@@ -1193,6 +1268,13 @@ def _resolve_project_path(project_root: Path, path: Path) -> Path:
     if path.is_absolute():
         return path
     return project_root / path
+
+
+def _pal_deploy_backup_path(project_root: Path, backup_id: str) -> Path:
+    backup_id_path = Path(backup_id)
+    if backup_id_path.name != backup_id or backup_id in {"", ".", ".."}:
+        raise ValueError("PAL deploy backup id must be a single directory name")
+    return project_root / ".promptclaw" / "pal-deploy" / "backups" / backup_id
 
 
 if __name__ == "__main__":

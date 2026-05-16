@@ -875,6 +875,18 @@ def rollback_pal_deployment_backup(
     )
 
 
+def load_pal_deployment_backup(backup_path: Path) -> PALDeploymentBackup:
+    """Load a local PAL deploy backup artifact from its metadata file."""
+    manifest_path = backup_path / "backup-manifest.json"
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise PALDeploymentManifestError(f"PAL deploy backup manifest is missing: {manifest_path}") from exc
+    except json.JSONDecodeError as exc:
+        raise PALDeploymentManifestError(f"Malformed PAL deploy backup manifest JSON: {manifest_path}") from exc
+    return _backup_from_payload(payload=payload, backup_path=backup_path)
+
+
 def build_pal_deploy_plan(
     project_root: Path,
     *,
@@ -990,6 +1002,99 @@ def format_pal_deploy_apply_result(result: PALDeploymentApply) -> str:
         for entry in result.skipped_entries:
             lines.append(f"- {entry.status.upper()} {entry.target} reason={entry.reason}")
     return "\n".join(lines)
+
+
+def format_pal_deploy_rollback_result(result: PALDeploymentRollback) -> str:
+    """Render a concise human-readable deploy rollback result."""
+    counts = result.summary_counts
+    lines = [
+        f"PAL deploy rollback: {result.status.upper()} backup={result.backup_path}",
+        (
+            f"approved={str(result.approved).lower()} "
+            f"remote_writes={str(result.remote_writes).lower()} "
+            f"remote_transport={result.remote_transport} "
+            f"live_ssh={str(result.live_ssh).lower()} "
+            f"service_restarts={str(result.service_restarts).lower()}"
+        ),
+        f"summary restored={counts['restored']}",
+        "restored file changes:",
+    ]
+    if result.restored_entries:
+        for entry in result.restored_entries:
+            lines.append(f"- {entry.status.upper()} {entry.target} backup={entry.backup_path}")
+    else:
+        lines.append("- none")
+    return "\n".join(lines)
+
+
+def _backup_from_payload(
+    *,
+    payload: Any,
+    backup_path: Path,
+) -> PALDeploymentBackup:
+    if not isinstance(payload, dict):
+        raise PALDeploymentManifestError("PAL deploy backup manifest root must be an object")
+    if payload.get("workflow_id") != "pal_deploy_backup":
+        raise PALDeploymentManifestError("PAL deploy backup manifest has invalid workflow_id")
+
+    entries_payload = payload.get("entries")
+    if not isinstance(entries_payload, list):
+        raise PALDeploymentManifestError("PAL deploy backup manifest entries must be a list")
+
+    try:
+        backup_id = str(payload["backup_id"])
+        manifest_path = Path(str(payload["manifest_path"]))
+        deployment_root = str(payload["deployment_root"])
+    except KeyError as exc:
+        raise PALDeploymentManifestError(f"PAL deploy backup manifest missing {exc}") from exc
+
+    return PALDeploymentBackup(
+        backup_id=backup_id,
+        backup_path=backup_path,
+        manifest_path=manifest_path,
+        deployment_root=deployment_root,
+        entries=tuple(_backup_entry_from_payload(item) for item in entries_payload),
+    )
+
+
+def _backup_entry_from_payload(payload: Any) -> PALDeploymentBackupEntry:
+    if not isinstance(payload, dict):
+        raise PALDeploymentManifestError("PAL deploy backup entries must be objects")
+    try:
+        return PALDeploymentBackupEntry(
+            target=str(payload["target"]),
+            status=str(payload["status"]),
+            backup_path=str(payload["backup_path"]),
+            remote_sha256=(
+                str(payload["remote_sha256"])
+                if payload.get("remote_sha256") is not None
+                else None
+            ),
+            remote_mode=(
+                str(payload["remote_mode"])
+                if payload.get("remote_mode") is not None
+                else None
+            ),
+            remote_owner=(
+                str(payload["remote_owner"])
+                if payload.get("remote_owner") is not None
+                else None
+            ),
+            remote_group=(
+                str(payload["remote_group"])
+                if payload.get("remote_group") is not None
+                else None
+            ),
+            size_bytes=(
+                int(payload["size_bytes"])
+                if payload.get("size_bytes") is not None
+                else None
+            ),
+            changed_fields=tuple(str(item) for item in payload.get("changed_fields", [])),
+            source=str(payload["source"]),
+        )
+    except KeyError as exc:
+        raise PALDeploymentManifestError(f"PAL deploy backup entry missing {exc}") from exc
 
 
 def _manifest_from_payload(
