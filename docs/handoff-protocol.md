@@ -120,9 +120,11 @@ artifacts under `.promptclaw/pal-deploy/backups/<backup-id>/`, records
 `service_restarts=false`. The paired local rollback primitive,
 `promptclaw.pal_deploy.rollback_pal_deployment_backup(...)`, can restore those
 backed-up files into a fake remote inventory and records `workflow_id:
-pal_deploy_rollback`, but there is not yet a rollback CLI or live remote
-rollback path. Live remote deployment remains outside the current handoff
-protocol.
+pal_deploy_rollback`. `promptclaw pal deploy rollback PROJECT_ROOT
+--remote-inventory PATH --backup-id ID --approve-rollback` is the matching
+approval-gated fake-remote rollback CLI; without `--approve-rollback` it returns
+nonzero and performs no fake remote write. Live remote deployment remains
+outside the current handoff protocol.
 
 The slow-inference context workflow uses the same artifact transport, but it is
 read-only context collection rather than a PAL-authored plan. It records:

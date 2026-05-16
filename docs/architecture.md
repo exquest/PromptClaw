@@ -234,9 +234,12 @@ inventory transport, with `live_ssh=false` and `service_restarts=false`.
 local PAL deploy rollback primitive: it restores files and metadata from a local
 backup artifact into the supplied fake remote inventory snapshot after an
 explicit approval argument. The primitive reports `workflow_id:
-pal_deploy_rollback`, `live_ssh=false`, and `service_restarts=false`; rollback
-CLI wiring, live SSH deployment, and service restart orchestration remain future
-approval-gated work.
+pal_deploy_rollback`, `live_ssh=false`, and `service_restarts=false`.
+`promptclaw pal deploy rollback PROJECT_ROOT --remote-inventory PATH
+--backup-id ID --approve-rollback` exposes that local-only recovery path through
+the CLI and refuses to mutate the fake remote inventory without the exact
+approval flag. Live SSH deployment and service restart orchestration remain
+future approval-gated work.
 
 Every PAL agent run uses the standard `.promptclaw/runs/<run-id>/` layout so the
 plan, observations, approvals, results, summary, events, and state remain

@@ -71,7 +71,18 @@ changed managed files from the manifest, preserves unmanaged files, and reports
 missing local sources as skipped. The local rollback primitive
 `promptclaw.pal_deploy.rollback_pal_deployment_backup(...)` can restore those
 backed-up files and metadata into a fake remote inventory for testable recovery
-work. There is not yet a rollback CLI, and neither path performs live SSH
+work.
+
+5. **Rollback a fake remote snapshot** only after explicit approval:
+
+```bash
+promptclaw pal deploy rollback pal-2026 --remote-inventory remote-inventory.json --backup-id apply-20260516T000000Z --approve-rollback
+```
+
+The rollback command mutates only the named local fake remote inventory JSON
+snapshot. It restores files recorded in the selected local backup artifact,
+preserves unmanaged files, and reports `live_ssh=false` and
+`service_restarts=false`. Neither apply nor rollback performs live SSH
 deployment or service restarts.
 
 ## Live PAL Verification Commands

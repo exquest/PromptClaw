@@ -52,6 +52,12 @@ All commands take a `PROJECT_ROOT` and read the `pal` section from
 - `promptclaw pal deploy plan PROJECT_ROOT [--remote-inventory PATH] [--json]` —
   dry-run deployment plan for the repo-managed manifest; prints diff sets and
   service impacts without remote writes.
+- `promptclaw pal deploy apply PROJECT_ROOT --remote-inventory PATH --approve-apply [--json]` —
+  apply managed manifest changes to a supplied local fake remote inventory after
+  explicit approval.
+- `promptclaw pal deploy rollback PROJECT_ROOT --remote-inventory PATH --backup-id ID --approve-rollback [--json]` —
+  restore a local PAL deploy backup into a supplied local fake remote inventory
+  after explicit approval.
 
 ### Action allow-list
 
@@ -85,8 +91,9 @@ PAL ships as a set of Python modules in the `promptclaw` package:
   primitive `run_pal_slow_inference_context`.
 - `promptclaw.pal_deploy` — deployment manifest loader,
   `diff_pal_deployment`, `build_fake_pal_remote_inventory` test helper,
-  `build_pal_deploy_plan`, `format_pal_deploy_plan`, and
-  `load_pal_remote_inventory_snapshot`.
+  `build_pal_deploy_plan`, `format_pal_deploy_plan`,
+  `apply_pal_deployment_changes`, `rollback_pal_deployment_backup`,
+  `load_pal_deployment_backup`, and `load_pal_remote_inventory_snapshot`.
 - `promptclaw.vast_connector` — non-executing Vast lifecycle stub boundary.
   Records blocked operations; exposes `callable_actions=[]`.
 
@@ -132,6 +139,12 @@ read-only workflows).
   intended `/opt/pal` files.
 - `pal deploy plan` is dry-run only: it writes no run artifact and performs no
   remote writes. Output is stdout (human or `--json`).
+- `pal deploy apply` writes changed backups under
+  `.promptclaw/pal-deploy/backups/<backup-id>/` and mutates only the supplied
+  fake remote inventory JSON after `--approve-apply`.
+- `pal deploy rollback` restores from
+  `.promptclaw/pal-deploy/backups/<backup-id>/` and mutates only the supplied
+  fake remote inventory JSON after `--approve-rollback`.
 
 ## Host-managed `/opt/pal` Layout
 

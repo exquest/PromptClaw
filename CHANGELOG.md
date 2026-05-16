@@ -2,14 +2,24 @@
 
 ## Unreleased
 
+- Added approval-gated PAL deploy rollback CLI (T-043@20260515T214233Z):
+  `promptclaw pal deploy rollback PROJECT_ROOT --remote-inventory PATH
+  --backup-id ID --approve-rollback` now restores a local PAL deploy backup
+  into the supplied fake remote inventory snapshot. The command refuses
+  rollback without `--approve-rollback`, preserves unmanaged inventory entries,
+  and reports `workflow_id: pal_deploy_rollback`, `live_ssh=false`, and
+  `service_restarts=false`. This adds no live SSH deployment, service restart,
+  provider secret, dependency, migration, or database behavior.
+
 - Added PAL deploy rollback primitive (T-042@20260515T214233Z):
   `promptclaw.pal_deploy.rollback_pal_deployment_backup(...)` now restores
   backed-up managed fake-remote file content and metadata into a supplied local
   fake remote inventory snapshot after an explicit approval argument. It
   preserves unmanaged and non-backed-up entries and reports `workflow_id:
   pal_deploy_rollback`, `live_ssh=false`, and `service_restarts=false`. This
-  adds no rollback CLI, live SSH deployment, service restart, provider secret,
-  dependency, migration, or database behavior.
+  primitive adds no live SSH deployment, service restart, provider secret,
+  dependency, migration, or database behavior; CLI exposure is provided by
+  T-043.
 
 - Added approval-gated PAL deploy apply for fake remote inventories
   (T-041@20260515T214233Z): `promptclaw pal deploy apply PROJECT_ROOT
@@ -17,16 +27,16 @@
   remote inventory snapshot from the PAL deployment manifest after explicit
   approval. The command backs up changed managed fake-remote file content before
   overwrite, writes added/changed managed files, preserves unmanaged files, and
-  reports skipped missing local sources. This adds no rollback command, live SSH
+  reports skipped missing local sources. This apply command adds no live SSH
   deployment, service restart, provider secret, dependency, migration, or
   database behavior.
 
 - Added PAL deploy backup primitive (T-040@20260515T214233Z):
   `promptclaw.pal_deploy.backup_pal_deployment_changes(...)` now stores changed
   managed fake-remote file content and metadata under a local backup artifact,
-  with JSON-safe backup metadata and `remote_writes=false`. This adds no deploy
-  apply CLI, rollback CLI, live SSH capture, approval flag, remote write, or
-  service restart behavior.
+  with JSON-safe backup metadata and `remote_writes=false`. This primitive adds
+  no live SSH capture, remote write, or service restart behavior; apply and
+  rollback CLI exposure are provided by T-041 and T-043.
 
 - Shipped PAL 2026 agentic ops platform (T-030@20260515T214233Z): this release
   consolidates the PAL operator loop across four areas. **Approval replay** —

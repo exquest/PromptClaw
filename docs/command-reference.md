@@ -160,6 +160,8 @@ promptclaw pal deploy plan PROJECT_ROOT
 promptclaw pal deploy plan PROJECT_ROOT --remote-inventory remote-inventory.json --json
 promptclaw pal deploy apply PROJECT_ROOT --remote-inventory remote-inventory.json --approve-apply
 promptclaw pal deploy apply PROJECT_ROOT --remote-inventory remote-inventory.json --approve-apply --json
+promptclaw pal deploy rollback PROJECT_ROOT --remote-inventory remote-inventory.json --backup-id apply-20260516T000000Z --approve-rollback
+promptclaw pal deploy rollback PROJECT_ROOT --remote-inventory remote-inventory.json --backup-id apply-20260516T000000Z --approve-rollback --json
 promptclaw pal agent triage PROJECT_ROOT
 promptclaw pal agent actions PROJECT_ROOT
 promptclaw pal agent actions PROJECT_ROOT --approve inspect_logs_deep
@@ -279,13 +281,17 @@ uses `workflow_id: pal_deploy_apply`, `approved: true`,
 `live_ssh: false`, and `service_restarts: false`. This command does not perform
 live SSH deployment, rollback, or service restarts.
 
-The API-level rollback primitive is
-`promptclaw.pal_deploy.rollback_pal_deployment_backup(...)`. It restores
-backed-up managed fake-remote files and metadata into a supplied local remote
-inventory snapshot and reports `workflow_id: pal_deploy_rollback`,
-`live_ssh: false`, and `service_restarts: false`. There is no rollback command
-or `--approve-rollback` parser surface yet; that is reserved for the later
-approval-gated CLI task.
+`pal deploy rollback` is the approval-gated fake-remote rollback path. It
+requires `--remote-inventory PATH --backup-id ID --approve-rollback`; without
+that approval flag it returns nonzero and does not mutate the snapshot. With
+approval, it loads
+`.promptclaw/pal-deploy/backups/<backup-id>/backup-manifest.json`, restores the
+backed-up managed files and metadata into the supplied inventory JSON, and
+preserves unmanaged entries. JSON output uses `workflow_id:
+pal_deploy_rollback`, `approved: true`,
+`remote_transport: fake-remote-inventory`, `remote_writes: true`,
+`live_ssh: false`, and `service_restarts: false`. This command does not perform
+live SSH rollback or service restarts.
 
 Current action ids:
 
