@@ -1,5 +1,12 @@
 # Escalations
 
+## T-022@20260515T214233Z (2026-05-16)
+
+- **Reason:** PAL deployment manifest scope and startup-hardening assumptions
+- **Details:** Exploration found PAL-027 is the first deployment-tooling slice before deploy diff/plan/apply/rollback. The affected surface is the PAL PRD deployment section, `pal-2026/ops/` runbooks/templates, PAL product docs, and existing PAL tests. The implementation is assumed to be a repo-managed JSON manifest at `pal-2026/ops/deployment-manifest.json` plus a small typed stdlib-only loader/validator in `promptclaw/pal_deploy.py` for future deploy tooling. It will list intended `/opt/pal` files, include host-managed startup/shutdown/router files, keep runtime logs/model data out of managed file entries, and contain no provider secrets, key paths, tokens, Tailscale auth keys, or live credentials. It will not add deploy apply/rollback behavior, remote SSH writes, restarts, cloud lifecycle calls, database migrations, dependencies, provider secrets, or CLI approval paths. The generated startup hardening bullets target the existing identity startup subsystem; current CLI, first-boot, daemon-ordering, and narrative ASGI tests already cover `bootstrap_identity()` persistence and ordering before `FirstBootAnnouncer`, so those remain mandatory regression anchors rather than broadening this manifest task into startup rewiring.
+- **Reason:** Red phase, implementation verification, and hardening-anchor results
+- **Details:** Red phase was confirmed with `pytest tests/test_pal_deploy.py -q` failing on the missing `promptclaw.pal_deploy` module before production code changed. After implementation, `pytest tests/test_pal_deploy.py -q` passed with `6 passed`, `pytest tests/test_pal_deploy.py tests/test_pal_knowledge.py -q` passed with `21 passed`, the focused PAL regression suite passed with `68 passed`, and the startup identity hardening anchors passed with `41 passed`. The required validation command `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` passed with `4759 passed, 10 skipped`, Ruff clean, and mypy clean. Additional focused checks `ruff check promptclaw/pal_deploy.py promptclaw/pal_knowledge.py tests/test_pal_deploy.py`, `mypy promptclaw/pal_deploy.py`, and `git diff --check` passed. No new dependencies or migrations were introduced.
+
 ## T-017@20260515T214233Z (2026-05-16)
 
 - **Reason:** PAL Phase 2 readiness workflow scope and startup-hardening assumptions

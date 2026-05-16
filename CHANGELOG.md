@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added repo-managed PAL deployment manifest (T-022@20260515T214233Z):
+  `pal-2026/ops/deployment-manifest.json` now lists intended host-managed
+  `/opt/pal` files, `promptclaw.pal_deploy` loads and validates the manifest,
+  and runtime logs/model state/override flags remain excluded metadata rather
+  than managed files. This adds no deploy apply, rollback, remote write, or
+  restart behavior.
+
 - Added PAL Phase 2 readiness report workflow (T-017@20260515T214233Z):
   `promptclaw pal report phase2-readiness PROJECT_ROOT` now writes a read-only
   `phase2_readiness_report` run artifact with per-prerequisite scores,

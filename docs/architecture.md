@@ -198,6 +198,17 @@ and `phase2_execution_actions: []`. It is a report only: it does not rent,
 start, stop, destroy, or resize instances, load Phase 2 models, migrate volumes,
 restart services, or expose approval action ids.
 
+PAL deployment tooling starts with a repo-managed manifest, not remote write
+authority. `pal-2026/ops/deployment-manifest.json` is loaded through
+`promptclaw.pal_deploy` and lists the intended `/opt/pal` managed files for the
+host-managed Phase 1 runtime: startup scripts, router app, shutdown config,
+deployment-info template, and Docker fallback files. Runtime state such as logs,
+Ollama model storage, and the shutdown override flag is recorded as excluded
+metadata rather than as files to sync, and the manifest validator rejects
+targets outside `/opt/pal`, duplicate targets, malformed modes, missing required
+sources, and secret-looking content. This is dry local metadata only; deploy
+diff, plan, apply, backup, and rollback remain future approval-gated work.
+
 Every PAL agent run uses the standard `.promptclaw/runs/<run-id>/` layout so the
 plan, observations, approvals, results, summary, events, and state remain
 reproducible.

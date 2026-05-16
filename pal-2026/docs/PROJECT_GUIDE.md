@@ -6,6 +6,7 @@ deployment.
 ## Primary Files
 
 - `ops/phase-1-checkpoints.md`: live deployment runbook.
+- `ops/deployment-manifest.json`: repo-managed intended `/opt/pal` file list.
 - `ops/session-state.md`: pause/resume state.
 - `ops/deviation-log.md`: errors and deviations for guide v2.
 - `examples/tasks/phase-1-deployment.md`: PromptClaw task entry point.
@@ -34,6 +35,10 @@ promptclaw pal kb query pal-2026 --query "router restart"
 
 The query command returns ranked snippets with source paths and line ranges and
 does not contact the live PAL router.
+
+Use `ops/deployment-manifest.json` as the local deployment file source of truth.
+It is manifest metadata only: deploy diff, apply, rollback, and service restarts
+remain separate future approval-gated work.
 
 ## Validation
 

@@ -251,6 +251,13 @@ route/event/state artifacts, a handoff, and a final summary with
 `--approve` flag and cannot rent, start, stop, destroy, resize, migrate, or load
 Phase 2 hardware/model work.
 
+PAL deployment metadata is currently manifest-only. The repo-managed manifest at
+`pal-2026/ops/deployment-manifest.json` is loaded by `promptclaw.pal_deploy` and
+lists intended `/opt/pal` files for the host-managed Phase 1 runtime, including
+startup scripts, the router app, shutdown config/script, deployment info, and
+Docker fallback files. It is not a deploy command and performs no SSH writes,
+restarts, backups, apply, or rollback.
+
 Current action ids:
 
 - `rerun_smoke`: run the PAL smoke suite and save a fresh local report

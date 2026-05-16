@@ -14,6 +14,7 @@ from .models import PromptClawConfig
 DEFAULT_PAL_KNOWLEDGE_SOURCES: tuple[str, ...] = (
     "docs/**/*.md",
     "ops/**/*.md",
+    "ops/deployment-manifest.json",
     "ops/templates/*.conf",
     "ops/templates/*.md",
     "ops/templates/*.py",

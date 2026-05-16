@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~5h 2m remaining (28 tasks, low confidence, calibrating)
-Expected completion: 12:56 AM tomorrow.
-Progress: [████████████████████████████████████░░] 94%  409 / 437 tasks complete
-  completed: 409, pending: 25, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
+ETC: ~4h 37m remaining (26 tasks, low confidence, calibrating)
+Expected completion: 12:42 AM tomorrow.
+Progress: [████████████████████████████████████░░] 94%  411 / 437 tasks complete
+  completed: 411, pending: 23, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -454,7 +454,7 @@ Progress: [███████████████████████
 - **T-019@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-020@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-021@20260515T214233Z**: complete — Completed with verdict PASS.
-- **T-022@20260515T214233Z**: pending — Pending.
+- **T-022@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-023@20260515T214233Z**: pending — Pending.
 - **T-024@20260515T214233Z**: pending — Pending.
 - **T-025@20260515T214233Z**: pending — Pending.
@@ -478,3 +478,8 @@ Progress: [███████████████████████
 - **T-043@20260515T214233Z**: pending — Pending.
 - **T-044@20260515T214233Z**: pending — Pending.
 - **T-045@20260515T214233Z**: pending — Pending.
+
+## T-022@20260515T214233Z Notes
+
+- Explore: PAL-027 is the deployment-manifest slice before deploy diff/plan/apply. Relevant patterns live in `sdp/prd-pal-2026-agentic-ops-platform.md`, `pal-2026/ops/`, `promptclaw/pal_knowledge.py`, `promptclaw/vast_connector.py`, and PAL tests. The manifest should be local JSON plus a typed stdlib loader, list intended `/opt/pal` managed files, exclude runtime logs/model data, and contain no secrets. Startup identity hardening remains covered by existing regression anchors, not new startup changes in this task.
+- Verify: Added `promptclaw.pal_deploy`, `pal-2026/ops/deployment-manifest.json`, host-managed startup script templates, PAL knowledge-source coverage, and docs/changelog updates. Red phase failed on the missing module before implementation; focused PAL tests, startup identity anchors, focused Ruff/mypy, `git diff --check`, and the full required validation gate all passed.

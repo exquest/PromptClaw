@@ -1,0 +1,112 @@
+{
+  "deployment_root": "/opt/pal",
+  "excluded_paths": [
+    "/opt/pal/logs/*.log",
+    "/opt/pal/logs/*.pid",
+    "/opt/pal/ollama/**",
+    "/opt/pal/config/override.flag",
+    "/opt/pal/router/__pycache__/**"
+  ],
+  "files": [
+    {
+      "group": "root",
+      "kind": "script",
+      "mode": "0755",
+      "owner": "root",
+      "required": true,
+      "service_impact": "all",
+      "source": "ops/templates/start_all.sh",
+      "target": "/opt/pal/scripts/start_all.sh"
+    },
+    {
+      "group": "root",
+      "kind": "script",
+      "mode": "0755",
+      "owner": "root",
+      "required": true,
+      "service_impact": "ollama",
+      "source": "ops/templates/start_ollama.sh",
+      "target": "/opt/pal/scripts/start_ollama.sh"
+    },
+    {
+      "group": "root",
+      "kind": "script",
+      "mode": "0755",
+      "owner": "root",
+      "required": true,
+      "service_impact": "router",
+      "source": "ops/templates/start_router.sh",
+      "target": "/opt/pal/scripts/start_router.sh"
+    },
+    {
+      "group": "root",
+      "kind": "script",
+      "mode": "0755",
+      "owner": "root",
+      "required": true,
+      "service_impact": "shutdown-scheduler",
+      "source": "ops/templates/auto_shutdown.sh",
+      "target": "/opt/pal/scripts/auto_shutdown.sh"
+    },
+    {
+      "group": "root",
+      "kind": "config",
+      "mode": "0644",
+      "owner": "root",
+      "required": true,
+      "service_impact": "shutdown-scheduler",
+      "source": "ops/templates/shutdown.conf",
+      "target": "/opt/pal/config/shutdown.conf"
+    },
+    {
+      "group": "root",
+      "kind": "router",
+      "mode": "0644",
+      "owner": "root",
+      "required": true,
+      "service_impact": "router",
+      "source": "ops/templates/router-app.py",
+      "target": "/opt/pal/router/app.py"
+    },
+    {
+      "group": "root",
+      "kind": "metadata-template",
+      "mode": "0644",
+      "owner": "root",
+      "required": true,
+      "service_impact": "none",
+      "source": "ops/templates/DEPLOYMENT_INFO.md",
+      "target": "/opt/pal/DEPLOYMENT_INFO.md"
+    },
+    {
+      "group": "root",
+      "kind": "docker-fallback",
+      "mode": "0644",
+      "owner": "root",
+      "required": true,
+      "service_impact": "docker-fallback",
+      "source": "ops/templates/router-Dockerfile",
+      "target": "/opt/pal/router/Dockerfile"
+    },
+    {
+      "group": "root",
+      "kind": "docker-fallback",
+      "mode": "0644",
+      "owner": "root",
+      "required": true,
+      "service_impact": "docker-fallback",
+      "source": "ops/templates/docker-compose.phase1.yml",
+      "target": "/opt/pal/docker-compose.yml"
+    }
+  ],
+  "manifest_version": 1,
+  "mode": "host-managed",
+  "name": "pal-2026-phase1",
+  "runtime_directories": [
+    "/opt/pal/config",
+    "/opt/pal/logs",
+    "/opt/pal/ollama",
+    "/opt/pal/router",
+    "/opt/pal/scripts"
+  ]
+}
