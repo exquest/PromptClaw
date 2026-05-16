@@ -212,9 +212,13 @@ modes, missing required sources, and secret-looking content.
 local files with remote file snapshots and reports deterministic `added`,
 `changed`, `missing`, `unchanged`, and `unmanaged_remote` diff sets. Tests use
 `build_fake_pal_remote_inventory(...)` so the diff model can be exercised without
-live SSH; excluded runtime paths are ignored as unmanaged remote files. This is
-still dry local modeling only: deploy plan CLI, apply, backup, rollback, remote
-writes, and service restarts remain future approval-gated work.
+live SSH; excluded runtime paths are ignored as unmanaged remote files.
+`promptclaw pal deploy plan PROJECT_ROOT` exposes that model as a dry-run,
+stdout-only deploy plan. It loads the local manifest, optionally reads a local
+JSON remote-inventory snapshot, prints file diff counts plus service impacts,
+and records `dry_run=true` / `remote_writes=false` in JSON output. Apply,
+backup, rollback, remote writes, approval flags, and service restarts remain
+future approval-gated work.
 
 Every PAL agent run uses the standard `.promptclaw/runs/<run-id>/` layout so the
 plan, observations, approvals, results, summary, events, and state remain

@@ -26,6 +26,11 @@ from .pal_agent import (
     run_pal_slow_inference_diagnosis,
 )
 from .pal_client import PALRouterClient
+from .pal_deploy import (
+    build_pal_deploy_plan,
+    format_pal_deploy_plan,
+    load_pal_remote_inventory_snapshot,
+)
 from .pal_knowledge import query_pal_knowledge_index, write_pal_knowledge_index
 from .pal_smoke import (
     format_baseline_summary,
@@ -155,6 +160,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="Operator task for Phase 2 readiness reporting",
     )
     pal_report_phase2_parser.add_argument("--json", action="store_true", help="Print report result JSON")
+
+    pal_deploy_parser = pal_sub.add_parser("deploy", help="PAL deployment dry-run commands")
+    pal_deploy_sub = pal_deploy_parser.add_subparsers(dest="pal_deploy_command", required=True)
+    pal_deploy_plan_parser = pal_deploy_sub.add_parser(
+        "plan",
+        help="Print a dry-run PAL deployment plan without remote writes",
+    )
+    pal_deploy_plan_parser.add_argument("project_root", type=Path)
+    pal_deploy_plan_parser.add_argument(
+        "--manifest",
+        type=Path,
+        help="Override the deployment manifest path; relative paths resolve under PROJECT_ROOT",
+    )
+    pal_deploy_plan_parser.add_argument(
+        "--remote-inventory",
+        type=Path,
+        help="Local JSON remote inventory snapshot; no SSH or live remote probe is performed",
+    )
+    pal_deploy_plan_parser.add_argument("--json", action="store_true", help="Print deploy plan JSON")
 
     pal_kb_parser = pal_sub.add_parser("kb", help="PAL local knowledge-base commands")
     pal_kb_sub = pal_kb_parser.add_subparsers(dest="pal_kb_command", required=True)
@@ -763,6 +787,30 @@ def cmd_pal_report_phase2_readiness(args: argparse.Namespace) -> int:
     return 0 if result["status"] == "complete" else 1
 
 
+def cmd_pal_deploy_plan(args: argparse.Namespace) -> int:
+    project_root = args.project_root
+    manifest_path = _resolve_project_path(project_root, args.manifest) if args.manifest else None
+    remote_inventory_path = (
+        _resolve_project_path(project_root, args.remote_inventory) if args.remote_inventory else None
+    )
+    remote_inventory = (
+        load_pal_remote_inventory_snapshot(remote_inventory_path)
+        if remote_inventory_path is not None
+        else ()
+    )
+    plan = build_pal_deploy_plan(
+        project_root,
+        manifest_path=manifest_path,
+        remote_inventory=remote_inventory,
+        remote_inventory_source=str(remote_inventory_path) if remote_inventory_path is not None else "empty",
+    )
+    if args.json:
+        print(json.dumps(plan.to_dict(), indent=2))
+    else:
+        print(format_pal_deploy_plan(plan))
+    return 0
+
+
 def cmd_pal_kb_build(args: argparse.Namespace) -> int:
     result = write_pal_knowledge_index(
         args.project_root,
@@ -892,6 +940,8 @@ def _dispatch_pal(args: argparse.Namespace) -> int:
         return cmd_pal_audit_shutdown(args)
     if args.pal_command == "report" and args.pal_report_command == "phase2-readiness":
         return cmd_pal_report_phase2_readiness(args)
+    if args.pal_command == "deploy" and args.pal_deploy_command == "plan":
+        return cmd_pal_deploy_plan(args)
     if args.pal_command == "kb" and args.pal_kb_command == "build":
         return cmd_pal_kb_build(args)
     if args.pal_command == "kb" and args.pal_kb_command == "query":
@@ -954,6 +1004,12 @@ def _display_path(project_root: Path, path: Path) -> str:
         return path.relative_to(project_root.resolve()).as_posix()
     except ValueError:
         return str(path)
+
+
+def _resolve_project_path(project_root: Path, path: Path) -> Path:
+    if path.is_absolute():
+        return path
+    return project_root / path
 
 
 if __name__ == "__main__":

@@ -218,6 +218,56 @@ class PALDeploymentDiff:
         }
 
 
+@dataclass(frozen=True)
+class PALDeploymentPlan:
+    manifest: PALDeploymentManifest
+    diff: PALDeploymentDiff
+    remote_inventory_source: str
+    workflow_id: str = "pal_deploy_plan"
+    dry_run: bool = True
+    remote_writes: bool = False
+    approval_required_for_apply: bool = True
+
+    @property
+    def planned_changes(self) -> tuple[PALDeploymentDiffEntry, ...]:
+        return self.diff.added + self.diff.changed + self.diff.missing
+
+    @property
+    def service_impacts(self) -> dict[str, dict[str, int]]:
+        impacts: dict[str, dict[str, int]] = {}
+        for status, entries in (
+            ("added", self.diff.added),
+            ("changed", self.diff.changed),
+            ("missing", self.diff.missing),
+        ):
+            for entry in entries:
+                impact = entry.service_impact or "unknown"
+                impacts.setdefault(impact, {})
+                impacts[impact][status] = impacts[impact].get(status, 0) + 1
+        return {impact: impacts[impact] for impact in sorted(impacts)}
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "workflow_id": self.workflow_id,
+            "dry_run": self.dry_run,
+            "remote_writes": self.remote_writes,
+            "approval_required_for_apply": self.approval_required_for_apply,
+            "manifest": {
+                "path": str(self.manifest.manifest_path),
+                "name": self.manifest.name,
+                "mode": self.manifest.mode,
+                "file_count": len(self.manifest.files),
+            },
+            "deployment_root": self.manifest.deployment_root,
+            "remote_inventory_source": self.remote_inventory_source,
+            "summary_counts": self.diff.summary_counts,
+            "service_impacts": self.service_impacts,
+            "planned_changes": [entry.to_dict() for entry in self.planned_changes],
+            "unchanged": [entry.to_dict() for entry in self.diff.unchanged],
+            "unmanaged_remote": [entry.to_dict() for entry in self.diff.unmanaged_remote],
+        }
+
+
 def load_pal_deployment_manifest(
     project_root: Path,
     *,
@@ -330,6 +380,15 @@ def build_fake_pal_remote_inventory(
     return tuple(remote_files)
 
 
+def load_pal_remote_inventory_snapshot(path: Path) -> tuple[PALDeploymentRemoteFile, ...]:
+    """Load a local JSON remote-inventory snapshot for dry-run planning."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise PALDeploymentManifestError(f"Malformed PAL remote inventory JSON: {path}") from exc
+    return _remote_inventory_from_payload(payload)
+
+
 def diff_pal_deployment(
     manifest: PALDeploymentManifest,
     project_root: Path,
@@ -390,6 +449,68 @@ def diff_pal_deployment(
     )
 
 
+def build_pal_deploy_plan(
+    project_root: Path,
+    *,
+    manifest_path: Path | None = None,
+    remote_inventory: Iterable[PALDeploymentRemoteFile] = (),
+    remote_inventory_source: str = "empty",
+) -> PALDeploymentPlan:
+    """Build a stdout-safe dry-run PAL deployment plan with no remote writes."""
+    manifest = load_pal_deployment_manifest(project_root, manifest_path=manifest_path)
+    diff = diff_pal_deployment(
+        manifest,
+        project_root,
+        remote_inventory=remote_inventory,
+    )
+    return PALDeploymentPlan(
+        manifest=manifest,
+        diff=diff,
+        remote_inventory_source=remote_inventory_source,
+    )
+
+
+def format_pal_deploy_plan(plan: PALDeploymentPlan) -> str:
+    """Render a concise human-readable dry-run deploy plan."""
+    counts = plan.diff.summary_counts
+    impact_names = ",".join(plan.service_impacts) or "none"
+    lines = [
+        f"PAL deploy plan: DRY-RUN manifest={plan.manifest.manifest_path} root={plan.manifest.deployment_root}",
+        (
+            f"dry_run={str(plan.dry_run).lower()} "
+            f"remote_writes={str(plan.remote_writes).lower()} "
+            f"approval_required_for_apply={str(plan.approval_required_for_apply).lower()}"
+        ),
+        (
+            "summary "
+            f"added={counts['added']} "
+            f"changed={counts['changed']} "
+            f"missing={counts['missing']} "
+            f"unchanged={counts['unchanged']} "
+            f"unmanaged_remote={counts['unmanaged_remote']}"
+        ),
+        f"planned_changes={len(plan.planned_changes)} service_impacts={impact_names}",
+        "planned file changes:",
+    ]
+    if plan.planned_changes:
+        for entry in plan.planned_changes:
+            fields = ",".join(entry.changed_fields) or "none"
+            lines.append(
+                f"- {entry.status.upper()} {entry.target} <- {entry.source} "
+                f"impact={entry.service_impact or 'unknown'} fields={fields}"
+            )
+    else:
+        lines.append("- none")
+
+    lines.append("unmanaged remote files:")
+    if plan.diff.unmanaged_remote:
+        for entry in plan.diff.unmanaged_remote:
+            lines.append(f"- {entry.status.upper()} {entry.target}")
+    else:
+        lines.append("- none")
+    return "\n".join(lines)
+
+
 def _manifest_from_payload(
     *,
     path: Path,
@@ -435,6 +556,44 @@ def _file_from_payload(payload: Any) -> PALDeploymentFile:
         )
     except KeyError as exc:
         raise PALDeploymentManifestError(f"PAL deployment manifest file entry missing {exc}") from exc
+
+
+def _remote_inventory_from_payload(payload: Any) -> tuple[PALDeploymentRemoteFile, ...]:
+    if isinstance(payload, list):
+        return tuple(_remote_file_from_payload(item) for item in payload)
+    if isinstance(payload, dict):
+        if "target" in payload:
+            return (_remote_file_from_payload(payload),)
+        files_payload = payload.get("files", payload)
+        if isinstance(files_payload, list):
+            return tuple(_remote_file_from_payload(item) for item in files_payload)
+        if isinstance(files_payload, dict):
+            return build_fake_pal_remote_inventory(files_payload)
+    raise PALDeploymentManifestError("PAL remote inventory must be a list, target map, or object with files")
+
+
+def _remote_file_from_payload(payload: Any) -> PALDeploymentRemoteFile:
+    if not isinstance(payload, dict):
+        raise PALDeploymentManifestError("PAL remote inventory entries must be objects")
+    if "content" in payload:
+        target = str(payload.get("target", ""))
+        if not target:
+            raise PALDeploymentManifestError("PAL remote inventory content entry missing target")
+        return build_fake_pal_remote_inventory({target: payload})[0]
+    try:
+        exists = bool(payload.get("exists", True))
+        return PALDeploymentRemoteFile(
+            target=str(payload["target"]),
+            exists=exists,
+            sha256=str(payload["sha256"]) if payload.get("sha256") is not None else None,
+            mode=str(payload["mode"]) if exists and payload.get("mode") is not None else None,
+            owner=str(payload["owner"]) if exists and payload.get("owner") is not None else None,
+            group=str(payload["group"]) if exists and payload.get("group") is not None else None,
+            size_bytes=int(payload["size_bytes"]) if exists and payload.get("size_bytes") is not None else None,
+            source=str(payload.get("source", "local-snapshot")),
+        )
+    except KeyError as exc:
+        raise PALDeploymentManifestError(f"PAL remote inventory entry missing {exc}") from exc
 
 
 def _is_child_path(candidate: str, root: str) -> bool:

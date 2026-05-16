@@ -496,3 +496,30 @@ Progress: [███████████████████████
   failed on the missing diff API before implementation; focused deploy tests,
   focused Ruff/mypy, `git diff --check`, and the full required validation gate
   all passed.
+
+## T-024@20260515T214233Z Notes
+
+- Explore: PAL-029 follows the T-022 manifest and T-023 deploy-diff model.
+  Relevant patterns live in `sdp/prd-pal-2026-agentic-ops-platform.md`,
+  `sdp/templates/candidates/lead_t2/v006.md`, `promptclaw/pal_deploy.py`,
+  `promptclaw/cli.py`, `tests/test_pal_deploy.py`,
+  `docs/architecture.md`, `docs/command-reference.md`, and
+  `pal-2026/docs/PROJECT_GUIDE.md`. The dry-run deploy plan command should
+  remain stdlib-only and stdout-focused: load the manifest, optionally read a
+  local JSON inventory snapshot, report diff counts and service impact, and expose
+  `dry_run=true` plus `remote_writes=false`. It must not add live SSH reads,
+  remote writes, backups, apply, rollback, service restarts, approval flags,
+  migrations, dependencies, provider secrets, database columns, or cloud
+  lifecycle operations. Startup identity hardening remains covered by existing
+  regression anchors rather than new startup changes in this task.
+- Verify: Added `promptclaw pal deploy plan PROJECT_ROOT` as a stdout-only
+  dry-run command backed by the existing manifest and diff model, with optional
+  local JSON remote-inventory snapshots, human and JSON output, service-impact
+  summaries, and explicit `dry_run=true` / `remote_writes=false` metadata. Red
+  phase failed on the missing CLI API and parser wiring before implementation.
+  The locked deploy-plan tests passed with `3 passed`, all PAL deploy tests
+  passed with `13 passed`, the startup identity hardening anchors passed with
+  `11 passed`, and the required validation gate passed with `4766 passed, 10
+  skipped`, Ruff clean, and mypy clean. No dependencies, migrations, live SSH
+  reads, remote writes, backups, apply, rollback, approval flags, or service
+  restarts were added.

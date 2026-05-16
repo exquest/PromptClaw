@@ -39,9 +39,15 @@ does not contact the live PAL router.
 Use `ops/deployment-manifest.json` as the local deployment file source of truth.
 `promptclaw.pal_deploy` can compare that manifest to fake remote snapshots and
 report deploy diff sets for added, changed, missing, unchanged, and unmanaged
-remote files. This is still dry-run modeling only: deploy CLI planning, apply,
-backup, rollback, and service restarts remain separate future approval-gated
-work.
+remote files. Operators can print the dry-run deploy plan without remote writes:
+
+```bash
+promptclaw pal deploy plan pal-2026
+```
+
+Use `--remote-inventory PATH --json` when comparing against a saved local remote
+snapshot. This is still dry-run planning only: apply, backup, rollback, service
+restarts, and approval flags remain separate future approval-gated work.
 
 ## Validation
 

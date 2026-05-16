@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import argparse
 import copy
+import io
 import json
+from contextlib import redirect_stdout
 from pathlib import Path
 
 import pytest
 
+from promptclaw import cli as promptclaw_cli
 from promptclaw.pal_deploy import (
     PALDeploymentManifest,
     PALDeploymentManifestError,
@@ -232,6 +236,107 @@ def test_default_pal_deployment_manifest_diff_against_empty_fake_remote_is_json_
     assert json.dumps(diff.to_dict(), sort_keys=True)
 
 
+def test_pal_deploy_plan_cli_prints_dry_run_summary_without_remote_writes(tmp_path: Path) -> None:
+    manifest = _write_diff_manifest_project(tmp_path)
+    remote_inventory_path = _write_remote_inventory_snapshot(tmp_path)
+    original_inventory = remote_inventory_path.read_text(encoding="utf-8")
+
+    output = io.StringIO()
+    args = argparse.Namespace(
+        project_root=tmp_path,
+        manifest=manifest.manifest_path,
+        remote_inventory=remote_inventory_path,
+        json=False,
+    )
+    with redirect_stdout(output):
+        rc = promptclaw_cli.cmd_pal_deploy_plan(args)
+
+    assert rc == 0
+    rendered = output.getvalue()
+    assert "PAL deploy plan: DRY-RUN" in rendered
+    assert "dry_run=true remote_writes=false" in rendered
+    assert "added=1 changed=1 missing=1 unchanged=1 unmanaged_remote=1" in rendered
+    assert "planned_changes=3" in rendered
+    assert "service_impacts=none" in rendered
+    assert "ADDED /opt/pal/added.txt <- ops/templates/added.txt impact=none" in rendered
+    assert "CHANGED /opt/pal/changed.txt <- ops/templates/changed.txt impact=none fields=content_sha256" in rendered
+    assert "MISSING /opt/pal/missing.txt <- ops/templates/missing.txt impact=none" in rendered
+    assert "UNMANAGED_REMOTE /opt/pal/manual.txt" in rendered
+    assert remote_inventory_path.read_text(encoding="utf-8") == original_inventory
+    assert not (tmp_path / ".promptclaw").exists()
+
+
+def test_pal_deploy_plan_cli_json_includes_diff_and_service_impact(tmp_path: Path) -> None:
+    manifest = _write_diff_manifest_project(tmp_path)
+    remote_inventory_path = _write_remote_inventory_snapshot(tmp_path)
+
+    output = io.StringIO()
+    args = argparse.Namespace(
+        project_root=tmp_path,
+        manifest=manifest.manifest_path,
+        remote_inventory=remote_inventory_path,
+        json=True,
+    )
+    with redirect_stdout(output):
+        rc = promptclaw_cli.cmd_pal_deploy_plan(args)
+
+    assert rc == 0
+    payload = json.loads(output.getvalue())
+    assert payload["workflow_id"] == "pal_deploy_plan"
+    assert payload["dry_run"] is True
+    assert payload["remote_writes"] is False
+    assert payload["approval_required_for_apply"] is True
+    assert payload["manifest"]["name"] == "test-pal-diff"
+    assert payload["manifest"]["path"] == str(manifest.manifest_path)
+    assert payload["manifest"]["file_count"] == 4
+    assert payload["deployment_root"] == "/opt/pal"
+    assert payload["remote_inventory_source"] == str(remote_inventory_path)
+    assert payload["summary_counts"] == {
+        "added": 1,
+        "changed": 1,
+        "missing": 1,
+        "unchanged": 1,
+        "unmanaged_remote": 1,
+    }
+    assert payload["service_impacts"]["none"] == {
+        "added": 1,
+        "changed": 1,
+        "missing": 1,
+    }
+    assert [entry["target"] for entry in payload["planned_changes"]] == [
+        "/opt/pal/added.txt",
+        "/opt/pal/changed.txt",
+        "/opt/pal/missing.txt",
+    ]
+    assert payload["planned_changes"][1]["changed_fields"] == ["content_sha256"]
+    assert [entry["target"] for entry in payload["unmanaged_remote"]] == ["/opt/pal/manual.txt"]
+
+
+def test_pal_deploy_plan_parser_has_no_apply_or_approval_surface(tmp_path: Path) -> None:
+    remote_inventory_path = tmp_path / "remote-inventory.json"
+    parser = promptclaw_cli.build_parser()
+
+    parsed = parser.parse_args([
+        "pal",
+        "deploy",
+        "plan",
+        str(tmp_path),
+        "--remote-inventory",
+        str(remote_inventory_path),
+        "--json",
+    ])
+
+    assert parsed.pal_command == "deploy"
+    assert parsed.pal_deploy_command == "plan"
+    assert parsed.project_root == tmp_path
+    assert parsed.remote_inventory == remote_inventory_path
+    assert parsed.json is True
+    assert not hasattr(parsed, "approve")
+    assert not hasattr(parsed, "approve_deploy")
+    assert not hasattr(parsed, "approve_rollback")
+    assert not hasattr(parsed, "apply")
+
+
 def _valid_manifest_payload() -> dict[str, object]:
     return {
         "manifest_version": 1,
@@ -296,3 +401,19 @@ def _diff_file_entry(source: str, target: str, *, required: bool = True) -> dict
         "service_impact": "none",
         "required": required,
     }
+
+
+def _write_remote_inventory_snapshot(tmp_path: Path) -> Path:
+    remote_inventory_path = tmp_path / "remote-inventory.json"
+    remote_inventory_path.write_text(
+        json.dumps(
+            {
+                "/opt/pal/changed.txt": {"content": "remote old\n"},
+                "/opt/pal/manual.txt": {"content": "operator managed\n"},
+                "/opt/pal/unchanged.txt": {"content": "same\n"},
+            },
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+    return remote_inventory_path

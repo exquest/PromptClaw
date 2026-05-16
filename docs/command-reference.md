@@ -156,6 +156,8 @@ promptclaw pal validate restart PROJECT_ROOT
 promptclaw pal validate restart PROJECT_ROOT --json
 promptclaw pal audit shutdown PROJECT_ROOT
 promptclaw pal audit shutdown PROJECT_ROOT --json
+promptclaw pal deploy plan PROJECT_ROOT
+promptclaw pal deploy plan PROJECT_ROOT --remote-inventory remote-inventory.json --json
 promptclaw pal agent triage PROJECT_ROOT
 promptclaw pal agent actions PROJECT_ROOT
 promptclaw pal agent actions PROJECT_ROOT --approve inspect_logs_deep
@@ -251,16 +253,17 @@ route/event/state artifacts, a handoff, and a final summary with
 `--approve` flag and cannot rent, start, stop, destroy, resize, migrate, or load
 Phase 2 hardware/model work.
 
-PAL deployment metadata currently includes a manifest and reusable dry-run diff
-model. The repo-managed manifest at `pal-2026/ops/deployment-manifest.json` is
-loaded by `promptclaw.pal_deploy` and lists intended `/opt/pal` files for the
-host-managed Phase 1 runtime, including startup scripts, the router app,
-shutdown config/script, deployment info, and Docker fallback files.
-`diff_pal_deployment(...)` compares those local files with remote snapshots and
-reports `added`, `changed`, `missing`, `unchanged`, and `unmanaged_remote` sets;
-`build_fake_pal_remote_inventory(...)` supports tests without SSH. There is not
-yet a `promptclaw pal deploy` command, and this surface performs no SSH writes,
-restarts, backups, apply, or rollback.
+`pal deploy plan` prints a dry-run deployment plan for the repo-managed PAL
+manifest. The default manifest is `PROJECT_ROOT/ops/deployment-manifest.json`,
+which lists intended `/opt/pal` files for the host-managed Phase 1 runtime,
+including startup scripts, the router app, shutdown config/script, deployment
+info, and Docker fallback files. By default the command compares against an
+empty remote snapshot; `--remote-inventory PATH` can point at a local JSON
+snapshot for deterministic diagnostics without SSH. Human output shows summary
+counts, planned file changes, unmanaged remote files, and service impacts.
+`--json` includes the same diff data plus `dry_run: true` and
+`remote_writes: false`. The command writes no run artifact, performs no SSH
+writes, and exposes no apply, approval, restart, backup, or rollback flag.
 
 Current action ids:
 

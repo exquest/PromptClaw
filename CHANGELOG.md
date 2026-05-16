@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Added PAL deploy-plan CLI (T-024@20260515T214233Z):
+  `promptclaw pal deploy plan PROJECT_ROOT` now prints a stdout-only dry-run
+  plan from the repo-managed PAL deployment manifest, optionally comparing
+  against a local JSON remote-inventory snapshot. Human and JSON output report
+  file diff counts, planned changes, unmanaged remote files, service impacts,
+  `dry_run=true`, and `remote_writes=false`. The command adds no remote writes,
+  SSH probing, run artifacts, approval flags, backups, apply, rollback, or
+  service restart behavior.
+
 - Added PAL deploy diff model (T-023@20260515T214233Z):
   `promptclaw.pal_deploy.diff_pal_deployment(...)` now compares the
   repo-managed PAL deployment manifest against remote file snapshots and reports
