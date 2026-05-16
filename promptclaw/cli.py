@@ -13,12 +13,14 @@ from .doctor import run_doctor
 from .orchestrator import PromptClawOrchestrator
 from .pal_agent import (
     DEFAULT_ACTION_TASK,
+    DEFAULT_PHASE2_READINESS_TASK,
     DEFAULT_RESTART_VALIDATION_TASK,
     DEFAULT_SHUTDOWN_AUDIT_TASK,
     DEFAULT_SLOW_INFERENCE_DIAGNOSIS_TASK,
     DEFAULT_TRIAGE_TASK,
     run_pal_ops_actions,
     run_pal_ops_triage,
+    run_pal_phase2_readiness_report,
     run_pal_restart_validation,
     run_pal_shutdown_audit,
     run_pal_slow_inference_diagnosis,
@@ -139,6 +141,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="Operator task for shutdown audit",
     )
     pal_audit_shutdown_parser.add_argument("--json", action="store_true", help="Print audit result JSON")
+
+    pal_report_parser = pal_sub.add_parser("report", help="Run read-only PAL report workflows")
+    pal_report_sub = pal_report_parser.add_subparsers(dest="pal_report_command", required=True)
+    pal_report_phase2_parser = pal_report_sub.add_parser(
+        "phase2-readiness",
+        help="Score Phase 2 prerequisites without exposing execution actions",
+    )
+    pal_report_phase2_parser.add_argument("project_root", type=Path)
+    pal_report_phase2_parser.add_argument(
+        "--task",
+        default=DEFAULT_PHASE2_READINESS_TASK,
+        help="Operator task for Phase 2 readiness reporting",
+    )
+    pal_report_phase2_parser.add_argument("--json", action="store_true", help="Print report result JSON")
 
     pal_kb_parser = pal_sub.add_parser("kb", help="PAL local knowledge-base commands")
     pal_kb_sub = pal_kb_parser.add_subparsers(dest="pal_kb_command", required=True)
@@ -723,6 +739,30 @@ def cmd_pal_audit_shutdown(args: argparse.Namespace) -> int:
     return 0 if result["status"] == "complete" and result["audit_status"] != "fail" else 1
 
 
+def cmd_pal_report_phase2_readiness(args: argparse.Namespace) -> int:
+    result = run_pal_phase2_readiness_report(args.project_root, task=args.task)
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        executed_tools = ",".join(result["executed_tools"]) or "none"
+        mutating_actions = ",".join(result["mutating_actions"]) or "none"
+        phase2_execution_actions = ",".join(result["phase2_execution_actions"]) or "none"
+        print(
+            "PAL Phase 2 readiness: "
+            f"{result['status'].upper()} "
+            f"run_id={result['run_id']} "
+            f"readiness_status={result['readiness_status']} "
+            f"overall_score={result['overall_score']:.2f} "
+            f"prerequisites={result['prerequisite_count']} "
+            f"executed_tools={executed_tools} "
+            f"mutating_actions={mutating_actions} "
+            f"phase2_execution_actions={phase2_execution_actions} "
+            f"report={result['readiness_path']} "
+            f"summary={result['summary_path']}"
+        )
+    return 0 if result["status"] == "complete" else 1
+
+
 def cmd_pal_kb_build(args: argparse.Namespace) -> int:
     result = write_pal_knowledge_index(
         args.project_root,
@@ -850,6 +890,8 @@ def _dispatch_pal(args: argparse.Namespace) -> int:
         return cmd_pal_validate_restart(args)
     if args.pal_command == "audit" and args.pal_audit_command == "shutdown":
         return cmd_pal_audit_shutdown(args)
+    if args.pal_command == "report" and args.pal_report_command == "phase2-readiness":
+        return cmd_pal_report_phase2_readiness(args)
     if args.pal_command == "kb" and args.pal_kb_command == "build":
         return cmd_pal_kb_build(args)
     if args.pal_command == "kb" and args.pal_kb_command == "query":

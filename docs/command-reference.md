@@ -240,6 +240,17 @@ route/event/state artifacts, a handoff, and a final summary with
 `mutating_actions: []`. Missing SSH diagnostics are recorded as unknown state
 instead of prompting for credentials or changing shutdown behavior.
 
+`pal report phase2-readiness` runs the Phase 2 readiness report workflow. It
+uses fixed read-only diagnostics for PAL health, saved smoke baselines, shutdown
+safety, local runbook/session-state evidence, and the Vast connector boundary.
+It writes `.promptclaw/runs/<run-id>/outputs/phase2-readiness.json`,
+route/event/state artifacts, a handoff, and a final summary with
+`workflow_id: phase2_readiness_report`, per-prerequisite scores,
+`overall_score`, `readiness_status`, the executed tool list,
+`mutating_actions: []`, and `phase2_execution_actions: []`. The command has no
+`--approve` flag and cannot rent, start, stop, destroy, resize, migrate, or load
+Phase 2 hardware/model work.
+
 Current action ids:
 
 - `rerun_smoke`: run the PAL smoke suite and save a fresh local report

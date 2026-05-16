@@ -1227,6 +1227,229 @@ def test_pal_audit_shutdown_cli_prints_summary(
     assert payload["mutating_actions"] == []
 
 
+def test_pal_phase2_readiness_report_scores_each_prerequisite_without_actions(
+    tmp_path: Path,
+) -> None:
+    from promptclaw.pal_agent import run_pal_phase2_readiness_report
+
+    config = default_project_config("PAL Phase 2 Readiness")
+    save_config(tmp_path, config)
+    executed: list[str] = []
+    expected_tools = [
+        "pal_health",
+        "pal_smoke_baseline",
+        "shutdown_remote_audit",
+        "phase2_project_state",
+        "vast_boundary",
+    ]
+    tool_registry = {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Check PAL health.",
+            run=lambda: _slow_tool_result(
+                executed,
+                "pal_health",
+                {"health": {"status": "green", "phase": "phase-1-a6000"}},
+            ),
+        ),
+        "pal_smoke_baseline": PALOpsTool(
+            name="pal_smoke_baseline",
+            description="Summarize PAL smoke baselines.",
+            run=lambda: _slow_tool_result(
+                executed,
+                "pal_smoke_baseline",
+                {
+                    "baseline": {
+                        "report_count": 2,
+                        "pass_count": 2,
+                        "fail_count": 0,
+                        "pass_rate": 1.0,
+                    },
+                    "baseline_tokens_per_second": 18.4,
+                },
+            ),
+        ),
+        "shutdown_remote_audit": PALOpsTool(
+            name="shutdown_remote_audit",
+            description="Audit shutdown state.",
+            run=lambda: _slow_tool_result(
+                executed,
+                "shutdown_remote_audit",
+                {
+                    "audit": {
+                        "audit_status": "pass",
+                        "shutdown_enabled_state": "enabled",
+                        "override_state": "inactive",
+                        "next_shutdown_window": "2026-05-16 01:00-01:05 America/Los_Angeles",
+                    }
+                },
+            ),
+        ),
+        "phase2_project_state": PALOpsTool(
+            name="phase2_project_state",
+            description="Inspect local PAL project state.",
+            run=lambda: _slow_tool_result(
+                executed,
+                "phase2_project_state",
+                {
+                    "project_state": {
+                        "phase1_runbook_present": True,
+                        "session_state_present": True,
+                        "phase2_is_appendix_only": True,
+                    }
+                },
+            ),
+        ),
+        "vast_boundary": PALOpsTool(
+            name="vast_boundary",
+            description="Inspect Vast boundary.",
+            run=lambda: _slow_tool_result(
+                executed,
+                "vast_boundary",
+                {
+                    "boundary": {
+                        "provider": "vast",
+                        "status": "stubbed",
+                        "blocked_actions": ["rent", "destroy", "start", "stop"],
+                        "callable_actions": [],
+                    }
+                },
+            ),
+        ),
+    }
+
+    result = run_pal_phase2_readiness_report(
+        tmp_path,
+        task="Assess Phase 2 readiness.",
+        client=FakePALClient([]),
+        tool_registry=tool_registry,
+        now=_fake_now(),
+    )
+
+    assert executed == expected_tools
+    assert result["status"] == "complete"
+    assert result["workflow_id"] == "phase2_readiness_report"
+    assert result["readiness_status"] == "blocked"
+    assert result["overall_score"] == 0.83
+    assert result["mutating_actions"] == []
+    assert result["phase2_execution_actions"] == []
+    assert result["executed_tools"] == expected_tools
+
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    payload = json.loads((run_root / "outputs" / "phase2-readiness.json").read_text())
+    route = json.loads((run_root / "routing" / "route.json").read_text())
+    state = json.loads((run_root / "state.json").read_text())
+    events = (run_root / "logs" / "events.jsonl").read_text()
+    summary = (run_root / "summary" / "final-summary.md").read_text()
+    prerequisites = {row["id"]: row for row in payload["prerequisites"]}
+
+    assert set(prerequisites) == {
+        "operator_authorization",
+        "phase1_health_baseline",
+        "shutdown_safety",
+        "deployment_reproducibility",
+        "cost_and_vast_boundary",
+        "phase2_execution_boundary",
+    }
+    assert prerequisites["operator_authorization"]["score"] == 0.0
+    assert prerequisites["operator_authorization"]["status"] == "blocked"
+    assert prerequisites["phase1_health_baseline"]["score"] == 1.0
+    assert prerequisites["shutdown_safety"]["score"] == 1.0
+    assert prerequisites["deployment_reproducibility"]["score"] == 1.0
+    assert prerequisites["cost_and_vast_boundary"]["score"] == 1.0
+    assert prerequisites["phase2_execution_boundary"]["score"] == 1.0
+    assert payload["workflow_id"] == "phase2_readiness_report"
+    assert payload["overall_score"] == 0.83
+    assert payload["readiness_status"] == "blocked"
+    assert payload["mutating_actions"] == []
+    assert payload["phase2_execution_actions"] == []
+    assert payload["executed_tools"] == expected_tools
+    assert route["workflow_id"] == "phase2_readiness_report"
+    assert route["mutating_actions"] == []
+    assert route["phase2_execution_actions"] == []
+    assert "Mutating actions: none" in (run_root / "routing" / "route.md").read_text()
+    assert "Phase 2 execution actions: none" in summary
+    assert "operator_authorization" in summary
+    assert (run_root / "handoffs" / "phase2-readiness.md").exists()
+    assert not (run_root / "outputs" / "action-results.json").exists()
+    assert "phase2_readiness_started" in events
+    assert "phase2_readiness_completed" in events
+    assert state["status"] == "complete"
+    assert state["lead_agent"] == "local-allowlist"
+    assert state["verifier_agent"] == "local-allowlist"
+
+
+def test_pal_report_phase2_readiness_cli_prints_summary(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    parser = promptclaw_cli.build_parser()
+    parsed = parser.parse_args([
+        "pal",
+        "report",
+        "phase2-readiness",
+        str(tmp_path),
+        "--task",
+        "Assess readiness.",
+        "--json",
+    ])
+    assert parsed.pal_command == "report"
+    assert parsed.pal_report_command == "phase2-readiness"
+    assert parsed.project_root == tmp_path
+    assert parsed.task == "Assess readiness."
+    assert parsed.json is True
+    assert not hasattr(parsed, "approve")
+
+    result = {
+        "run_id": "20260515t210000z-pal-phase2-readiness",
+        "workflow_id": "phase2_readiness_report",
+        "status": "complete",
+        "readiness_status": "blocked",
+        "overall_score": 0.83,
+        "summary_path": ".promptclaw/runs/20260515t210000z-pal-phase2-readiness/summary/final-summary.md",
+        "readiness_path": ".promptclaw/runs/20260515t210000z-pal-phase2-readiness/outputs/phase2-readiness.json",
+        "executed_tools": ["pal_health", "pal_smoke_baseline"],
+        "tool_count": 2,
+        "prerequisite_count": 6,
+        "mutating_actions": [],
+        "phase2_execution_actions": [],
+    }
+    calls: list[dict[str, Any]] = []
+
+    def fake_run(project_root: Path, *, task: str) -> dict[str, Any]:
+        calls.append({"project_root": project_root, "task": task})
+        return dict(result)
+
+    monkeypatch.setattr("promptclaw.cli.run_pal_phase2_readiness_report", fake_run)
+
+    text_output = io.StringIO()
+    args = argparse.Namespace(project_root=tmp_path, task="Assess readiness.", json=False)
+    with redirect_stdout(text_output):
+        rc = promptclaw_cli.cmd_pal_report_phase2_readiness(args)
+
+    assert rc == 0
+    rendered = text_output.getvalue()
+    assert "PAL Phase 2 readiness: COMPLETE" in rendered
+    assert "readiness_status=blocked" in rendered
+    assert "overall_score=0.83" in rendered
+    assert "executed_tools=pal_health,pal_smoke_baseline" in rendered
+    assert "mutating_actions=none" in rendered
+    assert "phase2_execution_actions=none" in rendered
+    assert calls == [{"project_root": tmp_path, "task": "Assess readiness."}]
+
+    json_output = io.StringIO()
+    args = argparse.Namespace(project_root=tmp_path, task="Assess readiness.", json=True)
+    with redirect_stdout(json_output):
+        rc = promptclaw_cli.cmd_pal_report_phase2_readiness(args)
+
+    assert rc == 0
+    payload = json.loads(json_output.getvalue())
+    assert payload["workflow_id"] == "phase2_readiness_report"
+    assert payload["readiness_status"] == "blocked"
+    assert payload["mutating_actions"] == []
+    assert payload["phase2_execution_actions"] == []
+
+
 def test_pal_agent_cli_actions_prints_approval_summary(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr("promptclaw.cli.run_pal_ops_actions", lambda project_root, task, approved_actions: {
         "run_id": "20260515t191000z-pal-ops-actions",

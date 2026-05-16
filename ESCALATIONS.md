@@ -1,5 +1,12 @@
 # Escalations
 
+## T-017@20260515T214233Z (2026-05-16)
+
+- **Reason:** PAL Phase 2 readiness workflow scope and startup-hardening assumptions
+- **Details:** Exploration found PAL-022 should add a deterministic report-only workflow alongside the existing restart-validation and shutdown-audit paths in `promptclaw/pal_agent.py`, with CLI wiring in `promptclaw/cli.py` and tests in `tests/test_pal_agent.py`. The implementation is assumed to be exposed as `promptclaw pal report phase2-readiness PROJECT_ROOT`, writing standard `.promptclaw/runs/<run-id>/` artifacts with per-prerequisite scores, an overall readiness score/status, `mutating_actions: []`, and `phase2_execution_actions: []`. It will not rent, start, stop, destroy, or resize cloud instances; load Phase 2 models; migrate persistent volumes; restart services; change shutdown behavior; expose approval action ids; add dependencies; add migrations; add provider secrets; or change database columns. The generated startup hardening bullets target the existing identity startup subsystem; current CLI, first-boot, daemon-ordering, and narrative ASGI tests already cover `bootstrap_identity()` persistence and ordering before `FirstBootAnnouncer`, so those remain mandatory regression anchors rather than broadening this PAL readiness report into startup rewiring.
+- **Reason:** Red phase, implementation verification, and hardening-anchor results
+- **Details:** Red phase was confirmed with `pytest tests/test_pal_agent.py::test_pal_phase2_readiness_report_scores_each_prerequisite_without_actions tests/test_pal_agent.py::test_pal_report_phase2_readiness_cli_prints_summary -q` failing on the missing `run_pal_phase2_readiness_report` workflow and `pal report` parser wiring before production code changed. After implementation, those locked tests passed with `2 passed`, `pytest tests/test_pal_agent.py tests/test_pal_smoke.py tests/test_pal_client.py -q` passed with `44 passed`, and the mandatory startup identity hardening anchor command passed with `45 passed`. The required validation command `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` passed with `4748 passed, 10 skipped`, Ruff clean, and mypy clean. No new dependencies or migrations were introduced.
+
 ## T-015@20260515T214233Z (2026-05-15T21:42:33Z)
 
 - **Reason:** PAL restart-validation workflow scope and startup-hardening assumptions

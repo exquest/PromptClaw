@@ -187,6 +187,17 @@ writes `outputs/shutdown-audit.json` with `workflow_id: shutdown_audit`,
 state but does not create or remove overrides, edit cron, or power down the
 host.
 
+The Phase 2 readiness workflow is exposed as
+`promptclaw pal report phase2-readiness PROJECT_ROOT`. It scores fixed
+prerequisites for operator authorization, Phase 1 health baselines, shutdown
+safety, deployment reproducibility, the Vast cost boundary, and the no-execution
+boundary. The workflow writes `outputs/phase2-readiness.json` with
+`workflow_id: phase2_readiness_report`, per-prerequisite scores,
+`overall_score`, `readiness_status`, all observations, `mutating_actions: []`,
+and `phase2_execution_actions: []`. It is a report only: it does not rent,
+start, stop, destroy, or resize instances, load Phase 2 models, migrate volumes,
+restart services, or expose approval action ids.
+
 Every PAL agent run uses the standard `.promptclaw/runs/<run-id>/` layout so the
 plan, observations, approvals, results, summary, events, and state remain
 reproducible.

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added PAL Phase 2 readiness report workflow (T-017@20260515T214233Z):
+  `promptclaw pal report phase2-readiness PROJECT_ROOT` now writes a read-only
+  `phase2_readiness_report` run artifact with per-prerequisite scores,
+  `overall_score`, `readiness_status`, `mutating_actions: []`, and
+  `phase2_execution_actions: []`, without exposing any Phase 2 execution or
+  approval action.
+
 - Added PAL shutdown-audit workflow (T-016@20260515T214233Z):
   `promptclaw pal audit shutdown PROJECT_ROOT` now writes a read-only
   `shutdown_audit` run artifact after auditing shutdown config, cron,

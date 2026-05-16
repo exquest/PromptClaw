@@ -1,5 +1,33 @@
 # Progress
 
+## T-017@20260515T214233Z Exploration Findings
+
+- ADP source: the active process is the task prompt's Explore -> Specify ->
+  Test -> Implement -> Verify -> Document flow, matching
+  `sdp/templates/candidates/lead_t2/v006.md`.
+- PRD source: `sdp/prd-pal-2026-agentic-ops-platform.md` maps this task to
+  PAL-022 `phase2_readiness_report`: a report-only workflow that scores Phase 2
+  prerequisites and exposes no Phase 2 execution action.
+- Affected implementation files: `promptclaw/pal_agent.py` for workflow/tool
+  logic and scoring, `promptclaw/cli.py` for parser/dispatch, and
+  `tests/test_pal_agent.py` for workflow and CLI regression coverage.
+- Existing pattern: restart-validation and shutdown-audit are deterministic
+  local allow-list workflows that write standard `.promptclaw/runs/<run-id>/`
+  artifacts, route metadata, handoffs, summaries, events, state, and
+  `mutating_actions: []`; Phase 2 readiness should follow that pattern instead
+  of using PAL to choose tools or proposing approval-gated actions.
+- Related docs/tests: PAL workflow contracts are documented in
+  `docs/architecture.md`, `docs/handoff-protocol.md`,
+  `docs/command-reference.md`, and `docs/startup-wizard.md`; related tests in
+  `tests/test_pal_agent.py`, `tests/test_pal_smoke.py`, and
+  `tests/test_pal_client.py` cover fake clients, fake SSH diagnostics, standard
+  run artifacts, and CLI summary output.
+- Startup hardening check: current CLI, first-boot, daemon-ordering, and
+  narrative ASGI tests already cover `bootstrap_identity()` persistence and
+  ordering before `FirstBootAnnouncer`, so this task keeps those as mandatory
+  regression anchors and does not broaden Phase 2 readiness into startup
+  rewiring.
+
 ## T-015@20260515T214233Z Exploration Findings
 
 - ADP source: the active process is the task prompt's Explore -> Specify ->
@@ -469,7 +497,7 @@ Progress: [███████████████████████
 - **T-014@20260515T214233Z**: pending — Pending.
 - **T-015@20260515T214233Z**: complete — PAL restart-validation workflow implemented: `promptclaw pal validate restart PROJECT_ROOT` runs router health, one fixed direct query, active smoke, Tailscale, and process-check diagnostics into a standard read-only `restart_validation` run artifact with `validation_status` and `mutating_actions: []`; red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
 - **T-016@20260515T214233Z**: complete — PAL shutdown-audit workflow implemented: `promptclaw pal audit shutdown PROJECT_ROOT` runs a fixed read-only SSH diagnostic for shutdown config, cron, override flag, current local shutdown time, and recent logs, then writes a standard `shutdown_audit` run artifact whose summary states shutdown enabled state, override state, next shutdown window, and `mutating_actions: []`. Red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
-- **T-017@20260515T214233Z**: pending — Pending.
+- **T-017@20260515T214233Z**: complete — PAL Phase 2 readiness workflow implemented: `promptclaw pal report phase2-readiness PROJECT_ROOT` writes a report-only `phase2_readiness_report` run artifact with per-prerequisite scores, `overall_score`, `readiness_status`, `mutating_actions: []`, and `phase2_execution_actions: []`. Red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
 - **T-018@20260515T214233Z**: pending — Pending.
 - **T-019@20260515T214233Z**: pending — Pending.
 - **T-020@20260515T214233Z**: pending — Pending.

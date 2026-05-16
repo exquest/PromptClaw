@@ -136,6 +136,33 @@ DEFAULT_SHUTDOWN_AUDIT_TOOL_ORDER: tuple[str, ...] = (
     "shutdown_remote_audit",
 )
 
+DEFAULT_PHASE2_READINESS_TASK = (
+    "Assess PAL 2026 Phase 2 readiness from fixed read-only evidence. Score "
+    "operator authorization, Phase 1 health, shutdown safety, deployment "
+    "reproducibility, cost boundaries, and the no-execution boundary without "
+    "starting any Phase 2 work."
+)
+
+PHASE2_READINESS_WORKFLOW_ID = "phase2_readiness_report"
+
+DEFAULT_PHASE2_READINESS_TOOL_ORDER: tuple[str, ...] = (
+    "pal_health",
+    "pal_smoke_baseline",
+    "shutdown_remote_audit",
+    "phase2_project_state",
+    "vast_boundary",
+)
+
+PHASE2_BLOCKED_EXECUTION_ACTIONS: tuple[str, ...] = (
+    "rent",
+    "destroy",
+    "start",
+    "stop",
+    "resize_gpu_pool",
+    "load_phase2_model",
+    "migrate_persistent_volume",
+)
+
 PAL_AGENT_SYSTEM_PROMPT = (
     "You are PAL 2026 operating through PromptClaw's bounded agent runtime. "
     "You may choose diagnostics from the provided allow-list only. You cannot run "
@@ -1048,6 +1075,150 @@ def run_pal_shutdown_audit(
     }
 
 
+def run_pal_phase2_readiness_report(
+    project_root: Path,
+    *,
+    task: str = DEFAULT_PHASE2_READINESS_TASK,
+    client: PALAgentClient | None = None,
+    tool_registry: dict[str, PALOpsTool] | None = None,
+    default_tools: tuple[str, ...] = DEFAULT_PHASE2_READINESS_TOOL_ORDER,
+    now: Callable[[], str] = utc_now,
+) -> dict[str, Any]:
+    project_root = project_root.resolve()
+    config = load_config(project_root)
+    paths = ProjectPaths(project_root=project_root, config=config)
+    pal_client = client or PALRouterClient.from_config(config)
+    tools = tool_registry or build_phase2_readiness_tool_registry(project_root, pal_client)
+
+    created_at = now()
+    run_id = _build_run_id(created_at, "pal-phase2-readiness")
+    artifacts = ArtifactManager(paths, run_id)
+    artifacts.create_run_layout()
+    artifacts.write_task(task)
+
+    state = RunState(
+        run_id=run_id,
+        title="PAL Phase 2 Readiness",
+        status="running",
+        current_phase="readiness",
+        created_at=created_at,
+        updated_at=created_at,
+        task_text=task,
+        lead_agent="local-allowlist",
+        verifier_agent="local-allowlist",
+        route_decision={
+            "task_type": PHASE2_READINESS_WORKFLOW_ID,
+            "workflow_id": PHASE2_READINESS_WORKFLOW_ID,
+            "lead_agent": "local-allowlist",
+            "verifier_agent": "local-allowlist",
+            "reason": "PromptClaw scores Phase 2 prerequisites through fixed read-only diagnostics.",
+            "mutating_actions": [],
+            "phase2_execution_actions": [],
+        },
+    )
+
+    _record_event(
+        artifacts,
+        state,
+        now,
+        event_type="pal_agent.phase2_readiness_started",
+        message="PAL Phase 2 readiness report started.",
+        phase="readiness",
+        agent="local-allowlist",
+        role="verifier",
+    )
+
+    readiness_tools = [name for name in default_tools if name in tools]
+    observations: list[dict[str, Any]] = []
+    for tool_name in readiness_tools:
+        observation = _run_tool(tools[tool_name])
+        observations.append(observation)
+        _record_event(
+            artifacts,
+            state,
+            now,
+            event_type="pal_agent.phase2_readiness_observed",
+            message=f"{tool_name} returned {observation['status']}.",
+            phase="readiness",
+            agent="local-allowlist",
+            role="verifier",
+            extra={"tool": tool_name, "status": observation["status"]},
+        )
+
+    readiness = _phase2_readiness_from_observations(observations)
+    payload = {
+        "workflow_id": PHASE2_READINESS_WORKFLOW_ID,
+        "task": task,
+        "executed_tools": readiness_tools,
+        "mutating_actions": [],
+        "phase2_execution_actions": [],
+        "blocked_phase2_actions": list(PHASE2_BLOCKED_EXECUTION_ACTIONS),
+        "readiness_status": readiness["readiness_status"],
+        "overall_score": readiness["overall_score"],
+        "prerequisites": readiness["prerequisites"],
+        "observations": observations,
+    }
+    readiness_path = artifacts.write_output("phase2-readiness.json", _json_dumps(payload))
+    artifacts.write_route_json({
+        "lead_agent": "local-allowlist",
+        "verifier_agent": "local-allowlist",
+        "task_type": PHASE2_READINESS_WORKFLOW_ID,
+        "workflow_id": PHASE2_READINESS_WORKFLOW_ID,
+        "tools": readiness_tools,
+        "mutating_actions": [],
+        "phase2_execution_actions": [],
+        "blocked_phase2_actions": list(PHASE2_BLOCKED_EXECUTION_ACTIONS),
+        "readiness_status": readiness["readiness_status"],
+        "overall_score": readiness["overall_score"],
+        "output_path": _relative_path(project_root, readiness_path),
+    })
+    artifacts.write_route_markdown(_render_phase2_readiness_route_markdown(readiness_tools))
+
+    state.current_phase = "summary"
+    summary_text = _render_phase2_readiness_summary(payload)
+    summary_path = artifacts.write_summary("final-summary.md", summary_text)
+    artifacts.write_handoff(
+        "phase2-readiness.md",
+        _render_phase2_readiness_handoff(payload),
+    )
+
+    state.status = "complete"
+    state.current_phase = "complete"
+    state.updated_at = now()
+    state.final_summary_path = _relative_path(project_root, summary_path)
+    _record_event(
+        artifacts,
+        state,
+        now,
+        event_type="pal_agent.phase2_readiness_completed",
+        message="PAL Phase 2 readiness report completed.",
+        phase="complete",
+        agent="local-allowlist",
+        role="verifier",
+        extra={
+            "summary_path": state.final_summary_path,
+            "readiness_status": readiness["readiness_status"],
+            "overall_score": readiness["overall_score"],
+        },
+    )
+    StateStore(paths).save(state)
+
+    return {
+        "run_id": run_id,
+        "workflow_id": PHASE2_READINESS_WORKFLOW_ID,
+        "status": state.status,
+        "readiness_status": readiness["readiness_status"],
+        "overall_score": readiness["overall_score"],
+        "summary_path": state.final_summary_path,
+        "readiness_path": _relative_path(project_root, readiness_path),
+        "executed_tools": readiness_tools,
+        "tool_count": len(readiness_tools),
+        "prerequisite_count": len(readiness["prerequisites"]),
+        "mutating_actions": [],
+        "phase2_execution_actions": [],
+    }
+
+
 def build_default_tool_registry(project_root: Path, client: PALAgentClient) -> dict[str, PALOpsTool]:
     return {
         "pal_health": PALOpsTool(
@@ -1115,6 +1286,42 @@ def build_shutdown_audit_tool_registry() -> dict[str, PALOpsTool]:
                 "current local shutdown time, and recent shutdown logs over SSH."
             ),
             run=_shutdown_remote_audit_tool,
+        ),
+    }
+
+
+def build_phase2_readiness_tool_registry(
+    project_root: Path,
+    client: PALAgentClient,
+) -> dict[str, PALOpsTool]:
+    return {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Call the configured PAL router /health endpoint.",
+            run=lambda: _pal_health_tool(client),
+        ),
+        "pal_smoke_baseline": PALOpsTool(
+            name="pal_smoke_baseline",
+            description="Summarize saved PAL smoke reports and baseline token throughput.",
+            run=lambda: _pal_smoke_baseline_tool(project_root),
+        ),
+        "shutdown_remote_audit": PALOpsTool(
+            name="shutdown_remote_audit",
+            description=(
+                "Read PAL shutdown config, cron entry, override flag state, "
+                "current local shutdown time, and recent shutdown logs over SSH."
+            ),
+            run=_shutdown_remote_audit_tool,
+        ),
+        "phase2_project_state": PALOpsTool(
+            name="phase2_project_state",
+            description="Inspect local PAL runbook and session-state readiness evidence.",
+            run=lambda: _phase2_project_state_tool(project_root),
+        ),
+        "vast_boundary": PALOpsTool(
+            name="vast_boundary",
+            description="Inspect the local Vast connector lifecycle boundary.",
+            run=_vast_boundary_tool,
         ),
     }
 
@@ -1624,6 +1831,209 @@ def _shutdown_audit_from_observations(observations: list[dict[str, Any]]) -> dic
     return _unknown_shutdown_audit()
 
 
+def _phase2_readiness_from_observations(observations: list[dict[str, Any]]) -> dict[str, Any]:
+    rows = {str(row.get("tool", "")): row for row in observations}
+    prerequisites = [
+        _phase2_operator_authorization_prerequisite(),
+        _phase2_health_baseline_prerequisite(
+            rows.get("pal_health"),
+            rows.get("pal_smoke_baseline"),
+        ),
+        _phase2_shutdown_safety_prerequisite(rows.get("shutdown_remote_audit")),
+        _phase2_deployment_reproducibility_prerequisite(rows.get("phase2_project_state")),
+        _phase2_cost_boundary_prerequisite(rows.get("vast_boundary")),
+        _phase2_execution_boundary_prerequisite(),
+    ]
+    overall_score = round(
+        sum(float(row["score"]) for row in prerequisites) / len(prerequisites),
+        2,
+    )
+    return {
+        "readiness_status": _phase2_readiness_status(prerequisites),
+        "overall_score": overall_score,
+        "prerequisites": prerequisites,
+    }
+
+
+def _phase2_operator_authorization_prerequisite() -> dict[str, Any]:
+    return {
+        "id": "operator_authorization",
+        "label": "Explicit operator authorization",
+        "score": 0.0,
+        "status": "blocked",
+        "summary": "Phase 2 requires explicit Anthony authorization outside this report.",
+        "evidence": {
+            "authorization_recorded": False,
+            "reason": "PAL-022 is report-only and cannot authorize Phase 2 execution.",
+        },
+    }
+
+
+def _phase2_health_baseline_prerequisite(
+    health_observation: dict[str, Any] | None,
+    baseline_observation: dict[str, Any] | None,
+) -> dict[str, Any]:
+    health_status = _router_health_status(health_observation)
+    health_green = health_status in {"green", "ok", "healthy"}
+    baseline = baseline_observation.get("baseline") if baseline_observation else None
+    baseline_report_count = 0
+    baseline_fail_count = 0
+    if isinstance(baseline, dict):
+        baseline_report_count = _int_value(baseline.get("report_count"))
+        baseline_fail_count = _int_value(baseline.get("fail_count"))
+    baseline_ok = baseline_report_count > 0 and baseline_fail_count == 0
+    score = round((0.5 if health_green else 0.0) + (0.5 if baseline_ok else 0.0), 2)
+    status = "pass" if score == 1.0 else "warn" if score > 0 else "fail"
+    return {
+        "id": "phase1_health_baseline",
+        "label": "Phase 1 health and smoke baseline",
+        "score": score,
+        "status": status,
+        "summary": "PAL health is green and smoke baselines are passing."
+        if score == 1.0
+        else "PAL health or smoke baseline evidence is incomplete.",
+        "evidence": {
+            "router_status": health_status or "unknown",
+            "smoke_report_count": baseline_report_count,
+            "smoke_fail_count": baseline_fail_count,
+            "baseline_tokens_per_second": (
+                baseline_observation.get("baseline_tokens_per_second")
+                if baseline_observation
+                else None
+            ),
+        },
+    }
+
+
+def _phase2_shutdown_safety_prerequisite(
+    shutdown_observation: dict[str, Any] | None,
+) -> dict[str, Any]:
+    audit = shutdown_observation.get("audit") if shutdown_observation else None
+    if not isinstance(audit, dict):
+        audit = _unknown_shutdown_audit()
+    audit_status = str(audit.get("audit_status", "incomplete"))
+    enabled_state = str(audit.get("shutdown_enabled_state", "unknown"))
+    override_state = str(audit.get("override_state", "unknown"))
+    safe = audit_status == "pass" and enabled_state == "enabled" and override_state == "inactive"
+    if safe:
+        score = 1.0
+        status = "pass"
+    elif audit_status == "incomplete":
+        score = 0.5
+        status = "warn"
+    else:
+        score = 0.25
+        status = "warn" if audit_status == "warn" else "fail"
+    return {
+        "id": "shutdown_safety",
+        "label": "Shutdown safety",
+        "score": score,
+        "status": status,
+        "summary": "Shutdown automation is enabled and no override is active."
+        if safe
+        else "Shutdown safety evidence is incomplete or needs review.",
+        "evidence": {
+            "audit_status": audit_status,
+            "shutdown_enabled_state": enabled_state,
+            "override_state": override_state,
+            "next_shutdown_window": audit.get("next_shutdown_window", "unavailable"),
+        },
+    }
+
+
+def _phase2_deployment_reproducibility_prerequisite(
+    project_state_observation: dict[str, Any] | None,
+) -> dict[str, Any]:
+    project_state = project_state_observation.get("project_state") if project_state_observation else None
+    if not isinstance(project_state, dict):
+        project_state = {}
+    runbook_present = bool(project_state.get("phase1_runbook_present"))
+    session_state_present = bool(project_state.get("session_state_present"))
+    phase2_appendix_only = bool(project_state.get("phase2_is_appendix_only"))
+    score = 0.0
+    if runbook_present:
+        score += 0.4
+    if session_state_present:
+        score += 0.4
+    if phase2_appendix_only:
+        score += 0.2
+    score = round(score, 2)
+    status = "pass" if score == 1.0 else "warn" if score > 0 else "fail"
+    return {
+        "id": "deployment_reproducibility",
+        "label": "Deployment reproducibility",
+        "score": score,
+        "status": status,
+        "summary": "PAL Phase 1 runbook and session state are present."
+        if score == 1.0
+        else "PAL deployment runbook or session-state evidence is incomplete.",
+        "evidence": {
+            "phase1_runbook_present": runbook_present,
+            "session_state_present": session_state_present,
+            "phase2_is_appendix_only": phase2_appendix_only,
+        },
+    }
+
+
+def _phase2_cost_boundary_prerequisite(boundary_observation: dict[str, Any] | None) -> dict[str, Any]:
+    boundary = boundary_observation.get("boundary") if boundary_observation else None
+    if not isinstance(boundary, dict):
+        boundary = {}
+    callable_actions = [str(item) for item in boundary.get("callable_actions", [])]
+    blocked_actions = [str(item) for item in boundary.get("blocked_actions", [])]
+    expected_blocked = {"rent", "destroy", "start", "stop"}
+    boundary_safe = not callable_actions and expected_blocked.issubset(set(blocked_actions))
+    return {
+        "id": "cost_and_vast_boundary",
+        "label": "Cost and Vast lifecycle boundary",
+        "score": 1.0 if boundary_safe else 0.0,
+        "status": "pass" if boundary_safe else "fail",
+        "summary": "Vast lifecycle operations remain blocked by the default connector boundary."
+        if boundary_safe
+        else "Vast lifecycle boundary exposes callable actions.",
+        "evidence": {
+            "provider": boundary.get("provider", "vast"),
+            "status": boundary.get("status", "unknown"),
+            "blocked_actions": blocked_actions,
+            "callable_actions": callable_actions,
+        },
+    }
+
+
+def _phase2_execution_boundary_prerequisite() -> dict[str, Any]:
+    return {
+        "id": "phase2_execution_boundary",
+        "label": "No Phase 2 execution action exposed",
+        "score": 1.0,
+        "status": "pass",
+        "summary": "The readiness workflow exposes no Phase 2 execution actions.",
+        "evidence": {
+            "mutating_actions": [],
+            "phase2_execution_actions": [],
+            "blocked_phase2_actions": list(PHASE2_BLOCKED_EXECUTION_ACTIONS),
+        },
+    }
+
+
+def _phase2_readiness_status(prerequisites: list[dict[str, Any]]) -> str:
+    statuses = {str(row.get("status", "")) for row in prerequisites}
+    if "blocked" in statuses:
+        return "blocked"
+    if statuses.intersection({"fail", "warn"}):
+        return "not_ready"
+    return "ready_for_authorization"
+
+
+def _int_value(value: Any) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    return 0
+
+
 def _parse_shutdown_audit_stdout(stdout: str) -> tuple[dict[str, str], str]:
     fields: dict[str, str] = {}
     log_lines: list[str] = []
@@ -1726,6 +2136,64 @@ def _parse_shutdown_current_local(value: str) -> datetime | None:
         return datetime.fromisoformat(normalized)
     except ValueError:
         return None
+
+
+def _phase2_project_state_tool(project_root: Path) -> dict[str, Any]:
+    runbook_path = _first_existing_path(
+        project_root,
+        (
+            Path("ops/phase-1-checkpoints.md"),
+            Path("pal-2026/ops/phase-1-checkpoints.md"),
+        ),
+    )
+    session_state_path = _first_existing_path(
+        project_root,
+        (
+            Path("ops/session-state.md"),
+            Path("pal-2026/ops/session-state.md"),
+        ),
+    )
+    runbook_text = runbook_path.read_text(encoding="utf-8") if runbook_path else ""
+    phase2_is_appendix_only = "Phase 2 is appendix-only" in runbook_text
+    project_state = {
+        "phase1_runbook_present": runbook_path is not None,
+        "phase1_runbook_path": str(runbook_path) if runbook_path else "",
+        "session_state_present": session_state_path is not None,
+        "session_state_path": str(session_state_path) if session_state_path else "",
+        "phase2_is_appendix_only": phase2_is_appendix_only,
+    }
+    complete = (
+        project_state["phase1_runbook_present"]
+        and project_state["session_state_present"]
+        and phase2_is_appendix_only
+    )
+    return {
+        "status": "ok" if complete else "warn",
+        "summary": "PAL Phase 1 runbook and session-state evidence are present."
+        if complete
+        else "PAL Phase 1 runbook or session-state evidence is incomplete.",
+        "project_state": project_state,
+    }
+
+
+def _first_existing_path(project_root: Path, relative_paths: tuple[Path, ...]) -> Path | None:
+    for relative_path in relative_paths:
+        candidate = project_root / relative_path
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _vast_boundary_tool() -> dict[str, Any]:
+    boundary = default_vast_connector_boundary().to_dict()
+    callable_actions = boundary.get("callable_actions", [])
+    return {
+        "status": "ok" if callable_actions == [] else "error",
+        "summary": "Vast lifecycle actions are blocked by the local connector boundary."
+        if callable_actions == []
+        else "Vast connector boundary exposes callable lifecycle actions.",
+        "boundary": boundary,
+    }
 
 
 def _tailscale_status_tool() -> dict[str, Any]:
@@ -2408,6 +2876,19 @@ def _render_shutdown_audit_route_markdown(audit_tools: list[str]) -> str:
     )
 
 
+def _render_phase2_readiness_route_markdown(readiness_tools: list[str]) -> str:
+    tools = ", ".join(readiness_tools) if readiness_tools else "none"
+    return (
+        "# PAL Phase 2 Readiness Route\n\n"
+        f"- Workflow id: {PHASE2_READINESS_WORKFLOW_ID}\n"
+        f"- Lead agent: local allow-list\n"
+        f"- Verifier/executor: local allow-list\n"
+        f"- Tools: {tools}\n"
+        "- Mutating actions: none\n"
+        "- Phase 2 execution actions: none\n"
+    )
+
+
 def _render_slow_inference_context_summary(context_payload: dict[str, Any]) -> str:
     lines = ["# PAL Slow-Inference Context", ""]
     baseline_tps = context_payload.get("baseline_tokens_per_second")
@@ -2492,6 +2973,30 @@ def _render_shutdown_audit_summary(payload: dict[str, Any]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+def _render_phase2_readiness_summary(payload: dict[str, Any]) -> str:
+    lines = ["# PAL Phase 2 Readiness", ""]
+    lines.append(f"Workflow id: {payload['workflow_id']}")
+    lines.append(f"Readiness status: {payload['readiness_status']}")
+    lines.append(f"Overall score: {payload['overall_score']:.2f}")
+    lines.append("Mutating actions: none")
+    lines.append("Phase 2 execution actions: none")
+    lines.append("")
+    lines.append("Prerequisites:")
+    for prerequisite in payload["prerequisites"]:
+        lines.append(
+            f"- {prerequisite['id']}: {prerequisite['score']:.2f} "
+            f"({prerequisite['status']}) - {prerequisite['summary']}"
+        )
+    lines.append("")
+    lines.append("Observations:")
+    for observation in payload["observations"]:
+        lines.append(
+            f"- {observation.get('tool', 'unknown')}: "
+            f"{observation.get('status', 'unknown')} - {observation.get('summary', '')}"
+        )
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def _display_optional_bool(value: Any) -> str:
     if value is True:
         return "yes"
@@ -2553,6 +3058,22 @@ def _render_shutdown_audit_handoff(payload: dict[str, Any]) -> str:
         f"Next shutdown window: {payload['next_shutdown_window']}\n\n"
         "This audit is read-only except for local PromptClaw run artifacts. "
         "It does not approve or execute shutdown override changes.\n"
+    )
+
+
+def _render_phase2_readiness_handoff(payload: dict[str, Any]) -> str:
+    executed = ", ".join(payload["executed_tools"]) or "none"
+    return (
+        "# PAL Phase 2 Readiness Handoff\n\n"
+        f"Workflow id: {payload['workflow_id']}\n\n"
+        f"Executed diagnostics: {executed}\n\n"
+        "Mutating actions: none\n\n"
+        "Phase 2 execution actions: none\n\n"
+        f"Readiness status: {payload['readiness_status']}\n\n"
+        f"Overall score: {payload['overall_score']:.2f}\n\n"
+        "This report is read-only except for local PromptClaw run artifacts. "
+        "It does not approve or execute Phase 2 infrastructure, model, or "
+        "Vast lifecycle changes.\n"
     )
 
 

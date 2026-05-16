@@ -195,6 +195,29 @@ payload and route metadata record `workflow_id: shutdown_audit`,
 When SSH evidence is unavailable, the summary still states unknown enabled and
 override states plus an unavailable next shutdown window.
 
+The Phase 2 readiness CLI uses the same local workflow transport:
+
+```text
+.promptclaw/runs/<run-id>/
+├── input/task.md
+├── routing/route.json
+├── routing/route.md
+├── outputs/phase2-readiness.json
+├── handoffs/phase2-readiness.md
+├── summary/final-summary.md
+├── logs/events.jsonl
+└── state.json
+```
+
+`promptclaw pal report phase2-readiness PROJECT_ROOT` records fixed read-only
+evidence for PAL health, saved smoke baselines, shutdown safety, local project
+state, and the Vast connector boundary. The payload and route metadata record
+`workflow_id: phase2_readiness_report`, each prerequisite score,
+`overall_score`, `readiness_status`, the executed tool list,
+`mutating_actions: []`, and `phase2_execution_actions: []`. The report does not
+write `outputs/action-results.json` and does not expose a Phase 2 execution
+action for approval.
+
 ## Benefits
 
 - deterministic transfer point
