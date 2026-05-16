@@ -1,0 +1,10 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1282 chars)
+---
+
+Done. T-037 is committed.
+
+**Summary:**
+- Added `replay_pal_approved_actions(project_root, run_id, *, approved_actions, client, action_registry, now)` in `promptclaw/pal_agent.py:427`. It loads the saved plan via `load_pal_action_results`, looks up each approved action in the registry, runs it via `_run_action`, and returns the executed/unknown breakdown — without ever calling `client.query()`.
+- Added regression test `test_replay_pal_approved_actions_executes_without_model_call` in `tests/test_pal_agent.py:379` that seeds a plan, then replays with a fresh `FakePALClient([])` and asserts `replay_client.prompts == []` plus the approved action's runner fired.
+- `pytest tests/test_pal_agent.py` → 41 passed; full `pytest tests/` → 4785 passed, 11 skipped; ruff clean on touched files; pre-existing mypy errors unaffected.

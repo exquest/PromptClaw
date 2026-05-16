@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1254 chars)
+---
+
+Committed `ab4cc21`. 
+
+Summary:
+- `tests/conftest.py`: registered `--run-live-pal` option + `live_pal` marker, gated through the existing `collection_gate_decisions` mechanism so the marker skips by default and runs when the flag is passed.
+- `tests/test_pal_live.py`: new opt-in test marked `live_pal` that calls `PALRouterClient(...).health()` against `PROMPTCLAW_PAL_BASE_URL` (defaults to the `PALConfig` base URL).
+- `tests/test_conftest_depth.py`: extended depth coverage for the new option/marker and the updated summary count.
+- Validation: `pytest tests/test_conftest_depth.py tests/test_pal_live.py -x` → 7 passed, 1 skipped; `--run-live-pal` now collects the live test. Ruff clean; mypy errors in `src/` are pre-existing and unrelated.

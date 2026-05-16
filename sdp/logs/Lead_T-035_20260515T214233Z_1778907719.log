@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1278 chars)
+---
+
+Done. T-035 wires `cmd_pal_agent_approve` to load the saved plan via `load_pal_action_results`, and rejects with rc=1 (no artifact written) when:
+- the saved plan can't be loaded (missing/invalid run), or
+- any `--action` id isn't in `proposed_actions`.
+
+Approved actions present in the plan still produce the existing PENDING output and rc=0.
+
+**Validation:** `pytest tests/test_pal_agent.py` 39 passed; full suite 4783 passed; `ruff check src/ tests/` clean; `mypy src/` clean. Committed as `baa8358`.

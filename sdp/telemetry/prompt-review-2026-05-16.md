@@ -1,6 +1,6 @@
 # Prompt Review
 
-**Generated At:** 2026-05-16T00:13:19.069524+00:00
+**Generated At:** 2026-05-16T04:40:31.508064+00:00
 **Retry Context Window:** 20
 
 ## Recent Failure Patterns
@@ -14,7 +14,7 @@
 - Candidate path: `sdp/templates/candidates/lead_t2/v006.md`
 - Rationale: Auto-generated candidate for lead_t2.md from the latest 20 retry-context entries. No recurring failure bullets were detected.
 
-### verify.md v007 (created)
+### verify.md v007 (updated)
 
 - Candidate path: `sdp/templates/candidates/verify/v007.md`
 - Rationale: Auto-generated candidate for verify.md from the latest 20 retry-context entries. No recurring failure bullets were detected.

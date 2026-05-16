@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1280 chars)
+---
+
+T-038 complete and committed (fbe753e).
+
+**What changed:**
+- `replay_pal_approved_actions` now writes `outputs/approval-executions.json` for each replay, containing per-action records with `action_id`, `status`, `timestamp`, and `command_output` (with stdout/stderr scrubbed of secrets like GitHub/OpenAI/Slack tokens, AWS keys, and private key blocks using the existing `PAL_SECRET_PATTERNS`).
+- Added `_redact_secret_text` / `_redact_command_output` helpers reusing the existing redaction patterns.
+- Added regression test `test_replay_pal_approved_actions_writes_redacted_execution_artifact` that seeds a fake `ghp_…` token in stdout and asserts it's redacted in the written artifact.
+
+**Validation:** focused tests pass, full suite green (4786 passed, 11 skipped), `ruff` clean on changed files. Pre-existing mypy errors in `_run_command` truncate calls were left alone (out of scope).

@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~2h 53m remaining (18 tasks, low confidence, calibrating)
-Expected completion: 12:25 AM tomorrow.
-Progress: [████████████████████████████████████░░] 96%  419 / 437 tasks complete
-  completed: 419, pending: 15, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
+ETC: ~1h 57m remaining (10 tasks, low confidence, calibrating)
+Expected completion: 12:29 AM tomorrow.
+Progress: [█████████████████████████████████████░] 98%  427 / 437 tasks complete
+  completed: 427, pending: 7, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -464,13 +464,13 @@ Progress: [███████████████████████
 - **T-029@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-030@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-031@20260515T214233Z**: complete — Completed with verdict PASS.
-- **T-032@20260515T214233Z**: pending — Pending.
-- **T-033@20260515T214233Z**: pending — Pending.
-- **T-034@20260515T214233Z**: pending — Pending.
-- **T-035@20260515T214233Z**: pending — Pending.
-- **T-036@20260515T214233Z**: pending — Pending.
-- **T-037@20260515T214233Z**: pending — Pending.
-- **T-038@20260515T214233Z**: pending — Pending.
+- **T-032@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-033@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-034@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-035@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-036@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-037@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-038@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-039@20260515T214233Z**: pending — Pending.
 - **T-040@20260515T214233Z**: pending — Pending.
 - **T-041@20260515T214233Z**: pending — Pending.
