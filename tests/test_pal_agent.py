@@ -316,6 +316,66 @@ def test_pal_ops_actions_requires_explicit_approval_before_executing_actions(tmp
     assert "no actions were approved" in (run_root / "summary" / "final-summary.md").read_text()
 
 
+def test_load_pal_action_results_returns_saved_plan_for_run_id(tmp_path: Path) -> None:
+    from promptclaw.pal_agent import load_pal_action_results
+
+    config = default_project_config("PAL Action Results Load")
+    save_config(tmp_path, config)
+    tool_registry = {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Check PAL router health.",
+            run=lambda: {"summary": "router is green"},
+        ),
+    }
+    action_registry = {
+        "inspect_logs_deep": PALOpsAction(
+            name="inspect_logs_deep",
+            description="Inspect PAL logs.",
+            approval_required=True,
+            mutating=False,
+            run=lambda: {"summary": "inspected logs"},
+        ),
+    }
+    client = FakePALClient([
+        json.dumps({
+            "actions": ["inspect_logs_deep"],
+            "rationale": "Gather evidence.",
+        }),
+        "Proposal only: no actions approved.",
+    ])
+
+    result = run_pal_ops_actions(
+        tmp_path,
+        client=client,
+        tool_registry=tool_registry,
+        action_registry=action_registry,
+        default_tools=("pal_health",),
+        now=_fake_now(),
+    )
+
+    loaded = load_pal_action_results(tmp_path, result["run_id"])
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    expected = json.loads((run_root / "outputs" / "action-results.json").read_text())
+    assert loaded == expected
+    assert loaded["proposed_actions"] == ["inspect_logs_deep"]
+    assert loaded["actions"][0]["status"] == "pending_approval"
+
+
+def test_load_pal_action_results_raises_when_run_missing(tmp_path: Path) -> None:
+    from promptclaw.pal_agent import load_pal_action_results
+
+    config = default_project_config("PAL Action Results Missing")
+    save_config(tmp_path, config)
+
+    try:
+        load_pal_action_results(tmp_path, "20260515t000000z-pal-ops-actions")
+    except FileNotFoundError as exc:
+        assert "action-results.json" in str(exc)
+    else:
+        raise AssertionError("expected FileNotFoundError for missing run")
+
+
 def test_pal_ops_actions_executes_only_approved_allowlisted_actions(tmp_path: Path) -> None:
     config = default_project_config("PAL Actions Approved")
     save_config(tmp_path, config)

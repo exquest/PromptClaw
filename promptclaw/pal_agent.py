@@ -403,6 +403,27 @@ def _read_pal_workflow_id(run_root: Path) -> str:
     raise ValueError("workflow_id required when PAL run artifacts do not identify the workflow")
 
 
+def load_pal_action_results(project_root: Path, run_id: str) -> dict[str, Any]:
+    """Load the saved PAL action plan results for ``run_id``.
+
+    Reads ``outputs/action-results.json`` written by ``run_pal_ops_actions``.
+    """
+    project_root = project_root.resolve()
+    config = load_config(project_root)
+    paths = ProjectPaths(project_root=project_root, config=config)
+    results_path = paths.run_outputs(run_id) / "action-results.json"
+    if not results_path.is_file():
+        raise FileNotFoundError(
+            f"PAL action results not found for run_id {run_id!r}: {results_path}"
+        )
+    payload = json.loads(results_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(
+            f"PAL action results for run_id {run_id!r} must be a JSON object"
+        )
+    return payload
+
+
 def run_pal_ops_triage(
     project_root: Path,
     *,
