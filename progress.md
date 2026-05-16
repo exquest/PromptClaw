@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~1h 57m remaining (10 tasks, low confidence, calibrating)
-Expected completion: 12:29 AM tomorrow.
-Progress: [█████████████████████████████████████░] 98%  427 / 437 tasks complete
-  completed: 427, pending: 7, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
+ETC: ~1h 52m remaining (9 tasks, low confidence, calibrating)
+Expected completion: 12:44 AM tomorrow.
+Progress: [█████████████████████████████████████░] 98%  428 / 437 tasks complete
+  completed: 428, pending: 6, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -471,7 +471,7 @@ Progress: [███████████████████████
 - **T-036@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-037@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-038@20260515T214233Z**: complete — Completed with verdict PASS.
-- **T-039@20260515T214233Z**: pending — Pending.
+- **T-039@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-040@20260515T214233Z**: complete — Implemented PAL deploy backup primitive for changed fake-remote managed files; focused PAL deploy tests, startup identity hardening anchors, docs grep, dependency/migration diff check, and full validation passed.
 - **T-041@20260515T214233Z**: pending — Pending.
 - **T-042@20260515T214233Z**: pending — Pending.
