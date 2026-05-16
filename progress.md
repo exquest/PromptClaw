@@ -1,39 +1,11 @@
 # Progress
 
-## T-017@20260515T214233Z Exploration Findings
-
-- ADP source: the active process is the task prompt's Explore -> Specify ->
-  Test -> Implement -> Verify -> Document flow, matching
-  `sdp/templates/candidates/lead_t2/v006.md`.
-- PRD source: `sdp/prd-pal-2026-agentic-ops-platform.md` maps this task to
-  PAL-022 `phase2_readiness_report`: a report-only workflow that scores Phase 2
-  prerequisites and exposes no Phase 2 execution action.
-- Affected implementation files: `promptclaw/pal_agent.py` for workflow/tool
-  logic and scoring, `promptclaw/cli.py` for parser/dispatch, and
-  `tests/test_pal_agent.py` for workflow and CLI regression coverage.
-- Existing pattern: restart-validation and shutdown-audit are deterministic
-  local allow-list workflows that write standard `.promptclaw/runs/<run-id>/`
-  artifacts, route metadata, handoffs, summaries, events, state, and
-  `mutating_actions: []`; Phase 2 readiness should follow that pattern instead
-  of using PAL to choose tools or proposing approval-gated actions.
-- Related docs/tests: PAL workflow contracts are documented in
-  `docs/architecture.md`, `docs/handoff-protocol.md`,
-  `docs/command-reference.md`, and `docs/startup-wizard.md`; related tests in
-  `tests/test_pal_agent.py`, `tests/test_pal_smoke.py`, and
-  `tests/test_pal_client.py` cover fake clients, fake SSH diagnostics, standard
-  run artifacts, and CLI summary output.
-- Startup hardening check: current CLI, first-boot, daemon-ordering, and
-  narrative ASGI tests already cover `bootstrap_identity()` persistence and
-  ordering before `FirstBootAnnouncer`, so this task keeps those as mandatory
-  regression anchors and does not broaden Phase 2 readiness into startup
-  rewiring.
-
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~6h 11m remaining (32 tasks, low confidence, calibrating)
-Expected completion: 12:28 AM tomorrow.
-Progress: [███████████████████████████████████░░░] 93%  405 / 437 tasks complete
-  completed: 405, pending: 29, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
+ETC: ~5h 27m remaining (29 tasks, low confidence, calibrating)
+Expected completion: 1:13 AM tomorrow.
+Progress: [███████████████████████████████████░░░] 93%  408 / 437 tasks complete
+  completed: 408, pending: 26, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -477,10 +449,10 @@ Progress: [███████████████████████
 - **T-014@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-015@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-016@20260515T214233Z**: complete — Completed with verdict PASS.
-- **T-017@20260515T214233Z**: complete — PAL Phase 2 readiness workflow implemented: `promptclaw pal report phase2-readiness PROJECT_ROOT` writes a report-only `phase2_readiness_report` run artifact with per-prerequisite scores, `overall_score`, `readiness_status`, `mutating_actions: []`, and `phase2_execution_actions: []`. Red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
-- **T-018@20260515T214233Z**: pending — Pending.
-- **T-019@20260515T214233Z**: pending — Pending.
-- **T-020@20260515T214233Z**: pending — Pending.
+- **T-017@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-018@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-019@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-020@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-021@20260515T214233Z**: pending — Pending.
 - **T-022@20260515T214233Z**: pending — Pending.
 - **T-023@20260515T214233Z**: pending — Pending.

@@ -1,0 +1,9 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1270 chars)
+---
+
+T-020 done. Added `verify_pal_artifact_redaction()` in `promptclaw/pal_agent.py:283` with `PALSecretFinding` / `PALArtifactRedactionVerification` types and a `PAL_SECRET_PATTERNS` table (PAL_SSH_KEY assignment, PEM private-key blocks, GitHub/OpenAI/Slack/AWS token shapes). The verifier scans every file under a run root and flags matches without false-positiving on the legitimate operator-facing "set PAL_SSH_KEY" recommendation text.
+
+Regression test at `tests/test_pal_agent.py:1730` confirms a clean run passes, then writes a leaky log and verifies the verifier fails with the expected artifact + pattern set.
+
+Validation: `pytest tests/` (4751 passed, 10 skipped), `ruff check src/ tests/`, `mypy src/` — all clean. Committed as `04416d2`. Pre-existing uncommitted `progress.md` / sdp log files left untouched.
