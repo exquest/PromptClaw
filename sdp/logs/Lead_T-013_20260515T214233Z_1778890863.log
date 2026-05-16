@@ -1,0 +1,2350 @@
+Command: codex exec --dangerously-bypass-approvals-and-sandbox -c model_reasoning_effort=xhigh -m gpt-5.5 -
+Prompt delivered via: stdin (1237 chars)
+---
+
+Done and committed.
+
+Updated [docs/architecture.md](/Users/anthony/Programming/PromptClaw/docs/architecture.md:103) with a `PAL platform` section describing PAL’s bounded reasoning, local KB, read-only diagnostics, approval-gated actions, and local execution authority.
+
+Commit: `a3ac25b docs(architecture): add PAL platform section [T-013@20260515T214233Z]`
+
+Validation passed:
+- `pip install -e '.[dev]'`
+- `pytest tests/ -x --tb=short` -> 4741 passed, 10 skipped
+- `ruff check src/ tests/`
+- `mypy src/`
+
+No regression test added because this was documentation-only. The remaining uncommitted files are the unrelated pre-existing `progress.md` / `sdp/...` workspace changes.
+
+--- STDERR ---
+OpenAI Codex v0.130.0
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019e2e28-73a2-78f1-a493-55ced57eda0a
+--------
+user
+<!--
+  sdp-cli agent-specific template for codex
+  Edit this file to tune how codex handles lead_t1.md.
+  The shipped default lives at src/sdp/prompts/templates/lead_t1.md.
+  Delete this file to revert to the default.
+-->
+# Task T-013@20260515T214233Z: Update architecture documentation.
+
+## Acceptance Criteria
+
+Docs include a PAL platform section.
+
+**Tier:** T1
+
+## Instructions
+
+Handle this directly. Skip broad discovery and do not write a spec.
+
+1. Read only the file(s) you expect to change and the closest relevant tests.
+2. Make the smallest change that satisfies the task.
+3. Add or update a regression test when behavior changes.
+4. Run focused validation, then broader checks if needed.
+5. Commit as soon as the change works: `<type>(scope): summary [T-013@20260515T214233Z]`
+
+## Rules
+
+- Stay in scope; no unrelated cleanup.
+- Follow existing patterns and type hints.
+- Record blocking assumptions in `ESCALATIONS.md`.
+- Do not finish with uncommitted changes you introduced for this task.
+- Do not clean, revert, commit, or otherwise normalize unrelated pre-existing
+  workspace changes.
+
+## Validation
+
+Run before committing:
+```bash
+pip install -e '.[dev]'
+pytest tests/ -x --tb=short
+ruff check src/ tests/
+mypy src/
+```
+
+codex
+I’ll make the documentation-only change narrowly: read the architecture doc and any nearby doc tests if present, add the PAL platform section, run the requested validations, then commit only my task changes.
+exec
+/bin/zsh -lc "sed -n '1,240p' docs/architecture.md" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+# Architecture
+
+PromptClaw v2.1 is organized around one principle:
+
+> the orchestrator is the control plane, and files are the transport layer.
+
+## Components
+
+### 1. CLI
+
+`promptclaw.cli` exposes the operational commands:
+
+- `init`
+- `wizard`
+- `doctor`
+- `bootstrap`
+- `run`
+- `resume`
+- `status`
+- `show-config`
+- `pal`
+
+### 2. Startup wizard
+
+The startup wizard is a requirement-capture layer that sits before bootstrap.
+
+It:
+
+- asks questions one at a time
+- uses heuristics to ask follow-up questions when needed
+- writes the starter prompts
+- writes a startup profile and transcript
+- updates project config and agent instructions
+
+### 3. Project config
+
+Each PromptClaw project has a `promptclaw.json` file that defines:
+
+- project metadata
+- control plane mode
+- routing and retry policy
+- artifact locations
+- configured agents and their capabilities
+- prompt file locations
+
+`promptclaw.models` is the shared dataclass layer for those config, routing,
+agent-result, event, and run-state contracts. It also exposes JSON-safe
+diagnostic summaries for configs, agents, route decisions, and run states, so
+operator/status surfaces can report model state without reinterpreting raw
+dataclass fields differently in each caller.
+
+### 4. Control plane
+
+The control plane decides:
+
+- whether the task is ambiguous
+- which agent should lead
+- which agent should verify
+- what short handoff brief should be passed
+- whether the run can complete or needs another loop
+- when a live provider should be deprioritized or excluded because quota headroom is degraded
+
+In SDP-backed queues, verification is task-scoped even when the project worktree
+already contains unrelated local changes. Agents must commit their own task
+changes, but pre-existing unrelated dirty or untracked files are treated as a
+baseline condition and must not be cleaned, reverted, or folded into the task.
+
+There are two modes:
+
+- `agent`: ask a configured agent to return routing JSON
+- `heuristic`: use built-in keyword + capability scoring
+
+### 5. Artifact manager
+
+Each run gets a directory:
+
+```text
+.promptclaw/runs/<run-id>/
+├── input/
+├── routing/
+├── prompts/
+├── outputs/
+├── handoffs/
+├── summary/
+├── logs/
+└── state.json
+```
+
+### 6. Agent runtime
+
+Agent runtimes support three modes:
+
+- `mock`
+- `echo`
+- `command`
+
+`command` is the live mode. It writes a prompt file, executes the configured local command from the project root, and renders `{prompt_file}` and `{project_root}` as absolute paths so relative `PROJECT_ROOT` invocations still work.
+
+In CypherClaw-style live command deployments, command routing can consult `sdp-cli` quota telemetry. Healthy and warn providers remain eligible, degraded and paused providers are excluded from new work, and if every provider is degraded the runtime falls back to the provider with the most remaining headroom instead of refusing to operate.
+
+The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+
+### 7. PAL 2026 agent runtime
+
+PAL 2026 starts as a configured router under the `pal` section of
+`promptclaw.json`. The router commands can check health, run direct queries, run
+the fixed smoke suite, and summarize saved smoke baselines.
+
+The local PAL knowledge-base path is file-first. Source discovery reads
+`pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
+`promptclaw pal kb build` materializes those chunks into
+`.promptclaw/pal-kb/index.jsonl` without contacting the router. `promptclaw pal
+kb query` reads that local JSONL index, ranks lexical matches deterministically,
+and returns bounded snippets with source paths and line ranges. PAL workflow
+prompt artifacts now consume the same local index through a bounded `Knowledge
+Context` section, so plans and summaries can cite local runbook/deployment
+snippets without giving PAL any new execution authority. If the index is absent
+or unreadable, workflows still run and record that local context was unavailable.
+
+The first agentic PAL workflow is `promptclaw pal agent triage`. In that mode,
+PAL is the reasoning agent but not the executor. PAL receives the operator task
+and the diagnostic tool descriptions, returns a JSON tool plan, and PromptClaw
+executes only allow-listed local tools. The diagnostic allow-list is
+intentionally read-only:
+
+- `pal_health`: call the configured router `/health` endpoint
+- `pal_smoke_baseline`: summarize saved PAL smoke reports
+- `tailscale_status`: run a fixed local Tailscale status check
+- `ssh_process_check`: run a fixed read-only remote process/log check only when
+  `PAL_SSH_HOST`, `PAL_SSH_PORT`, and `PAL_SSH_KEY` are set
+
+`promptclaw pal agent actions` is the approval-gated action layer. It gathers
+diagnostic context, asks PAL to propose action ids from a second fixed
+allow-list, and executes nothing unless the operator passes `--approve
+ACTION_ID`. The current action allow-list covers `rerun_smoke`,
+`inspect_logs_deep`, `restart_router`, `pause_shutdown_once`, and
+`resume_shutdown`. Unknown proposed actions and unknown approvals are ignored
+and recorded. Restarts, shutdown overrides, and other mutating playbooks remain
+human-approved action ids, not open-ended shell authority.
+
+The Vast connector is currently a non-executing stub boundary. Its default
+metadata marks `rent`, `destroy`, `start`, and `stop` as blocked lifecycle
+operations and exposes `callable_actions=[]`; those ids are not registered PAL
+actions and are ignored if PAL proposes them.
+
+The slow-inference context workflow is a read-only PAL workflow primitive for
+latency investigations. It is callable from code as
+`run_pal_slow_inference_context(...)` and writes
+`outputs/slow-inference-context.json` with router health, saved smoke baseline
+token/s, optional GPU hints, and optional router/Ollama log tails. GPU and log
+collection use fixed SSH diagnostics and report `skipped` when PAL SSH
+environment variables are absent.
+
+The operator-facing slow-inference diagnosis command is
+`promptclaw pal diagnose slow-inference PROJECT_ROOT`. It reuses those same
+fixed read-only collectors, writes `outputs/slow-inference-diagnosis.json`, and
+derives deterministic findings for low baseline token/s, log-observed throughput
+regression, non-green router health, missing evidence, and GPU saturation. The
+route and diagnosis artifacts record `mutating_actions: []`; the command has no
+approval surface and does not restart services, change config, alter cloud
+rentals, or write remote files.
+
+Every PAL agent run uses the standard `.promptclaw/runs/<run-id>/` layout so the
+plan, observations, approvals, results, summary, events, and state remain
+reproducible.
+
+### 8. CypherClaw resilience layer
+
+CypherClaw live deployments add a runtime safety layer around the orchestrator:
+
+- disk authority for `.sdp/state.db` and `.promptclaw/observatory.db`
+- tmpfs workdir bootstrap via `my-claw/tools/init_workdir.sh`
+- startup preflight via `my-claw/tools/preflight.py`
+- unified health entry via `promptclaw doctor`
+- explicit maintenance state via `my-claw/tools/maintenance_mode.py`
+- checkpoint export via `my-claw/tools/runtime_checkpoint.py`
+- systemd-managed runner startup through `my-claw/tools/sdp_runner_launcher.sh`
+
+Identity bootstrap is part of startup hardening. Daemon poll loops call
+`bootstrap_identity()` before creating `FirstBootAnnouncer`, and ASGI imports of
+`cypherclaw.narrative_api.main:app` also bootstrap identity before app creation
+so both standalone and federated homes persist identity on first boot.
+
+The tmpfs workdir is acceleration only. It clones the repository into `/run/cypherclaw-tmp/workdir/<name>` and then symlinks the authoritative DBs back to disk so reboot or tmpfs loss cannot silently rewrite queue authority.
+
+When the project root also looks like a live CypherClaw runtime, `promptclaw doctor` now includes the runtime preflight lane in addition to config validation. Plain starter projects still get the lighter config-only doctor path.
+
+The live daemon path is now also portable across the MacBook dev home and the Linux server home. Status checks branch on platform, optional watchdog integrations are treated as optional imports, and runtime semaphore acquire/release/reject transitions are recorded so concurrency throttling is observable instead of implicit.
+
+Maintenance mode is now disk-authoritative too. The canonical flag lives at `.sdp/MAINTENANCE`, resolved through the authority `state.db` path so tmpfs workdir copies cannot invent a second maintenance state. Entering maintenance while the managed runner or a running task exists now requires an explicit operator override; `safe_reboot.sh prepare` is the intended path for that transition.
+
+Daemon child processes also run with a sanitized environment: `NOTIFY_SOCKET`, `WATCHDOG_PID`, and `WATCHDOG_USEC` are stripped before spawning agent CLIs or helper commands, so only the daemon main process talks to systemd's watchdog socket.
+
+The managed runner path also repairs a stale `.sdp/run.lock` before preflight runs. That keeps normal systemd restarts from failing their own startup checks after the previous runner PID has been terminated.
+The systemd runner unit itself now uses `Restart=always` so a clean `sdp-cli run` exit cannot silently strand the queue. Maintenance-gated launcher exits stay non-looping through `SuccessExitStatus=75` and `RestartPreventExitStatus=75`.
+When a sibling `sdp-cli/src` checkout exists next to the home, the launcher also exports that path into `PYTHONPATH` automatically unless the operator has already pinned a different value. That keeps the live runner on the checked-out source tree instead of an older installed package.
+
+Operator-facing Telegram status now also splits cleanly between built-ins and routed work. Queue-backed commands like `/monitor`, `/quota`, `/prd`, and `/tasks` read live runtime state directly instead of relying on conversational summaries, so queue progress, roadmap status, provider health, and actionable worklists stay aligned with the SQLite authority DB. Queue totals use one canonical denominator everywhere: all live executable tasks, excluding only split parents. `/prd` now also distinguishes empty roadmap stages from frozen or decomposed ones: stages with only frozen work are shown as `frozen`, stages with only split parents are shown as `decomposed`, and only truly absent work is shown as `not loaded`. `/monitor` now carries a compact `sdp-cli`-style status slice too: completion-gate status, latest completed run verdict/pair, and per-agent quota/provider health, while still surfacing queue-state drift when the active-task and open-task-run records disagree. `/tasks` now defaults to an operator-first queue view with running work, next root tasks, split-needed work, and attention items, while filtered slices like `/tasks frozen` or `/tasks all 20` expose deeper backlog details on demand. Roadmap-aware task slices such as `/tasks prd 6` and `/tasks stage clone and home creation` resolve through the same roadmap/batch files as `/prd`, so stage-level work inspection stays aligned with the live execution spine.
+
+The live daemon scheduler also owns a compact half-hour heartbeat. At `:00` and `:30` each hour it sends uptime, I/O wait, memory, load, available-agent count, queue progress, and pet XP summary to Telegram, and records the send in Observatory. This is the text-only precursor to the richer GlyphWeave art heartbeat.
+CypherClaw's tracker orchestration now also has an explicit instrument-patch layer. Cast voices are no longer used as a flat pool during normal listening: songs resolve into named house patches such as `house_monastery`, `house_chamber`, `house_garden`, `house_procession`, and `house_workshop`, with normal occupied listening biased toward `bowed`, `pluck`, `choir`, and `breath`. Those house patches are now musical as well as timbral: each patch carries its own contour bias, bass/comping vocabulary, dynamic envelope, and wider register spread. The older `bell` and `metal` voices are retired from live playback and degraded to tuned substitutes at runtime.
+That patch layer now reaches all the way through tracker runtime and playback too: patch metadata survives family shaping and cadence clamping, live tracker scenes apply per-patch octave floors and ceilings by role, tracker forms vary by song number instead of always using one fixed five-scene length, and very high notes are softened with a small saturation-style shaping pass because the live synth surface does not expose a dedicated drive control.
+Family planning is now more authored as well. `resolve_tracker_plan()` no longer pins large parts of the day to one family like `bloom`; it rotates through day-phase and weekly-phase family palettes, while also emitting a harmonic progression profile such as `awakening`, `open_day`, `lift`, `settling`, or `experiment` so the score generator changes not just scene shape but harmonic material across the day.
+
+`my-claw/tools/telegram.py` now treats test execution and tmpfs task-run workdirs as non-production contexts by default. If `PYTEST_CURRENT_TEST` or `PROMPTCLAW_TEST_MODE` is present, or if the helper is running from `/run/cypherclaw-tmp/workdir/`, Telegram sends are suppressed unless `PROMPTCLAW_ALLOW_LIVE_TELEGRAM=1` is set explicitly. That keeps shell-script, subprocess, and copied-workdir tests from leaking alerts into the live operator chat.
+
+The live CypherClaw solo music scheduler is also now tracker-first: it selects an active character cast, maps those character roles into tracker lane voice hints, and applies scene-level role floors so subdued moods still keep a cast-grounded foundation lane through `Theme`, `Development`, and `Recap`.
+That tracker path is now also mode-aware. Harmonic authority flows through the keyboard grimoire and the new harmonic planner: fresh keyboard, inner-life, and garden hints are normalized into a canonical key spec, scene-level modulation is planned before tracker scheduling, and stale outdoor or MIDI state is ignored instead of pinning the whole piece to an old major root.
+Melodic authority is now song-aware too. `score_from_mood()` seeds a motif-driven generator with song number, tracker family, cadence state, and recent melodic-memory fragments so repeated moods can still yield different note cells, rhythm cells, leap profiles, and occasional recalled motifs instead of recycling one default contour under new keys. The same generator now rotates comping styles as well, so the foundation line does not keep repeating one root-walk pattern.
+That motif system now has family memory instead of only recency memory. The live learner tags each tracker song with family, progression profile, cadence state, and house patch, recent in-session fragments can be recalled by matching those tags, and persisted melodic memory can rank stored fragments by the same keywords so re-entering `ember` or `drift` can produce an answer or recall gesture from earlier related songs instead of sounding fully disconnected.
+That recall now also happens inside a single tracker song. Once `Theme` exists, later scenes such as `Recap` and short-form `Release` can explicitly borrow lane-level motif shapes from it, rescale them to the new scene length, and resolve them with a small answering transform. That gives the form an actual memory curve instead of making every scene a fresh quantization of the same phrase-level score.
+The next musicianship layer is now live as a real end-to-end stack rather than only a roadmap. M1 adds a reharmonization layer through `reharmonizer.py` and `harmonic_planner.py`, so tracker songs carry section functions, cadence types, and a named reharm strategy. M2 adds a hook engine through `hook_engine.py`, which now emits deterministic song-title, hook-text, hook-type, and phrase-pair material that survives into score metadata. M3 adds `arrangement_engine.py`, which turns tracker forms into section-level groove and automation plans instead of treating every scene as a raw template replay. M4 adds `ear_engine.py` plus deliberate `practice_curriculum.py` blocks, so performed notes are analyzed for interval variety, hook clarity, leap ratio, register spread, and cadence strength while away-mode songs can focus on Harmony, Melody, Arrangement, Ear, or Scene labs. M5 adds `prosody_engine.py`, which gives tracker songs short titles and scene captions that the face layer can surface. M6 adds `repertoire_memory.py`, a long-term song memory that stores titles, hook text, cadence/family context, and ear metrics so CypherClaw can gradually accumulate a repertoire instead of living only in fragment memory.
+That M1-M6 layer is now threaded through the live tracker path. `duet_composer.py` selects a practice block, resolves harmonic section metadata, writes title/hook/prosody state into `/tmp/composer_state.json`, stores completed songs into repertoire memory, and lets the face surface a song title and scene caption instead of only key and movement changes. The result is a more authored pipeline: function and cadence inform the form, the score now has a named hook, the tracker carries section intent, the learner judges the result, and the piece can remember whole songs as well as motifs.
+The next songwriting layer is now active above that tracker runtime too. CypherClaw no longer has to treat the tracker as the composer: `piece_commission.py` chooses a form class, composition mode, duration target, groove identity, and ending family; `piece_brief.py` turns world/narrative state into a concrete brief; `form_grammar.py` expands that into section functions with duration budgets; `recursive_composer.py` turns the brief plus hook profile into a full `ScoreTree`; `composition_gate.py` rejects underbuilt sketches; and `tracker_compiler.py` compiles approved trees into tracker scenes only after the whole-piece architecture exists. `piece_queue.py` keeps a small queue of precomposed score trees at `/home/user/cypherclaw-data/state/piece_queue.json`, so the live runtime can keep one committed piece active while preparing the next one in the background instead of improvising every song from scratch. `repertoire_memory.py` now stores a `score_tree_summary` alongside the old surface metadata, which means repertoire can remember section functions, motif ids, narrative beats, and ending family rather than only titles and hook text. The live commission layer now also carries an audibility bias: the very first post-boot piece is capped away from maximal suite scale unless the cadence is already in sleep or wind-down territory, so runtime recovery produces a committed audible piece instead of immediately disappearing into a sparse ten-minute introduction. And long section budgets now expand mostly through repeated phrase cycles rather than by stretching every note into a drone, which keeps long-form pieces song-like when they are compiled down into tracker rows. That compiler layer is now section-aware too: each scene gets its own derived score, section-function transforms, and motif-aware rewrites before quantization, so `Theme`, `Development`, `Recap`, and `Afterglow` no longer share one base phrase body with only density changes on top. Longer scenes now also carry coordinated internal phrase families such as `A`, `A_prime`, and `B` inside the same section body, with tracker-step root/function provenance, so a development section can unfold recursively while melody, bass, counter, and color lanes follow the same harmonic turns before any repeat-cycle variation is applied. Scene endings are now transition-aware as well: non-final sections know the next section's target function and root, and the tracker reshapes only the final repeat cycle's tail events into preparation tones so section boundaries behave like composed handoffs rather than hard resets.
+The tracker quantizer also now has a simple arrangement timeline inside repeated scenes. It computes per-role `entry_cycle` / `exit_cycle` windows, so support lanes can arrive after the foundation and melody in `Development`, `Bridge`, or `Lift` sections. This is deliberately separate from note variation: the same phrase family can exist, but the ensemble density changes over time.
+The motif-recall layer now respects the same transition authority. Recalled lanes remove transition fields from their source scene and reattach the current scene's target root/function to the final tail, so return sections can sound like returns without pointing their cadence back at the wrong section.
+The compiler now adds a section-local motif/progression layer above those tracker mechanics. `tracker_compiler.py` derives a named motif-development mode from each section function, rewrites melody/counter material accordingly, chooses a local four-step harmonic progression from the section's harmonic role/function, and reshapes bass/counter/color/melody notes against that progression. The tracker then preserves `motif_development`, `section_progression`, and per-step progression roots/roles, which makes a long piece more like related thematic development than one motif poured through unrelated scene templates.
+The same compiler layer now owns section rhythm identity. `tracker_compiler.py` maps section functions onto named rhythm-development modes and duration cells, then rewrites phrase durations and accents before internal phrase-family expansion. That means `Development` can be recognizably syncopated, `Bridge` can feel displaced or half-time, `Arrival` can drive, and `Afterglow` can breathe out while all of those choices remain inspectable through tracker metadata.
+The motif-recall layer preserves this current-section rhythm identity too. Recalled steps strip stale source section rhythm/progression fields before receiving the current scene's `rhythm_development`, `rhythm_cell`, and progression metadata, keeping diagnostics and downstream listeners aligned with the section currently being performed.
+The tracker now turns that section identity into audible arrangement curves. `music_tracker.py` maps `rhythm_development` into an `arrangement_curve`, writes multi-point automation lanes for `density`, `master_amp`, and `reverb_send`, and shapes each lane's note velocity across its own active window without raising the register. `music_tracker_runtime.py` publishes interpolated row automation in `/tmp/tracker_runtime_state.json`, uses low density to thin optional color/counter events while preserving bass and melody, and `duet_composer.py` periodically applies those current values to `sw_master_smooth`, so a long `Development` can actually rise, a `Bridge` can open into suspended reverb, and residues can fade instead of looping at one flat mix level.
+The EMSD layer now exists as a parallel production-and-sound-design package rather than only a future brief. `my-claw/curriculum/` contains a full 40-course EMSD catalog plus scaffolded course directories, while the runtime gained `sound_palette_lab.py`, `sample_lab.py`, `mix_engine.py`, `procedural_arc.py`, `dsp_scene_lab.py`, `artistic_identity.py`, `capstone_engine.py`, and `emsd_runtime.py`. Together, those modules give CypherClaw a formal sound-design study surface: synthesis-method-aware palette studies, environmental sampling plans, cadence-aware mix targets, 30-minute arc directives, audio-to-visual feature mapping, capstone-cycle planning derived from repertoire identity, and one typed live context object that the composer can consume directly instead of reconstructing EMSD state ad hoc.
+That EMSD layer is now live in the tracker path too. Before each tracker song is built, `duet_composer.py` constructs an EMSD context from cadence state, occupancy, family, patch, attention, CPU pressure, Theramini presence, and repertoire history. That context can now bias the active density shape, and its arc/mix/sample/DSP/identity fields are written into `/tmp/composer_state.json` at scene boundaries. `self_listener.py` also reads those fields back alongside `/tmp/cadence_state.json` and publishes `/tmp/glyph_audio_features.json`, so GlyphWeave-facing consumers can finally see brightness, motion, density, sample source, DSP blocks, and arc phase as a coherent audio-driven surface rather than inferring them from raw transport state. When direct self-capture hangs on the live JACK recorder path, that listener can now fall back to a fresh `/tmp/room_capture.wav` clip instead of dropping all the way to a dark `capture_timeout` state.
+That EMSD context now reaches the note-render stage too. `emsd_performance.py` turns the live mix profile, sampling plan, and DSP scene into per-event amp/release/brightness/space/filter/drive adjustments, and `play_voice()` applies those adjustments on top of the existing per-register shaping. In practice this means `garden_mic` / `spectral_smear` scenes really render softer and bloomier, `theramini_in` / `parallel_delay` scenes really widen and duck frontline voices, and the top register is now folded harder: notes above roughly `C6` are pulled down an octave, and the sharpest top band is pulled down two octaves instead of only one.
+The EMSD sampling side now has stable capture authority as well. `room_listener.py`, `contact_listener.py`, `theramini_listener.py`, and `self_listener.py` mirror their latest clips into `/tmp/room_capture.wav`, `/tmp/contact_capture.wav`, `/tmp/theramini_capture.wav`, and `/tmp/self_capture.wav` so higher-level planners can target durable sample paths instead of short-lived listener scratch files. `self_listener.py` also writes `/tmp/sample_dsp_activity.json` by combining those capture ages with composer, cadence, and sensor state. That file is the live sampler/DSP intent surface: it says which source is fresh, whether it should trigger now, which activity mode is appropriate (`texture_bed`, `slice_accents`, `window_echo`, `grain_cloud`, `freeze_bed`, `lowpass_wash`), and what wetness, grain density, stretch, filter, pitch window, and reverse probability should be used if a downstream sampler layer consumes it. If the requested source is unavailable, that planner can now fall back to a fresh room/contact/self capture instead of leaving the sampler stranded on a dead path like an absent `garden_capture.wav`.
+That sampler layer is now live, not only planned. `sample_playback_engine.py` reads `/tmp/sample_dsp_activity.json`, renders short room-derived events through `sample_event_renderer.py`, and plays them back through PipeWire as a sparse auxiliary layer. It also publishes `/tmp/sample_playback_state.json`, which records whether the sampler is currently playing, which activity mode launched, which capture path was used, and where the rendered event file lives. On hosts where the 10TB archive volume is mounted, those rendered sample events now default to `/mnt/archive/cypherclaw/sample_events` instead of growing under `/tmp` or the root disk. Stable ambient scenes are allowed to refresh after cooldown even when their source signature is unchanged, so Divination and other bed-oriented states do not go silent after one render cycle.
+On the current CypherClaw hardware, the default ambient study source is now the room/Perform-VE condenser path rather than `garden_mic`. Divination and Emergence scenes keep the soft spectral-smear / long-convolution language around `room_mic`, and Convergence/Crystallization now also bias back toward `room_mic` for lived-in states instead of defaulting to `self_bus`. The exception is `away_practice`, where the late arc can still use `self_bus` as an explicit internal remix source.
+The room-listener path now also reports which backend actually won. `room_speech.json` can include `capture_backend` and `capture_source`, and the boot script no longer hard-forces `--no-jack`; it now tries a PipeWire `pw-record` target for Perform-VE first, then falls back to JACK, then ALSA if needed. That matters on the live box because PipeWire can see the Perform-VE device even when the old raw JACK/ALSA assumptions were wrong. When ALSA fallback is still required, the selector prefers the Perform-VE interface over generic analog or webcam capture, and the ALSA capture loop retries alternate sample formats per device before moving on. When the named Perform-VE JACK port is absent but real JACK capture ports are available, `room_listener.py` now tries direct `jack_rec` on fallback ports like `system:capture_1` before dropping to ALSA, which prevents `/tmp/room_capture.wav` from staying stale and forcing the sampler onto a quiet self-bus fallback.
+The audio boot path itself is now more defensive too. `start_audio.sh` no longer disables synthdef auto-loading with `-D 0`; it links the repo SynthDef bundle into `~/.local/share/SuperCollider/synthdefs`, starts `scsynth` with auto-load enabled, and prefers a real JACK/Scarlett graph when one is available before falling back to PipeWire's JACK shim. That preference is now verified instead of assumed: the launcher only stays on real JACK when `system:playback_1` is visible, and if `scsynth` fails to register `SuperCollider:out_1` on that graph it kills the failed server and retries automatically on `pw-jack` instead of leaving CypherClaw silent. When it does need to rebuild real JACK, it now clears stale JACK state, relaunches `jackdbus`, and configures the ALSA backend for `hw:USB` before booting `scsynth`, which makes the Scarlett monitor path recoverable after a JACK/DBus drift. `restart_composer.sh` now treats audio as an existing dependency rather than trying to rebuild the whole synth library over OSC, waits for a healthy steady-state `duet_composer.py` process rather than only trusting the first short-lived child PID emitted during startup, and launches that composer through `nohup setsid ... </dev/null` so it survives operator session teardown. `self_listener.py` is now pinned to the verified JACK capture path on this host by the AV boot wrapper, still keeps explicit PipeWire and `pw-jack` fallbacks available in code, publishes `capture_backend` in `/tmp/self_listen.json`, and derives glyph-facing brightness/motion from the captured audio itself instead of from target-only centroid metadata.
+That restart path now also reseeds the `sw_master_smooth` node twice on purpose: once while the outputs are muted and the old composer is down, and again after the new `duet_composer.py` process is confirmed alive. The second reseed matters because the composer clears the root group on startup before building the next piece, which would otherwise leave scene-level master-bus automation writing to a dead node and make the runtime effectively silent even while tracker events are still being scheduled.
+Cold boot now has a repo-backed AV entrypoint too. `cypherclaw_av_boot.sh` waits for the display, checks whether `scsynth` and `duet_composer.py` are already present from another startup path, and only calls `start_audio.sh` / `restart_composer.sh` if they are still missing. After that it waits for `SuperCollider:out_1`, relaunches `self_listener.py` under a detached session with the explicit verified JACK backend, force-restarts `face_display.py` and `gallery_x11.py` under X, and exports `XDG_RUNTIME_DIR=/run/user/1000` for those display clients so they attach to the real user session instead of restarting into a blank SDL/X state. It only backfills `room_listener.py` and `sample_playback_engine.py` if no other startup path has already brought them up during the same boot. If stale copies from earlier bad boot loops are already present, that wrapper now deduplicates those optional daemons back down to one live process, then runs a second delayed dedupe pass so late-start copies from another boot hook are also collapsed. That wrapper now also normalizes the live dual-head modes after X recovery, using the observed `DP-2` face screen at `1280x1024` and `DP-0` gallery screen at `3840x2160`, and it launches the face on `:0.0` with the gallery on `:0.1` so the 4K gallery is no longer offset into the wrong coordinate space. `cypherclaw_boot.sh` now delegates core audio/composer/face/gallery/room-listener/sample ownership to that wrapper instead of trying to start the same daemons itself. The matching `cypherclaw-av-stack.service` is designed as a system service bound to `graphical.target`, so the live music/face stack can return after reboot even when only the core main daemon unit is already persistent.
+The boot path now starts the Theramini and contact-mic listeners alongside the room and self buses, which means those stable EMSD capture aliases can actually refresh during unattended runtime instead of existing only as planned fields in `/tmp/composer_state.json`.
+The face layer now reflects that sampler state as well. `face_display.py` reads `/tmp/sample_dsp_activity.json`, `/tmp/sample_playback_state.json`, and `/tmp/self_listen.json`, so the head monitor can distinguish between the sampler plan, the sampler that is actually playing, and a broken self-monitor path. In practice this means sparse late phases can say `playing room mic · freeze bed` when the layer is sounding, or surface monitor failure instead of blindly echoing a planned playback state.
+The operator diagnostics path now reads those same authority files through `my-claw/tools/senseweave/operator_diagnostics.py` and renders them in daemon `/status`. That keeps status output aligned with the live score-tree, tracker, composer, sampler, master-bus, and self-listener contracts instead of showing only daemon counters. SenseWeave behavior gates live in `my-claw/tools/senseweave/rollout_controls.py` and are controlled by `CYPHERCLAW_ENABLE_CURRICULUM_EXERCISE`, `CYPHERCLAW_ENABLE_PREVIEW_RENDER`, `CYPHERCLAW_ENABLE_SELF_CRITIQUE`, and `CYPHERCLAW_ENABLE_LONG_FORM_SUITE`, so curriculum exercises, preview metrics, revision passes, and suite-scale commissioning can be rolled back independently.
+The local camera path now assumes a single shared webcam unless another device is configured explicitly. `observer_vision.py` owns `/dev/video0` by default and only treats a frame as fresh when the underlying `ffmpeg` capture succeeds, so stale JPEGs no longer masquerade as live camera input after a device error. `room_presence_daemon.py` can run in `--observer-frame-only` mode, where it derives presence from the shared `/tmp/observer_frame.jpg` instead of contending for the same webcam. In that mode it mirrors the shared frame into `/tmp/room_frame.jpg`, so archive and downstream consumers still see a fresh room image instead of a frozen old capture.
+Heavy long-lived artifacts now have an archive-root contract too. Runtime helpers prefer `CYPHERCLAW_ARCHIVE_ROOT` when set, otherwise they use `/mnt/archive/cypherclaw` on machines where the 10TB archive disk is mounted, then fall back to the older `/home/user/cypherclaw-data` layout or a project-local archive directory. That storage root now owns Litestream file replicas, archive-daemon outputs, rendered sample-event WAVs, and the porch/side camera capture rings, which keeps those high-growth paths off the NVMe root volume.
+The slow observer summary path is now queue-aware as well. `observer_vision.py` now accepts an ordered `OBSERVER_OLLAMA_URLS` list and the boot path routes it to a dedicated observer queue on `127.0.0.1:11435` before falling back to the shared `11434` instance. A matching `cypherclaw-observer-ollama.service` runs that second queue as the `ollama` user against the shared model store, which keeps camera summaries from competing directly with the main local model traffic. When both endpoints are saturated, the observer no longer writes the raw `HTTP Error 503` text as the room description. Instead it publishes a compact local fallback summary derived from the fast image analysis, records `vision_backend` and `vision_error` in `/tmp/observer_state.json`, and backs off before retrying the slow multimodal call again. That keeps the observer state readable during local-model contention while still leaving the slow summary path available when Ollama is free.
+The sampler plan itself is now scene-aware and transport-aware too. `sample_dsp_activity.py` no longer chooses only a generic mode from transforms and DSP blocks; it also reads the 30-minute arc phase plus tracker scene and row state from the self-listener, then emits a scene profile such as `development_grains`, `theme_accents`, `recap_echo`, `divination_bed`, or `afterglow_residue` together with a transport trigger key. `sample_event_renderer.py` consumes that profile to change grain count, event duration, bed spacing, echo spacing, peak target, filter ceiling, and stretch, and `sample_playback_engine.py` now uses the transport key to launch once per musical bucket instead of free-running only on cooldown. The practical effect is that `Development` room material can widen into denser grain clouds while `Afterglow` and `Resolution` can leave a longer, softer residue instead of sharing the same generic freeze or slice pattern.
+EMSD mix state now reaches the real master bus too. Tracker scene starts no longer only update per-note render shaping; they also translate `mix_target_lufs`, `mix_bus_comp_ratio`, `mix_peak_ceiling_dbtp`, scene `master_amp`, and scene `reverb_send` into live `sw_master_smooth` control updates, so scene density and mix intent affect the actual summed output path.
+That repertoire layer is no longer passive. Before each tracker song is built, the live composer now asks `repertoire_memory.py` for an influence object keyed by family and cadence state. That influence can bias the next song's progression profile as well as title and hook generation, and it can now also recommend a tracker form variant, a section-density bias, and a preferred payoff scene. Strong earlier songs can therefore echo forward not only as language and harmony, but also as structural memory that nudges the next song toward bridge, concise, or afterglow forms with a matching density contour and a remembered place of arrival. The hook path now also uses phrase-level answer transforms instead of a blunt suffix fallback, and those transforms are context-aware rather than single-template replacements: the same recalled hook can answer differently across family, cadence, and song context while staying grammatical. The hook generator now normalizes a small set of historically awkward phrases too, so rough forms like `carry the line wide` or `open the room open` collapse back into musically usable hooks before they can propagate through repertoire recall. Title generation is now tied to the same image field as the hook at the phrase level, not just the noun level, and that title planner now also reacts to cadence state, progression profile, and hook type. The result is that calmer hooks can land in phrases like `Low Light` or `Quiet Rooms`, while brighter or more kinetic hooks can move toward `Electric Circuits`, `Moving Lines`, or `Open Thresholds` instead of repeating one adjective-noun template. The same planner also avoids exact title repeats from remembered repertoire hints, so callback titles can echo earlier songs without cloning them verbatim. The prosody layer now reshapes that same hook by section too, so `Theme`, `Recap`, `Release`, `Resolution`, and `Afterglow` can carry the same motif with different textual density instead of reusing one caption verbatim across the whole song. That caption shaping is now harmonic-function-aware as well: the same `Afterglow` hook can read differently under `half`, `plagal`, `authentic`, or `deceptive` cadences, which lets the face text follow the actual harmonic landing rather than only the scene name. It is now orchestration-aware too: sparse `house_monastery` or `house_chamber` scenes can compress a hook into a leaner noun phrase, while denser `house_workshop` or `house_procession` scenes can widen the same hook into a fuller line, which lets the face react to texture before the harmony resolves. `repertoire_memory.py` also repairs legacy broken hook text on load and on write, so older bad phrases do not keep leaking forward into new songs after the hook system improves.
+
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/notifications.log
+ M sdp/run-log.md
+?? sdp/fractal-reports/2026-05-13.md
+?? sdp/fractal-reports/2026-05-14.md
+?? sdp/fractal-reports/2026-05-15.md
+?? sdp/logs/Lead_T-001_20260515T214233Z_1778881438.log
+?? sdp/logs/Lead_T-001_20260515T214233Z_1778881650.log
+?? sdp/logs/Lead_T-002_20260515T214233Z_1778882292.log
+?? sdp/logs/Lead_T-003_20260515T214233Z_1778882654.log
+?? sdp/logs/Lead_T-004_20260515T214233Z_1778883104.log
+?? sdp/logs/Lead_T-005_20260515T214233Z_1778883871.log
+?? sdp/logs/Lead_T-005_20260515T214233Z_1778884424.log
+?? sdp/logs/Lead_T-006_20260515T214233Z_1778884981.log
+?? sdp/logs/Lead_T-006_20260515T214233Z_1778885634.log
+?? sdp/logs/Lead_T-007_20260515T214233Z_1778886028.log
+?? sdp/logs/Lead_T-008_20260515T214233Z_1778886776.log
+?? sdp/logs/Lead_T-009_20260515T214233Z_1778887588.log
+?? sdp/logs/Lead_T-009_20260515T214233Z_1778888239.log
+?? sdp/logs/Lead_T-010_20260515T214233Z_1778888694.log
+?? sdp/logs/Lead_T-011_20260515T214233Z_1778889727.log
+?? sdp/logs/Lead_T-012_20260515T214233Z_1778890447.log
+?? sdp/logs/Lead_T-013_20260515T214233Z_1778890863.log
+?? sdp/logs/Verify_T-001_20260515T214233Z_1778882000.log
+?? sdp/logs/Verify_T-002_20260515T214233Z_1778882468.log
+?? sdp/logs/Verify_T-003_20260515T214233Z_1778882941.log
+?? sdp/logs/Verify_T-004_20260515T214233Z_1778883760.log
+?? sdp/logs/Verify_T-005_20260515T214233Z_1778884787.log
+?? sdp/logs/Verify_T-006_20260515T214233Z_1778885848.log
+?? sdp/logs/Verify_T-007_20260515T214233Z_1778886590.log
+?? sdp/logs/Verify_T-008_20260515T214233Z_1778887365.log
+?? sdp/logs/Verify_T-009_20260515T214233Z_1778888471.log
+?? sdp/logs/Verify_T-010_20260515T214233Z_1778889487.log
+?? sdp/logs/Verify_T-011_20260515T214233Z_1778890244.log
+?? sdp/logs/Verify_T-012_20260515T214233Z_1778890712.log
+?? sdp/telemetry/prompt-review-2026-05-16.md
+?? sdp/templates/candidates/verify/v007.md
+?? sdp/verification/t-003@20260515t214233z-verify.md
+
+exec
+/bin/zsh -lc 'rg -n "architecture|docs/architecture|PAL|platform" tests' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_decision_store.py:83:            title="Cache layer architecture",
+tests/test_check_status_runtime.py:40:def test_check_status_uses_platform_detection() -> None:
+tests/test_check_status_runtime.py:45:    assert "platform" in source
+tests/test_generation_e2e_cypherclaw.py:13:import platform
+tests/test_generation_e2e_cypherclaw.py:35:    host = platform.node().lower()
+tests/test_pal_smoke.py:12:from promptclaw.pal_client import PALQueryResult
+tests/test_pal_smoke.py:44:    ) -> PALQueryResult:
+tests/test_pal_smoke.py:46:        return PALQueryResult(
+tests/test_pal_smoke.py:85:        ) -> PALQueryResult:
+tests/test_pal_smoke.py:116:    config = default_project_config("PAL Smoke CLI")
+tests/test_pal_smoke.py:124:    monkeypatch.setattr("promptclaw.cli.PALRouterClient", FakeClientFactory)
+tests/test_pal_smoke.py:138:    assert "PAL smoke: PASS" in rendered
+tests/test_pal_smoke.py:183:    assert empty == "PAL baseline: no smoke reports found"
+tests/test_pal_smoke.py:202:    assert "PAL baseline: reports=2 pass_rate=50.0%" in rendered
+tests/test_pal_smoke.py:224:    assert "PAL baseline: reports=1 pass_rate=100.0%" in output.getvalue()
+tests/test_agent_selector_quota.py:269:            ("design system structure", "architecture"),
+tests/test_agent_selector_defaults.py:16:    "architecture",
+tests/test_image_api_spec_parser.py:69:platform: blog
+tests/test_image_api_spec_parser.py:82:    def test_platform_appears_in_prompt(self):
+tests/test_image_api_spec_parser.py:189:platform: blog
+tests/test_wizard.py:45:            "architecture, specs, and verification",
+tests/test_wizard.py:112:            "code changes, architecture, documentation",
+tests/test_wizard.py:116:            "architecture, specs, and verification",
+tests/test_wizard.py:166:            "claude": ["architecture", "specification", "verification"],
+tests/test_synthesis_architecture_registry.py:1:"""Tests for the synthesis-architecture strategy registry.
+tests/test_synthesis_architecture_registry.py:14:from senseweave.synthesis_architecture_registry import (
+tests/test_synthesis_architecture_registry.py:18:    architectures_for_phase,
+tests/test_synthesis_architecture_registry.py:19:    best_architecture_for_phase,
+tests/test_synthesis_architecture_registry.py:20:    build_architecture_registry_report,
+tests/test_synthesis_architecture_registry.py:21:    covered_architectures,
+tests/test_synthesis_architecture_registry.py:23:    resolve_architecture,
+tests/test_synthesis_architecture_registry.py:24:    summarize_architecture_registry_report,
+tests/test_synthesis_architecture_registry.py:33:    def test_covers_all_required_architectures(self) -> None:
+tests/test_synthesis_architecture_registry.py:34:        assert REQUIRED_ARCHITECTURES <= covered_architectures()
+tests/test_synthesis_architecture_registry.py:39:    def test_required_architectures_match_registry(self) -> None:
+tests/test_synthesis_architecture_registry.py:50:                f"{strategy.architecture_id} has no role tags"
+tests/test_synthesis_architecture_registry.py:56:                f"{strategy.architecture_id} has no macro controls"
+tests/test_synthesis_architecture_registry.py:63:                    f"{strategy.architecture_id}.{ctrl.name}: "
+tests/test_synthesis_architecture_registry.py:70:                f"{strategy.architecture_id} has no arc affinity"
+tests/test_synthesis_architecture_registry.py:77:                    f"{strategy.architecture_id} missing affinity for {phase}"
+tests/test_synthesis_architecture_registry.py:84:                    f"{strategy.architecture_id}.{phase}: affinity {value} out of [0, 1]"
+tests/test_synthesis_architecture_registry.py:90:                f"{strategy.architecture_id} has no fallback"
+tests/test_synthesis_architecture_registry.py:92:            assert strategy.fallback != strategy.architecture_id, (
+tests/test_synthesis_architecture_registry.py:93:                f"{strategy.architecture_id} falls back to itself"
+tests/test_synthesis_architecture_registry.py:96:                f"{strategy.architecture_id} fallback {strategy.fallback!r} not in registry"
+tests/test_synthesis_architecture_registry.py:101:            assert strategy.label, f"{strategy.architecture_id} missing label"
+tests/test_synthesis_architecture_registry.py:102:            assert strategy.summary, f"{strategy.architecture_id} missing summary"
+tests/test_synthesis_architecture_registry.py:111:            best = best_architecture_for_phase(phase)
+tests/test_synthesis_architecture_registry.py:113:                f"best for {phase} ({best.architecture_id}) only has "
+tests/test_synthesis_architecture_registry.py:118:        assert best_architecture_for_phase("Divination").architecture_id == "spectral"
+tests/test_synthesis_architecture_registry.py:121:        assert best_architecture_for_phase("Emergence").architecture_id == "fm"
+tests/test_synthesis_architecture_registry.py:124:        assert best_architecture_for_phase("Conversation").architecture_id == "subtractive"
+tests/test_synthesis_architecture_registry.py:127:        assert best_architecture_for_phase("Convergence").architecture_id == "additive"
+tests/test_synthesis_architecture_registry.py:130:        assert best_architecture_for_phase("Crystallization").architecture_id == "granular"
+tests/test_synthesis_architecture_registry.py:132:    def test_architectures_for_phase_respects_threshold(self) -> None:
+tests/test_synthesis_architecture_registry.py:133:        high = architectures_for_phase("Divination", threshold=0.8)
+tests/test_synthesis_architecture_registry.py:138:    def test_architectures_for_phase_sorted_descending(self) -> None:
+tests/test_synthesis_architecture_registry.py:139:        results = architectures_for_phase("Emergence")
+tests/test_synthesis_architecture_registry.py:148:    def test_melody_has_multiple_architectures(self) -> None:
+tests/test_synthesis_architecture_registry.py:154:        ids = {s.architecture_id for s in color}
+tests/test_synthesis_architecture_registry.py:159:        ids = {s.architecture_id for s in bass}
+tests/test_synthesis_architecture_registry.py:168:        ids = {s.architecture_id for s in rhythm}
+tests/test_synthesis_architecture_registry.py:181:        assert s.architecture_id == "fm"
+tests/test_synthesis_architecture_registry.py:191:    def test_resolve_known_architecture(self) -> None:
+tests/test_synthesis_architecture_registry.py:192:        s = resolve_architecture("granular")
+tests/test_synthesis_architecture_registry.py:193:        assert s.architecture_id == "granular"
+tests/test_synthesis_architecture_registry.py:196:        s = resolve_architecture("unknown_synth")
+tests/test_synthesis_architecture_registry.py:197:        assert s.architecture_id == "subtractive"
+tests/test_synthesis_architecture_registry.py:199:    def test_covered_architectures_matches_required(self) -> None:
+tests/test_synthesis_architecture_registry.py:200:        assert covered_architectures() == REQUIRED_ARCHITECTURES
+tests/test_synthesis_architecture_registry.py:213:                f"which is not in the architecture registry"
+tests/test_synthesis_architecture_registry.py:220:            best = best_architecture_for_phase(phase.name)
+tests/test_synthesis_architecture_registry.py:221:            assert best.architecture_id == phase.synthesis, (
+tests/test_synthesis_architecture_registry.py:223:                f"registry best is {best.architecture_id}"
+tests/test_synthesis_architecture_registry.py:234:        chapter = course_chapter("synthesis_architecture")
+tests/test_synthesis_architecture_registry.py:239:                f"not in architecture registry"
+tests/test_synthesis_architecture_registry.py:256:        report = build_architecture_registry_report()
+tests/test_synthesis_architecture_registry.py:257:        summary = summarize_architecture_registry_report(report)
+tests/test_synthesis_architecture_registry.py:259:        assert summary["architecture_ids"] == [
+tests/test_synthesis_architecture_registry.py:274:        assert summary["missing_required_architectures"] == []
+tests/test_synthesis_architecture_registry.py:278:            phase: best_architecture_for_phase(phase).architecture_id
+tests/test_synthesis_architecture_registry.py:292:                strategy.architecture_id for strategy in architectures_for_phase(phase)
+tests/test_synthesis_architecture_registry.py:296:        assert summary["phase_architectures"] == phase_rankings
+tests/test_synthesis_architecture_registry.py:299:            role: [strategy.architecture_id for strategy in strategies_for_role(role)]
+tests/test_synthesis_architecture_registry.py:302:        assert summary["role_architectures"] == role_mappings
+tests/test_synthesis_architecture_registry.py:313:            profile["architecture_id"]: profile for profile in summary["profiles"]
+tests/test_synthesis_architecture_registry.py:315:        assert set(profiles) == set(summary["architecture_ids"])
+tests/test_synthesis_architecture_registry.py:316:        for architecture_id in summary["architecture_ids"]:
+tests/test_synthesis_architecture_registry.py:317:            profile = profiles[architecture_id]
+tests/test_synthesis_architecture_registry.py:326:            assert profile["fallback_chain"][0] == architecture_id
+tests/test_synthesis_architecture_registry.py:331:        chapter = course_chapter("synthesis_architecture")
+tests/test_synthesis_architecture_registry.py:334:        assert set(course_values) <= set(summary["architecture_ids"])
+tests/test_synthesis_architecture_registry.py:337:            "architecture_ids": summary["architecture_ids"],
+tests/test_synthesis_architecture_registry.py:346:                architecture_id: {
+tests/test_synthesis_architecture_registry.py:347:                    "best_phase": profiles[architecture_id]["best_phase"],
+tests/test_synthesis_architecture_registry.py:348:                    "macro_control_names": profiles[architecture_id][
+tests/test_synthesis_architecture_registry.py:351:                    "fallback_chain": profiles[architecture_id]["fallback_chain"],
+tests/test_synthesis_architecture_registry.py:353:                for architecture_id in summary["architecture_ids"]
+tests/test_pal_agent.py:13:from promptclaw.pal_agent import PALOpsAction, PALOpsTool, run_pal_ops_actions, run_pal_ops_triage
+tests/test_pal_agent.py:14:from promptclaw.pal_client import PALQueryResult
+tests/test_pal_agent.py:18:class FakePALClient:
+tests/test_pal_agent.py:36:    ) -> PALQueryResult:
+tests/test_pal_agent.py:39:        return PALQueryResult(text=text, raw={"response": text, "model": self.default_model})
+tests/test_pal_agent.py:43:    config = default_project_config("PAL Agent Test")
+tests/test_pal_agent.py:47:        "pal_health": PALOpsTool(
+tests/test_pal_agent.py:49:            description="Check PAL router health.",
+tests/test_pal_agent.py:52:        "pal_smoke_baseline": PALOpsTool(
+tests/test_pal_agent.py:54:            description="Summarize PAL smoke baselines.",
+tests/test_pal_agent.py:58:    client = FakePALClient([
+tests/test_pal_agent.py:63:        "PAL triage summary: health is green and smoke baseline is stable.",
+tests/test_pal_agent.py:68:        task="Diagnose PAL health.",
+tests/test_pal_agent.py:91:    config = default_project_config("PAL Agent Invalid Plan")
+tests/test_pal_agent.py:95:        "pal_health": PALOpsTool(
+tests/test_pal_agent.py:97:            description="Check PAL router health.",
+tests/test_pal_agent.py:100:        "pal_smoke_baseline": PALOpsTool(
+tests/test_pal_agent.py:102:            description="Summarize PAL smoke baselines.",
+tests/test_pal_agent.py:106:    client = FakePALClient([
+tests/test_pal_agent.py:126:    config = default_project_config("PAL Triage Knowledge Context")
+tests/test_pal_agent.py:149:        "pal_health": PALOpsTool(
+tests/test_pal_agent.py:151:            description="Check PAL router health.",
+tests/test_pal_agent.py:155:    client = FakePALClient([
+tests/test_pal_agent.py:157:        "PAL triage summary with local KB context.",
+tests/test_pal_agent.py:190:    config = default_project_config("PAL Missing Knowledge Context")
+tests/test_pal_agent.py:194:        "pal_health": PALOpsTool(
+tests/test_pal_agent.py:196:            description="Check PAL router health.",
+tests/test_pal_agent.py:200:    client = FakePALClient([
+tests/test_pal_agent.py:202:        "PAL triage summary without local KB index.",
+tests/test_pal_agent.py:220:    assert "No local PAL KB index is available" in section
+tests/test_pal_agent.py:236:    args = argparse.Namespace(project_root=tmp_path, task="Diagnose PAL.", json=False)
+tests/test_pal_agent.py:242:    assert "PAL agent triage: COMPLETE" in rendered
+tests/test_pal_agent.py:248:    config = default_project_config("PAL Actions Proposal")
+tests/test_pal_agent.py:252:        "pal_health": PALOpsTool(
+tests/test_pal_agent.py:254:            description="Check PAL router health.",
+tests/test_pal_agent.py:259:        "inspect_logs_deep": PALOpsAction(
+tests/test_pal_agent.py:261:            description="Inspect PAL logs.",
+tests/test_pal_agent.py:266:        "restart_router": PALOpsAction(
+tests/test_pal_agent.py:268:            description="Restart the PAL router.",
+tests/test_pal_agent.py:274:    client = FakePALClient([
+tests/test_pal_agent.py:304:    config = default_project_config("PAL Actions Approved")
+tests/test_pal_agent.py:308:        "pal_health": PALOpsTool(
+tests/test_pal_agent.py:310:            description="Check PAL router health.",
+tests/test_pal_agent.py:315:        "inspect_logs_deep": PALOpsAction(
+tests/test_pal_agent.py:317:            description="Inspect PAL logs.",
+tests/test_pal_agent.py:322:        "restart_router": PALOpsAction(
+tests/test_pal_agent.py:324:            description="Restart the PAL router.",
+tests/test_pal_agent.py:330:    client = FakePALClient([
+tests/test_pal_agent.py:355:    config = default_project_config("PAL Action Knowledge Context")
+tests/test_pal_agent.py:366:        "pal_health": PALOpsTool(
+tests/test_pal_agent.py:368:            description="Check PAL router health.",
+tests/test_pal_agent.py:373:        "inspect_logs_deep": PALOpsAction(
+tests/test_pal_agent.py:375:            description="Inspect PAL logs.",
+tests/test_pal_agent.py:380:        "restart_router": PALOpsAction(
+tests/test_pal_agent.py:382:            description="Restart the PAL router.",
+tests/test_pal_agent.py:388:    client = FakePALClient([
+tests/test_pal_agent.py:393:        "PAL action summary with local KB context.",
+tests/test_pal_agent.py:427:    actions = build_default_action_registry(tmp_path, FakePALClient([]))
+tests/test_pal_agent.py:466:    config = default_project_config("PAL Vast Boundary")
+tests/test_pal_agent.py:470:        "pal_health": PALOpsTool(
+tests/test_pal_agent.py:472:            description="Check PAL router health.",
+tests/test_pal_agent.py:477:        "inspect_logs_deep": PALOpsAction(
+tests/test_pal_agent.py:479:            description="Inspect PAL logs.",
+tests/test_pal_agent.py:485:    client = FakePALClient([
+tests/test_pal_agent.py:490:        "PAL action summary.",
+tests/test_pal_agent.py:495:        task="Inspect PAL and describe any Vast boundary.",
+tests/test_pal_agent.py:523:    config = default_project_config("PAL Slow Inference Context")
+tests/test_pal_agent.py:555:        task="Diagnose PAL slow inference at 2 tokens per second.",
+tests/test_pal_agent.py:556:        client=FakePALClient([]),
+tests/test_pal_agent.py:588:    config = default_project_config("PAL Slow Inference No SSH")
+tests/test_pal_agent.py:590:    for key in ("PAL_SSH_HOST", "PAL_SSH_PORT", "PAL_SSH_KEY"):
+tests/test_pal_agent.py:595:        client=FakePALClient([]),
+tests/test_pal_agent.py:616:    config = default_project_config("PAL Slow Inference Diagnosis")
+tests/test_pal_agent.py:620:        "pal_health": PALOpsTool(
+tests/test_pal_agent.py:622:            description="Check PAL router health.",
+tests/test_pal_agent.py:629:        "pal_smoke_baseline": PALOpsTool(
+tests/test_pal_agent.py:631:            description="Summarize PAL smoke baselines.",
+tests/test_pal_agent.py:638:        "gpu_hints": PALOpsTool(
+tests/test_pal_agent.py:643:        "slow_inference_logs": PALOpsTool(
+tests/test_pal_agent.py:645:            description="Collect read-only PAL logs.",
+tests/test_pal_agent.py:652:        task="Diagnose PAL slow inference without changing services.",
+tests/test_pal_agent.py:653:        client=FakePALClient([]),
+tests/test_pal_agent.py:679:    assert "PAL Slow-Inference Diagnosis" in (run_root / "summary" / "final-summary.md").read_text()
+tests/test_pal_agent.py:693:    config = default_project_config("PAL Slow Inference Diagnosis Findings")
+tests/test_pal_agent.py:697:        "pal_health": PALOpsTool(
+tests/test_pal_agent.py:699:            description="Check PAL router health.",
+tests/test_pal_agent.py:706:        "pal_smoke_baseline": PALOpsTool(
+tests/test_pal_agent.py:708:            description="Summarize PAL smoke baselines.",
+tests/test_pal_agent.py:718:        "gpu_hints": PALOpsTool(
+tests/test_pal_agent.py:732:        "slow_inference_logs": PALOpsTool(
+tests/test_pal_agent.py:734:            description="Collect read-only PAL logs.",
+tests/test_pal_agent.py:750:        task="PAL is answering at roughly two tokens per second.",
+tests/test_pal_agent.py:751:        client=FakePALClient([]),
+tests/test_pal_agent.py:783:        "Diagnose slow PAL.",
+tests/test_pal_agent.py:789:    assert parsed.task == "Diagnose slow PAL."
+tests/test_pal_agent.py:812:    args = argparse.Namespace(project_root=tmp_path, task="Diagnose slow PAL.", json=False)
+tests/test_pal_agent.py:818:    assert "PAL slow-inference diagnosis: COMPLETE" in rendered
+tests/test_pal_agent.py:822:    assert calls == [{"project_root": tmp_path, "task": "Diagnose slow PAL."}]
+tests/test_pal_agent.py:825:    args = argparse.Namespace(project_root=tmp_path, task="Diagnose slow PAL.", json=True)
+tests/test_pal_agent.py:850:    args = argparse.Namespace(project_root=tmp_path, task="Act on PAL.", approve=["inspect_logs_deep"], json=False)
+tests/test_pal_agent.py:856:    assert "PAL agent actions: COMPLETE" in rendered
+tests/test_pal_agent.py:1013:                "args": ["ssh", "<PAL_SSH_HOST>", "<remote-command>"],
+tests/test_pal_agent.py:1016:                "stderr": "SSH diagnostics skipped because PAL_SSH_HOST, PAL_SSH_PORT, and PAL_SSH_KEY are not all set.",
+tests/test_pareidolia_characters.py:21:    PALETTES,
+tests/test_pareidolia_characters.py:110:        palette = PALETTES["day_happy"]
+tests/test_pareidolia_characters.py:119:        palette = PALETTES["day_calm"]
+tests/test_pareidolia_characters.py:291:        palette = PALETTES["day_calm"]
+tests/test_pareidolia_characters.py:344:        self.assertIs(palette, PALETTES["day_happy"])
+tests/test_router.py:22:    def test_infer_task_type_architecture(self):
+tests/test_router.py:24:        self.assertEqual(task_type, "architecture")
+tests/test_router.py:35:    def test_heuristic_route_prefers_claude_for_architecture(self):
+tests/test_router.py:36:        decision = heuristic_route(self.config, "Design the orchestrator architecture and verification protocol.")
+tests/test_server_health.py:39:    monkeypatch.setattr(server_health.platform, "system", lambda: "Linux")
+tests/test_server_health.py:66:    monkeypatch.setattr(server_health.platform, "system", lambda: "Linux")
+tests/test_course_critique.py:528:                "synthesis_architecture",
+tests/test_test_synthesis_architecture_registry_depth.py:1:"""Depth gate for synthesis-architecture registry tests."""
+tests/test_test_synthesis_architecture_registry_depth.py:69:def test_test_synthesis_architecture_registry_reaches_depth_two_with_e2e_class() -> None:
+tests/test_test_synthesis_architecture_registry_depth.py:70:    test_path = Path("tests/test_synthesis_architecture_registry.py")
+tests/test_test_synthesis_architecture_registry_depth.py:92:def test_test_synthesis_architecture_registry_declares_depth_two_marker() -> None:
+tests/test_test_synthesis_architecture_registry_depth.py:93:    test_path = Path("tests/test_synthesis_architecture_registry.py")
+tests/test_test_synthesis_architecture_registry_depth.py:97:        "tests/test_synthesis_architecture_registry.py must declare depth: 2 "
+tests/test_image_api_app.py:114:            "platform: blog\n"
+tests/test_doctor.py:9:from promptclaw.models import PALConfig
+tests/test_doctor.py:60:    config = default_project_config("PAL Doctor Test")
+tests/test_doctor.py:61:    config.pal = PALConfig(enabled=True, base_url="http://pal-cloud-a6000:8000")
+tests/test_doctor.py:78:    monkeypatch.setattr("promptclaw.doctor.PALRouterClient", FakeClient)
+tests/test_doctor.py:94:    config = default_project_config("PAL Doctor Failure Test")
+tests/test_doctor.py:106:    monkeypatch.setattr("promptclaw.doctor.PALRouterClient", FakeClient)
+tests/test_pal_client.py:18:from promptclaw.models import PALConfig
+tests/test_pal_client.py:19:from promptclaw.pal_client import PALClientError, PALRouterClient
+tests/test_pal_client.py:51:    client = PALRouterClient(
+tests/test_pal_client.py:87:                "response": "PAL is reachable.",
+tests/test_pal_client.py:92:    client = PALRouterClient(
+tests/test_pal_client.py:101:        system="You are PAL.",
+tests/test_pal_client.py:105:    assert result.text == "PAL is reachable."
+tests/test_pal_client.py:115:                "system": "You are PAL.",
+tests/test_pal_client.py:127:    client = PALRouterClient(base_url="http://pal-cloud-a6000:8000", opener=fake_urlopen)
+tests/test_pal_client.py:129:    with pytest.raises(PALClientError) as excinfo:
+tests/test_pal_client.py:136:class PALConfigTests(unittest.TestCase):
+tests/test_pal_client.py:140:        config = default_project_config("PAL Config Claw")
+tests/test_pal_client.py:141:        config.pal = PALConfig(
+tests/test_pal_client.py:160:        config = default_project_config("Broken PAL Config")
+tests/test_pal_client.py:173:    config = default_project_config("PAL CLI Claw")
+tests/test_pal_client.py:185:    monkeypatch.setattr("promptclaw.cli.PALRouterClient", FakeClient)
+tests/test_pal_client.py:196:    config = default_project_config("PAL CLI Query Claw")
+tests/test_pal_client.py:201:        text = "PAL query response."
+tests/test_pal_client.py:213:    monkeypatch.setattr("promptclaw.cli.PALRouterClient", FakeClient)
+tests/test_pal_client.py:219:        system="You are PAL.",
+tests/test_pal_client.py:228:    assert output.getvalue() == "PAL query response.\n"
+tests/test_pal_client.py:231:        "system": "You are PAL.",
+tests/test_executable_curriculum.py:22:    "synthesis_architecture": ("EMSD-201", "ex01", "architecture"),
+tests/test_senseweave_rollout_controls.py:160:            (root / "docs" / "architecture.md").read_text(encoding="utf-8"),
+tests/test_sw_sampler.py:245:        # architecture: changing fx_send must not change dry level). We
+tests/test_sw_sampler.py:254:            "(parallel send architecture)"
+tests/test_sw_sampler.py:387:            "(parallel send architecture)"
+tests/test_pal_knowledge.py:14:from promptclaw.models import PALConfig
+tests/test_pal_knowledge.py:16:    PALKnowledgeIndexBuild,
+tests/test_pal_knowledge.py:17:    PALKnowledgeChunk,
+tests/test_pal_knowledge.py:18:    PALKnowledgeQueryResult,
+tests/test_pal_knowledge.py:34:    config = default_project_config("PAL Source Discovery")
+tests/test_pal_knowledge.py:35:    config.pal = PALConfig(
+tests/test_pal_knowledge.py:68:    save_config(tmp_path, default_project_config("PAL Defaults"))
+tests/test_pal_knowledge.py:89:    assert all(isinstance(chunk, PALKnowledgeChunk) for chunk in chunks)
+tests/test_pal_knowledge.py:189:    assert isinstance(result, PALKnowledgeIndexBuild)
+tests/test_pal_knowledge.py:236:    assert "PAL KB build:" in rendered
+tests/test_pal_knowledge.py:248:        "# Router\nPAL router restart validates health and smoke evidence.\n"
+tests/test_pal_knowledge.py:262:    assert all(isinstance(result, PALKnowledgeQueryResult) for result in results)
+tests/test_pal_knowledge.py:283:        "# Tailscale\nTailscale router checks confirm PAL reachability.\n"
+tests/test_pal_knowledge.py:324:        "# Router\nPAL router restart validates health and smoke evidence.\n"
+tests/test_pal_knowledge.py:342:    assert "PAL KB query: matches=1" in rendered
+tests/test_pal_knowledge.py:345:    assert "PAL router restart validates health" in rendered
+tests/test_pal_knowledge.py:353:    config = default_project_config("PAL Knowledge Chunking")
+tests/test_pal_knowledge.py:354:    config.pal = PALConfig(enabled=True, knowledge_sources=sources)
+tests/test_pal_knowledge.py:358:def _chunk_ids_by_source(chunks: tuple[PALKnowledgeChunk, ...]) -> dict[str, list[str]]:
+tests/test_narrative_api_beats.py:234:                    palette_name="PALETTE_NIGHT",
+tests/test_narrative_api_beats.py:246:                "palette_name": "PALETTE_NIGHT",
+tests/test_pareidolia_color.py:4:- ColorPalette dataclass and PALETTES dict
+tests/test_pareidolia_color.py:26:    PALETTES,
+tests/test_pareidolia_color.py:58:# PARE-002: ColorPalette and PALETTES
+tests/test_pareidolia_color.py:79:        p = PALETTES["dawn"]
+tests/test_pareidolia_color.py:84:        for name, p in PALETTES.items():
+tests/test_pareidolia_color.py:92:        for name, p in PALETTES.items():
+tests/test_pareidolia_color.py:101:    """Tests for the PALETTES dictionary entries."""
+tests/test_pareidolia_color.py:110:            self.assertIn(key, PALETTES, f"Missing palette: {key}")
+tests/test_pareidolia_color.py:113:        self.assertEqual(len(PALETTES), len(self.EXPECTED_KEYS))
+tests/test_pareidolia_color.py:116:        p = PALETTES["dawn"]
+tests/test_pareidolia_color.py:121:        p = PALETTES["night"]
+tests/test_pareidolia_color.py:126:        p = PALETTES["snow"]
+tests/test_pareidolia_color.py:131:        p = PALETTES["rain"]
+tests/test_pareidolia_color.py:146:            self.assertEqual(p, PALETTES["dawn"], f"hour={h} should be dawn")
+tests/test_pareidolia_color.py:150:        self.assertEqual(p, PALETTES["day_happy"])
+tests/test_pareidolia_color.py:154:        self.assertEqual(p, PALETTES["day_calm"])
+tests/test_pareidolia_color.py:158:        self.assertEqual(p, PALETTES["day_happy"])
+tests/test_pareidolia_color.py:162:        self.assertEqual(p, PALETTES["day_calm"])
+tests/test_pareidolia_color.py:167:            self.assertEqual(p, PALETTES["dusk"], f"hour={h} should be dusk")
+tests/test_pareidolia_color.py:172:        self.assertEqual(p, PALETTES["night_calm"])
+tests/test_pareidolia_color.py:176:        self.assertEqual(p, PALETTES["night"])
+tests/test_pareidolia_color.py:180:        self.assertEqual(p, PALETTES["night_calm"])
+tests/test_pareidolia_color.py:184:        self.assertEqual(p, PALETTES["night"])
+tests/test_pareidolia_color.py:188:        self.assertEqual(p, PALETTES["rain"])
+tests/test_pareidolia_color.py:192:        self.assertEqual(p, PALETTES["snow"])
+tests/test_pareidolia_color.py:196:        self.assertEqual(p, PALETTES["overcast"])
+tests/test_pareidolia_color.py:200:        self.assertEqual(p, PALETTES["overcast"])
+tests/test_pareidolia_color.py:205:        self.assertIn(p, [PALETTES["night"], PALETTES["night_calm"]])
+tests/test_pareidolia_color.py:210:        self.assertIn(p, [PALETTES["night"], PALETTES["night_calm"]])
+tests/test_pareidolia_color.py:214:        self.assertIn(p, [PALETTES["night"], PALETTES["night_calm"]])
+tests/test_pareidolia_color.py:259:        palette = PALETTES["day_calm"]
+tests/test_pareidolia_color.py:267:        palette = PALETTES["dawn"]
+tests/test_pareidolia_color.py:276:        palette = PALETTES["night"]
+tests/test_pareidolia_color.py:283:        palette = PALETTES["day_calm"]
+tests/test_pareidolia_color.py:384:        palette = PALETTES["day_happy"]
+tests/test_pareidolia_color.py:392:        palette = PALETTES["day_happy"]
+tests/test_pareidolia_color.py:441:        palette = PALETTES["overcast"]
+tests/test_pareidolia_color.py:463:        palette = PALETTES["day_calm"]
+tests/test_pareidolia_color.py:471:        palette = PALETTES["day_calm"]
+tests/test_pareidolia_color.py:478:        draw_ground(draw1, 400, 300, PALETTES["day_calm"], texture_seed=42)
+tests/test_pareidolia_color.py:480:        draw_ground(draw2, 400, 300, PALETTES["day_calm"], texture_seed=42)
+tests/test_pareidolia_color.py:493:        palette = PALETTES["day_calm"]
+tests/test_pareidolia_color.py:500:        draw_character(draw, 200, 150, 60, "happy", PALETTES["day_happy"], "round")
+tests/test_pareidolia_color.py:506:        draw_character(draw, 200, 150, 60, "sad", PALETTES["dusk"], "tall")
+tests/test_pareidolia_color.py:512:        draw_character(draw, 200, 150, 60, "curious", PALETTES["rain"], "flat")
+tests/test_pareidolia_color.py:518:        draw_character(draw, 200, 150, 60, "neutral", PALETTES["night"], "spiky")
+tests/test_pareidolia_color.py:584:        draw_rock(draw, 200, 200, 50, PALETTES["day_calm"], has_face=True)
+tests/test_pareidolia_color.py:590:        draw_rock(draw, 200, 200, 50, PALETTES["day_calm"], has_face=False)
+tests/test_pareidolia_color.py:596:        draw_tree(draw, 200, 250, 120, PALETTES["day_calm"])
+tests/test_pareidolia_color.py:602:        draw_tree(draw, 200, 250, 120, PALETTES["day_calm"], has_face=False)
+tests/test_pareidolia_color.py:608:        draw_puddle(draw, 200, 250, 80, PALETTES["rain"])
+tests/test_pareidolia_color.py:614:        draw_puddle(draw, 200, 250, 80, PALETTES["rain"], has_face=False)
+tests/test_pareidolia_color.py:620:        draw_bush(draw, 200, 200, 60, PALETTES["day_happy"])
+tests/test_pareidolia_color.py:634:        draw_basalt(draw, 200, 150, 80, "neutral", PALETTES["day_calm"])
+tests/test_pareidolia_color.py:641:            draw_basalt(draw, 200, 150, 80, expr, PALETTES["dusk"])
+tests/test_pareidolia_color.py:653:        draw_pebble(draw, 200, 150, 50, "happy", PALETTES["day_happy"])
+tests/test_pareidolia_color.py:660:            draw_pebble(draw, 200, 150, 50, expr, PALETTES["night"])
+tests/test_pareidolia_color.py:673:        draw_basalt(draw1, 200, 150, 100, "neutral", PALETTES["day_calm"])
+tests/test_pareidolia_color.py:677:        draw_pebble(draw2, 200, 150, 50, "neutral", PALETTES["day_calm"])
+tests/test_pareidolia_color.py:703:        img = render_panel(spec, palette=PALETTES["day_happy"])
+tests/test_pareidolia_color.py:790:        img = render_story(spec, palette=PALETTES["dusk"])
+tests/test_pareidolia_color.py:826:        img = render_scene(640, 480, weather_effects=weather, palette=PALETTES["rain"])
+tests/test_pareidolia_color.py:831:        img = render_scene(640, 480, weather_effects=weather, palette=PALETTES["snow"])
+tests/test_pareidolia_color.py:852:        img = render_scene(640, 480, palette=PALETTES["snow"], hour=12)
+tests/test_pareidolia_color.py:867:                            weather_effects=weather, palette=PALETTES["rain"], seed=42)
+tests/test_pareidolia_color.py:869:                            weather_effects=weather, palette=PALETTES["rain"], seed=42)
+tests/test_pareidolia_color.py:933:            palette=PALETTES["dusk"],
+tests/test_pareidolia_color.py:952:        img = render_panel(spec, palette=PALETTES["night"])
+tests/test_pareidolia_color.py:959:        img = render_panel(spec, palette=PALETTES["snow"])
+tests/test_pareidolia_color.py:969:            img = render_panel(spec, palette=PALETTES[name])
+tests/test_synthesis_architecture_registry_depth.py:1:"""Depth-2 synthesis_architecture_registry helpers - locked test surface for frac-0031."""
+tests/test_synthesis_architecture_registry_depth.py:13:from senseweave.synthesis_architecture_registry import (  # noqa: E402
+tests/test_synthesis_architecture_registry_depth.py:21:    architectures_for_phase,
+tests/test_synthesis_architecture_registry_depth.py:22:    best_architecture_for_phase,
+tests/test_synthesis_architecture_registry_depth.py:23:    build_architecture_profile,
+tests/test_synthesis_architecture_registry_depth.py:24:    build_architecture_registry_report,
+tests/test_synthesis_architecture_registry_depth.py:26:    covered_architectures,
+tests/test_synthesis_architecture_registry_depth.py:29:    resolve_architecture,
+tests/test_synthesis_architecture_registry_depth.py:31:    summarize_architecture_registry_report,
+tests/test_synthesis_architecture_registry_depth.py:46:def test_architecture_helper_bands_and_fallback_chain_are_stable() -> None:
+tests/test_synthesis_architecture_registry_depth.py:60:    assert fallback_chain("unknown_architecture") == (
+tests/test_synthesis_architecture_registry_depth.py:67:def test_build_architecture_profile_resolves_strategy_diagnostics() -> None:
+tests/test_synthesis_architecture_registry_depth.py:69:    profile = build_architecture_profile(strategy)
+tests/test_synthesis_architecture_registry_depth.py:75:    assert profile.architecture_id == "spectral"
+tests/test_synthesis_architecture_registry_depth.py:112:def test_build_architecture_registry_report_resolves_full_registry() -> None:
+tests/test_synthesis_architecture_registry_depth.py:113:    report = build_architecture_registry_report()
+tests/test_synthesis_architecture_registry_depth.py:120:    assert report.architecture_ids == tuple(ARCHITECTURE_REGISTRY.keys())
+tests/test_synthesis_architecture_registry_depth.py:121:    assert report.architecture_ids == (
+tests/test_synthesis_architecture_registry_depth.py:145:    assert tuple(report.phase_architectures.keys()) == report.phases
+tests/test_synthesis_architecture_registry_depth.py:146:    assert report.phase_architectures["Divination"] == (
+tests/test_synthesis_architecture_registry_depth.py:154:    assert report.phase_architectures["Emergence"][0] == "fm"
+tests/test_synthesis_architecture_registry_depth.py:165:    assert report.role_architectures["melody"] == (
+tests/test_synthesis_architecture_registry_depth.py:171:    assert report.role_architectures["color"] == (
+tests/test_synthesis_architecture_registry_depth.py:176:    assert report.role_architectures["rhythm"] == ("physical_model",)
+tests/test_synthesis_architecture_registry_depth.py:186:    assert report.missing_required_architectures == ()
+tests/test_synthesis_architecture_registry_depth.py:188:    assert tuple(report.macro_control_counts.keys()) == report.architecture_ids
+tests/test_synthesis_architecture_registry_depth.py:190:    assert set(report.architecture_ids) == REQUIRED_ARCHITECTURES
+tests/test_synthesis_architecture_registry_depth.py:193:    assert tuple(profile.architecture_id for profile in report.profiles) == report.architecture_ids
+tests/test_synthesis_architecture_registry_depth.py:198:def test_summarize_architecture_registry_report_returns_json_safe_summary() -> None:
+tests/test_synthesis_architecture_registry_depth.py:199:    report = build_architecture_registry_report()
+tests/test_synthesis_architecture_registry_depth.py:200:    summary = summarize_architecture_registry_report(report)
+tests/test_synthesis_architecture_registry_depth.py:203:    assert summary["architecture_ids"] == list(report.architecture_ids)
+tests/test_synthesis_architecture_registry_depth.py:206:    assert summary["phase_architectures"] == {
+tests/test_synthesis_architecture_registry_depth.py:207:        phase: list(ids) for phase, ids in report.phase_architectures.items()
+tests/test_synthesis_architecture_registry_depth.py:210:    assert summary["role_architectures"] == {
+tests/test_synthesis_architecture_registry_depth.py:211:        role: list(ids) for role, ids in report.role_architectures.items()
+tests/test_synthesis_architecture_registry_depth.py:214:    assert summary["missing_required_architectures"] == list(
+tests/test_synthesis_architecture_registry_depth.py:215:        report.missing_required_architectures
+tests/test_synthesis_architecture_registry_depth.py:224:    assert first["architecture_id"] == first_profile.architecture_id  # type: ignore[index]
+tests/test_synthesis_architecture_registry_depth.py:246:def test_architecture_registry_report_agrees_with_existing_lookups() -> None:
+tests/test_synthesis_architecture_registry_depth.py:247:    report = build_architecture_registry_report()
+tests/test_synthesis_architecture_registry_depth.py:249:    assert set(report.architecture_ids) == covered_architectures()
+tests/test_synthesis_architecture_registry_depth.py:250:    assert report.missing_required_architectures == ()
+tests/test_synthesis_architecture_registry_depth.py:254:        assert report.phase_winners[phase] == best_architecture_for_phase(
+tests/test_synthesis_architecture_registry_depth.py:256:        ).architecture_id
+tests/test_synthesis_architecture_registry_depth.py:257:        assert report.phase_architectures[phase] == tuple(
+tests/test_synthesis_architecture_registry_depth.py:258:            strategy.architecture_id for strategy in architectures_for_phase(phase)
+tests/test_synthesis_architecture_registry_depth.py:261:    for role, architecture_ids in report.role_architectures.items():
+tests/test_synthesis_architecture_registry_depth.py:262:        assert architecture_ids == tuple(
+tests/test_synthesis_architecture_registry_depth.py:263:            strategy.architecture_id for strategy in strategies_for_role(role)
+tests/test_synthesis_architecture_registry_depth.py:266:    for architecture_id, fallback in report.fallback_map.items():
+tests/test_synthesis_architecture_registry_depth.py:267:        assert fallback == resolve_architecture(architecture_id).fallback
+tests/test_synthesis_architecture_registry_depth.py:270:        assert profile.fallback_chain[0] == resolve_architecture(
+tests/test_synthesis_architecture_registry_depth.py:271:            profile.architecture_id
+tests/test_synthesis_architecture_registry_depth.py:272:        ).architecture_id
+tests/test_synthesis_architecture_registry_depth.py:276:def test_synthesis_architecture_registry_reaches_depth_two() -> None:
+tests/test_synthesis_architecture_registry_depth.py:279:    result = classify_depth("my-claw/tools/senseweave/synthesis_architecture_registry.py")
+tests/test_cypherclaw_sampler_artistic_intent.py:9:ARCHITECTURE_PATH = Path("docs/cypherclaw-sampler-architecture.md")
+tests/test_cypherclaw_sampler_artistic_intent.py:66:    assert "cypherclaw-sampler-architecture.md" in content
+tests/test_research_runtime.py:224:                    "1. Compare runtime architecture\n"
+tests/test_research_runtime.py:228:            if agent == "claude" and "Focus on: architecture" in prompt:
+tests/test_research_runtime.py:247:        query = "Compare architecture for our research runtime module"
+tests/test_dashboard_generator.py:492:            ("claude", "architecture", 0.8, 6, "2026-05-02T10:00:00+00:00"),
+tests/test_cypherclaw_sampler_architecture.py:1:"""Static regression tests for docs/cypherclaw-sampler-architecture.md.
+tests/test_cypherclaw_sampler_architecture.py:12:DOC_PATH = Path("docs/cypherclaw-sampler-architecture.md")
+tests/test_cypherclaw_sampler_architecture.py:41:    assert "# cypherclaw sampler architecture" in lowered
+
+codex
+The architecture doc already has a PAL runtime section, but it does not use the “PAL platform” framing from the acceptance criterion. I’m checking the one test reference that reads `docs/architecture.md` before editing, then I’ll add a small section in the existing PAL area.
+exec
+/bin/zsh -lc "sed -n '130,185p' tests/test_senseweave_rollout_controls.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+        weekly_phase="weekend",
+        attention_score=1.0,
+        narrative_pressure=1.0,
+        occupancy_state="occupied_active",
+        repertoire_entries=[{"ear_metrics": {"hook_clarity": 0.8}}] * 20,
+        song_num=4,
+        hour=22,
+    )
+    ordinary_kwargs = dict(
+        cadence_state="occupied_day",
+        day_phase="midday",
+        attention_score=0.1,
+        narrative_pressure=0.3,
+        occupancy_state="occupied_quiet",
+        repertoire_entries=(),
+        song_num=2,
+        hour=12,
+    )
+
+    assert commission_piece(**high_pressure_kwargs, flags=enabled).form_class == "suite"
+    assert commission_piece(**high_pressure_kwargs, flags=suite_disabled).form_class == "extended"
+    assert commission_piece(**ordinary_kwargs, flags=suite_disabled).form_class == "song"
+
+
+def test_docs_name_rollout_order_and_rollback_files() -> None:
+    root = Path(__file__).resolve().parents[1]
+    docs_text = "\n".join(
+        [
+            (root / "docs" / "command-reference.md").read_text(encoding="utf-8"),
+            (root / "docs" / "startup-wizard.md").read_text(encoding="utf-8"),
+            (root / "docs" / "architecture.md").read_text(encoding="utf-8"),
+            (root / "docs" / "handoff-protocol.md").read_text(encoding="utf-8"),
+            (root / "docs" / "cypherclaw-upgrade-checklist.md").read_text(encoding="utf-8"),
+            (root / "CHANGELOG.md").read_text(encoding="utf-8"),
+        ]
+    )
+
+    assert "Safe rollout order" in docs_text
+    assert "Rollback files" in docs_text
+    for env_name in (
+        "CYPHERCLAW_ENABLE_CURRICULUM_EXERCISE",
+        "CYPHERCLAW_ENABLE_PREVIEW_RENDER",
+        "CYPHERCLAW_ENABLE_SELF_CRITIQUE",
+        "CYPHERCLAW_ENABLE_LONG_FORM_SUITE",
+    ):
+        assert env_name in docs_text
+    for path in (
+        "my-claw/tools/senseweave/operator_diagnostics.py",
+        "my-claw/tools/senseweave/rollout_controls.py",
+        "my-claw/tools/cypherclaw_daemon.py",
+        "my-claw/tools/glyphweave/scenes.py",
+    ):
+        assert path in docs_text
+
+exec
+/bin/zsh -lc 'rg -n "PAL 2026|PAL platform|PAL agent|pal section|platform section" docs/architecture.md' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+103:### 7. PAL 2026 agent runtime
+105:PAL 2026 starts as a configured router under the `pal` section of
+163:Every PAL agent run uses the standard `.promptclaw/runs/<run-id>/` layout so the
+
+codex
+I’m going to keep this documentation-only: rename the PAL heading to the requested platform concept and add a short boundary description before the existing PAL runtime details. No regression test is warranted because no behavior or generated output changes.
+apply patch
+patch: completed
+/Users/anthony/Programming/PromptClaw/docs/architecture.md
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2adef9fb995e83565dd7706b4008bb0d20..0a3b2cd65406bba9f3cfff619735c99ac9d42ee8
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,9 +100,16 @@
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
++### 7. PAL platform
+ 
+-PAL 2026 starts as a configured router under the `pal` section of
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal` section of
+ `promptclaw.json`. The router commands can check health, run direct queries, run
+ the fixed smoke suite, and summarize saved smoke baselines.
+ 
+
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2adef9fb995e83565dd7706b4008bb0d20..0a3b2cd65406bba9f3cfff619735c99ac9d42ee8
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,9 +100,16 @@
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
++### 7. PAL platform
+ 
+-PAL 2026 starts as a configured router under the `pal` section of
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal` section of
+ `promptclaw.json`. The router commands can check health, run direct queries, run
+ the fixed smoke suite, and summarize saved smoke baselines.
+ 
+
+codex
+The doc change is in place. I’m verifying the edited section and diff now before running the requested validation suite.
+exec
+/bin/zsh -lc "sed -n '96,125p' docs/architecture.md" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+
+`command` is the live mode. It writes a prompt file, executes the configured local command from the project root, and renders `{prompt_file}` and `{project_root}` as absolute paths so relative `PROJECT_ROOT` invocations still work.
+
+In CypherClaw-style live command deployments, command routing can consult `sdp-cli` quota telemetry. Healthy and warn providers remain eligible, degraded and paused providers are excluded from new work, and if every provider is degraded the runtime falls back to the provider with the most remaining headroom instead of refusing to operate.
+
+The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+
+### 7. PAL platform
+
+The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
+It combines a configured PAL router, a local file-first knowledge base,
+read-only diagnostic tools, and approval-gated action ids. PAL can plan,
+summarize, and propose known actions, but PromptClaw keeps execution authority
+in local allow-listed code and records every workflow in the standard run
+artifact tree.
+
+The PAL 2026 agent runtime starts as a configured router under the `pal` section of
+`promptclaw.json`. The router commands can check health, run direct queries, run
+the fixed smoke suite, and summarize saved smoke baselines.
+
+The local PAL knowledge-base path is file-first. Source discovery reads
+`pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
+`promptclaw pal kb build` materializes those chunks into
+`.promptclaw/pal-kb/index.jsonl` without contacting the router. `promptclaw pal
+kb query` reads that local JSONL index, ranks lexical matches deterministically,
+and returns bounded snippets with source paths and line ranges. PAL workflow
+prompt artifacts now consume the same local index through a bounded `Knowledge
+Context` section, so plans and summaries can cite local runbook/deployment
+snippets without giving PAL any new execution authority. If the index is absent
+or unreadable, workflows still run and record that local context was unavailable.
+
+exec
+/bin/zsh -lc 'git diff -- docs/architecture.md' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2..0a3b2cd 100644
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,9 +100,16 @@ In CypherClaw-style live command deployments, command routing can consult `sdp-c
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
++### 7. PAL platform
+ 
+-PAL 2026 starts as a configured router under the `pal` section of
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal` section of
+ `promptclaw.json`. The router commands can check health, run direct queries, run
+ the fixed smoke suite, and summarize saved smoke baselines.
+ 
+
+exec
+/bin/zsh -lc 'git status --short docs/architecture.md' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M docs/architecture.md
+
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2adef9fb995e83565dd7706b4008bb0d20..0a3b2cd65406bba9f3cfff619735c99ac9d42ee8
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,9 +100,16 @@
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
++### 7. PAL platform
+ 
+-PAL 2026 starts as a configured router under the `pal` section of
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal` section of
+ `promptclaw.json`. The router commands can check health, run direct queries, run
+ the fixed smoke suite, and summarize saved smoke baselines.
+ 
+
+codex
+The diff is limited to `docs/architecture.md`. I noticed one new Markdown line is longer than the surrounding style, so I’m wrapping it before validation.
+apply patch
+patch: completed
+/Users/anthony/Programming/PromptClaw/docs/architecture.md
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2adef9fb995e83565dd7706b4008bb0d20..54ab89835d7d5c4acb4db25bf9fdffbcad136e30
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,11 +100,18 @@
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
++### 7. PAL platform
+ 
+-PAL 2026 starts as a configured router under the `pal` section of
+-`promptclaw.json`. The router commands can check health, run direct queries, run
+-the fixed smoke suite, and summarize saved smoke baselines.
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal`
++section of `promptclaw.json`. The router commands can check health, run direct
++queries, run the fixed smoke suite, and summarize saved smoke baselines.
+ 
+ The local PAL knowledge-base path is file-first. Source discovery reads
+ `pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
+
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2adef9fb995e83565dd7706b4008bb0d20..54ab89835d7d5c4acb4db25bf9fdffbcad136e30
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,11 +100,18 @@
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
++### 7. PAL platform
+ 
+-PAL 2026 starts as a configured router under the `pal` section of
+-`promptclaw.json`. The router commands can check health, run direct queries, run
+-the fixed smoke suite, and summarize saved smoke baselines.
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal`
++section of `promptclaw.json`. The router commands can check health, run direct
++queries, run the fixed smoke suite, and summarize saved smoke baselines.
+ 
+ The local PAL knowledge-base path is file-first. Source discovery reads
+ `pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
+
+codex
+The documentation edit is now cleanly wrapped. I’m starting the required validation commands in order, beginning with the editable dev install.
+exec
+/bin/zsh -lc "pip install -e '.[dev]'" in /Users/anthony/Programming/PromptClaw
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2adef9fb995e83565dd7706b4008bb0d20..54ab89835d7d5c4acb4db25bf9fdffbcad136e30
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,11 +100,18 @@
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
++### 7. PAL platform
+ 
+-PAL 2026 starts as a configured router under the `pal` section of
+-`promptclaw.json`. The router commands can check health, run direct queries, run
+-the fixed smoke suite, and summarize saved smoke baselines.
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal`
++section of `promptclaw.json`. The router commands can check health, run direct
++queries, run the fixed smoke suite, and summarize saved smoke baselines.
+ 
+ The local PAL knowledge-base path is file-first. Source discovery reads
+ `pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
+
+ succeeded in 4500ms:
+Obtaining file:///Users/anthony/Programming/PromptClaw
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: partitura<2,>=1.8 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.8.0)
+Requirement already satisfied: librosa<1,>=0.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.11.0)
+Requirement already satisfied: mypy>=1.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.19.1)
+Requirement already satisfied: pytest>=8.0 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (8.3.5)
+Requirement already satisfied: ruff>=0.9 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.9.2)
+Requirement already satisfied: audioread>=2.1.9 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (3.1.0)
+Requirement already satisfied: numba>=0.51.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.59.0)
+Requirement already satisfied: numpy>=1.22.3 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.26.0)
+Requirement already satisfied: scipy>=1.6.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.11.4)
+Requirement already satisfied: scikit-learn>=1.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.2)
+Requirement already satisfied: joblib>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.0)
+Requirement already satisfied: decorator>=4.3.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (5.1.1)
+Requirement already satisfied: soundfile>=0.12.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.13.1)
+Requirement already satisfied: pooch>=1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.9.0)
+Requirement already satisfied: soxr>=0.3.2 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: typing_extensions>=4.1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (4.15.0)
+Requirement already satisfied: lazy_loader>=0.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.3)
+Requirement already satisfied: msgpack>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.3)
+Requirement already satisfied: lxml in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.9.3)
+Requirement already satisfied: lark-parser in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (0.12.0)
+Requirement already satisfied: xmlschema in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.3.1)
+Requirement already satisfied: mido in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (1.3.3)
+Requirement already satisfied: mypy_extensions>=1.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: pathspec>=0.9.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.10.3)
+Requirement already satisfied: librt>=0.6.2 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.8.1)
+Requirement already satisfied: llvmlite<0.43,>=0.42.0dev0 in /opt/anaconda3/lib/python3.11/site-packages (from numba>=0.51.0->librosa<1,>=0.10->promptclaw==3.0.0) (0.42.0)
+Requirement already satisfied: platformdirs>=2.5.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (4.5.1)
+Requirement already satisfied: packaging>=20.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (23.2)
+Requirement already satisfied: requests>=2.19.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.32.3)
+Requirement already satisfied: iniconfig in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.1.1)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.5.0)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.4)
+Requirement already satisfied: idna<4,>=2.5 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (3.4)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.6.3)
+Requirement already satisfied: certifi>=2017.4.17 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2026.1.4)
+Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from scikit-learn>=1.1.0->librosa<1,>=0.10->promptclaw==3.0.0) (2.2.0)
+Requirement already satisfied: cffi>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.0)
+Requirement already satisfied: pycparser in /opt/anaconda3/lib/python3.11/site-packages (from cffi>=1.0->soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.21)
+Requirement already satisfied: elementpath<6.0.0,>=5.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from xmlschema->partitura<2,>=1.8->promptclaw==3.0.0) (5.1.1)
+Building wheels for collected packages: promptclaw
+  Building editable for promptclaw (pyproject.toml): started
+  Building editable for promptclaw (pyproject.toml): finished with status 'done'
+  Created wheel for promptclaw: filename=promptclaw-3.0.0-0.editable-py3-none-any.whl size=7147 sha256=c17e9608acef3877ed9ae184d9badd804a804ae4f1812246a96f6fff984aed46
+  Stored in directory: /private/var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/pip-ephem-wheel-cache-z9rtv918/wheels/ab/f4/89/0cacd29874f6252d7c6bef0fca4c14839da91ab6a8d842965e
+Successfully built promptclaw
+Installing collected packages: promptclaw
+  Attempting uninstall: promptclaw
+    Found existing installation: promptclaw 3.0.0
+    Uninstalling promptclaw-3.0.0:
+      Successfully uninstalled promptclaw-3.0.0
+Successfully installed promptclaw-3.0.0
+
+codex
+`pip install -e '.[dev]'` passed. I’m running the full test suite exactly as requested next.
+exec
+/bin/zsh -lc 'pytest tests/ -x --tb=short' in /Users/anthony/Programming/PromptClaw
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2adef9fb995e83565dd7706b4008bb0d20..54ab89835d7d5c4acb4db25bf9fdffbcad136e30
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,11 +100,18 @@
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
++### 7. PAL platform
+ 
+-PAL 2026 starts as a configured router under the `pal` section of
+-`promptclaw.json`. The router commands can check health, run direct queries, run
+-the fixed smoke suite, and summarize saved smoke baselines.
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal`
++section of `promptclaw.json`. The router commands can check health, run direct
++queries, run the fixed smoke suite, and summarize saved smoke baselines.
+ 
+ The local PAL knowledge-base path is file-first. Source discovery reads
+ `pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
+
+codex
+The test suite is still running and has passed through most of the repository so far, including the PAL tests. I’m waiting for it to finish before moving to lint and type checks.
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2adef9fb995e83565dd7706b4008bb0d20..54ab89835d7d5c4acb4db25bf9fdffbcad136e30
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,11 +100,18 @@
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
++### 7. PAL platform
+ 
+-PAL 2026 starts as a configured router under the `pal` section of
+-`promptclaw.json`. The router commands can check health, run direct queries, run
+-the fixed smoke suite, and summarize saved smoke baselines.
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal`
++section of `promptclaw.json`. The router commands can check health, run direct
++queries, run the fixed smoke suite, and summarize saved smoke baselines.
+ 
+ The local PAL knowledge-base path is file-first. Source discovery reads
+ `pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
+
+ succeeded in 46237ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0, hypothesis-6.152.4
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 4751 items
+
+tests/test_accompaniment.py ............................................ [  0%]
+.......                                                                  [  1%]
+tests/test_accompaniment_depth.py ......                                 [  1%]
+tests/test_acoustic_ecology.py ......................................... [  2%]
+......................                                                   [  2%]
+tests/test_acoustic_ecology_depth.py .                                   [  2%]
+tests/test_agent_runtime.py ..                                           [  2%]
+tests/test_agent_selector_defaults.py .                                  [  2%]
+tests/test_agent_selector_quota.py ..................                    [  2%]
+tests/test_agent_selector_quota_depth.py .                               [  3%]
+tests/test_agogic_rule.py ...                                            [  3%]
+tests/test_antenna_to_skin.py .................................          [  3%]
+tests/test_archive_daemon_runtime.py .                                   [  3%]
+tests/test_archive_paths.py .........                                    [  3%]
+tests/test_arrangement_engine.py ....................................... [  4%]
+..........                                                               [  5%]
+tests/test_arrangement_engine_depth.py .                                 [  5%]
+tests/test_art_engine_runtime.py ....                                    [  5%]
+tests/test_articulation.py ......                                        [  5%]
+tests/test_artist_identity.py .......................................... [  6%]
+......................................                                   [  6%]
+tests/test_artist_identity_depth.py .                                    [  6%]
+tests/test_artistic_identity.py .                                        [  6%]
+tests/test_audio_analysis.py ..........................................  [  7%]
+tests/test_audio_analysis_depth.py .                                     [  7%]
+tests/test_audio_novelty.py ....                                         [  7%]
+tests/test_bootstrap.py ..                                               [  7%]
+tests/test_breath_to_filter.py ......................................... [  8%]
+......                                                                   [  8%]
+tests/test_breath_to_filter_depth.py .                                   [  9%]
+tests/test_cadence_engine.py .......                                     [  9%]
+tests/test_call_response.py ..........                                   [  9%]
+tests/test_capstone_engine.py ...........                                [  9%]
+tests/test_capstone_engine_depth.py .                                    [  9%]
+tests/test_capture_alias.py ..                                           [  9%]
+tests/test_cast_planner.py ....................                          [ 10%]
+tests/test_cast_planner_depth.py .                                       [ 10%]
+tests/test_character_registry.py ......                                  [ 10%]
+tests/test_character_registry_depth.py .........                         [ 10%]
+tests/test_check_status_runtime.py ..                                    [ 10%]
+tests/test_cli_identity_hardening.py .                                   [ 10%]
+tests/test_client_local.py ......                                        [ 10%]
+tests/test_client_local_depth.py .....                                   [ 10%]
+tests/test_client_modal.py ..                                            [ 10%]
+tests/test_coherence_engine.py ....................                      [ 11%]
+tests/test_coherence_integration.py ............                         [ 11%]
+tests/test_collaborative_canvas.py ......................                [ 11%]
+tests/test_collaborative_canvas_depth.py ....                            [ 11%]
+tests/test_commission_context.py ..                                      [ 12%]
+tests/test_commission_context_depth.py ......                            [ 12%]
+tests/test_composer_quote_verify.py .....                                [ 12%]
+tests/test_composer_quote_verify_depth.py .....                          [ 12%]
+tests/test_config.py .......                                             [ 12%]
+tests/test_conftest_depth.py .......                                     [ 12%]
+tests/test_constitution.py ............................................. [ 13%]
+........                                                                 [ 13%]
+tests/test_contact_listener_runtime.py ....                              [ 13%]
+tests/test_contact_mic_calibration_runtime.py ........                   [ 14%]
+tests/test_context_pulse_runtime.py .                                    [ 14%]
+tests/test_continuous_learner.py ......................                  [ 14%]
+tests/test_counterpoint_pipeline.py ...........................          [ 15%]
+tests/test_counterpoint_rules.py ....................................... [ 15%]
+..................................                                       [ 16%]
+tests/test_counterpoint_rules_depth.py ....                              [ 16%]
+tests/test_course_critique.py ...............................            [ 17%]
+tests/test_cypherclaw_audio_runtime.py .....                             [ 17%]
+tests/test_cypherclaw_av_stack_service.py ...                            [ 17%]
+tests/test_cypherclaw_boot_runtime.py .......                            [ 17%]
+tests/test_cypherclaw_musicianship_roadmap.py ..                         [ 17%]
+tests/test_cypherclaw_narrative_api_service.py .                         [ 17%]
+tests/test_cypherclaw_runtime.py .....                                   [ 17%]
+tests/test_cypherclaw_sampler_architecture.py .......                    [ 17%]
+tests/test_cypherclaw_sampler_artistic_intent.py .....                   [ 18%]
+tests/test_daemon_concurrency_compat.py ...                              [ 18%]
+tests/test_daemon_fallback.py ...............                            [ 18%]
+tests/test_daemon_scheduler.py ..                                        [ 18%]
+tests/test_daemon_status_ollama.py .......                               [ 18%]
+tests/test_dashboard_generator.py ...................................... [ 19%]
+.........                                                                [ 19%]
+tests/test_dashboard_generator_runtime.py ...                            [ 19%]
+tests/test_decision_store.py .........                                   [ 19%]
+tests/test_doctor.py .....                                               [ 19%]
+tests/test_dsp_scene_lab.py ................                             [ 20%]
+tests/test_duration_contrast_depth.py ........                           [ 20%]
+tests/test_duration_contrast_rule.py .......                             [ 20%]
+tests/test_ear_engine.py ............                                    [ 20%]
+tests/test_emsd_catalog_depth.py ..                                      [ 20%]
+tests/test_emsd_curriculum.py ...............                            [ 21%]
+tests/test_emsd_performance.py ....                                      [ 21%]
+tests/test_emsd_performance_depth.py .......                             [ 21%]
+tests/test_emsd_runtime.py ...                                           [ 21%]
+tests/test_emsd_runtime_depth.py .........                               [ 21%]
+tests/test_escalations_lingering.py ....                                 [ 21%]
+tests/test_event_store.py .......                                        [ 21%]
+tests/test_executable_curriculum.py ...                                  [ 22%]
+tests/test_face_display_sample_status.py ....                            [ 22%]
+tests/test_federation_discovery.py ...........                           [ 22%]
+tests/test_final_rit.py ...                                              [ 22%]
+tests/test_first_boot.py ....................................            [ 23%]
+tests/test_form_grammar.py ..                                            [ 23%]
+tests/test_frac_0102a_notes.py .                                         [ 23%]
+tests/test_frac_0102d_depth_completion.py .                              [ 23%]
+tests/test_fractal_form.py ...............                               [ 23%]
+tests/test_functional_harmony.py ..................................      [ 24%]
+tests/test_gallery.py ..........................                         [ 24%]
+tests/test_gallery_x11_runtime.py ..........                             [ 25%]
+tests/test_gallery_x11_wrapper_depth.py ...........                      [ 25%]
+tests/test_garden_watcher.py ........................................... [ 26%]
+....                                                                     [ 26%]
+tests/test_gemini_image_runtime.py ...                                   [ 26%]
+tests/test_generation_budget.py ..................                       [ 26%]
+tests/test_generation_cache.py .........                                 [ 26%]
+tests/test_generation_client_protocol.py .......                         [ 27%]
+tests/test_generation_client_protocol_depth.py .....                     [ 27%]
+tests/test_generation_composer_hook.py ...............                   [ 27%]
+tests/test_generation_conditioner.py .......................             [ 27%]
+tests/test_generation_e2e_cypherclaw.py s                                [ 27%]
+tests/test_generation_health.py ..............                           [ 28%]
+tests/test_generation_live_modal.py s                                    [ 28%]
+tests/test_generation_live_replicate.py s                                [ 28%]
+tests/test_generation_queue.py .....................                     [ 28%]
+tests/test_generation_replicate_retry.py ............................... [ 29%]
+..................                                                       [ 29%]
+tests/test_generation_request.py ....................................... [ 30%]
+.                                                                        [ 30%]
+tests/test_generation_request_depth.py .                                 [ 30%]
+tests/test_generation_storage.py ....                                    [ 30%]
+tests/test_generation_validate.py .......                                [ 30%]
+tests/test_generation_worker.py .........                                [ 31%]
+tests/test_generative_scores.py ........................................ [ 31%]
+................................................                         [ 32%]
+tests/test_genre_literacy.py ............                                [ 33%]
+tests/test_genre_literacy_depth.py .....                                 [ 33%]
+tests/test_glyphweave_cli.py ....                                        [ 33%]
+tests/test_glyphweave_runtime.py ....                                    [ 33%]
+tests/test_governor_integration.py ...................                   [ 33%]
+tests/test_governor_integration_depth.py .                               [ 33%]
+tests/test_graduation.py ......................                          [ 34%]
+tests/test_groove_engine.py ............................................ [ 35%]
+.........................................                                [ 36%]
+tests/test_harmonic_planner.py .........                                 [ 36%]
+tests/test_healer_runtime.py .....                                       [ 36%]
+tests/test_healthcheck_script_runtime.py ...                             [ 36%]
+tests/test_hook_engine.py .................                              [ 36%]
+tests/test_human_phrase_capture_verify.py .                              [ 36%]
+tests/test_image_api_app.py ........                                     [ 37%]
+tests/test_image_api_jobs_db.py ............                             [ 37%]
+tests/test_image_api_s3_uploader.py .....                                [ 37%]
+tests/test_image_api_s3_uploader_depth.py .......                        [ 37%]
+tests/test_image_api_schemas_depth.py ......                             [ 37%]
+tests/test_image_api_spec_parser.py ....................                 [ 38%]
+tests/test_image_api_worker.py ........                                  [ 38%]
+tests/test_inkplate_display.py ....                                      [ 38%]
+tests/test_inner_life.py ...................................             [ 39%]
+tests/test_instrument_patches.py .........                               [ 39%]
+tests/test_ixml_chunk_writer.py .......                                  [ 39%]
+tests/test_keyboard_chat.py ..............................               [ 40%]
+tests/test_lifeimprover_bridge_runtime.py .....                          [ 40%]
+tests/test_listener_review.py ........                                   [ 40%]
+tests/test_live_buffer.py ...                                            [ 40%]
+tests/test_local_command_runtime.py ....                                 [ 40%]
+tests/test_lung_capacity_depth.py ........                               [ 40%]
+tests/test_lung_capacity_rule.py .........                               [ 40%]
+tests/test_macbook_codex_monitor.py ....                                 [ 40%]
+tests/test_maintenance_mode.py .....                                     [ 41%]
+tests/test_master_bus.py ......                                          [ 41%]
+tests/test_master_smooth_scd.py ...                                      [ 41%]
+tests/test_melodic_mind.py ............................................. [ 42%]
+..........................................................               [ 43%]
+tests/test_metric_accent_depth.py ........                               [ 43%]
+tests/test_metric_accent_rule.py ....                                    [ 43%]
+tests/test_microtiming.py .....................                          [ 44%]
+tests/test_midi_keyboard_listener_runtime.py .....                       [ 44%]
+tests/test_midi_state.py ........................................        [ 45%]
+tests/test_mix_engine.py ..............................                  [ 45%]
+tests/test_mix_verify.py ............................................... [ 46%]
+.                                                                        [ 46%]
+tests/test_mood_mirror.py ..........................................     [ 47%]
+tests/test_motif_lifecycle.py ............................               [ 48%]
+tests/test_motif_lifecycle_depth.py .......                              [ 48%]
+tests/test_motif_memory.py ...............                               [ 48%]
+tests/test_music_theory.py ............................................. [ 49%]
+.........................................                                [ 50%]
+tests/test_music_tracker.py ..........................................   [ 51%]
+tests/test_music_tracker_runtime.py .................................... [ 52%]
+........                                                                 [ 52%]
+tests/test_musical_integration_runtime.py ..                             [ 52%]
+tests/test_musical_marathon_integration.py ..                            [ 52%]
+tests/test_narrative_api_beats.py .........                              [ 52%]
+tests/test_narrative_api_entities.py ...............................     [ 53%]
+tests/test_narrative_api_events.py .....................                 [ 53%]
+tests/test_narrative_api_health.py ...                                   [ 53%]
+tests/test_narrative_api_main.py ........                                [ 53%]
+tests/test_narrative_api_memory.py ...........                           [ 54%]
+tests/test_narrative_api_settings.py ....                                [ 54%]
+tests/test_narrative_api_smoke.py sssssss                                [ 54%]
+tests/test_narrative_arc_depth.py .........                              [ 54%]
+tests/test_narrative_entities_domain_migration.py .......                [ 54%]
+tests/test_narrative_envelope.py ..............                          [ 54%]
+tests/test_observatory_authority.py .....                                [ 54%]
+tests/test_observatory_runtime.py ..                                     [ 55%]
+tests/test_observatory_verification.py ..                                [ 55%]
+tests/test_observer_vision_runtime.py ..............                     [ 55%]
+tests/test_ollama_daemon_health.py ...                                   [ 55%]
+tests/test_ollama_health.py .......                                      [ 55%]
+tests/test_ollama_invoke.py ...                                          [ 55%]
+tests/test_ollama_routing.py ....................                        [ 56%]
+tests/test_ollama_run_agent.py ........                                  [ 56%]
+tests/test_operator_diagnostics.py ...................                   [ 56%]
+tests/test_operator_diagnostics_sample_status.py ....                    [ 56%]
+tests/test_ops_helpers_runtime.py ....                                   [ 56%]
+tests/test_orchestral_form.py ................................           [ 57%]
+tests/test_orchestrator.py ...                                           [ 57%]
+tests/test_pal_agent.py .......................                          [ 58%]
+tests/test_pal_client.py .......                                         [ 58%]
+tests/test_pal_knowledge.py ...............                              [ 58%]
+tests/test_pal_smoke.py .......                                          [ 58%]
+tests/test_pareidolia_art_engine.py .......                              [ 58%]
+tests/test_pareidolia_characters.py ..................................   [ 59%]
+tests/test_pareidolia_color.py ......................................... [ 60%]
+........................................................................ [ 61%]
+....                                                                     [ 61%]
+tests/test_pedals_to_key.py ...........................................  [ 62%]
+tests/test_phrase_arch.py ..........                                     [ 63%]
+tests/test_phrase_capture.py ........................                    [ 63%]
+tests/test_phrase_capture_runtime.py ...                                 [ 63%]
+tests/test_phrase_tracker.py ............                                [ 63%]
+tests/test_phrase_tracker_depth.py ....                                  [ 63%]
+tests/test_piece_brief.py ........                                       [ 64%]
+tests/test_piece_commission.py ....                                      [ 64%]
+tests/test_piece_queue.py ..                                             [ 64%]
+tests/test_porch_eye.py ..................................               [ 64%]
+tests/test_portfolio_report.py .........................                 [ 65%]
+tests/test_practice_curriculum.py ..                                     [ 65%]
+tests/test_preflight.py ......                                           [ 65%]
+tests/test_presence_engine.py ............                               [ 65%]
+tests/test_procedural_arc.py .....                                       [ 66%]
+tests/test_production_course_depth.py ..........                         [ 66%]
+tests/test_production_course_integration.py ..........                   [ 66%]
+tests/test_production_course_knowledge_base.py ...                       [ 66%]
+tests/test_project_scanner_runtime.py ....                               [ 66%]
+tests/test_promptclaw_artifacts_depth.py .....                           [ 66%]
+tests/test_promptclaw_artifacts_report.py ...                            [ 66%]
+tests/test_promptclaw_config_depth.py ......                             [ 66%]
+tests/test_promptclaw_memory_depth.py .........                          [ 67%]
+tests/test_promptclaw_models_depth.py ......                             [ 67%]
+tests/test_promptclaw_paths_depth.py .....                               [ 67%]
+tests/test_promptclaw_sdp_cost_depth.py .......                          [ 67%]
+tests/test_promptclaw_templates_depth.py .....                           [ 67%]
+tests/test_prosody_engine.py ........                                    [ 67%]
+tests/test_punctuation_depth.py .........                                [ 67%]
+tests/test_punctuation_rule.py ............                              [ 68%]
+tests/test_quota_monitor.py .....................                        [ 68%]
+tests/test_reharmonizer.py ...                                           [ 68%]
+tests/test_render_ablation.py ...............                            [ 69%]
+tests/test_render_antipatterns.py .................................      [ 69%]
+tests/test_render_audio_sidecar.py ...                                   [ 69%]
+tests/test_render_debugger.py ..                                         [ 69%]
+tests/test_render_diff.py ................                               [ 70%]
+tests/test_render_events.py .......................                      [ 70%]
+tests/test_render_export.py ......                                       [ 70%]
+tests/test_render_features.py ...                                        [ 70%]
+tests/test_render_metrics.py ..............                              [ 71%]
+tests/test_render_pass.py ......................                         [ 71%]
+tests/test_render_replay.py ...                                          [ 71%]
+tests/test_render_seed.py ..........................                     [ 72%]
+tests/test_render_worm.py ..........                                     [ 72%]
+tests/test_repertoire_memory.py .................                        [ 72%]
+tests/test_repertoire_memory_score_tree.py .                             [ 72%]
+tests/test_research_runtime.py ......                                    [ 72%]
+tests/test_resilience_runtime_scripts.py ..............                  [ 73%]
+tests/test_resource_governor.py ..........................               [ 73%]
+tests/test_restraint.py ...                                              [ 73%]
+tests/test_reviewer_runtime.py ...                                       [ 73%]
+tests/test_rewrite_hook_depth.py .........                               [ 74%]
+tests/test_role_gate_integration.py .................................... [ 74%]
+....                                                                     [ 74%]
+tests/test_rollout_controls.py ......                                    [ 75%]
+tests/test_room_listener_runtime.py ..................                   [ 75%]
+tests/test_room_presence_daemon.py ......                                [ 75%]
+tests/test_router.py ......                                              [ 75%]
+tests/test_row_automation.py ...........                                 [ 75%]
+tests/test_runbook_generation_backend.py ......                          [ 76%]
+tests/test_runtime_checkpoint.py ...                                     [ 76%]
+tests/test_runtime_paths.py ..                                           [ 76%]
+tests/test_sample_capture_daemon.py .................................... [ 76%]
+.............                                                            [ 77%]
+tests/test_sample_capture_service_verify.py ....                         [ 77%]
+tests/test_sample_capture_verify.py ....                                 [ 77%]
+tests/test_sample_dsp_activity.py ...........                            [ 77%]
+tests/test_sample_event_renderer.py .....                                [ 77%]
+tests/test_sample_lab.py ....                                            [ 77%]
+tests/test_sample_lab_depth.py .........                                 [ 77%]
+tests/test_sample_library.py ......................                      [ 78%]
+tests/test_sample_library_import.py ...                                  [ 78%]
+tests/test_sample_playback_engine.py .......                             [ 78%]
+tests/test_sample_record_audio_analysis.py ..............                [ 78%]
+tests/test_sample_record_context.py ...........                          [ 79%]
+tests/test_sample_record_json.py ..............                          [ 79%]
+tests/test_sample_record_skeleton.py ..........                          [ 79%]
+tests/test_sample_selector.py ..................                         [ 80%]
+tests/test_sample_status.py ......                                       [ 80%]
+tests/test_sampler_buffers.py ...............                            [ 80%]
+tests/test_sampler_dispatch.py ....................................      [ 81%]
+tests/test_sampler_dispatch_depth.py ......                              [ 81%]
+tests/test_sampler_effects.py .......................................... [ 82%]
+........                                                                 [ 82%]
+tests/test_sampler_fx_mode_verify.py ...                                 [ 82%]
+tests/test_sampler_scheduler.py ............                             [ 82%]
+tests/test_scene_composer.py ......................................      [ 83%]
+tests/test_score_tree.py .                                               [ 83%]
+tests/test_score_tree_composer.py .......................                [ 84%]
+tests/test_score_tree_depth.py ........                                  [ 84%]
+tests/test_score_tree_pipeline.py .                                      [ 84%]
+tests/test_sdp_cost_extractor.py ............                            [ 84%]
+tests/test_sdp_telemetry_cost_model.py ....                              [ 84%]
+tests/test_self_critique.py .........................                    [ 85%]
+tests/test_self_listener_quote_verify.py ......                          [ 85%]
+tests/test_self_listener_tracker_runtime.py ...............              [ 85%]
+tests/test_senseweave_rollout_controls.py .....                          [ 85%]
+tests/test_senseweave_voice.py ..........................                [ 86%]
+tests/test_senseweave_voice_depth.py .......                             [ 86%]
+tests/test_sensor_fusion.py ...............................              [ 86%]
+tests/test_sensor_intent_rule.py ....                                    [ 87%]
+tests/test_sensory_journal.py ............................               [ 87%]
+tests/test_sensory_journal_daemon.py ....                                [ 87%]
+tests/test_server_health.py ...                                          [ 87%]
+tests/test_silence_budget_depth.py .........                             [ 87%]
+tests/test_silence_budget_rule.py .................                      [ 88%]
+tests/test_smoke_narrative_script.py ........                            [ 88%]
+tests/test_sound_palette_lab.py ..                                       [ 88%]
+tests/test_startle.py .................................                  [ 89%]
+tests/test_startle_daemon.py ....                                        [ 89%]
+tests/test_supercollider_recipes.py ...                                  [ 89%]
+tests/test_sw_sampler.py ........................................        [ 90%]
+tests/test_syncopation_features.py ..........................            [ 90%]
+tests/test_synthdef_registry.py ...................................      [ 91%]
+tests/test_synthdef_registry_depth.py ......                             [ 91%]
+tests/test_synthesis_architecture_registry.py .......................... [ 92%]
+........                                                                 [ 92%]
+tests/test_synthesis_architecture_registry_depth.py ......               [ 92%]
+tests/test_tamagotchi_depth.py .....                                     [ 92%]
+tests/test_tamagotchi_runtime.py ......                                  [ 92%]
+tests/test_telegram_runtime.py ......                                    [ 92%]
+tests/test_temp_sampler_dispatch_depth.py .......                        [ 92%]
+tests/test_test_client_local_depth.py .                                  [ 93%]
+tests/test_test_coherence_engine_depth.py .                              [ 93%]
+tests/test_test_config_depth.py .                                        [ 93%]
+tests/test_test_constitution_depth.py .                                  [ 93%]
+tests/test_test_contact_mic_calibration_runtime_depth.py .               [ 93%]
+tests/test_test_counterpoint_rules_depth.py .                            [ 93%]
+tests/test_test_dashboard_generator_depth.py .                           [ 93%]
+tests/test_test_federation_discovery_depth.py .                          [ 93%]
+tests/test_test_functional_harmony_depth.py .                            [ 93%]
+tests/test_test_garden_watcher_depth.py .                                [ 93%]
+tests/test_test_genai_depth.py .........                                 [ 93%]
+tests/test_test_generation_cache_depth.py .                              [ 93%]
+tests/test_test_generation_client_protocol_depth.py .                    [ 93%]
+tests/test_test_generation_composer_hook_depth.py .                      [ 93%]
+tests/test_test_generation_health_depth.py .                             [ 93%]
+tests/test_test_generative_scores_depth.py .                             [ 93%]
+tests/test_test_groove_engine_depth.py .                                 [ 93%]
+tests/test_test_image_api_s3_uploader_depth.py .                         [ 93%]
+tests/test_test_image_api_spec_parser_depth.py .                         [ 93%]
+tests/test_test_instrument_patches_depth.py .                            [ 93%]
+tests/test_test_listener_review_depth.py .                               [ 93%]
+tests/test_test_lung_capacity_rule_depth.py .                            [ 93%]
+tests/test_test_midi_state_depth.py .                                    [ 93%]
+tests/test_test_mix_verify_depth.py .                                    [ 93%]
+tests/test_test_mood_mirror_depth.py .                                   [ 93%]
+tests/test_test_music_theory_depth.py .                                  [ 93%]
+tests/test_test_musical_integration_runtime_depth.py .                   [ 93%]
+tests/test_test_narrative_api_entities_depth.py .                        [ 93%]
+tests/test_test_narrative_api_health_depth.py .                          [ 93%]
+tests/test_test_narrative_entities_domain_migration_depth.py .           [ 93%]
+tests/test_test_ollama_health_depth.py .                                 [ 93%]
+tests/test_test_ollama_routing_depth.py .                                [ 93%]
+tests/test_test_ollama_run_agent_depth.py .                              [ 93%]
+tests/test_test_orchestral_form_depth.py .                               [ 93%]
+tests/test_test_pareidolia_characters_depth.py .                         [ 93%]
+tests/test_test_pedals_to_key_depth.py .                                 [ 93%]
+tests/test_test_render_ablation_depth.py .                               [ 93%]
+tests/test_test_render_antipatterns_depth.py .                           [ 93%]
+tests/test_test_render_events_depth.py .                                 [ 93%]
+tests/test_test_render_pass_depth.py .                                   [ 94%]
+tests/test_test_render_replay_depth.py .                                 [ 94%]
+tests/test_test_render_seed_depth.py .                                   [ 94%]
+tests/test_test_research_runtime_depth.py .                              [ 94%]
+tests/test_test_router_depth.py .                                        [ 94%]
+tests/test_test_sample_record_audio_analysis_depth.py .                  [ 94%]
+tests/test_test_sample_record_context_depth.py .                         [ 94%]
+tests/test_test_sample_record_skeleton_depth.py .                        [ 94%]
+tests/test_test_sample_status_depth.py .                                 [ 94%]
+tests/test_test_sampler_effects_depth.py .                               [ 94%]
+tests/test_test_sampler_scheduler_depth.py .                             [ 94%]
+tests/test_test_startle_depth.py .                                       [ 94%]
+tests/test_test_sw_sampler_depth.py ..                                   [ 94%]
+tests/test_test_syncopation_features_depth.py ..                         [ 94%]
+tests/test_test_synthesis_architecture_registry_depth.py ..              [ 94%]
+tests/test_test_theramini_duet_depth.py ..                               [ 94%]
+tests/test_test_voice_aliases_depth.py ..                                [ 94%]
+tests/test_test_wizard_depth.py ..                                       [ 94%]
+tests/test_theramini_duet.py ........................................... [ 95%]
+..........                                                               [ 95%]
+tests/test_theramini_listener_runtime.py ............                    [ 95%]
+tests/test_theramini_midi.py .......                                     [ 96%]
+tests/test_tracker_cadence.py ............                               [ 96%]
+tests/test_tracker_compiler.py ................                          [ 96%]
+tests/test_tracker_variation.py .....                                    [ 96%]
+tests/test_trust.py ................                                     [ 97%]
+tests/test_trust_depth.py .......                                        [ 97%]
+tests/test_usage_journal.py .......................                      [ 97%]
+tests/test_usage_journal_integration.py .                                [ 97%]
+tests/test_vast_connector.py ..                                          [ 97%]
+tests/test_voice_aliases.py ........                                     [ 97%]
+tests/test_voice_aliases_depth.py ......                                 [ 98%]
+tests/test_voice_interpretation_rules.py ............................... [ 98%]
+..                                                                       [ 98%]
+tests/test_voice_manager_v2.py ......................................... [ 99%]
+............                                                             [ 99%]
+tests/test_voice_shaping.py ....                                         [ 99%]
+tests/test_wizard.py ....                                                [100%]
+
+=============================== warnings summary ===============================
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163: DeprecationWarning: module 'sre_parse' is deprecated
+    import sre_parse
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164: DeprecationWarning: module 'sre_constants' is deprecated
+    import sre_constants
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25
+  /opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    from pkg_resources import resource_stream, resource_exists
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google.cloud')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(parent)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('ruamel')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('zope')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+tests/test_narrative_api_smoke.py:38
+  /Users/anthony/Programming/PromptClaw/tests/test_narrative_api_smoke.py:38: PytestUnknownMarkWarning: Unknown pytest.mark.smoke - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    pytestmark = pytest.mark.smoke
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:16: DeprecationWarning: 'aifc' is deprecated and slated for removal in Python 3.13
+    import aifc
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:17: DeprecationWarning: 'audioop' is deprecated and slated for removal in Python 3.13
+    import audioop
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:19: DeprecationWarning: 'sunau' is deprecated and slated for removal in Python 3.13
+    import sunau
+
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+  /Users/anthony/Programming/PromptClaw/tests/test_gallery.py:108: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(result.getdata()), list(canvas.getdata()))
+
+tests/test_pareidolia_characters.py: 193 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:88: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pixels = list(img.getdata())
+
+tests/test_pareidolia_characters.py: 21 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:296: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    rendered[name] = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:310: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:314: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:316: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:339: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_low = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:343: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_high = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:326: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:352: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:331: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:333: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:361: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:376: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:366: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:368: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_add_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:429: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:451: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_with_palette
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:443: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:434: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:436: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:481: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_curious_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:554: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_happy_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:542: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_neutral_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:536: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sad_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:548: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sleeping_eyes_no_highlights
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:560: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:571: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_bush
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:621: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:615: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:609: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:585: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_without_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:591: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:597: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:603: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:642: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:661: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:674: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    basalt_pixels = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:678: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pebble_pixels = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:870: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============== 4741 passed, 10 skipped, 301 warnings in 44.30s ================
+
+codex
+`pytest tests/ -x --tb=short` passed: 4741 passed, 10 skipped. I’m running `ruff` now.
+exec
+/bin/zsh -lc 'ruff check src/ tests/' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+All checks passed!
+
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2adef9fb995e83565dd7706b4008bb0d20..54ab89835d7d5c4acb4db25bf9fdffbcad136e30
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,11 +100,18 @@
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
++### 7. PAL platform
+ 
+-PAL 2026 starts as a configured router under the `pal` section of
+-`promptclaw.json`. The router commands can check health, run direct queries, run
+-the fixed smoke suite, and summarize saved smoke baselines.
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal`
++section of `promptclaw.json`. The router commands can check health, run direct
++queries, run the fixed smoke suite, and summarize saved smoke baselines.
+ 
+ The local PAL knowledge-base path is file-first. Source discovery reads
+ `pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
+
+codex
+`ruff check src/ tests/` passed. I’m running the final requested validation, `mypy src/`.
+exec
+/bin/zsh -lc 'mypy src/' in /Users/anthony/Programming/PromptClaw
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2adef9fb995e83565dd7706b4008bb0d20..54ab89835d7d5c4acb4db25bf9fdffbcad136e30
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,11 +100,18 @@
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
++### 7. PAL platform
+ 
+-PAL 2026 starts as a configured router under the `pal` section of
+-`promptclaw.json`. The router commands can check health, run direct queries, run
+-the fixed smoke suite, and summarize saved smoke baselines.
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal`
++section of `promptclaw.json`. The router commands can check health, run direct
++queries, run the fixed smoke suite, and summarize saved smoke baselines.
+ 
+ The local PAL knowledge-base path is file-first. Source discovery reads
+ `pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
+
+ succeeded in 506ms:
+Success: no issues found in 35 source files
+
+codex
+All requested validation commands passed. I’m checking the final diff and workspace state, then I’ll stage and commit only `docs/architecture.md` with the required task tag.
+exec
+/bin/zsh -lc 'git diff -- docs/architecture.md' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2..54ab898 100644
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,11 +100,18 @@ In CypherClaw-style live command deployments, command routing can consult `sdp-c
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
+-
+-PAL 2026 starts as a configured router under the `pal` section of
+-`promptclaw.json`. The router commands can check health, run direct queries, run
+-the fixed smoke suite, and summarize saved smoke baselines.
++### 7. PAL platform
++
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal`
++section of `promptclaw.json`. The router commands can check health, run direct
++queries, run the fixed smoke suite, and summarize saved smoke baselines.
+ 
+ The local PAL knowledge-base path is file-first. Source discovery reads
+ `pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M docs/architecture.md
+ M progress.md
+ M sdp/notifications.log
+ M sdp/run-log.md
+?? sdp/fractal-reports/2026-05-13.md
+?? sdp/fractal-reports/2026-05-14.md
+?? sdp/fractal-reports/2026-05-15.md
+?? sdp/logs/Lead_T-001_20260515T214233Z_1778881438.log
+?? sdp/logs/Lead_T-001_20260515T214233Z_1778881650.log
+?? sdp/logs/Lead_T-002_20260515T214233Z_1778882292.log
+?? sdp/logs/Lead_T-003_20260515T214233Z_1778882654.log
+?? sdp/logs/Lead_T-004_20260515T214233Z_1778883104.log
+?? sdp/logs/Lead_T-005_20260515T214233Z_1778883871.log
+?? sdp/logs/Lead_T-005_20260515T214233Z_1778884424.log
+?? sdp/logs/Lead_T-006_20260515T214233Z_1778884981.log
+?? sdp/logs/Lead_T-006_20260515T214233Z_1778885634.log
+?? sdp/logs/Lead_T-007_20260515T214233Z_1778886028.log
+?? sdp/logs/Lead_T-008_20260515T214233Z_1778886776.log
+?? sdp/logs/Lead_T-009_20260515T214233Z_1778887588.log
+?? sdp/logs/Lead_T-009_20260515T214233Z_1778888239.log
+?? sdp/logs/Lead_T-010_20260515T214233Z_1778888694.log
+?? sdp/logs/Lead_T-011_20260515T214233Z_1778889727.log
+?? sdp/logs/Lead_T-012_20260515T214233Z_1778890447.log
+?? sdp/logs/Lead_T-013_20260515T214233Z_1778890863.log
+?? sdp/logs/Verify_T-001_20260515T214233Z_1778882000.log
+?? sdp/logs/Verify_T-002_20260515T214233Z_1778882468.log
+?? sdp/logs/Verify_T-003_20260515T214233Z_1778882941.log
+?? sdp/logs/Verify_T-004_20260515T214233Z_1778883760.log
+?? sdp/logs/Verify_T-005_20260515T214233Z_1778884787.log
+?? sdp/logs/Verify_T-006_20260515T214233Z_1778885848.log
+?? sdp/logs/Verify_T-007_20260515T214233Z_1778886590.log
+?? sdp/logs/Verify_T-008_20260515T214233Z_1778887365.log
+?? sdp/logs/Verify_T-009_20260515T214233Z_1778888471.log
+?? sdp/logs/Verify_T-010_20260515T214233Z_1778889487.log
+?? sdp/logs/Verify_T-011_20260515T214233Z_1778890244.log
+?? sdp/logs/Verify_T-012_20260515T214233Z_1778890712.log
+?? sdp/telemetry/prompt-review-2026-05-16.md
+?? sdp/templates/candidates/verify/v007.md
+?? sdp/verification/t-003@20260515t214233z-verify.md
+
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2adef9fb995e83565dd7706b4008bb0d20..54ab89835d7d5c4acb4db25bf9fdffbcad136e30
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,11 +100,18 @@
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
++### 7. PAL platform
+ 
+-PAL 2026 starts as a configured router under the `pal` section of
+-`promptclaw.json`. The router commands can check health, run direct queries, run
+-the fixed smoke suite, and summarize saved smoke baselines.
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal`
++section of `promptclaw.json`. The router commands can check health, run direct
++queries, run the fixed smoke suite, and summarize saved smoke baselines.
+ 
+ The local PAL knowledge-base path is file-first. Source discovery reads
+ `pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
+
+exec
+/bin/zsh -lc 'git add docs/architecture.md' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2adef9fb995e83565dd7706b4008bb0d20..54ab89835d7d5c4acb4db25bf9fdffbcad136e30
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,11 +100,18 @@
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
++### 7. PAL platform
+ 
+-PAL 2026 starts as a configured router under the `pal` section of
+-`promptclaw.json`. The router commands can check health, run direct queries, run
+-the fixed smoke suite, and summarize saved smoke baselines.
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal`
++section of `promptclaw.json`. The router commands can check health, run direct
++queries, run the fixed smoke suite, and summarize saved smoke baselines.
+ 
+ The local PAL knowledge-base path is file-first. Source discovery reads
+ `pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
+
+exec
+/bin/zsh -lc 'git diff --cached --stat' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ docs/architecture.md | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+M  docs/architecture.md
+ M progress.md
+ M sdp/notifications.log
+ M sdp/run-log.md
+?? sdp/fractal-reports/2026-05-13.md
+?? sdp/fractal-reports/2026-05-14.md
+?? sdp/fractal-reports/2026-05-15.md
+?? sdp/logs/Lead_T-001_20260515T214233Z_1778881438.log
+?? sdp/logs/Lead_T-001_20260515T214233Z_1778881650.log
+?? sdp/logs/Lead_T-002_20260515T214233Z_1778882292.log
+?? sdp/logs/Lead_T-003_20260515T214233Z_1778882654.log
+?? sdp/logs/Lead_T-004_20260515T214233Z_1778883104.log
+?? sdp/logs/Lead_T-005_20260515T214233Z_1778883871.log
+?? sdp/logs/Lead_T-005_20260515T214233Z_1778884424.log
+?? sdp/logs/Lead_T-006_20260515T214233Z_1778884981.log
+?? sdp/logs/Lead_T-006_20260515T214233Z_1778885634.log
+?? sdp/logs/Lead_T-007_20260515T214233Z_1778886028.log
+?? sdp/logs/Lead_T-008_20260515T214233Z_1778886776.log
+?? sdp/logs/Lead_T-009_20260515T214233Z_1778887588.log
+?? sdp/logs/Lead_T-009_20260515T214233Z_1778888239.log
+?? sdp/logs/Lead_T-010_20260515T214233Z_1778888694.log
+?? sdp/logs/Lead_T-011_20260515T214233Z_1778889727.log
+?? sdp/logs/Lead_T-012_20260515T214233Z_1778890447.log
+?? sdp/logs/Lead_T-013_20260515T214233Z_1778890863.log
+?? sdp/logs/Verify_T-001_20260515T214233Z_1778882000.log
+?? sdp/logs/Verify_T-002_20260515T214233Z_1778882468.log
+?? sdp/logs/Verify_T-003_20260515T214233Z_1778882941.log
+?? sdp/logs/Verify_T-004_20260515T214233Z_1778883760.log
+?? sdp/logs/Verify_T-005_20260515T214233Z_1778884787.log
+?? sdp/logs/Verify_T-006_20260515T214233Z_1778885848.log
+?? sdp/logs/Verify_T-007_20260515T214233Z_1778886590.log
+?? sdp/logs/Verify_T-008_20260515T214233Z_1778887365.log
+?? sdp/logs/Verify_T-009_20260515T214233Z_1778888471.log
+?? sdp/logs/Verify_T-010_20260515T214233Z_1778889487.log
+?? sdp/logs/Verify_T-011_20260515T214233Z_1778890244.log
+?? sdp/logs/Verify_T-012_20260515T214233Z_1778890712.log
+?? sdp/telemetry/prompt-review-2026-05-16.md
+?? sdp/templates/candidates/verify/v007.md
+?? sdp/verification/t-003@20260515t214233z-verify.md
+
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2adef9fb995e83565dd7706b4008bb0d20..54ab89835d7d5c4acb4db25bf9fdffbcad136e30
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,11 +100,18 @@
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
++### 7. PAL platform
+ 
+-PAL 2026 starts as a configured router under the `pal` section of
+-`promptclaw.json`. The router commands can check health, run direct queries, run
+-the fixed smoke suite, and summarize saved smoke baselines.
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal`
++section of `promptclaw.json`. The router commands can check health, run direct
++queries, run the fixed smoke suite, and summarize saved smoke baselines.
+ 
+ The local PAL knowledge-base path is file-first. Source discovery reads
+ `pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
+
+codex
+Only `docs/architecture.md` is staged; the other dirty SDP/progress files remain unstaged as pre-existing workspace state. I’m committing the staged documentation change now.
+exec
+/bin/zsh -lc 'git commit -m "docs(architecture): add PAL platform section [T-013@20260515T214233Z]"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+[main a3ac25b] docs(architecture): add PAL platform section [T-013@20260515T214233Z]
+ 1 file changed, 12 insertions(+), 5 deletions(-)
+
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2adef9fb995e83565dd7706b4008bb0d20..54ab89835d7d5c4acb4db25bf9fdffbcad136e30
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,11 +100,18 @@
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
++### 7. PAL platform
+ 
+-PAL 2026 starts as a configured router under the `pal` section of
+-`promptclaw.json`. The router commands can check health, run direct queries, run
+-the fixed smoke suite, and summarize saved smoke baselines.
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal`
++section of `promptclaw.json`. The router commands can check health, run direct
++queries, run the fixed smoke suite, and summarize saved smoke baselines.
+ 
+ The local PAL knowledge-base path is file-first. Source discovery reads
+ `pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
+
+codex
+The commit succeeded. I’m doing a final sanity check that the working tree only has the unrelated pre-existing changes left.
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/notifications.log
+ M sdp/run-log.md
+?? sdp/fractal-reports/2026-05-13.md
+?? sdp/fractal-reports/2026-05-14.md
+?? sdp/fractal-reports/2026-05-15.md
+?? sdp/logs/Lead_T-001_20260515T214233Z_1778881438.log
+?? sdp/logs/Lead_T-001_20260515T214233Z_1778881650.log
+?? sdp/logs/Lead_T-002_20260515T214233Z_1778882292.log
+?? sdp/logs/Lead_T-003_20260515T214233Z_1778882654.log
+?? sdp/logs/Lead_T-004_20260515T214233Z_1778883104.log
+?? sdp/logs/Lead_T-005_20260515T214233Z_1778883871.log
+?? sdp/logs/Lead_T-005_20260515T214233Z_1778884424.log
+?? sdp/logs/Lead_T-006_20260515T214233Z_1778884981.log
+?? sdp/logs/Lead_T-006_20260515T214233Z_1778885634.log
+?? sdp/logs/Lead_T-007_20260515T214233Z_1778886028.log
+?? sdp/logs/Lead_T-008_20260515T214233Z_1778886776.log
+?? sdp/logs/Lead_T-009_20260515T214233Z_1778887588.log
+?? sdp/logs/Lead_T-009_20260515T214233Z_1778888239.log
+?? sdp/logs/Lead_T-010_20260515T214233Z_1778888694.log
+?? sdp/logs/Lead_T-011_20260515T214233Z_1778889727.log
+?? sdp/logs/Lead_T-012_20260515T214233Z_1778890447.log
+?? sdp/logs/Lead_T-013_20260515T214233Z_1778890863.log
+?? sdp/logs/Verify_T-001_20260515T214233Z_1778882000.log
+?? sdp/logs/Verify_T-002_20260515T214233Z_1778882468.log
+?? sdp/logs/Verify_T-003_20260515T214233Z_1778882941.log
+?? sdp/logs/Verify_T-004_20260515T214233Z_1778883760.log
+?? sdp/logs/Verify_T-005_20260515T214233Z_1778884787.log
+?? sdp/logs/Verify_T-006_20260515T214233Z_1778885848.log
+?? sdp/logs/Verify_T-007_20260515T214233Z_1778886590.log
+?? sdp/logs/Verify_T-008_20260515T214233Z_1778887365.log
+?? sdp/logs/Verify_T-009_20260515T214233Z_1778888471.log
+?? sdp/logs/Verify_T-010_20260515T214233Z_1778889487.log
+?? sdp/logs/Verify_T-011_20260515T214233Z_1778890244.log
+?? sdp/logs/Verify_T-012_20260515T214233Z_1778890712.log
+?? sdp/telemetry/prompt-review-2026-05-16.md
+?? sdp/templates/candidates/verify/v007.md
+?? sdp/verification/t-003@20260515t214233z-verify.md
+
+exec
+/bin/zsh -lc 'git show --stat --oneline --decorate --no-renames HEAD' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+a3ac25b (HEAD -> main) docs(architecture): add PAL platform section [T-013@20260515T214233Z]
+ docs/architecture.md | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
+
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2adef9fb995e83565dd7706b4008bb0d20..54ab89835d7d5c4acb4db25bf9fdffbcad136e30
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,11 +100,18 @@
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
++### 7. PAL platform
+ 
+-PAL 2026 starts as a configured router under the `pal` section of
+-`promptclaw.json`. The router commands can check health, run direct queries, run
+-the fixed smoke suite, and summarize saved smoke baselines.
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal`
++section of `promptclaw.json`. The router commands can check health, run direct
++queries, run the fixed smoke suite, and summarize saved smoke baselines.
+ 
+ The local PAL knowledge-base path is file-first. Source discovery reads
+ `pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
+
+codex
+Done and committed.
+
+Updated [docs/architecture.md](/Users/anthony/Programming/PromptClaw/docs/architecture.md:103) with a `PAL platform` section describing PAL’s bounded reasoning, local KB, read-only diagnostics, approval-gated actions, and local execution authority.
+
+Commit: `a3ac25b docs(architecture): add PAL platform section [T-013@20260515T214233Z]`
+
+Validation passed:
+- `pip install -e '.[dev]'`
+- `pytest tests/ -x --tb=short` -> 4741 passed, 10 skipped
+- `ruff check src/ tests/`
+- `mypy src/`
+
+No regression test added because this was documentation-only. The remaining uncommitted files are the unrelated pre-existing `progress.md` / `sdp/...` workspace changes.
+diff --git a/docs/architecture.md b/docs/architecture.md
+index 73508e2adef9fb995e83565dd7706b4008bb0d20..54ab89835d7d5c4acb4db25bf9fdffbcad136e30
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -100,11 +100,18 @@
+ 
+ The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
+ 
+-### 7. PAL 2026 agent runtime
++### 7. PAL platform
+ 
+-PAL 2026 starts as a configured router under the `pal` section of
+-`promptclaw.json`. The router commands can check health, run direct queries, run
+-the fixed smoke suite, and summarize saved smoke baselines.
++The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
++It combines a configured PAL router, a local file-first knowledge base,
++read-only diagnostic tools, and approval-gated action ids. PAL can plan,
++summarize, and propose known actions, but PromptClaw keeps execution authority
++in local allow-listed code and records every workflow in the standard run
++artifact tree.
++
++The PAL 2026 agent runtime starts as a configured router under the `pal`
++section of `promptclaw.json`. The router commands can check health, run direct
++queries, run the fixed smoke suite, and summarize saved smoke baselines.
+ 
+ The local PAL knowledge-base path is file-first. Source discovery reads
+ `pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
+
+tokens used
+103,392

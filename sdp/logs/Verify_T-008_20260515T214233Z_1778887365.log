@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2765 chars)
+---
+
+**Verdict: PASS**
+
+T-008 is clean across all five dimensions. Summary:
+
+- All 3 named acceptance criteria tests pass; 4732 total tests pass, 0 failures.
+- All four prompt artifacts (triage-plan, triage-summary, action-plan, action-summary) include a bounded `## Knowledge Context` section with correct limits (3 results, 1600 char section cap, 240 char snippet cap).
+- All spec edge cases handled: missing KB index, empty query, no matches, result overflow, long snippets — none fail the workflow.
+- Hardening anchors satisfied: `bootstrap_identity()` is called in `cli.main()` before dispatch, both daemon entrypoints are covered, and identity persistence tests pass.
+- No security issues; no remote calls added; no new dependencies.
+
+Report committed as `sdp/verification/t-008@20260515t214233z-verify.md`.

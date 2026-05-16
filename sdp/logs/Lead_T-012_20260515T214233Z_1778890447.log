@@ -1,0 +1,2675 @@
+Command: codex exec --dangerously-bypass-approvals-and-sandbox -c model_reasoning_effort=xhigh -m gpt-5.5 -
+Prompt delivered via: stdin (1242 chars)
+---
+
+Implemented and committed T-012.
+
+Commit: `1b20c15 test(vast): reject persisted API key values [T-012@20260515T214233Z]`
+
+Change: added a regression test in [tests/test_vast_connector.py](/Users/anthony/Programming/PromptClaw/tests/test_vast_connector.py) that sets `VAST_API_KEY`, persists the Vast boundary payload to JSON, and rejects the raw key value appearing in persisted text.
+
+Validation passed:
+- `pip install -e '.[dev]'`
+- `pytest tests/ -x --tb=short`
+- `ruff check src/ tests/`
+- `mypy src/`
+
+Only the T-012 test file was committed. The existing unrelated SDP/log worktree changes are still uncommitted and untouched.
+
+--- STDERR ---
+OpenAI Codex v0.130.0
+--------
+workdir: /Users/anthony/Programming/PromptClaw
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 019e2e22-1b29-7ae0-b7bc-2154f4dcc1c6
+--------
+user
+<!--
+  sdp-cli agent-specific template for codex
+  Edit this file to tune how codex handles lead_t1.md.
+  The shipped default lives at src/sdp/prompts/templates/lead_t1.md.
+  Delete this file to revert to the default.
+-->
+# Task T-012@20260515T214233Z: Add Vast secret redaction tests.
+
+## Acceptance Criteria
+
+Tests reject persisted Vast API key values.
+
+**Tier:** T1
+
+## Instructions
+
+Handle this directly. Skip broad discovery and do not write a spec.
+
+1. Read only the file(s) you expect to change and the closest relevant tests.
+2. Make the smallest change that satisfies the task.
+3. Add or update a regression test when behavior changes.
+4. Run focused validation, then broader checks if needed.
+5. Commit as soon as the change works: `<type>(scope): summary [T-012@20260515T214233Z]`
+
+## Rules
+
+- Stay in scope; no unrelated cleanup.
+- Follow existing patterns and type hints.
+- Record blocking assumptions in `ESCALATIONS.md`.
+- Do not finish with uncommitted changes you introduced for this task.
+- Do not clean, revert, commit, or otherwise normalize unrelated pre-existing
+  workspace changes.
+
+## Validation
+
+Run before committing:
+```bash
+pip install -e '.[dev]'
+pytest tests/ -x --tb=short
+ruff check src/ tests/
+mypy src/
+```
+
+codex
+I’ll keep this narrow: first I’m checking the current worktree and the existing Vast/redaction tests so I can add the smallest regression coverage without touching unrelated files.
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/notifications.log
+ M sdp/run-log.md
+?? sdp/fractal-reports/2026-05-13.md
+?? sdp/fractal-reports/2026-05-14.md
+?? sdp/fractal-reports/2026-05-15.md
+?? sdp/logs/Lead_T-001_20260515T214233Z_1778881438.log
+?? sdp/logs/Lead_T-001_20260515T214233Z_1778881650.log
+?? sdp/logs/Lead_T-002_20260515T214233Z_1778882292.log
+?? sdp/logs/Lead_T-003_20260515T214233Z_1778882654.log
+?? sdp/logs/Lead_T-004_20260515T214233Z_1778883104.log
+?? sdp/logs/Lead_T-005_20260515T214233Z_1778883871.log
+?? sdp/logs/Lead_T-005_20260515T214233Z_1778884424.log
+?? sdp/logs/Lead_T-006_20260515T214233Z_1778884981.log
+?? sdp/logs/Lead_T-006_20260515T214233Z_1778885634.log
+?? sdp/logs/Lead_T-007_20260515T214233Z_1778886028.log
+?? sdp/logs/Lead_T-008_20260515T214233Z_1778886776.log
+?? sdp/logs/Lead_T-009_20260515T214233Z_1778887588.log
+?? sdp/logs/Lead_T-009_20260515T214233Z_1778888239.log
+?? sdp/logs/Lead_T-010_20260515T214233Z_1778888694.log
+?? sdp/logs/Lead_T-011_20260515T214233Z_1778889727.log
+?? sdp/logs/Lead_T-012_20260515T214233Z_1778890447.log
+?? sdp/logs/Verify_T-001_20260515T214233Z_1778882000.log
+?? sdp/logs/Verify_T-002_20260515T214233Z_1778882468.log
+?? sdp/logs/Verify_T-003_20260515T214233Z_1778882941.log
+?? sdp/logs/Verify_T-004_20260515T214233Z_1778883760.log
+?? sdp/logs/Verify_T-005_20260515T214233Z_1778884787.log
+?? sdp/logs/Verify_T-006_20260515T214233Z_1778885848.log
+?? sdp/logs/Verify_T-007_20260515T214233Z_1778886590.log
+?? sdp/logs/Verify_T-008_20260515T214233Z_1778887365.log
+?? sdp/logs/Verify_T-009_20260515T214233Z_1778888471.log
+?? sdp/logs/Verify_T-010_20260515T214233Z_1778889487.log
+?? sdp/logs/Verify_T-011_20260515T214233Z_1778890244.log
+?? sdp/telemetry/prompt-review-2026-05-16.md
+?? sdp/templates/candidates/verify/v007.md
+?? sdp/verification/t-003@20260515t214233z-verify.md
+
+exec
+/bin/zsh -lc 'rg -n "Vast|vast|redact|secret|api[_ -]?key|API key" src tests' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+src/cypherclaw/image_api/config.py:22:    gemini_api_key_env: str = "GEMINI_API_KEY"
+src/cypherclaw/image_api/config.py:38:            gemini_api_key_env=os.environ.get("CYPHERCLAW_GEMINI_API_KEY_ENV", cls.gemini_api_key_env),
+src/cypherclaw/image_api/gemini_backend.py:40:    api_key = os.environ.get(s.gemini_api_key_env)
+src/cypherclaw/image_api/gemini_backend.py:41:    if not api_key:
+src/cypherclaw/image_api/gemini_backend.py:43:            f"missing {s.gemini_api_key_env} in environment"
+src/cypherclaw/image_api/gemini_backend.py:46:    client: _GenAIClientProtocol = genai.Client(api_key=api_key)  # type: ignore[assignment]
+tests/test_coherence_integration.py:96:        """A run with a 'no-secrets' hard rule completes cleanly when
+tests/test_coherence_integration.py:97:        the mock agent output does not contain secrets.
+tests/test_coherence_integration.py:101:                "id": "no-secrets",
+tests/test_coherence_integration.py:103:                "description": "No secrets or API keys in output",
+tests/test_coherence_integration.py:105:                "message": "Output must not contain API keys or secrets",
+src/cypherclaw/narrative_api/app.py:87:            "NARRATIVE_AUTH_TOKEN is unset or empty; shared-secret auth is disabled."
+tests/test_pal_agent.py:424:def test_default_pal_action_registry_excludes_vast_lifecycle_actions(tmp_path: Path) -> None:
+tests/test_pal_agent.py:432:        assert f"vast_{action_id}" not in actions
+tests/test_pal_agent.py:441:                "vast_rent",
+tests/test_pal_agent.py:442:                "vast_destroy",
+tests/test_pal_agent.py:443:                "vast_start",
+tests/test_pal_agent.py:444:                "vast_stop",
+tests/test_pal_agent.py:447:            "rationale": "Restart the router, but do not manage the Vast instance.",
+tests/test_pal_agent.py:458:        "vast_rent",
+tests/test_pal_agent.py:459:        "vast_destroy",
+tests/test_pal_agent.py:460:        "vast_start",
+tests/test_pal_agent.py:461:        "vast_stop",
+tests/test_pal_agent.py:465:def test_pal_ops_actions_prompt_includes_vast_stub_boundary(tmp_path: Path) -> None:
+tests/test_pal_agent.py:466:    config = default_project_config("PAL Vast Boundary")
+tests/test_pal_agent.py:495:        task="Inspect PAL and describe any Vast boundary.",
+tests/test_pal_agent.py:507:    assert "Vast connector" in plan_prompt
+tests/test_pal_agent.py:512:        assert f"- vast_{action_id}:" not in plan_prompt
+tests/test_vast_connector.py:3:from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+tests/test_vast_connector.py:6:def test_default_vast_connector_boundary_blocks_lifecycle_actions() -> None:
+tests/test_vast_connector.py:7:    boundary = default_vast_connector_boundary()
+tests/test_vast_connector.py:9:    assert boundary.provider == "vast"
+tests/test_vast_connector.py:17:    assert payload["provider"] == "vast"
+tests/test_coherence_engine.py:198:                    "id": "no-secret",
+tests/test_coherence_engine.py:200:                    "description": "Output must not leak secrets.",
+tests/test_coherence_engine.py:201:                    "keywords": ["password", "api_key"],
+tests/test_coherence_engine.py:203:                    "message": "secret leak",
+tests/test_coherence_engine.py:217:            "post_lead": "implementation done; todo:test follow-up; api_key=abc",
+tests/test_coherence_engine.py:250:            self.assertIn("no-secret", lead_violation_ids)
+tests/test_coherence_engine.py:258:                    if v.rule_id == "no-secret"
+tests/test_coherence_engine.py:266:                if v.rule_id == "no-secret"
+tests/test_constitution.py:31:                "id": "no-secrets",
+tests/test_constitution.py:33:                "description": "Never include API keys or secrets",
+tests/test_constitution.py:34:                "pattern": r"(api[_-]?key|secret|password|token)\s*[:=]\s*\S+",
+tests/test_constitution.py:35:                "message": "Output contains what appears to be a secret",
+tests/test_constitution.py:47:        self.assertEqual(c.rules[0].rule_id, "no-secrets")
+tests/test_constitution.py:71:                "id": "no-secrets",
+tests/test_constitution.py:73:                "description": "Never include API keys or secrets",
+tests/test_constitution.py:74:                "pattern": r"(api[_-]?key|secret|password|token)\s*[:=]\s*\S+",
+tests/test_constitution.py:75:                "message": "Output contains what appears to be a secret",
+tests/test_constitution.py:107:        violations = self.constitution.evaluate("Here is api_key = sk-12345abc")
+tests/test_constitution.py:109:        self.assertIn("no-secrets", rule_ids)
+tests/test_constitution.py:112:        violations = self.constitution.evaluate("This text has no secrets at all.")
+tests/test_constitution.py:114:        self.assertNotIn("no-secrets", rule_ids)
+tests/test_constitution.py:152:        violations = self.constitution.evaluate("api_key = mysecret123", phase="routing")
+tests/test_constitution.py:154:        self.assertIn("no-secrets", rule_ids)
+tests/test_constitution.py:157:        violations = self.constitution.evaluate("api_key = mysecret123")
+tests/test_constitution.py:158:        secret_violations = [v for v in violations if v.rule_id == "no-secrets"]
+tests/test_constitution.py:159:        self.assertEqual(len(secret_violations), 1)
+tests/test_constitution.py:160:        v = secret_violations[0]
+tests/test_constitution.py:162:        self.assertEqual(v.message, "Output contains what appears to be a secret")
+tests/test_constitution.py:283:                "id": "no-secrets",
+tests/test_constitution.py:285:                "description": "Never include API keys or secrets",
+tests/test_constitution.py:286:                "pattern": r"(api[_-]?key|secret|password|token)\s*[:=]\s*\S+",
+tests/test_constitution.py:287:                "message": "Output contains what appears to be a secret",
+tests/test_constitution.py:353:        secret_rule = next(r for r in loaded if r.rule_id == "no-secrets")
+tests/test_constitution.py:354:        self.assertEqual(secret_rule.severity, ViolationSeverity.HARD)
+tests/test_constitution.py:355:        self.assertEqual(secret_rule.message, "Output contains what appears to be a secret")
+tests/test_constitution.py:362:        violations = constitution.evaluate("api_key = sk-shouldnotmatch")
+tests/test_constitution.py:368:        violations = constitution.evaluate("api_key = sk-shouldnotmatch")
+tests/test_constitution.py:378:        violations = constitution.evaluate("api_key = sk-shouldnotmatch")
+tests/test_constitution.py:391:    def test_regex_pattern_matches_secret_payload_end_to_end(self) -> None:
+tests/test_constitution.py:392:        text = "Here is api_key = sk-12345abc embedded in a message"
+tests/test_constitution.py:395:        self.assertIn("no-secrets", rule_ids)
+tests/test_constitution.py:396:        secret_violations = [v for v in violations if v.rule_id == "no-secrets"]
+tests/test_constitution.py:397:        self.assertEqual(len(secret_violations), 1)
+tests/test_constitution.py:398:        self.assertEqual(secret_violations[0].severity, ViolationSeverity.HARD)
+tests/test_constitution.py:404:        self.assertNotIn("no-secrets", rule_ids)
+tests/test_constitution.py:421:        for unrelated in ("be-polite", "no-secrets", "claude-only-rule"):
+tests/test_constitution.py:446:        for unrelated in ("no-secrets", "no-profanity"):
+tests/test_constitution.py:460:        for other in ("lead-claude-only-rule", "no-secrets"):
+tests/test_constitution.py:465:            violations = self.constitution.evaluate("api_key = sk-anywhere", phase=phase)
+tests/test_constitution.py:467:            self.assertIn("no-secrets", rule_ids)
+tests/test_constitution.py:487:        for expected_hard in ("no-secrets", "lead-only-rule", "lead-claude-only-rule"):
+tests/test_constitution.py:497:        for unexpected_hard in ("no-secrets", "lead-only-rule", "lead-claude-only-rule"):
+tests/test_constitution.py:503:        for expected in ("no-secrets", "lead-only-rule", "lead-claude-only-rule", "be-polite"):
+tests/test_constitution.py:512:        for still_present in ("no-secrets", "no-profanity"):
+tests/test_constitution.py:516:        hard_only = self.constitution.evaluate("api_key = sk-leak")
+tests/test_constitution.py:517:        mixed = self.constitution.evaluate("api_key = sk-leak with badword inside")
+tests/test_constitution.py:523:        violations = self.constitution.evaluate("api_key = sk-leak in body")
+tests/test_constitution.py:525:        self.assertIn("no-secrets", rule_ids)
+tests/test_constitution.py:532:        self.assertNotIn("no-secrets", rule_ids)
+tests/test_constitution.py:538:        hard_only = self.constitution.evaluate("api_key = sk-leak")
+tests/test_constitution.py:549:    def test_pipeline_load_evaluate_secret_blocks_under_soft_mode(self) -> None:
+tests/test_constitution.py:551:        text = "api_key = sk-pipeline123 leaked in lead phase"
+tests/test_constitution.py:553:        self.assertIn("no-secrets", self._rule_ids(violations))
+tests/test_constitution.py:564:        text = "api_key = sk-leak plus badword and rude tone"
+tests/test_constitution.py:567:        for expected in ("no-secrets", "no-profanity", "be-polite"):
+tests/test_constitution.py:572:        violations = self.constitution.evaluate("api_key = sk-fields-check")
+tests/test_constitution.py:573:        secret = [v for v in violations if v.rule_id == "no-secrets"]
+tests/test_constitution.py:574:        self.assertEqual(len(secret), 1)
+tests/test_constitution.py:575:        self.assertEqual(secret[0].rule_id, "no-secrets")
+tests/test_constitution.py:576:        self.assertEqual(secret[0].severity, ViolationSeverity.HARD)
+tests/test_constitution.py:577:        self.assertEqual(secret[0].message, "Output contains what appears to be a secret")
+tests/test_generation_worker.py:128:        generation_worker.ENV_REPLICATE_TOKEN: "secret-token",
+tests/test_generation_worker.py:139:    assert config.replicate_api_token == "secret-token"
+tests/test_generation_worker.py:142:def test_worker_runtime_summary_redacts_secret_token(tmp_path: Path) -> None:
+tests/test_narrative_api_beats.py:182:            create_app(narrative_engine=engine, auth_token="secret")
+tests/test_narrative_api_beats.py:196:            create_app(narrative_engine=engine, auth_token="secret")
+tests/test_narrative_api_beats.py:202:            headers={"X-Narrative-Auth": "secret"},
+tests/test_first_boot.py:103:        """Payload must not leak raw private memory or secrets."""
+tests/test_first_boot.py:110:        for forbidden in ("private_memory", "secret", "token", "password", "api_key"):
+tests/test_collaborative_canvas_depth.py:25:    canvas.add_layer(CanvasLayer("hidden", 10, "secret", None, 0.5, (1, 1), False))
+tests/test_smoke_narrative_script.py:164:    rc = module.main(["--base-url", base_url, "--token", "secret-123"])
+tests/test_smoke_narrative_script.py:176:        "Bearer secret-123"
+tests/test_smoke_narrative_script.py:179:        "secret-123"
+tests/test_test_genai_depth.py:62:    explicit = test_genai.create_genai_client(api_key="explicit-test-key")
+tests/test_test_genai_depth.py:129:        "Successfully created client without explicit API key.",
+tests/test_test_genai_depth.py:159:        "Successfully created client without explicit API key.",
+tests/test_narrative_api_events.py:381:        client = TestClient(create_app(event_store=store, auth_token="secret"))
+tests/test_narrative_api_events.py:390:        client = TestClient(create_app(event_store=store, auth_token="secret"))
+tests/test_narrative_api_events.py:394:            headers={"X-Narrative-Auth": "secret"},
+tests/test_narrative_api_events.py:404:        client = TestClient(create_app(event_store=store, auth_token="secret"))
+tests/test_narrative_api_events.py:416:        client = TestClient(create_app(event_store=store, auth_token="secret"))
+tests/test_narrative_api_events.py:425:            headers={"X-Narrative-Auth": "secret"},
+tests/test_narrative_api_memory.py:187:            create_app(memory=RecordingMemory(), auth_token="secret")
+tests/test_narrative_api_memory.py:200:            create_app(memory=RecordingMemory(), auth_token="secret")
+tests/test_narrative_api_memory.py:213:        client = TestClient(create_app(memory=memory, auth_token="secret"))
+tests/test_narrative_api_memory.py:218:            headers={"X-Narrative-Auth": "secret"},
+tests/test_gemini_image_runtime.py:37:        def __init__(self, api_key: str) -> None:
+tests/test_gemini_image_runtime.py:38:            assert api_key == "test-key"
+tests/test_gemini_image_runtime.py:102:        def __init__(self, api_key: str) -> None:
+tests/test_gemini_image_runtime.py:103:            assert api_key == "test-key"
+tests/test_narrative_api_health.py:47:                auth_token="secret",
+
+codex
+The worktree already has unrelated SDP/log changes, so I’ll leave those alone and make sure the commit only includes files I touch for T-012. The relevant surface appears to be the Vast connector and its closest tests.
+exec
+/bin/zsh -lc "sed -n '1,220p' tests/test_vast_connector.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+from __future__ import annotations
+
+from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+
+
+def test_default_vast_connector_boundary_blocks_lifecycle_actions() -> None:
+    boundary = default_vast_connector_boundary()
+
+    assert boundary.provider == "vast"
+    assert boundary.callable_action_names() == ()
+    assert boundary.blocked_action_names() == VAST_LIFECYCLE_ACTIONS
+    for action_name in ("rent", "destroy", "start", "stop"):
+        assert boundary.is_action_callable(action_name) is False
+        assert not hasattr(boundary, action_name)
+
+    payload = boundary.to_dict()
+    assert payload["provider"] == "vast"
+    assert payload["callable_actions"] == []
+    assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+    assert payload["status"] == "stubbed"
+
+exec
+/bin/zsh -lc "sed -n '1,260p' src/promptclaw/vast_connector.py" in /Users/anthony/Programming/PromptClaw
+ exited 1 in 0ms:
+sed: src/promptclaw/vast_connector.py: No such file or directory
+
+exec
+/bin/zsh -lc 'rg -n "persist|redact|redaction|api_key|secret|VAST|vast" src/promptclaw/vast_connector.py tests/test_vast_connector.py' in /Users/anthony/Programming/PromptClaw
+ exited 2 in 0ms:
+rg: src/promptclaw/vast_connector.py: No such file or directory (os error 2)
+tests/test_vast_connector.py:3:from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+tests/test_vast_connector.py:6:def test_default_vast_connector_boundary_blocks_lifecycle_actions() -> None:
+tests/test_vast_connector.py:7:    boundary = default_vast_connector_boundary()
+tests/test_vast_connector.py:9:    assert boundary.provider == "vast"
+tests/test_vast_connector.py:11:    assert boundary.blocked_action_names() == VAST_LIFECYCLE_ACTIONS
+tests/test_vast_connector.py:17:    assert payload["provider"] == "vast"
+
+codex
+The import path points at `promptclaw.vast_connector`, but the file is not under the first path I tried. I’m locating that module directly now, still keeping the search to Vast-related files.
+exec
+/bin/zsh -lc "rg --files src tests | rg 'vast|connector'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_vast_connector.py
+
+exec
+/bin/zsh -lc "rg --files | rg 'vast|connector'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+promptclaw/vast_connector.py
+tests/test_vast_connector.py
+
+exec
+/bin/zsh -lc "sed -n '1,260p' promptclaw/vast_connector.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+
+VAST_LIFECYCLE_ACTIONS: tuple[str, ...] = ("rent", "destroy", "start", "stop")
+
+
+@dataclass(frozen=True)
+class VastConnectorBoundary:
+    provider: str = "vast"
+    status: str = "stubbed"
+    reason: str = (
+        "Vast lifecycle operations are intentionally unavailable in the default "
+        "PromptClaw PAL action registry."
+    )
+    blocked_actions: tuple[str, ...] = VAST_LIFECYCLE_ACTIONS
+    callable_actions: tuple[str, ...] = ()
+
+    def callable_action_names(self) -> tuple[str, ...]:
+        return self.callable_actions
+
+    def blocked_action_names(self) -> tuple[str, ...]:
+        return self.blocked_actions
+
+    def is_action_callable(self, action_name: str) -> bool:
+        normalized = action_name.strip().lower()
+        return normalized in self.callable_actions
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "provider": self.provider,
+            "status": self.status,
+            "reason": self.reason,
+            "blocked_actions": list(self.blocked_actions),
+            "callable_actions": list(self.callable_actions),
+        }
+
+
+def default_vast_connector_boundary() -> VastConnectorBoundary:
+    return VastConnectorBoundary()
+
+exec
+/bin/zsh -lc 'rg -n "persist|redact|redaction|api_key|secret|VAST|vast" promptclaw/vast_connector.py tests/test_vast_connector.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+promptclaw/vast_connector.py:6:VAST_LIFECYCLE_ACTIONS: tuple[str, ...] = ("rent", "destroy", "start", "stop")
+promptclaw/vast_connector.py:11:    provider: str = "vast"
+promptclaw/vast_connector.py:17:    blocked_actions: tuple[str, ...] = VAST_LIFECYCLE_ACTIONS
+promptclaw/vast_connector.py:40:def default_vast_connector_boundary() -> VastConnectorBoundary:
+tests/test_vast_connector.py:3:from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+tests/test_vast_connector.py:6:def test_default_vast_connector_boundary_blocks_lifecycle_actions() -> None:
+tests/test_vast_connector.py:7:    boundary = default_vast_connector_boundary()
+tests/test_vast_connector.py:9:    assert boundary.provider == "vast"
+tests/test_vast_connector.py:11:    assert boundary.blocked_action_names() == VAST_LIFECYCLE_ACTIONS
+tests/test_vast_connector.py:17:    assert payload["provider"] == "vast"
+
+codex
+The current Vast connector is a stub with only boundary serialization, so the acceptance criterion likely needs a regression test around what that serialized/persisted payload may contain. I’m checking the nearest existing redaction test pattern before editing.
+exec
+/bin/zsh -lc "sed -n '120,170p' tests/test_generation_worker.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+def test_load_worker_config_resolves_environment_paths(tmp_path: Path) -> None:
+    env = {
+        generation_worker.ENV_DATA_DIR: str(tmp_path),
+        generation_worker.ENV_QUEUE_DB: str(tmp_path / "explicit-queue.sqlite"),
+        generation_worker.ENV_CACHE_ROOT: str(tmp_path / "explicit-cache"),
+        generation_worker.ENV_SAMPLES_ROOT: str(tmp_path / "explicit-samples"),
+        generation_worker.ENV_BUDGET_STATE: str(tmp_path / "state" / "budget.json"),
+        generation_worker.ENV_STATUS_PATH: str(tmp_path / "status.json"),
+        generation_worker.ENV_REPLICATE_TOKEN: "secret-token",
+    }
+
+    config = generation_worker.load_worker_config(env)
+
+    assert config.data_dir == tmp_path
+    assert config.queue_db == tmp_path / "explicit-queue.sqlite"
+    assert config.cache_root == tmp_path / "explicit-cache"
+    assert config.samples_root == tmp_path / "explicit-samples"
+    assert config.budget_state == tmp_path / "state" / "budget.json"
+    assert config.status_path == tmp_path / "status.json"
+    assert config.replicate_api_token == "secret-token"
+
+
+def test_worker_runtime_summary_redacts_secret_token(tmp_path: Path) -> None:
+    config = _worker_config(tmp_path)
+
+    summary = generation_worker.worker_runtime_summary(config)
+    encoded = json.dumps(summary, sort_keys=True)
+
+    assert summary["data_dir"] == str(tmp_path)
+    assert summary["queue_db"] == str(tmp_path / "queue.sqlite")
+    assert summary["cache_root"] == str(tmp_path / "cache")
+    assert summary["samples_root"] == str(tmp_path / "samples")
+    assert summary["budget_state"] == str(tmp_path / "state" / "budget.json")
+    assert summary["status_path"] == str(tmp_path / "status.json")
+    assert summary["status_interval_sec"] == 0.1
+    assert summary["replicate_token_configured"] is True
+    assert "test-token" not in encoded
+
+
+def test_build_queue_uses_explicit_config(tmp_path: Path) -> None:
+    config = _worker_config(tmp_path)
+
+    queue = generation_worker.build_queue(config)
+
+    assert queue.db_path == tmp_path / "queue.sqlite"
+    assert queue.cache.root == tmp_path / "cache"
+    assert queue.budget.path == tmp_path / "state" / "budget.json"
+    assert queue.storage.samples_root == tmp_path / "samples"
+    assert queue.client._api_token == "test-token"
+    assert (tmp_path / "queue.sqlite").exists()
+    assert (tmp_path / "cache").is_dir()
+
+exec
+/bin/zsh -lc "rg -n \"redact|redacts|persist|to_dict\\(|api_key|token|secret\" promptclaw tests/test_generation_worker.py tests/test_vast_connector.py tests/test_pal_agent.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+tests/test_generation_worker.py:74:        replicate_api_token="test-token",
+tests/test_generation_worker.py:128:        generation_worker.ENV_REPLICATE_TOKEN: "secret-token",
+tests/test_generation_worker.py:139:    assert config.replicate_api_token == "secret-token"
+tests/test_generation_worker.py:142:def test_worker_runtime_summary_redacts_secret_token(tmp_path: Path) -> None:
+tests/test_generation_worker.py:155:    assert summary["replicate_token_configured"] is True
+tests/test_generation_worker.py:156:    assert "test-token" not in encoded
+tests/test_generation_worker.py:168:    assert queue.client._api_token == "test-token"
+tests/test_vast_connector.py:16:    payload = boundary.to_dict()
+tests/test_pal_agent.py:532:            {"id": "reachability", "status": "pass", "latency_s": 10.0, "tokens_per_second": 8.0},
+tests/test_pal_agent.py:533:            {"id": "configuration", "status": "pass", "latency_s": 9.0, "tokens_per_second": 12.0},
+tests/test_pal_agent.py:534:            {"id": "operational_triage", "status": "pass", "latency_s": 11.0, "tokens_per_second": 16.0},
+tests/test_pal_agent.py:555:        task="Diagnose PAL slow inference at 2 tokens per second.",
+tests/test_pal_agent.py:572:    assert context["baseline_tokens_per_second"] == 12.0
+tests/test_pal_agent.py:574:    assert observations["pal_smoke_baseline"]["baseline_tokens_per_second"] == 12.0
+tests/test_pal_agent.py:603:    assert context["baseline_tokens_per_second"] is None
+tests/test_pal_agent.py:635:                {"baseline_tokens_per_second": 12.0},
+tests/test_pal_agent.py:675:    assert payload["diagnosis"]["baseline_tokens_per_second"] == 12.0
+tests/test_pal_agent.py:713:                    "baseline_tokens_per_second": 4.0,
+tests/test_pal_agent.py:750:        task="PAL is answering at roughly two tokens per second.",
+tests/test_pal_agent.py:761:    assert diagnosis["baseline_tokens_per_second"] == 4.0
+tests/test_pal_agent.py:762:    assert diagnosis["observed_tokens_per_second"] == 2.0
+tests/test_pal_agent.py:765:        "low_baseline_tokens_per_second",
+promptclaw/pal_agent.py:81:    "saved smoke baseline token throughput, GPU resource hints, and recent PAL "
+promptclaw/pal_agent.py:89:    "health, saved smoke baseline token throughput, optional GPU hints, and "
+promptclaw/pal_agent.py:558:    baseline_tokens_per_second = _baseline_tokens_per_second_from_observations(observations)
+promptclaw/pal_agent.py:563:        "baseline_tokens_per_second": baseline_tokens_per_second,
+promptclaw/pal_agent.py:609:        "baseline_tokens_per_second": baseline_tokens_per_second,
+promptclaw/pal_agent.py:779:            description="Summarize saved PAL smoke reports and baseline token throughput.",
+promptclaw/pal_agent.py:899:    baseline_tokens_per_second = _baseline_tokens_per_second_from_summary(summary)
+promptclaw/pal_agent.py:912:        "baseline_tokens_per_second": baseline_tokens_per_second,
+promptclaw/pal_agent.py:916:def _baseline_tokens_per_second_from_summary(summary: dict[str, Any]) -> float | None:
+promptclaw/pal_agent.py:924:        value = prompt_summary.get("avg_tokens_per_second")
+promptclaw/pal_agent.py:932:def _baseline_tokens_per_second_from_observations(
+promptclaw/pal_agent.py:938:        value = observation.get("baseline_tokens_per_second")
+promptclaw/pal_agent.py:946:    baseline_tps = _baseline_tokens_per_second_from_observations(observations)
+promptclaw/pal_agent.py:947:    observed_tps = _observed_tokens_per_second_from_logs(rows.get("slow_inference_logs"))
+promptclaw/pal_agent.py:961:            "code": "baseline_tokens_per_second_unavailable",
+promptclaw/pal_agent.py:963:            "summary": "No saved PAL smoke token/s baseline is available.",
+promptclaw/pal_agent.py:967:            "code": "low_baseline_tokens_per_second",
+promptclaw/pal_agent.py:969:            "summary": f"Saved PAL smoke baseline is low at {baseline_tps:g} tokens/s.",
+promptclaw/pal_agent.py:973:            "code": "low_baseline_tokens_per_second",
+promptclaw/pal_agent.py:975:            "summary": f"Saved PAL smoke baseline is below target at {baseline_tps:g} tokens/s.",
+promptclaw/pal_agent.py:983:                f"Recent log throughput is {observed_tps:g} tokens/s versus "
+promptclaw/pal_agent.py:984:                f"{baseline_tps:g} tokens/s baseline."
+promptclaw/pal_agent.py:991:            "summary": "PAL SSH logs were unavailable, so live token/s could not be inferred.",
+promptclaw/pal_agent.py:1011:        "baseline_tokens_per_second": baseline_tps,
+promptclaw/pal_agent.py:1012:        "observed_tokens_per_second": observed_tps,
+promptclaw/pal_agent.py:1034:def _observed_tokens_per_second_from_logs(observation: dict[str, Any] | None) -> float | None:
+promptclaw/pal_agent.py:1084:    if "baseline_tokens_per_second_unavailable" in codes:
+promptclaw/pal_agent.py:1086:    if "low_baseline_tokens_per_second" in codes or "log_throughput_regression" in codes:
+promptclaw/pal_agent.py:1088:            "Compare against a fresh smoke run after any approved remediation to confirm token/s recovery."
+promptclaw/pal_agent.py:1384:            "args": _redact_args(args),
+promptclaw/pal_agent.py:1390:        "args": _redact_args(args),
+promptclaw/pal_agent.py:1405:def _redact_args(args: list[str]) -> list[str]:
+promptclaw/pal_agent.py:1406:    redacted: list[str] = []
+promptclaw/pal_agent.py:1410:            redacted.append("<redacted>")
+promptclaw/pal_agent.py:1413:        redacted.append(item)
+promptclaw/pal_agent.py:1416:    return redacted
+promptclaw/pal_agent.py:1759:    baseline_tps = context_payload.get("baseline_tokens_per_second")
+promptclaw/pal_agent.py:1761:    lines.append(f"Baseline tokens/s: {baseline_tps if baseline_tps is not None else 'unavailable'}")
+promptclaw/pal_agent.py:1778:        "Baseline tokens/s: "
+promptclaw/pal_agent.py:1779:        f"{diagnosis['baseline_tokens_per_second'] if diagnosis['baseline_tokens_per_second'] is not None else 'unavailable'}"
+promptclaw/pal_agent.py:1782:        "Observed tokens/s: "
+promptclaw/pal_agent.py:1783:        f"{diagnosis['observed_tokens_per_second'] if diagnosis['observed_tokens_per_second'] is not None else 'unavailable'}"
+promptclaw/pal_agent.py:1812:        f"Baseline tokens/s: {context_payload.get('baseline_tokens_per_second')}\n\n"
+promptclaw/router.py:54:    if task_type == "code" and not any(token in lowered for token in ["python", "typescript", "javascript", "go", "rust", "java", "language"]):
+promptclaw/router.py:55:        if any(token in lowered for token in ["module", "script", "function", "feature"]):
+promptclaw/router.py:58:    if task_type in {"research", "docs"} and not any(token in lowered for token in ["summary", "guide", "manual", "report", "brief", "plan"]):
+promptclaw/wizard.py:471:def mentions_any(text: str, tokens: list[str]) -> bool:
+promptclaw/wizard.py:472:    return any(token in text for token in tokens)
+promptclaw/pal_smoke.py:96:                    "tokens_per_second": _tokens_per_second(result.raw),
+promptclaw/pal_smoke.py:189:                    "tokens_per_second": [],
+promptclaw/pal_smoke.py:197:            if isinstance(check.get("tokens_per_second"), int | float):
+promptclaw/pal_smoke.py:198:                row["tokens_per_second"].append(float(check["tokens_per_second"]))
+promptclaw/pal_smoke.py:206:            "avg_tokens_per_second": _avg(row["tokens_per_second"]),
+promptclaw/pal_smoke.py:245:                f"avg_tps={prompt_summary['avg_tokens_per_second']}"
+promptclaw/pal_smoke.py:268:def _tokens_per_second(raw: dict[str, Any]) -> float | None:
+promptclaw/vast_connector.py:30:    def to_dict(self) -> dict[str, object]:
+promptclaw/sdp_cost.py:4:documented in `sdp/telemetry/cost-model.md`, and rolls per-task token usage
+promptclaw/sdp_cost.py:51:def call_cost_usd(input_tokens: int, output_tokens: int, profile_id: str) -> float:
+promptclaw/sdp_cost.py:54:    return (input_tokens / 1_000_000.0) * in_p + (output_tokens / 1_000_000.0) * out_p
+promptclaw/sdp_cost.py:61:    input_tokens: int
+promptclaw/sdp_cost.py:62:    output_tokens: int
+promptclaw/sdp_cost.py:63:    cache_creation_tokens: int
+promptclaw/sdp_cost.py:64:    cache_read_tokens: int
+promptclaw/sdp_cost.py:119:    have at least one telemetry row, then aggregates token totals and applies
+promptclaw/sdp_cost.py:141:            f"input_tokens, output_tokens, "
+promptclaw/sdp_cost.py:142:            f"cache_creation_tokens, cache_read_tokens "
+promptclaw/sdp_cost.py:152:                input_tokens=0,
+promptclaw/sdp_cost.py:153:                output_tokens=0,
+promptclaw/sdp_cost.py:154:                cache_creation_tokens=0,
+promptclaw/sdp_cost.py:155:                cache_read_tokens=0,
+promptclaw/sdp_cost.py:165:            bucket.input_tokens += int(row["input_tokens"] or 0)
+promptclaw/sdp_cost.py:166:            bucket.output_tokens += int(row["output_tokens"] or 0)
+promptclaw/sdp_cost.py:167:            bucket.cache_creation_tokens += int(row["cache_creation_tokens"] or 0)
+promptclaw/sdp_cost.py:168:            bucket.cache_read_tokens += int(row["cache_read_tokens"] or 0)
+promptclaw/sdp_cost.py:171:                int(row["input_tokens"] or 0),
+promptclaw/sdp_cost.py:172:                int(row["output_tokens"] or 0),
+promptclaw/sdp_cost.py:186:    "input_tokens",
+promptclaw/sdp_cost.py:187:    "output_tokens",
+promptclaw/sdp_cost.py:188:    "cache_creation_tokens",
+promptclaw/sdp_cost.py:189:    "cache_read_tokens",
+promptclaw/sdp_cost.py:206:                    row.input_tokens,
+promptclaw/sdp_cost.py:207:                    row.output_tokens,
+promptclaw/sdp_cost.py:208:                    row.cache_creation_tokens,
+promptclaw/sdp_cost.py:209:                    row.cache_read_tokens,
+promptclaw/sdp_cost.py:233:                    input_tokens=int(record["input_tokens"]),
+promptclaw/sdp_cost.py:234:                    output_tokens=int(record["output_tokens"]),
+promptclaw/sdp_cost.py:235:                    cache_creation_tokens=int(record["cache_creation_tokens"]),
+promptclaw/sdp_cost.py:236:                    cache_read_tokens=int(record["cache_read_tokens"]),
+promptclaw/sdp_cost.py:302:    """Sum runs, tokens, and cost across rows into a single ``DailyCostRow``.
+promptclaw/sdp_cost.py:309:    input_tokens = 0
+promptclaw/sdp_cost.py:310:    output_tokens = 0
+promptclaw/sdp_cost.py:318:        input_tokens += row.input_tokens
+promptclaw/sdp_cost.py:319:        output_tokens += row.output_tokens
+promptclaw/sdp_cost.py:320:        cache_creation += row.cache_creation_tokens
+promptclaw/sdp_cost.py:321:        cache_read += row.cache_read_tokens
+promptclaw/sdp_cost.py:329:        input_tokens=input_tokens,
+promptclaw/sdp_cost.py:330:        output_tokens=output_tokens,
+promptclaw/sdp_cost.py:331:        cache_creation_tokens=cache_creation,
+promptclaw/sdp_cost.py:332:        cache_read_tokens=cache_read,
+promptclaw/glyphweave_cli.py:59:    for token in _split_graphemes(text):
+promptclaw/glyphweave_cli.py:60:        width = max(1, _display_width(token))
+promptclaw/glyphweave_cli.py:63:        if token.strip():
+promptclaw/glyphweave_cli.py:65:                canvas.place_emoji(cursor, y, token)
+promptclaw/glyphweave_cli.py:67:                canvas.place(cursor, y, token)
+promptclaw/glyphweave_cli.py:213:    token_lines: list[list[tuple[str, int]]] = []
+promptclaw/glyphweave_cli.py:218:        for token in _split_graphemes(line):
+promptclaw/glyphweave_cli.py:219:            token_width = max(1, _display_width(token))
+promptclaw/glyphweave_cli.py:220:            row.append((token, token_width))
+promptclaw/glyphweave_cli.py:221:            width += token_width
+promptclaw/glyphweave_cli.py:222:        token_lines.append(row)
+promptclaw/glyphweave_cli.py:226:    img_h = max(1, len(token_lines) * cell_h + padding * 2)
+promptclaw/glyphweave_cli.py:237:    for row_index, row in enumerate(token_lines):
+promptclaw/glyphweave_cli.py:239:        for token, token_width in row:
+promptclaw/glyphweave_cli.py:240:            if token.strip():
+promptclaw/glyphweave_cli.py:241:                color_seed = sum(ord(ch) for ch in token)
+promptclaw/glyphweave_cli.py:248:                fill_rect(cursor, padding + row_index * cell_h, token_width * cell_w - 1, cell_h - 2, rgba)
+promptclaw/glyphweave_cli.py:249:            cursor += token_width * cell_w
+promptclaw/pal_knowledge.py:154:    query_terms = _unique_terms(_tokenize(normalized_query))
+promptclaw/pal_knowledge.py:366:def _tokenize(text: str) -> tuple[str, ...]:
+promptclaw/pal_knowledge.py:380:    text_terms = Counter(_tokenize(text))
+promptclaw/federation/discovery.py:45:    def to_dict(self) -> dict[str, Any]:
+promptclaw/federation/discovery.py:201:# ── Registry persistence ──────────────────────────────────────────
+promptclaw/federation/discovery.py:211:    path.write_text(json.dumps([p.to_dict() for p in peers], indent=2))
+promptclaw/coherence/decision_store.py:1:"""Decision store — persists architectural decisions (ADRs) for prompt injection."""
+
+exec
+/bin/zsh -lc "sed -n '400,520p' tests/test_pal_agent.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+        tool_registry=tool_registry,
+        action_registry=action_registry,
+        default_tools=("pal_health",),
+        now=_fake_now(),
+    )
+
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    plan_prompt = (run_root / "prompts" / "action-plan.md").read_text(encoding="utf-8")
+    summary_prompt = (run_root / "prompts" / "action-summary.md").read_text(encoding="utf-8")
+    for prompt, next_marker in (
+        (plan_prompt, "Current diagnostic context:"),
+        (summary_prompt, "Action results JSON:"),
+    ):
+        section = _knowledge_context_section(prompt, next_marker)
+        assert section.startswith("## Knowledge Context")
+        assert section.count("\n- ") == 1
+        assert len(section) <= 1600
+        assert "docs/actions.md:1-2" in section
+        assert "inspect logs before mutation" in section
+        assert "chunk=pal-kb:" in section
+    assert executed == ["pal_health"]
+    assert result["pending_approval"] == ["inspect_logs_deep", "restart_router"]
+
+
+def test_default_pal_action_registry_excludes_vast_lifecycle_actions(tmp_path: Path) -> None:
+    from promptclaw.pal_agent import build_default_action_registry, _parse_action_plan
+
+    actions = build_default_action_registry(tmp_path, FakePALClient([]))
+    blocked_actions = ("rent", "destroy", "start", "stop")
+
+    for action_id in blocked_actions:
+        assert action_id not in actions
+        assert f"vast_{action_id}" not in actions
+
+    plan = _parse_action_plan(
+        json.dumps({
+            "actions": [
+                "rent",
+                "destroy",
+                "start",
+                "stop",
+                "vast_rent",
+                "vast_destroy",
+                "vast_start",
+                "vast_stop",
+                "restart_router",
+            ],
+            "rationale": "Restart the router, but do not manage the Vast instance.",
+        }),
+        actions=actions,
+    )
+
+    assert plan["actions"] == ["restart_router"]
+    assert plan["ignored_actions"] == [
+        "rent",
+        "destroy",
+        "start",
+        "stop",
+        "vast_rent",
+        "vast_destroy",
+        "vast_start",
+        "vast_stop",
+    ]
+
+
+def test_pal_ops_actions_prompt_includes_vast_stub_boundary(tmp_path: Path) -> None:
+    config = default_project_config("PAL Vast Boundary")
+    save_config(tmp_path, config)
+    executed: list[str] = []
+    tool_registry = {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Check PAL router health.",
+            run=lambda: _recorded_tool_result(executed, "pal_health"),
+        ),
+    }
+    action_registry = {
+        "inspect_logs_deep": PALOpsAction(
+            name="inspect_logs_deep",
+            description="Inspect PAL logs.",
+            approval_required=True,
+            mutating=False,
+            run=lambda: _recorded_tool_result(executed, "inspect_logs_deep"),
+        ),
+    }
+    client = FakePALClient([
+        json.dumps({
+            "actions": ["inspect_logs_deep", "rent", "destroy", "start", "stop"],
+            "rationale": "Inspect logs; cloud instance lifecycle is not available.",
+        }),
+        "PAL action summary.",
+    ])
+
+    result = run_pal_ops_actions(
+        tmp_path,
+        task="Inspect PAL and describe any Vast boundary.",
+        client=client,
+        tool_registry=tool_registry,
+        action_registry=action_registry,
+        default_tools=("pal_health",),
+        now=_fake_now(),
+    )
+
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    plan_prompt = (run_root / "prompts" / "action-plan.md").read_text(encoding="utf-8")
+
+    assert "## Provider Action Boundaries" in plan_prompt
+    assert "Vast connector" in plan_prompt
+    assert "callable_actions=[]" in plan_prompt
+    assert "blocked_actions=[rent, destroy, start, stop]" in plan_prompt
+    for action_id in ("rent", "destroy", "start", "stop"):
+        assert f"- {action_id}:" not in plan_prompt
+        assert f"- vast_{action_id}:" not in plan_prompt
+    assert result["ignored_actions"] == ["rent", "destroy", "start", "stop"]
+    assert result["pending_approval"] == ["inspect_logs_deep"]
+
+
+def test_pal_slow_inference_context_captures_health_baseline_gpu_and_logs(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+
+exec
+/bin/zsh -lc "sed -n '1360,1425p' promptclaw/pal_agent.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+        "-i",
+        key,
+        "-p",
+        port,
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "ConnectTimeout=8",
+        f"{user}@{host}",
+        remote_command,
+    ]
+
+
+def _run_command(args: list[str], *, timeout_s: int) -> dict[str, Any]:
+    try:
+        completed = subprocess.run(
+            args,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout_s,
+        )
+    except subprocess.TimeoutExpired as exc:
+        return {
+            "args": _redact_args(args),
+            "exit_code": 124,
+            "stdout": truncate(exc.stdout or "", 4000),
+            "stderr": truncate(exc.stderr or f"Timed out after {timeout_s}s", 4000),
+        }
+    return {
+        "args": _redact_args(args),
+        "exit_code": completed.returncode,
+        "stdout": truncate(completed.stdout, 4000),
+        "stderr": truncate(completed.stderr, 4000),
+    }
+
+
+def _action_status_summary(status: str, *, ok: str, skipped: str, problem: str) -> str:
+    if status == "ok":
+        return ok
+    if status == "skipped":
+        return skipped
+    return problem
+
+
+def _redact_args(args: list[str]) -> list[str]:
+    redacted: list[str] = []
+    skip_next = False
+    for item in args:
+        if skip_next:
+            redacted.append("<redacted>")
+            skip_next = False
+            continue
+        redacted.append(item)
+        if item == "-i":
+            skip_next = True
+    return redacted
+
+
+def _build_knowledge_context(project_root: Path, query: str) -> str:
+    normalized_query = " ".join(query.split())
+    if not normalized_query:
+        return _render_knowledge_context(
+            (),
+            note="No local PAL KB query was available for this workflow task.",
+        )
+
+exec
+/bin/zsh -lc "sed -n '1,120p' tests/test_pal_agent.py" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+from __future__ import annotations
+
+import argparse
+import io
+import json
+from contextlib import redirect_stdout
+from pathlib import Path
+from typing import Any
+
+from promptclaw import cli as promptclaw_cli
+from promptclaw.cli import cmd_pal_agent_actions, cmd_pal_agent_triage
+from promptclaw.config import default_project_config, save_config
+from promptclaw.pal_agent import PALOpsAction, PALOpsTool, run_pal_ops_actions, run_pal_ops_triage
+from promptclaw.pal_client import PALQueryResult
+from promptclaw.pal_knowledge import write_pal_knowledge_index
+
+
+class FakePALClient:
+    base_url = "http://pal-cloud-a6000:8000"
+    default_model = "llama3.3:70b-instruct-q4_K_M"
+
+    def __init__(self, responses: list[str]) -> None:
+        self.responses = responses
+        self.prompts: list[str] = []
+
+    def health(self) -> dict[str, Any]:
+        return {"status": "green", "phase": "phase-1-a6000"}
+
+    def query(
+        self,
+        prompt: str,
+        *,
+        system: str | None = None,
+        model: str | None = None,
+        temperature: float | None = 0.7,
+    ) -> PALQueryResult:
+        self.prompts.append(prompt)
+        text = self.responses.pop(0)
+        return PALQueryResult(text=text, raw={"response": text, "model": self.default_model})
+
+
+def test_pal_ops_triage_executes_only_allowlisted_tools_and_writes_artifacts(tmp_path: Path) -> None:
+    config = default_project_config("PAL Agent Test")
+    save_config(tmp_path, config)
+    executed: list[str] = []
+    tool_registry = {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Check PAL router health.",
+            run=lambda: _recorded_tool_result(executed, "pal_health"),
+        ),
+        "pal_smoke_baseline": PALOpsTool(
+            name="pal_smoke_baseline",
+            description="Summarize PAL smoke baselines.",
+            run=lambda: _recorded_tool_result(executed, "pal_smoke_baseline"),
+        ),
+    }
+    client = FakePALClient([
+        json.dumps({
+            "tools": ["pal_health", "destroy_instance", "pal_smoke_baseline"],
+            "rationale": "Check health before any operator action.",
+        }),
+        "PAL triage summary: health is green and smoke baseline is stable.",
+    ])
+
+    result = run_pal_ops_triage(
+        tmp_path,
+        task="Diagnose PAL health.",
+        client=client,
+        tool_registry=tool_registry,
+        now=_fake_now(),
+    )
+
+    assert result["status"] == "complete"
+    assert executed == ["pal_health", "pal_smoke_baseline"]
+    assert result["ignored_tools"] == ["destroy_instance"]
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    assert (run_root / "input" / "task.md").exists()
+    assert (run_root / "routing" / "route.json").exists()
+    assert json.loads((run_root / "outputs" / "tool-observations.json").read_text())["ignored_tools"] == [
+        "destroy_instance"
+    ]
+    assert "health is green" in (run_root / "summary" / "final-summary.md").read_text()
+    state = json.loads((run_root / "state.json").read_text())
+    assert state["status"] == "complete"
+    assert state["lead_agent"] == "pal"
+    assert state["verifier_agent"] == "local-allowlist"
+
+
+def test_pal_ops_triage_falls_back_to_default_plan_when_pal_plan_is_invalid(tmp_path: Path) -> None:
+    config = default_project_config("PAL Agent Invalid Plan")
+    save_config(tmp_path, config)
+    executed: list[str] = []
+    tool_registry = {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Check PAL router health.",
+            run=lambda: _recorded_tool_result(executed, "pal_health"),
+        ),
+        "pal_smoke_baseline": PALOpsTool(
+            name="pal_smoke_baseline",
+            description="Summarize PAL smoke baselines.",
+            run=lambda: _recorded_tool_result(executed, "pal_smoke_baseline"),
+        ),
+    }
+    client = FakePALClient([
+        "not json",
+        "Fallback summary.",
+    ])
+
+    result = run_pal_ops_triage(
+        tmp_path,
+        client=client,
+        tool_registry=tool_registry,
+        default_tools=("pal_health", "pal_smoke_baseline"),
+        now=_fake_now(),
+    )
+
+    assert result["status"] == "complete"
+    assert executed == ["pal_health", "pal_smoke_baseline"]
+
+exec
+/bin/zsh -lc "rg -n \"VAST|vast_api|VAST_API|vast.*key|api_key.*vast|Vast.*key\" . --glob '"'!sdp/logs/**'"' --glob '"'!sdp/fractal-reports/**'"' --glob '"'!sdp/telemetry/**'"'" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+./promptclaw/vast_connector.py:6:VAST_LIFECYCLE_ACTIONS: tuple[str, ...] = ("rent", "destroy", "start", "stop")
+./promptclaw/vast_connector.py:17:    blocked_actions: tuple[str, ...] = VAST_LIFECYCLE_ACTIONS
+./sdp/prd-pal-2026-agentic-ops-platform.md:226:| PAL-037 | Add Vast secret redaction tests. | MUST | T1 | Tests reject persisted Vast API key values. |
+./sdp/prd-pal-2026-agentic-ops-platform.md:349:3. The current Vast instance may be recreated in the future, so host, port, instance id, and SSH key path must be metadata/config, not hardcoded into source.
+./tests/test_vast_connector.py:3:from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+./tests/test_vast_connector.py:11:    assert boundary.blocked_action_names() == VAST_LIFECYCLE_ACTIONS
+./sdp/task-graph.md:33:| 12 | T-012 | Add Vast secret redaction tests. | T1 | 2 | 3 | PAL-037 | T-001 | Tests reject persisted Vast API key values. |
+./sdp/prd-snapshot.md:232:| PAL-037 | Add Vast secret redaction tests. | MUST | T1 | Tests reject persisted Vast API key values. |
+./sdp/prd-snapshot.md:355:3. The current Vast instance may be recreated in the future, so host, port, instance id, and SSH key path must be metadata/config, not hardcoded into source.
+./sdp/assumption-log.md:13:| ASM-003 | The current Vast instance may be recreated in the future, so host, port, instance id, and SSH key path must be metadata/config, not hardcoded into source. | Derived from PRD assumptions bullet. | Risk if wrong not specified in PRD. |
+
+codex
+The PRD entry is very narrow: PAL-037 is explicitly about tests rejecting persisted Vast API key values. I’m reading only that local PRD slice, then I’ll add the regression in the closest Vast test file.
+exec
+/bin/zsh -lc "sed -n '218,232p' sdp/prd-pal-2026-agentic-ops-platform.md" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+| PAL-029 | Implement deploy-plan CLI. | MUST | T2 | Command prints plan with no remote writes. |
+| PAL-030 | Implement deploy backup primitive. | SHOULD | T2 | Fake remote test stores changed files. |
+| PAL-031 | Implement approved deploy-apply CLI. | SHOULD | T2 | Fake remote test requires approval flag. |
+| PAL-032 | Implement rollback primitive. | SHOULD | T2 | Fake remote test restores backed-up files. |
+| PAL-033 | Add `promptclaw pal deploy rollback --approve-rollback`. | SHOULD | T2 | Command refuses rollback without approval flag. |
+| PAL-034 | Add PAL deployment metadata model. | SHOULD | T1 | Metadata stores hourly rate, runtime estimate, and optional Vast instance id. |
+| PAL-035 | Add `promptclaw pal cost`. | SHOULD | T1 | Command prints hourly, daily, and monthly burn estimates. |
+| PAL-036 | Add Vast connector stub boundary. | MUST | T2 | No rent/destroy/start/stop action is callable by default. |
+| PAL-037 | Add Vast secret redaction tests. | MUST | T1 | Tests reject persisted Vast API key values. |
+| PAL-038 | Update architecture documentation. | MUST | T1 | Docs include a PAL platform section. |
+| PAL-039 | Update command reference documentation. | MUST | T1 | Docs list all new `promptclaw pal` commands. |
+| PAL-040 | Update PAL project guide. | MUST | T1 | `pal-2026/docs/PROJECT_GUIDE.md` names the new operator loop. |
+| PAL-041 | Add fake-client CLI tests for PAL workflows. | MUST | T2 | Tests cover kb, approve, workflow, and deploy-plan commands. |
+| PAL-042 | Add opt-in live PAL verification marker or script. | MUST | T1 | Default test run skips live checks. |
+| PAL-043 | Document live PAL verification commands. | MUST | T1 | Handoff lists health, smoke, triage, proposal-only, and read-only action checks. |
+
+exec
+/bin/zsh -lc "sed -n '342,352p' sdp/prd-pal-2026-agentic-ops-platform.md" in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+
+---
+
+## Assumptions
+
+1. PromptClaw remains the local control plane.
+2. PAL router remains reachable over Tailscale at `http://pal-cloud-a6000:8000`.
+3. The current Vast instance may be recreated in the future, so host, port, instance id, and SSH key path must be metadata/config, not hardcoded into source.
+4. `sdp-cli` frontier agents can make better implementation choices than PAL's local 70B model; PAL should not self-modify this codebase.
+5. Anthony prefers minimal involvement but still wants explicit approval for cost-bearing and mutating operations.
+6. Phase 1 remains the active hardware target until Anthony explicitly authorizes Phase 2.
+
+exec
+/bin/zsh -lc 'rg -n "vast_instance|hourly_rate|runtime_estimate|deploy|metadata" promptclaw tests/test_pal_agent.py tests/test_vast_connector.py tests | head -200' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+promptclaw/wizard.py:296:                    hint="Examples: production deploys, destructive file changes, external publishing.",
+tests/test_score_tree.py:109:        metadata={"author": "AI"},
+tests/test_score_tree.py:128:    assert deserialized.metadata == {"author": "AI"}
+tests/test_punctuation_rule.py:31:        metadata={"groove_meter": "4/4"},
+tests/test_punctuation_rule.py:41:        metadata={"phrase_id": phrase_id},
+tests/test_punctuation_rule.py:64:    assert breath.metadata.get("breath_r6") == "true"
+tests/test_punctuation_rule.py:65:    assert "breath_ms" in breath.metadata
+tests/test_punctuation_rule.py:88:    breaths = [s for s in out if s.metadata.get("breath_r6") == "true"]
+tests/test_punctuation_rule.py:130:            metadata={"phrase_id": "p1", "grid_locked": "true"},
+tests/test_punctuation_rule.py:140:def test_breath_budget_metadata() -> None:
+tests/test_punctuation_rule.py:145:    breaths = [s for s in out if s.metadata.get("breath_r6") == "true"]
+tests/test_punctuation_rule.py:147:    ms = float(breaths[0].metadata["breath_ms"])
+tests/test_punctuation_rule.py:159:    breaths_a = [s for s in out_a if s.metadata.get("breath_r6") == "true"]
+tests/test_punctuation_rule.py:160:    breaths_b = [s for s in out_b if s.metadata.get("breath_r6") == "true"]
+tests/test_punctuation_rule.py:161:    assert breaths_a[0].metadata["breath_ms"] == breaths_b[0].metadata["breath_ms"]
+tests/test_acoustic_ecology.py:733:    def test_room_activity_reason_metadata_records_modifier(self) -> None:
+tests/test_acoustic_ecology.py:746:    def test_day_phase_reason_metadata_records_modifier(self) -> None:
+tests/test_acoustic_ecology.py:759:    def test_dwell_reason_metadata_records_non_nominal_modifiers(self) -> None:
+tests/test_lung_capacity_depth.py:43:        metadata={"phrase_id": phrase_id},
+tests/test_lung_capacity_depth.py:53:    metadata: dict[str, str] | None = None,
+tests/test_lung_capacity_depth.py:60:        metadata=metadata or {},
+tests/test_lung_capacity_depth.py:68:    metadata: dict[str, str] | None = None,
+tests/test_lung_capacity_depth.py:77:        metadata=metadata or {"groove_meter": "4/4"},
+tests/test_lung_capacity_depth.py:122:        metadata={"lung_capacity_s": "6"},
+tests/test_score_tree_pipeline.py:70:    assert compiled.tracker_song.metadata["song_title"] == active.title
+tests/test_image_api_schemas_depth.py:101:def test_build_internal_spec_profile_derives_image_metadata() -> None:
+tests/test_wizard.py:50:            "production deploys and destructive edits",
+tests/test_wizard.py:121:            "production deploys and destructive edits",
+tests/test_wizard.py:156:        self.assertIn("production deploys and destructive edits", vision_text)
+tests/test_character_registry.py:20:def test_voice_sampler_is_registered_with_expected_voice_metadata() -> None:
+tests/test_emsd_runtime.py:75:def test_composer_emsd_extras_exposes_dynamics_and_sidechain_metadata() -> None:
+tests/test_emsd_runtime.py:90:    # Dynamics metadata should be present because capstone_engine passes phase_name
+tests/test_emsd_runtime.py:98:    production_metadata = extras["mix_production_metadata"]
+tests/test_emsd_runtime.py:100:        assert production_metadata[role]["hpf_hz"] > 0.0
+tests/test_emsd_runtime.py:101:        assert production_metadata[role]["lpf_hz"] > production_metadata[role]["hpf_hz"]
+tests/test_emsd_runtime.py:102:        assert production_metadata[role]["eq_intent"]
+tests/test_agent_selector_quota.py:274:            ("deploy to production server", "devops"),
+tests/test_lung_capacity_rule.py:41:        metadata={"phrase_id": phrase_id},
+tests/test_lung_capacity_rule.py:51:        metadata={"breath_r6": "true"},
+tests/test_lung_capacity_rule.py:59:    lane_metadata: dict[str, str] | None = None,
+tests/test_lung_capacity_rule.py:66:        metadata=lane_metadata or {},
+tests/test_lung_capacity_rule.py:75:        metadata={"groove_meter": "4/4"},
+tests/test_lung_capacity_rule.py:83:        if step.metadata.get("breath_lung_capacity") == "true"
+tests/test_lung_capacity_rule.py:113:    assert breaths[0].metadata["lung_capacity_s"] == "6.0"
+tests/test_lung_capacity_rule.py:129:    assert breaths[0].metadata["breath_r6"] == "true"
+tests/test_lung_capacity_rule.py:151:        lane_metadata={"lung_capacity_s": "6"},
+tests/test_lung_capacity_rule.py:162:    assert out[2].metadata["breath_lung_capacity"] == "true"
+tests/test_lung_capacity_rule.py:174:    metadata: dict[str, str] | None = None,
+tests/test_lung_capacity_rule.py:181:        metadata=metadata or {},
+tests/test_lung_capacity_rule.py:193:        metadata={"groove_meter": "4/4"},
+tests/test_lung_capacity_rule.py:219:            metadata={"lung_capacity_s": "6"},
+tests/test_lung_capacity_rule.py:250:        assert inserted_breath.metadata == {
+tests/test_lung_capacity_rule.py:259:        assert tagged_breath.metadata["breath_lung_capacity"] == "true"
+tests/test_lung_capacity_rule.py:260:        assert tagged_breath.metadata["phrase_id"] == "p1"
+tests/test_phrase_capture_runtime.py:12:from senseweave.phrase_capture import validate_sample_metadata
+tests/test_phrase_capture_runtime.py:15:    read_active_song_metadata,
+tests/test_phrase_capture_runtime.py:27:def test_read_active_song_metadata_maps_song_key_and_tempo(tmp_path: Path) -> None:
+tests/test_phrase_capture_runtime.py:39:    meta = read_active_song_metadata(
+tests/test_phrase_capture_runtime.py:104:    validate_sample_metadata(sidecar)
+tests/test_phrase_capture_runtime.py:123:    keyboard_meta = read_active_song_metadata(
+tests/test_phrase_capture_runtime.py:129:    theramini_meta = read_active_song_metadata(
+tests/test_mix_engine.py:51:def test_production_metadata_includes_filter_and_eq_intent_for_lane_roles() -> None:
+tests/test_mix_engine.py:55:        metadata = profile.production_metadata[role]
+tests/test_mix_engine.py:56:        assert metadata["hpf_hz"] > 0.0
+tests/test_mix_engine.py:57:        assert metadata["lpf_hz"] > metadata["hpf_hz"]
+tests/test_mix_engine.py:58:        assert metadata["eq_intent"]
+tests/test_mix_engine.py:67:    assert profile.production_metadata["bass"]["stereo_policy"] == "mono-center"
+tests/test_duration_contrast_depth.py:34:    metadata: dict[str, str] | None = None,
+tests/test_duration_contrast_depth.py:41:        metadata=metadata or {},
+tests/test_duration_contrast_depth.py:50:    metadata: dict[str, str] | None = None,
+tests/test_duration_contrast_depth.py:57:        metadata=metadata or {},
+tests/test_duration_contrast_depth.py:74:        metadata={"groove_meter": "4/4"},
+tests/test_duration_contrast_depth.py:116:    original = _lane("melody", metadata={"grid_locked": "true"})
+tests/test_midi_keyboard_listener_runtime.py:13:from senseweave.phrase_capture import validate_sample_metadata
+tests/test_midi_keyboard_listener_runtime.py:201:    validate_sample_metadata(meta)
+tests/test_gallery.py:165:    def test_sidecar_metadata_loaded_at_display(self):
+tests/test_gallery.py:181:        piece = gallery._load_metadata_sidecar(dict(gallery.playlist[0]))
+tests/test_silence_budget_rule.py:33:        metadata={"groove_meter": "4/4"},
+tests/test_silence_budget_rule.py:43:        metadata={"phrase_id": phrase_id},
+tests/test_silence_budget_rule.py:53:        metadata={"breath_r6": "true", "breath_ms": "250.0"},
+tests/test_silence_budget_rule.py:120:    p2_steps = [s for s in out if s.metadata.get("phrase_id") == "p2"]
+tests/test_silence_budget_rule.py:122:    assert all(s.metadata.get("silence_budget_tacet") == "true" for s in p2_steps)
+tests/test_silence_budget_rule.py:153:    assert breath.metadata.get("silence_budget_breath_ext") == "true"
+tests/test_silence_budget_rule.py:154:    p2_steps = [s for s in out if s.metadata.get("phrase_id") == "p2"]
+tests/test_silence_budget_rule.py:168:    assert out[1].metadata.get("silence_budget_breath_ext") == "true"
+tests/test_silence_budget_rule.py:185:    p2 = [s for s in out if s.metadata.get("phrase_id") == "p2"]
+tests/test_silence_budget_rule.py:186:    p3 = [s for s in out if s.metadata.get("phrase_id") == "p3"]
+tests/test_silence_budget_rule.py:241:    low_tacet = any(s.metadata.get("silence_budget_tacet") for s in out_low)
+tests/test_silence_budget_rule.py:242:    high_tacet = any(s.metadata.get("silence_budget_tacet") for s in out_high)
+tests/test_silence_budget_rule.py:258:    assert out[1].metadata.get("silence_budget_tacet") == "true"
+tests/test_cypherclaw_narrative_api_service.py:18:    # Unit metadata
+tests/test_agogic_rule.py:33:        metadata={"groove_meter": "4/4"},
+tests/test_agogic_rule.py:44:    metadata = {}
+tests/test_agogic_rule.py:46:        metadata["harmonic_charge"] = str(charge)
+tests/test_agogic_rule.py:52:        metadata=metadata,
+tests/test_theramini_duet.py:448:    def test_response_metadata_describes_partner_space(self):
+tests/test_self_critique.py:378:            metadata={"song_num": "1"},
+tests/test_emsd_catalog_depth.py:77:    """Catalog validation passes cleanly now and reports bad catalog metadata."""
+tests/test_score_tree_composer.py:77:def test_recursive_composer_seed_is_deterministic_and_attaches_render_metadata() -> None:
+tests/test_score_tree_composer.py:83:    assert first.metadata["composition_seed"] == "t-035-seed"
+tests/test_score_tree_composer.py:188:            "missing harmonic metadata",
+tests/test_score_tree_composer.py:201:            "missing rhythm metadata",
+tests/test_generative_scores.py:285:    def test_score_from_mood_emits_songwriter_metadata(self):
+tests/test_generative_scores.py:295:        assert score.metadata["song_title"]
+tests/test_generative_scores.py:296:        assert score.metadata["text_hook"]
+tests/test_generative_scores.py:297:        assert score.metadata["hook_class"]
+tests/test_generative_scores.py:298:        assert score.metadata["groove_family"]
+tests/test_generative_scores.py:299:        assert score.metadata["section_intent"]
+tests/test_generative_scores.py:301:    def test_repertoire_hint_biases_songwriter_metadata(self):
+tests/test_generative_scores.py:318:        assert score.metadata["song_title"] != "Quiet Machines"
+tests/test_generative_scores.py:319:        assert score.metadata["text_hook"] != ""
+tests/test_generative_scores.py:320:        assert score.metadata["repertoire_source_title"] == "Quiet Machines"
+tests/test_generative_scores.py:636:        assert open_day.metadata["progression_profile"] == "open_day"
+tests/test_generative_scores.py:637:        assert settling.metadata["progression_profile"] == "settling"
+tests/test_generative_scores.py:920:            metadata={"patch_name": "house_monastery"},
+tests/test_generative_scores.py:928:            metadata={"patch_name": "house_procession"},
+tests/test_generative_scores.py:982:    def test_mood_pipeline_produces_metadata_and_frequency_payload(self) -> None:
+tests/test_generative_scores.py:996:        assert score.metadata["song_title"].strip()
+tests/test_generative_scores.py:997:        assert score.metadata["text_hook"].strip()
+tests/test_generative_scores.py:998:        assert score.metadata["hook_class"] in {"contour", "rhythmic", "lyric", "interval"}
+tests/test_generative_scores.py:999:        assert score.metadata["groove_family"] == "lyric"
+tests/test_generative_scores.py:1000:        assert score.metadata["patch_name"] == "house_chamber"
+tests/test_generative_scores.py:1001:        assert score.metadata["progression_profile"] == "lift"
+tests/test_generative_scores.py:1003:        anchor_degrees = json.loads(score.metadata["hook_anchor_degrees"])
+tests/test_generative_scores.py:1004:        answer_degrees = json.loads(score.metadata["hook_answer_degrees"])
+tests/test_generative_scores.py:1005:        section_intent = json.loads(score.metadata["section_intent"])
+tests/test_generative_scores.py:1031:                    "metadata": score.metadata,
+tests/test_generative_scores.py:1037:        assert payload["metadata"]["song_title"] == score.metadata["song_title"]
+tests/test_generative_scores.py:1070:        assert score.metadata["repertoire_source_title"] == "Quiet Machines"
+tests/test_generative_scores.py:1071:        assert score.metadata["song_title"] != "Quiet Machines"
+tests/test_generative_scores.py:1072:        assert json.loads(score.metadata["hook_anchor_degrees"])
+tests/test_call_response.py:27:        metadata={"call_response_role": "follower"},
+tests/test_call_response.py:69:        metadata={"call_response_role": "leader"},
+tests/test_call_response.py:82:        metadata={"call_response_role": "solo"},
+tests/test_call_response.py:94:        metadata={"call_response_role": "tacet"},
+tests/test_call_response.py:105:        metadata={"call_response_role": "follower"},
+tests/test_call_response.py:140:            metadata={key: "follower"},
+tests/test_call_response.py:146:def test_no_metadata_no_change():
+tests/test_generation_e2e_cypherclaw.py:202:        metadata={
+tests/test_generation_e2e_cypherclaw.py:208:        scene_metadata={},
+tests/test_generation_e2e_cypherclaw.py:297:        SimpleNamespace(metadata={"arc_phase": ARC_PHASE}),
+tests/test_tracker_cadence.py:195:def test_shape_score_for_family_preserves_patch_metadata() -> None:
+tests/test_tracker_cadence.py:197:    score.metadata["patch_name"] = "house_monastery"
+tests/test_tracker_cadence.py:206:    assert shaped.metadata["patch_name"] == "house_monastery"
+tests/test_tracker_cadence.py:221:def test_constrain_score_to_cadence_preserves_patch_metadata() -> None:
+tests/test_tracker_cadence.py:223:    score.metadata["patch_name"] = "house_procession"
+tests/test_tracker_cadence.py:232:    assert constrained.metadata["patch_name"] == "house_procession"
+tests/test_silence_budget_depth.py:41:        metadata={"phrase_id": phrase_id},
+tests/test_silence_budget_depth.py:51:        metadata={"breath_r6": "true", "breath_ms": "250.0"},
+tests/test_silence_budget_depth.py:67:        metadata={},
+tests/test_silence_budget_depth.py:83:        metadata={},
+tests/test_silence_budget_depth.py:95:        metadata={"groove_meter": "4/4"},
+tests/test_motif_memory.py:29:def test_motif_memory_insert_stores_metadata() -> None:
+tests/test_emsd_curriculum.py:78:def test_exercise_metadata_validity() -> None:
+tests/test_human_phrase_capture_verify.py:28:    keyboard_meta = json.loads(payload["keyboard_metadata"])
+tests/test_human_phrase_capture_verify.py:29:    theramini_meta = json.loads(payload["theramini_metadata"])
+tests/test_artist_identity.py:251:    def test_adds_mode_metadata(self):
+tests/test_artist_identity.py:344:    def test_every_mode_applies_full_metadata_keys(self):
+tests/test_mix_verify.py:377:            metadata={"patch_name": "house_garden", "cadence_state": "occupied_day", "progression_profile": "open_day"},
+tests/test_fractal_form.py:210:def test_song_tree_has_phrase_family_metadata() -> None:
+tests/test_fractal_form.py:219:def test_extended_tree_has_phrase_family_metadata() -> None:
+tests/test_fractal_form.py:228:def test_suite_tree_has_phrase_family_metadata() -> None:
+tests/test_executable_curriculum.py:49:def test_exercise_metadata_includes_templates_and_expected_features(tmp_path) -> None:
+tests/test_executable_curriculum.py:50:    """Catalog and generated spec.json files expose executable metadata."""
+tests/test_project_scanner_runtime.py:30:def test_analyze_project_collects_framework_deployment_and_git_info(tmp_path, monkeypatch) -> None:
+tests/test_project_scanner_runtime.py:52:    (workflows / "deploy.yml").write_text("name: deploy\nsteps:\n  - run: vercel deploy\n")
+tests/test_project_scanner_runtime.py:84:    assert info["deployment_status"] == "deployed"
+tests/test_project_scanner_runtime.py:156:            "deployment_status": "deployed",
+tests/test_project_scanner_runtime.py:157:            "deployment_targets": ["Vercel"],
+tests/test_project_scanner_runtime.py:158:            "deployment_notes": ["Has automated deployment pipeline or hosting config"],
+tests/test_generation_live_modal.py:15:    """End-to-end smoke test invoking the real Modal MusicGen deployment."""
+tests/test_render_export.py:17:    read_audio_metadata_sidecar,
+tests/test_render_export.py:39:        metadata={"intent_tags": "withhold"},
+tests/test_render_export.py:46:        extra_metadata={"renderer": "test"},
+tests/test_render_export.py:54:    sidecar = read_audio_metadata_sidecar(wav)
+tests/test_render_export.py:59:        "metadata",
+tests/test_render_export.py:71:        "metadata",
+tests/test_render_export.py:95:    sidecar = read_audio_metadata_sidecar(wav)
+tests/test_render_export.py:128:    sidecar = read_audio_metadata_sidecar(wav)
+tests/test_render_export.py:166:    sidecar = read_audio_metadata_sidecar(wav)
+tests/test_syncopation_features.py:117:    def test_metadata_marks_syncopated(self):
+tests/test_syncopation_features.py:121:            assert result.metadata.get("syncopated") == "true"
+tests/test_syncopation_features.py:255:        assert full_intensity_melody.metadata.get("syncopated") == "true"
+tests/test_syncopation_features.py:318:                    "metadata_syncopated": full_intensity_melody.metadata.get(
+tests/test_syncopation_features.py:345:                "metadata_syncopated"
+tests/test_music_tracker.py:107:            scene_metadata={"groove_lane_phase_offsets": "0,0,0,0,0"},
+tests/test_music_tracker.py:114:    def test_meter_policy_metadata_does_not_change_row_schedule(self):
+tests/test_music_tracker.py:120:            scene_metadata={
+tests/test_music_tracker.py:129:        assert scene.metadata["groove_meter"] == "7/8"
+tests/test_music_tracker.py:130:        assert scene.metadata["groove_subdivision"] == "polyrhythmic"
+tests/test_music_tracker.py:131:        assert scene.metadata["groove_metric_modulation"] == "3:2"
+tests/test_music_tracker.py:132:        assert lane.steps[0].metadata["groove_meter"] == "7/8"
+tests/test_music_tracker.py:133:        assert lane.steps[0].metadata["groove_subdivision"] == "polyrhythmic"
+tests/test_music_tracker.py:134:        assert lane.steps[0].metadata["groove_phrase_breath"] == "asymmetric"
+tests/test_music_tracker.py:147:    def test_adds_arrangement_automation_curves_from_section_metadata(self):
+tests/test_music_tracker.py:154:            scene_metadata={
+tests/test_music_tracker.py:164:        assert scene.metadata["arrangement_curve"] == "development_rise"
+tests/test_music_tracker.py:170:    def test_adds_sample_gesture_lane_from_scene_metadata(self):
+tests/test_music_tracker.py:177:            scene_metadata={
+tests/test_music_tracker.py:193:        assert all(step.metadata["sample_gesture_mode"] == "grain_cloud" for step in sample_lane.steps)
+
+codex
+I’m going to add a focused regression test in `tests/test_vast_connector.py` that sets a representative `VAST_API_KEY`, persists the boundary payload as JSON, and fails if the raw key value appears in that persisted text.
+apply patch
+patch: completed
+/Users/anthony/Programming/PromptClaw/tests/test_vast_connector.py
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c51f4bc3713c800f35f18345cd87c621a4..01a716d41edcfb7c7ebc77c4508fb2fd86f557f5
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c51f4bc3713c800f35f18345cd87c621a4..01a716d41edcfb7c7ebc77c4508fb2fd86f557f5
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+codex
+The regression test is in place. I’m running the closest test file first so any issue is isolated before the full required validation.
+exec
+/bin/zsh -lc 'pytest tests/test_vast_connector.py -q' in /Users/anthony/Programming/PromptClaw
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c51f4bc3713c800f35f18345cd87c621a4..01a716d41edcfb7c7ebc77c4508fb2fd86f557f5
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+ succeeded in 1145ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+..                                                                       [100%]
+2 passed in 0.13s
+
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c51f4bc3713c800f35f18345cd87c621a4..01a716d41edcfb7c7ebc77c4508fb2fd86f557f5
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+codex
+The focused Vast tests pass. I’m moving through the required validation commands now, starting with the editable dev install.
+exec
+/bin/zsh -lc "pip install -e '.[dev]'" in /Users/anthony/Programming/PromptClaw
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c51f4bc3713c800f35f18345cd87c621a4..01a716d41edcfb7c7ebc77c4508fb2fd86f557f5
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c51f4bc3713c800f35f18345cd87c621a4..01a716d41edcfb7c7ebc77c4508fb2fd86f557f5
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+ succeeded in 4248ms:
+Obtaining file:///Users/anthony/Programming/PromptClaw
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: partitura<2,>=1.8 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.8.0)
+Requirement already satisfied: librosa<1,>=0.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.11.0)
+Requirement already satisfied: mypy>=1.10 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (1.19.1)
+Requirement already satisfied: pytest>=8.0 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (8.3.5)
+Requirement already satisfied: ruff>=0.9 in /opt/anaconda3/lib/python3.11/site-packages (from promptclaw==3.0.0) (0.9.2)
+Requirement already satisfied: audioread>=2.1.9 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (3.1.0)
+Requirement already satisfied: numba>=0.51.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.59.0)
+Requirement already satisfied: numpy>=1.22.3 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.26.0)
+Requirement already satisfied: scipy>=1.6.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.11.4)
+Requirement already satisfied: scikit-learn>=1.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.2)
+Requirement already satisfied: joblib>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.2.0)
+Requirement already satisfied: decorator>=4.3.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (5.1.1)
+Requirement already satisfied: soundfile>=0.12.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.13.1)
+Requirement already satisfied: pooch>=1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.9.0)
+Requirement already satisfied: soxr>=0.3.2 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: typing_extensions>=4.1.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (4.15.0)
+Requirement already satisfied: lazy_loader>=0.1 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (0.3)
+Requirement already satisfied: msgpack>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from librosa<1,>=0.10->promptclaw==3.0.0) (1.0.3)
+Requirement already satisfied: lxml in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.9.3)
+Requirement already satisfied: lark-parser in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (0.12.0)
+Requirement already satisfied: xmlschema in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (4.3.1)
+Requirement already satisfied: mido in /opt/anaconda3/lib/python3.11/site-packages (from partitura<2,>=1.8->promptclaw==3.0.0) (1.3.3)
+Requirement already satisfied: mypy_extensions>=1.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (1.0.0)
+Requirement already satisfied: pathspec>=0.9.0 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.10.3)
+Requirement already satisfied: librt>=0.6.2 in /opt/anaconda3/lib/python3.11/site-packages (from mypy>=1.10->promptclaw==3.0.0) (0.8.1)
+Requirement already satisfied: llvmlite<0.43,>=0.42.0dev0 in /opt/anaconda3/lib/python3.11/site-packages (from numba>=0.51.0->librosa<1,>=0.10->promptclaw==3.0.0) (0.42.0)
+Requirement already satisfied: platformdirs>=2.5.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (4.5.1)
+Requirement already satisfied: packaging>=20.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (23.2)
+Requirement already satisfied: requests>=2.19.0 in /opt/anaconda3/lib/python3.11/site-packages (from pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.32.3)
+Requirement already satisfied: iniconfig in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.1.1)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/anaconda3/lib/python3.11/site-packages (from pytest>=8.0->promptclaw==3.0.0) (1.5.0)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.4)
+Requirement already satisfied: idna<4,>=2.5 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (3.4)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.6.3)
+Requirement already satisfied: certifi>=2017.4.17 in /opt/anaconda3/lib/python3.11/site-packages (from requests>=2.19.0->pooch>=1.1->librosa<1,>=0.10->promptclaw==3.0.0) (2026.1.4)
+Requirement already satisfied: threadpoolctl>=2.0.0 in /opt/anaconda3/lib/python3.11/site-packages (from scikit-learn>=1.1.0->librosa<1,>=0.10->promptclaw==3.0.0) (2.2.0)
+Requirement already satisfied: cffi>=1.0 in /opt/anaconda3/lib/python3.11/site-packages (from soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.0.0)
+Requirement already satisfied: pycparser in /opt/anaconda3/lib/python3.11/site-packages (from cffi>=1.0->soundfile>=0.12.1->librosa<1,>=0.10->promptclaw==3.0.0) (2.21)
+Requirement already satisfied: elementpath<6.0.0,>=5.1.0 in /opt/anaconda3/lib/python3.11/site-packages (from xmlschema->partitura<2,>=1.8->promptclaw==3.0.0) (5.1.1)
+Building wheels for collected packages: promptclaw
+  Building editable for promptclaw (pyproject.toml): started
+  Building editable for promptclaw (pyproject.toml): finished with status 'done'
+  Created wheel for promptclaw: filename=promptclaw-3.0.0-0.editable-py3-none-any.whl size=7147 sha256=5163858767d62c4570ecf482887b0f2187385f66da2ffa4e8ee5efb512241272
+  Stored in directory: /private/var/folders/fm/wylt1x1x5_dcpxzyb91ztln40000gn/T/pip-ephem-wheel-cache-0fhnci37/wheels/ab/f4/89/0cacd29874f6252d7c6bef0fca4c14839da91ab6a8d842965e
+Successfully built promptclaw
+Installing collected packages: promptclaw
+  Attempting uninstall: promptclaw
+    Found existing installation: promptclaw 3.0.0
+    Uninstalling promptclaw-3.0.0:
+      Successfully uninstalled promptclaw-3.0.0
+Successfully installed promptclaw-3.0.0
+
+codex
+The editable install completed cleanly. I’m running the full test suite with the requested fail-fast options next.
+exec
+/bin/zsh -lc 'pytest tests/ -x --tb=short' in /Users/anthony/Programming/PromptClaw
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c51f4bc3713c800f35f18345cd87c621a4..01a716d41edcfb7c7ebc77c4508fb2fd86f557f5
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c51f4bc3713c800f35f18345cd87c621a4..01a716d41edcfb7c7ebc77c4508fb2fd86f557f5
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+codex
+The full suite is still running and has passed the PAL/Vast area already; I’m waiting for it to finish before lint and type checks.
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c51f4bc3713c800f35f18345cd87c621a4..01a716d41edcfb7c7ebc77c4508fb2fd86f557f5
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+ succeeded in 45765ms:
+/opt/anaconda3/lib/python3.11/site-packages/pytest_asyncio/plugin.py:252: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.11.7, pytest-8.3.5, pluggy-1.5.0
+sensitiveurl: .*
+rootdir: /Users/anthony/Programming/PromptClaw
+configfile: pyproject.toml
+plugins: anyio-4.12.1, respx-0.22.0, cov-5.0.0, timeout-2.2.0, asyncio-1.2.0, variables-3.1.0, html-4.1.1, metadata-3.1.1, django-4.8.0, web3-6.20.0, Faker-40.1.2, xdist-3.5.0, base-url-2.1.0, selenium-4.1.0, hypothesis-6.152.4
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 4751 items
+
+tests/test_accompaniment.py ............................................ [  0%]
+.......                                                                  [  1%]
+tests/test_accompaniment_depth.py ......                                 [  1%]
+tests/test_acoustic_ecology.py ......................................... [  2%]
+......................                                                   [  2%]
+tests/test_acoustic_ecology_depth.py .                                   [  2%]
+tests/test_agent_runtime.py ..                                           [  2%]
+tests/test_agent_selector_defaults.py .                                  [  2%]
+tests/test_agent_selector_quota.py ..................                    [  2%]
+tests/test_agent_selector_quota_depth.py .                               [  3%]
+tests/test_agogic_rule.py ...                                            [  3%]
+tests/test_antenna_to_skin.py .................................          [  3%]
+tests/test_archive_daemon_runtime.py .                                   [  3%]
+tests/test_archive_paths.py .........                                    [  3%]
+tests/test_arrangement_engine.py ....................................... [  4%]
+..........                                                               [  5%]
+tests/test_arrangement_engine_depth.py .                                 [  5%]
+tests/test_art_engine_runtime.py ....                                    [  5%]
+tests/test_articulation.py ......                                        [  5%]
+tests/test_artist_identity.py .......................................... [  6%]
+......................................                                   [  6%]
+tests/test_artist_identity_depth.py .                                    [  6%]
+tests/test_artistic_identity.py .                                        [  6%]
+tests/test_audio_analysis.py ..........................................  [  7%]
+tests/test_audio_analysis_depth.py .                                     [  7%]
+tests/test_audio_novelty.py ....                                         [  7%]
+tests/test_bootstrap.py ..                                               [  7%]
+tests/test_breath_to_filter.py ......................................... [  8%]
+......                                                                   [  8%]
+tests/test_breath_to_filter_depth.py .                                   [  9%]
+tests/test_cadence_engine.py .......                                     [  9%]
+tests/test_call_response.py ..........                                   [  9%]
+tests/test_capstone_engine.py ...........                                [  9%]
+tests/test_capstone_engine_depth.py .                                    [  9%]
+tests/test_capture_alias.py ..                                           [  9%]
+tests/test_cast_planner.py ....................                          [ 10%]
+tests/test_cast_planner_depth.py .                                       [ 10%]
+tests/test_character_registry.py ......                                  [ 10%]
+tests/test_character_registry_depth.py .........                         [ 10%]
+tests/test_check_status_runtime.py ..                                    [ 10%]
+tests/test_cli_identity_hardening.py .                                   [ 10%]
+tests/test_client_local.py ......                                        [ 10%]
+tests/test_client_local_depth.py .....                                   [ 10%]
+tests/test_client_modal.py ..                                            [ 10%]
+tests/test_coherence_engine.py ....................                      [ 11%]
+tests/test_coherence_integration.py ............                         [ 11%]
+tests/test_collaborative_canvas.py ......................                [ 11%]
+tests/test_collaborative_canvas_depth.py ....                            [ 11%]
+tests/test_commission_context.py ..                                      [ 12%]
+tests/test_commission_context_depth.py ......                            [ 12%]
+tests/test_composer_quote_verify.py .....                                [ 12%]
+tests/test_composer_quote_verify_depth.py .....                          [ 12%]
+tests/test_config.py .......                                             [ 12%]
+tests/test_conftest_depth.py .......                                     [ 12%]
+tests/test_constitution.py ............................................. [ 13%]
+........                                                                 [ 13%]
+tests/test_contact_listener_runtime.py ....                              [ 13%]
+tests/test_contact_mic_calibration_runtime.py ........                   [ 14%]
+tests/test_context_pulse_runtime.py .                                    [ 14%]
+tests/test_continuous_learner.py ......................                  [ 14%]
+tests/test_counterpoint_pipeline.py ...........................          [ 15%]
+tests/test_counterpoint_rules.py ....................................... [ 15%]
+..................................                                       [ 16%]
+tests/test_counterpoint_rules_depth.py ....                              [ 16%]
+tests/test_course_critique.py ...............................            [ 17%]
+tests/test_cypherclaw_audio_runtime.py .....                             [ 17%]
+tests/test_cypherclaw_av_stack_service.py ...                            [ 17%]
+tests/test_cypherclaw_boot_runtime.py .......                            [ 17%]
+tests/test_cypherclaw_musicianship_roadmap.py ..                         [ 17%]
+tests/test_cypherclaw_narrative_api_service.py .                         [ 17%]
+tests/test_cypherclaw_runtime.py .....                                   [ 17%]
+tests/test_cypherclaw_sampler_architecture.py .......                    [ 17%]
+tests/test_cypherclaw_sampler_artistic_intent.py .....                   [ 18%]
+tests/test_daemon_concurrency_compat.py ...                              [ 18%]
+tests/test_daemon_fallback.py ...............                            [ 18%]
+tests/test_daemon_scheduler.py ..                                        [ 18%]
+tests/test_daemon_status_ollama.py .......                               [ 18%]
+tests/test_dashboard_generator.py ...................................... [ 19%]
+.........                                                                [ 19%]
+tests/test_dashboard_generator_runtime.py ...                            [ 19%]
+tests/test_decision_store.py .........                                   [ 19%]
+tests/test_doctor.py .....                                               [ 19%]
+tests/test_dsp_scene_lab.py ................                             [ 20%]
+tests/test_duration_contrast_depth.py ........                           [ 20%]
+tests/test_duration_contrast_rule.py .......                             [ 20%]
+tests/test_ear_engine.py ............                                    [ 20%]
+tests/test_emsd_catalog_depth.py ..                                      [ 20%]
+tests/test_emsd_curriculum.py ...............                            [ 21%]
+tests/test_emsd_performance.py ....                                      [ 21%]
+tests/test_emsd_performance_depth.py .......                             [ 21%]
+tests/test_emsd_runtime.py ...                                           [ 21%]
+tests/test_emsd_runtime_depth.py .........                               [ 21%]
+tests/test_escalations_lingering.py ....                                 [ 21%]
+tests/test_event_store.py .......                                        [ 21%]
+tests/test_executable_curriculum.py ...                                  [ 22%]
+tests/test_face_display_sample_status.py ....                            [ 22%]
+tests/test_federation_discovery.py ...........                           [ 22%]
+tests/test_final_rit.py ...                                              [ 22%]
+tests/test_first_boot.py ....................................            [ 23%]
+tests/test_form_grammar.py ..                                            [ 23%]
+tests/test_frac_0102a_notes.py .                                         [ 23%]
+tests/test_frac_0102d_depth_completion.py .                              [ 23%]
+tests/test_fractal_form.py ...............                               [ 23%]
+tests/test_functional_harmony.py ..................................      [ 24%]
+tests/test_gallery.py ..........................                         [ 24%]
+tests/test_gallery_x11_runtime.py ..........                             [ 25%]
+tests/test_gallery_x11_wrapper_depth.py ...........                      [ 25%]
+tests/test_garden_watcher.py ........................................... [ 26%]
+....                                                                     [ 26%]
+tests/test_gemini_image_runtime.py ...                                   [ 26%]
+tests/test_generation_budget.py ..................                       [ 26%]
+tests/test_generation_cache.py .........                                 [ 26%]
+tests/test_generation_client_protocol.py .......                         [ 27%]
+tests/test_generation_client_protocol_depth.py .....                     [ 27%]
+tests/test_generation_composer_hook.py ...............                   [ 27%]
+tests/test_generation_conditioner.py .......................             [ 27%]
+tests/test_generation_e2e_cypherclaw.py s                                [ 27%]
+tests/test_generation_health.py ..............                           [ 28%]
+tests/test_generation_live_modal.py s                                    [ 28%]
+tests/test_generation_live_replicate.py s                                [ 28%]
+tests/test_generation_queue.py .....................                     [ 28%]
+tests/test_generation_replicate_retry.py ............................... [ 29%]
+..................                                                       [ 29%]
+tests/test_generation_request.py ....................................... [ 30%]
+.                                                                        [ 30%]
+tests/test_generation_request_depth.py .                                 [ 30%]
+tests/test_generation_storage.py ....                                    [ 30%]
+tests/test_generation_validate.py .......                                [ 30%]
+tests/test_generation_worker.py .........                                [ 31%]
+tests/test_generative_scores.py ........................................ [ 31%]
+................................................                         [ 32%]
+tests/test_genre_literacy.py ............                                [ 33%]
+tests/test_genre_literacy_depth.py .....                                 [ 33%]
+tests/test_glyphweave_cli.py ....                                        [ 33%]
+tests/test_glyphweave_runtime.py ....                                    [ 33%]
+tests/test_governor_integration.py ...................                   [ 33%]
+tests/test_governor_integration_depth.py .                               [ 33%]
+tests/test_graduation.py ......................                          [ 34%]
+tests/test_groove_engine.py ............................................ [ 35%]
+.........................................                                [ 36%]
+tests/test_harmonic_planner.py .........                                 [ 36%]
+tests/test_healer_runtime.py .....                                       [ 36%]
+tests/test_healthcheck_script_runtime.py ...                             [ 36%]
+tests/test_hook_engine.py .................                              [ 36%]
+tests/test_human_phrase_capture_verify.py .                              [ 36%]
+tests/test_image_api_app.py ........                                     [ 37%]
+tests/test_image_api_jobs_db.py ............                             [ 37%]
+tests/test_image_api_s3_uploader.py .....                                [ 37%]
+tests/test_image_api_s3_uploader_depth.py .......                        [ 37%]
+tests/test_image_api_schemas_depth.py ......                             [ 37%]
+tests/test_image_api_spec_parser.py ....................                 [ 38%]
+tests/test_image_api_worker.py ........                                  [ 38%]
+tests/test_inkplate_display.py ....                                      [ 38%]
+tests/test_inner_life.py ...................................             [ 39%]
+tests/test_instrument_patches.py .........                               [ 39%]
+tests/test_ixml_chunk_writer.py .......                                  [ 39%]
+tests/test_keyboard_chat.py ..............................               [ 40%]
+tests/test_lifeimprover_bridge_runtime.py .....                          [ 40%]
+tests/test_listener_review.py ........                                   [ 40%]
+tests/test_live_buffer.py ...                                            [ 40%]
+tests/test_local_command_runtime.py ....                                 [ 40%]
+tests/test_lung_capacity_depth.py ........                               [ 40%]
+tests/test_lung_capacity_rule.py .........                               [ 40%]
+tests/test_macbook_codex_monitor.py ....                                 [ 40%]
+tests/test_maintenance_mode.py .....                                     [ 41%]
+tests/test_master_bus.py ......                                          [ 41%]
+tests/test_master_smooth_scd.py ...                                      [ 41%]
+tests/test_melodic_mind.py ............................................. [ 42%]
+..........................................................               [ 43%]
+tests/test_metric_accent_depth.py ........                               [ 43%]
+tests/test_metric_accent_rule.py ....                                    [ 43%]
+tests/test_microtiming.py .....................                          [ 44%]
+tests/test_midi_keyboard_listener_runtime.py .....                       [ 44%]
+tests/test_midi_state.py ........................................        [ 45%]
+tests/test_mix_engine.py ..............................                  [ 45%]
+tests/test_mix_verify.py ............................................... [ 46%]
+.                                                                        [ 46%]
+tests/test_mood_mirror.py ..........................................     [ 47%]
+tests/test_motif_lifecycle.py ............................               [ 48%]
+tests/test_motif_lifecycle_depth.py .......                              [ 48%]
+tests/test_motif_memory.py ...............                               [ 48%]
+tests/test_music_theory.py ............................................. [ 49%]
+.........................................                                [ 50%]
+tests/test_music_tracker.py ..........................................   [ 51%]
+tests/test_music_tracker_runtime.py .................................... [ 52%]
+........                                                                 [ 52%]
+tests/test_musical_integration_runtime.py ..                             [ 52%]
+tests/test_musical_marathon_integration.py ..                            [ 52%]
+tests/test_narrative_api_beats.py .........                              [ 52%]
+tests/test_narrative_api_entities.py ...............................     [ 53%]
+tests/test_narrative_api_events.py .....................                 [ 53%]
+tests/test_narrative_api_health.py ...                                   [ 53%]
+tests/test_narrative_api_main.py ........                                [ 53%]
+tests/test_narrative_api_memory.py ...........                           [ 54%]
+tests/test_narrative_api_settings.py ....                                [ 54%]
+tests/test_narrative_api_smoke.py sssssss                                [ 54%]
+tests/test_narrative_arc_depth.py .........                              [ 54%]
+tests/test_narrative_entities_domain_migration.py .......                [ 54%]
+tests/test_narrative_envelope.py ..............                          [ 54%]
+tests/test_observatory_authority.py .....                                [ 54%]
+tests/test_observatory_runtime.py ..                                     [ 55%]
+tests/test_observatory_verification.py ..                                [ 55%]
+tests/test_observer_vision_runtime.py ..............                     [ 55%]
+tests/test_ollama_daemon_health.py ...                                   [ 55%]
+tests/test_ollama_health.py .......                                      [ 55%]
+tests/test_ollama_invoke.py ...                                          [ 55%]
+tests/test_ollama_routing.py ....................                        [ 56%]
+tests/test_ollama_run_agent.py ........                                  [ 56%]
+tests/test_operator_diagnostics.py ...................                   [ 56%]
+tests/test_operator_diagnostics_sample_status.py ....                    [ 56%]
+tests/test_ops_helpers_runtime.py ....                                   [ 56%]
+tests/test_orchestral_form.py ................................           [ 57%]
+tests/test_orchestrator.py ...                                           [ 57%]
+tests/test_pal_agent.py .......................                          [ 58%]
+tests/test_pal_client.py .......                                         [ 58%]
+tests/test_pal_knowledge.py ...............                              [ 58%]
+tests/test_pal_smoke.py .......                                          [ 58%]
+tests/test_pareidolia_art_engine.py .......                              [ 58%]
+tests/test_pareidolia_characters.py ..................................   [ 59%]
+tests/test_pareidolia_color.py ......................................... [ 60%]
+........................................................................ [ 61%]
+....                                                                     [ 61%]
+tests/test_pedals_to_key.py ...........................................  [ 62%]
+tests/test_phrase_arch.py ..........                                     [ 63%]
+tests/test_phrase_capture.py ........................                    [ 63%]
+tests/test_phrase_capture_runtime.py ...                                 [ 63%]
+tests/test_phrase_tracker.py ............                                [ 63%]
+tests/test_phrase_tracker_depth.py ....                                  [ 63%]
+tests/test_piece_brief.py ........                                       [ 64%]
+tests/test_piece_commission.py ....                                      [ 64%]
+tests/test_piece_queue.py ..                                             [ 64%]
+tests/test_porch_eye.py ..................................               [ 64%]
+tests/test_portfolio_report.py .........................                 [ 65%]
+tests/test_practice_curriculum.py ..                                     [ 65%]
+tests/test_preflight.py ......                                           [ 65%]
+tests/test_presence_engine.py ............                               [ 65%]
+tests/test_procedural_arc.py .....                                       [ 66%]
+tests/test_production_course_depth.py ..........                         [ 66%]
+tests/test_production_course_integration.py ..........                   [ 66%]
+tests/test_production_course_knowledge_base.py ...                       [ 66%]
+tests/test_project_scanner_runtime.py ....                               [ 66%]
+tests/test_promptclaw_artifacts_depth.py .....                           [ 66%]
+tests/test_promptclaw_artifacts_report.py ...                            [ 66%]
+tests/test_promptclaw_config_depth.py ......                             [ 66%]
+tests/test_promptclaw_memory_depth.py .........                          [ 67%]
+tests/test_promptclaw_models_depth.py ......                             [ 67%]
+tests/test_promptclaw_paths_depth.py .....                               [ 67%]
+tests/test_promptclaw_sdp_cost_depth.py .......                          [ 67%]
+tests/test_promptclaw_templates_depth.py .....                           [ 67%]
+tests/test_prosody_engine.py ........                                    [ 67%]
+tests/test_punctuation_depth.py .........                                [ 67%]
+tests/test_punctuation_rule.py ............                              [ 68%]
+tests/test_quota_monitor.py .....................                        [ 68%]
+tests/test_reharmonizer.py ...                                           [ 68%]
+tests/test_render_ablation.py ...............                            [ 69%]
+tests/test_render_antipatterns.py .................................      [ 69%]
+tests/test_render_audio_sidecar.py ...                                   [ 69%]
+tests/test_render_debugger.py ..                                         [ 69%]
+tests/test_render_diff.py ................                               [ 70%]
+tests/test_render_events.py .......................                      [ 70%]
+tests/test_render_export.py ......                                       [ 70%]
+tests/test_render_features.py ...                                        [ 70%]
+tests/test_render_metrics.py ..............                              [ 71%]
+tests/test_render_pass.py ......................                         [ 71%]
+tests/test_render_replay.py ...                                          [ 71%]
+tests/test_render_seed.py ..........................                     [ 72%]
+tests/test_render_worm.py ..........                                     [ 72%]
+tests/test_repertoire_memory.py .................                        [ 72%]
+tests/test_repertoire_memory_score_tree.py .                             [ 72%]
+tests/test_research_runtime.py ......                                    [ 72%]
+tests/test_resilience_runtime_scripts.py ..............                  [ 73%]
+tests/test_resource_governor.py ..........................               [ 73%]
+tests/test_restraint.py ...                                              [ 73%]
+tests/test_reviewer_runtime.py ...                                       [ 73%]
+tests/test_rewrite_hook_depth.py .........                               [ 74%]
+tests/test_role_gate_integration.py .................................... [ 74%]
+....                                                                     [ 74%]
+tests/test_rollout_controls.py ......                                    [ 75%]
+tests/test_room_listener_runtime.py ..................                   [ 75%]
+tests/test_room_presence_daemon.py ......                                [ 75%]
+tests/test_router.py ......                                              [ 75%]
+tests/test_row_automation.py ...........                                 [ 75%]
+tests/test_runbook_generation_backend.py ......                          [ 76%]
+tests/test_runtime_checkpoint.py ...                                     [ 76%]
+tests/test_runtime_paths.py ..                                           [ 76%]
+tests/test_sample_capture_daemon.py .................................... [ 76%]
+.............                                                            [ 77%]
+tests/test_sample_capture_service_verify.py ....                         [ 77%]
+tests/test_sample_capture_verify.py ....                                 [ 77%]
+tests/test_sample_dsp_activity.py ...........                            [ 77%]
+tests/test_sample_event_renderer.py .....                                [ 77%]
+tests/test_sample_lab.py ....                                            [ 77%]
+tests/test_sample_lab_depth.py .........                                 [ 77%]
+tests/test_sample_library.py ......................                      [ 78%]
+tests/test_sample_library_import.py ...                                  [ 78%]
+tests/test_sample_playback_engine.py .......                             [ 78%]
+tests/test_sample_record_audio_analysis.py ..............                [ 78%]
+tests/test_sample_record_context.py ...........                          [ 79%]
+tests/test_sample_record_json.py ..............                          [ 79%]
+tests/test_sample_record_skeleton.py ..........                          [ 79%]
+tests/test_sample_selector.py ..................                         [ 80%]
+tests/test_sample_status.py ......                                       [ 80%]
+tests/test_sampler_buffers.py ...............                            [ 80%]
+tests/test_sampler_dispatch.py ....................................      [ 81%]
+tests/test_sampler_dispatch_depth.py ......                              [ 81%]
+tests/test_sampler_effects.py .......................................... [ 82%]
+........                                                                 [ 82%]
+tests/test_sampler_fx_mode_verify.py ...                                 [ 82%]
+tests/test_sampler_scheduler.py ............                             [ 82%]
+tests/test_scene_composer.py ......................................      [ 83%]
+tests/test_score_tree.py .                                               [ 83%]
+tests/test_score_tree_composer.py .......................                [ 84%]
+tests/test_score_tree_depth.py ........                                  [ 84%]
+tests/test_score_tree_pipeline.py .                                      [ 84%]
+tests/test_sdp_cost_extractor.py ............                            [ 84%]
+tests/test_sdp_telemetry_cost_model.py ....                              [ 84%]
+tests/test_self_critique.py .........................                    [ 85%]
+tests/test_self_listener_quote_verify.py ......                          [ 85%]
+tests/test_self_listener_tracker_runtime.py ...............              [ 85%]
+tests/test_senseweave_rollout_controls.py .....                          [ 85%]
+tests/test_senseweave_voice.py ..........................                [ 86%]
+tests/test_senseweave_voice_depth.py .......                             [ 86%]
+tests/test_sensor_fusion.py ...............................              [ 86%]
+tests/test_sensor_intent_rule.py ....                                    [ 87%]
+tests/test_sensory_journal.py ............................               [ 87%]
+tests/test_sensory_journal_daemon.py ....                                [ 87%]
+tests/test_server_health.py ...                                          [ 87%]
+tests/test_silence_budget_depth.py .........                             [ 87%]
+tests/test_silence_budget_rule.py .................                      [ 88%]
+tests/test_smoke_narrative_script.py ........                            [ 88%]
+tests/test_sound_palette_lab.py ..                                       [ 88%]
+tests/test_startle.py .................................                  [ 89%]
+tests/test_startle_daemon.py ....                                        [ 89%]
+tests/test_supercollider_recipes.py ...                                  [ 89%]
+tests/test_sw_sampler.py ........................................        [ 90%]
+tests/test_syncopation_features.py ..........................            [ 90%]
+tests/test_synthdef_registry.py ...................................      [ 91%]
+tests/test_synthdef_registry_depth.py ......                             [ 91%]
+tests/test_synthesis_architecture_registry.py .......................... [ 92%]
+........                                                                 [ 92%]
+tests/test_synthesis_architecture_registry_depth.py ......               [ 92%]
+tests/test_tamagotchi_depth.py .....                                     [ 92%]
+tests/test_tamagotchi_runtime.py ......                                  [ 92%]
+tests/test_telegram_runtime.py ......                                    [ 92%]
+tests/test_temp_sampler_dispatch_depth.py .......                        [ 92%]
+tests/test_test_client_local_depth.py .                                  [ 93%]
+tests/test_test_coherence_engine_depth.py .                              [ 93%]
+tests/test_test_config_depth.py .                                        [ 93%]
+tests/test_test_constitution_depth.py .                                  [ 93%]
+tests/test_test_contact_mic_calibration_runtime_depth.py .               [ 93%]
+tests/test_test_counterpoint_rules_depth.py .                            [ 93%]
+tests/test_test_dashboard_generator_depth.py .                           [ 93%]
+tests/test_test_federation_discovery_depth.py .                          [ 93%]
+tests/test_test_functional_harmony_depth.py .                            [ 93%]
+tests/test_test_garden_watcher_depth.py .                                [ 93%]
+tests/test_test_genai_depth.py .........                                 [ 93%]
+tests/test_test_generation_cache_depth.py .                              [ 93%]
+tests/test_test_generation_client_protocol_depth.py .                    [ 93%]
+tests/test_test_generation_composer_hook_depth.py .                      [ 93%]
+tests/test_test_generation_health_depth.py .                             [ 93%]
+tests/test_test_generative_scores_depth.py .                             [ 93%]
+tests/test_test_groove_engine_depth.py .                                 [ 93%]
+tests/test_test_image_api_s3_uploader_depth.py .                         [ 93%]
+tests/test_test_image_api_spec_parser_depth.py .                         [ 93%]
+tests/test_test_instrument_patches_depth.py .                            [ 93%]
+tests/test_test_listener_review_depth.py .                               [ 93%]
+tests/test_test_lung_capacity_rule_depth.py .                            [ 93%]
+tests/test_test_midi_state_depth.py .                                    [ 93%]
+tests/test_test_mix_verify_depth.py .                                    [ 93%]
+tests/test_test_mood_mirror_depth.py .                                   [ 93%]
+tests/test_test_music_theory_depth.py .                                  [ 93%]
+tests/test_test_musical_integration_runtime_depth.py .                   [ 93%]
+tests/test_test_narrative_api_entities_depth.py .                        [ 93%]
+tests/test_test_narrative_api_health_depth.py .                          [ 93%]
+tests/test_test_narrative_entities_domain_migration_depth.py .           [ 93%]
+tests/test_test_ollama_health_depth.py .                                 [ 93%]
+tests/test_test_ollama_routing_depth.py .                                [ 93%]
+tests/test_test_ollama_run_agent_depth.py .                              [ 93%]
+tests/test_test_orchestral_form_depth.py .                               [ 93%]
+tests/test_test_pareidolia_characters_depth.py .                         [ 93%]
+tests/test_test_pedals_to_key_depth.py .                                 [ 93%]
+tests/test_test_render_ablation_depth.py .                               [ 93%]
+tests/test_test_render_antipatterns_depth.py .                           [ 93%]
+tests/test_test_render_events_depth.py .                                 [ 93%]
+tests/test_test_render_pass_depth.py .                                   [ 94%]
+tests/test_test_render_replay_depth.py .                                 [ 94%]
+tests/test_test_render_seed_depth.py .                                   [ 94%]
+tests/test_test_research_runtime_depth.py .                              [ 94%]
+tests/test_test_router_depth.py .                                        [ 94%]
+tests/test_test_sample_record_audio_analysis_depth.py .                  [ 94%]
+tests/test_test_sample_record_context_depth.py .                         [ 94%]
+tests/test_test_sample_record_skeleton_depth.py .                        [ 94%]
+tests/test_test_sample_status_depth.py .                                 [ 94%]
+tests/test_test_sampler_effects_depth.py .                               [ 94%]
+tests/test_test_sampler_scheduler_depth.py .                             [ 94%]
+tests/test_test_startle_depth.py .                                       [ 94%]
+tests/test_test_sw_sampler_depth.py ..                                   [ 94%]
+tests/test_test_syncopation_features_depth.py ..                         [ 94%]
+tests/test_test_synthesis_architecture_registry_depth.py ..              [ 94%]
+tests/test_test_theramini_duet_depth.py ..                               [ 94%]
+tests/test_test_voice_aliases_depth.py ..                                [ 94%]
+tests/test_test_wizard_depth.py ..                                       [ 94%]
+tests/test_theramini_duet.py ........................................... [ 95%]
+..........                                                               [ 95%]
+tests/test_theramini_listener_runtime.py ............                    [ 95%]
+tests/test_theramini_midi.py .......                                     [ 96%]
+tests/test_tracker_cadence.py ............                               [ 96%]
+tests/test_tracker_compiler.py ................                          [ 96%]
+tests/test_tracker_variation.py .....                                    [ 96%]
+tests/test_trust.py ................                                     [ 97%]
+tests/test_trust_depth.py .......                                        [ 97%]
+tests/test_usage_journal.py .......................                      [ 97%]
+tests/test_usage_journal_integration.py .                                [ 97%]
+tests/test_vast_connector.py ..                                          [ 97%]
+tests/test_voice_aliases.py ........                                     [ 97%]
+tests/test_voice_aliases_depth.py ......                                 [ 98%]
+tests/test_voice_interpretation_rules.py ............................... [ 98%]
+..                                                                       [ 98%]
+tests/test_voice_manager_v2.py ......................................... [ 99%]
+............                                                             [ 99%]
+tests/test_voice_shaping.py ....                                         [ 99%]
+tests/test_wizard.py ....                                                [100%]
+
+=============================== warnings summary ===============================
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:163: DeprecationWarning: module 'sre_parse' is deprecated
+    import sre_parse
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164
+  /opt/anaconda3/lib/python3.11/site-packages/lark/utils.py:164: DeprecationWarning: module 'sre_constants' is deprecated
+    import sre_constants
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25
+  /opt/anaconda3/lib/python3.11/site-packages/pygame/pkgdata.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    from pkg_resources import resource_stream, resource_exists
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google.cloud')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:2558: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(parent)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('ruamel')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146
+  /opt/anaconda3/lib/python3.11/site-packages/pkg_resources/__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('zope')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+tests/test_narrative_api_smoke.py:38
+  /Users/anthony/Programming/PromptClaw/tests/test_narrative_api_smoke.py:38: PytestUnknownMarkWarning: Unknown pytest.mark.smoke - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    pytestmark = pytest.mark.smoke
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:88: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_fontconfig_pattern.py:92: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../../../opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45
+  /opt/anaconda3/lib/python3.11/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:16: DeprecationWarning: 'aifc' is deprecated and slated for removal in Python 3.13
+    import aifc
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:17: DeprecationWarning: 'audioop' is deprecated and slated for removal in Python 3.13
+    import audioop
+
+tests/test_audio_novelty.py::test_librosa_ssm_and_foote_novelty_are_extracted
+  /opt/anaconda3/lib/python3.11/site-packages/audioread/rawread.py:19: DeprecationWarning: 'sunau' is deprecated and slated for removal in Python 3.13
+    import sunau
+
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+tests/test_gallery.py::TestFramebufferRenderer::test_overlay_alpha_zero_keeps_canvas_unchanged
+  /Users/anthony/Programming/PromptClaw/tests/test_gallery.py:108: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(result.getdata()), list(canvas.getdata()))
+
+tests/test_pareidolia_characters.py: 193 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:88: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pixels = list(img.getdata())
+
+tests/test_pareidolia_characters.py: 21 warnings
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_characters.py:296: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    rendered[name] = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawStars::test_stars_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:310: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:314: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawStars::test_zero_count_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:316: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:339: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_low = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_high_intensity_more_drops
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:343: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black_high = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:326: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawRain::test_rain_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:352: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:331: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawRain::test_zero_intensity_no_rain
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:333: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_adds_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:361: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawSnow::test_snow_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:376: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:366: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawSnow::test_zero_intensity_no_snow
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:368: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_add_pixels
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:429: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:451: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_clouds_with_palette
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:443: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:434: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    before = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawClouds::test_zero_clouds_no_change
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:436: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    after = list(img.getdata())
+
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+tests/test_pareidolia_color.py::TestDrawGround::test_texture_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:481: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_curious_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:554: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_happy_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:542: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_neutral_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:536: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sad_eyes
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:548: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceEyes::test_sleeping_eyes_no_highlights
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:560: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+tests/test_pareidolia_color.py::TestDrawFaceMouth::test_all_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:571: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_bush
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:621: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:615: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_puddle_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:609: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_with_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:585: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_rock_without_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:591: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:597: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestSceneElements::test_tree_no_face
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:603: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_basalt_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:642: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_expressions
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:661: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    non_black = sum(1 for px in img.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:674: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    basalt_pixels = sum(1 for px in img1.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestNamedCharacters::test_pebble_smaller_than_basalt
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:678: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    pebble_pixels = sum(1 for px in img2.getdata() if px != (0, 0, 0, 255))
+
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+tests/test_pareidolia_color.py::TestRenderScene::test_scene_seed_reproducible
+  /Users/anthony/Programming/PromptClaw/tests/test_pareidolia_color.py:870: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+    self.assertEqual(list(img1.getdata()), list(img2.getdata()))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============== 4741 passed, 10 skipped, 301 warnings in 43.92s ================
+
+codex
+The full test suite passed. I’m running `ruff` now against `src/` and `tests/` as requested.
+exec
+/bin/zsh -lc 'ruff check src/ tests/' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+All checks passed!
+
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c51f4bc3713c800f35f18345cd87c621a4..01a716d41edcfb7c7ebc77c4508fb2fd86f557f5
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+codex
+`ruff` passed. I’m running the requested `mypy src/` check next.
+exec
+/bin/zsh -lc 'mypy src/' in /Users/anthony/Programming/PromptClaw
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c51f4bc3713c800f35f18345cd87c621a4..01a716d41edcfb7c7ebc77c4508fb2fd86f557f5
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+ succeeded in 499ms:
+Success: no issues found in 35 source files
+
+codex
+All required validation commands passed. I’m checking the final diff and worktree so the commit includes only the T-012 test change.
+exec
+/bin/zsh -lc 'git diff -- tests/test_vast_connector.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c..01a716d 100644
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@ def test_default_vast_connector_boundary_blocks_lifecycle_actions() -> None:
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/notifications.log
+ M sdp/run-log.md
+ M tests/test_vast_connector.py
+?? sdp/fractal-reports/2026-05-13.md
+?? sdp/fractal-reports/2026-05-14.md
+?? sdp/fractal-reports/2026-05-15.md
+?? sdp/logs/Lead_T-001_20260515T214233Z_1778881438.log
+?? sdp/logs/Lead_T-001_20260515T214233Z_1778881650.log
+?? sdp/logs/Lead_T-002_20260515T214233Z_1778882292.log
+?? sdp/logs/Lead_T-003_20260515T214233Z_1778882654.log
+?? sdp/logs/Lead_T-004_20260515T214233Z_1778883104.log
+?? sdp/logs/Lead_T-005_20260515T214233Z_1778883871.log
+?? sdp/logs/Lead_T-005_20260515T214233Z_1778884424.log
+?? sdp/logs/Lead_T-006_20260515T214233Z_1778884981.log
+?? sdp/logs/Lead_T-006_20260515T214233Z_1778885634.log
+?? sdp/logs/Lead_T-007_20260515T214233Z_1778886028.log
+?? sdp/logs/Lead_T-008_20260515T214233Z_1778886776.log
+?? sdp/logs/Lead_T-009_20260515T214233Z_1778887588.log
+?? sdp/logs/Lead_T-009_20260515T214233Z_1778888239.log
+?? sdp/logs/Lead_T-010_20260515T214233Z_1778888694.log
+?? sdp/logs/Lead_T-011_20260515T214233Z_1778889727.log
+?? sdp/logs/Lead_T-012_20260515T214233Z_1778890447.log
+?? sdp/logs/Verify_T-001_20260515T214233Z_1778882000.log
+?? sdp/logs/Verify_T-002_20260515T214233Z_1778882468.log
+?? sdp/logs/Verify_T-003_20260515T214233Z_1778882941.log
+?? sdp/logs/Verify_T-004_20260515T214233Z_1778883760.log
+?? sdp/logs/Verify_T-005_20260515T214233Z_1778884787.log
+?? sdp/logs/Verify_T-006_20260515T214233Z_1778885848.log
+?? sdp/logs/Verify_T-007_20260515T214233Z_1778886590.log
+?? sdp/logs/Verify_T-008_20260515T214233Z_1778887365.log
+?? sdp/logs/Verify_T-009_20260515T214233Z_1778888471.log
+?? sdp/logs/Verify_T-010_20260515T214233Z_1778889487.log
+?? sdp/logs/Verify_T-011_20260515T214233Z_1778890244.log
+?? sdp/telemetry/prompt-review-2026-05-16.md
+?? sdp/templates/candidates/verify/v007.md
+?? sdp/verification/t-003@20260515t214233z-verify.md
+
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c51f4bc3713c800f35f18345cd87c621a4..01a716d41edcfb7c7ebc77c4508fb2fd86f557f5
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+codex
+The diff is only `tests/test_vast_connector.py`; the other modified/untracked SDP files were already present and are staying out of this commit. I’m staging just the Vast test file and committing with the required task tag.
+exec
+/bin/zsh -lc 'git add tests/test_vast_connector.py' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c51f4bc3713c800f35f18345cd87c621a4..01a716d41edcfb7c7ebc77c4508fb2fd86f557f5
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+exec
+/bin/zsh -lc 'git diff --cached --stat' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ tests/test_vast_connector.py | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c51f4bc3713c800f35f18345cd87c621a4..01a716d41edcfb7c7ebc77c4508fb2fd86f557f5
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+exec
+/bin/zsh -lc 'git commit -m "test(vast): reject persisted API key values [T-012@20260515T214233Z]"' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+[main 1b20c15] test(vast): reject persisted API key values [T-012@20260515T214233Z]
+ 1 file changed, 18 insertions(+)
+
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c51f4bc3713c800f35f18345cd87c621a4..01a716d41edcfb7c7ebc77c4508fb2fd86f557f5
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+codex
+The commit was created. I’m doing the final status check to confirm my changes are committed and only pre-existing unrelated workspace changes remain.
+exec
+/bin/zsh -lc 'git log -1 --oneline' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+1b20c15 test(vast): reject persisted API key values [T-012@20260515T214233Z]
+
+exec
+/bin/zsh -lc 'git status --short' in /Users/anthony/Programming/PromptClaw
+ succeeded in 0ms:
+ M progress.md
+ M sdp/notifications.log
+ M sdp/run-log.md
+?? sdp/fractal-reports/2026-05-13.md
+?? sdp/fractal-reports/2026-05-14.md
+?? sdp/fractal-reports/2026-05-15.md
+?? sdp/logs/Lead_T-001_20260515T214233Z_1778881438.log
+?? sdp/logs/Lead_T-001_20260515T214233Z_1778881650.log
+?? sdp/logs/Lead_T-002_20260515T214233Z_1778882292.log
+?? sdp/logs/Lead_T-003_20260515T214233Z_1778882654.log
+?? sdp/logs/Lead_T-004_20260515T214233Z_1778883104.log
+?? sdp/logs/Lead_T-005_20260515T214233Z_1778883871.log
+?? sdp/logs/Lead_T-005_20260515T214233Z_1778884424.log
+?? sdp/logs/Lead_T-006_20260515T214233Z_1778884981.log
+?? sdp/logs/Lead_T-006_20260515T214233Z_1778885634.log
+?? sdp/logs/Lead_T-007_20260515T214233Z_1778886028.log
+?? sdp/logs/Lead_T-008_20260515T214233Z_1778886776.log
+?? sdp/logs/Lead_T-009_20260515T214233Z_1778887588.log
+?? sdp/logs/Lead_T-009_20260515T214233Z_1778888239.log
+?? sdp/logs/Lead_T-010_20260515T214233Z_1778888694.log
+?? sdp/logs/Lead_T-011_20260515T214233Z_1778889727.log
+?? sdp/logs/Lead_T-012_20260515T214233Z_1778890447.log
+?? sdp/logs/Verify_T-001_20260515T214233Z_1778882000.log
+?? sdp/logs/Verify_T-002_20260515T214233Z_1778882468.log
+?? sdp/logs/Verify_T-003_20260515T214233Z_1778882941.log
+?? sdp/logs/Verify_T-004_20260515T214233Z_1778883760.log
+?? sdp/logs/Verify_T-005_20260515T214233Z_1778884787.log
+?? sdp/logs/Verify_T-006_20260515T214233Z_1778885848.log
+?? sdp/logs/Verify_T-007_20260515T214233Z_1778886590.log
+?? sdp/logs/Verify_T-008_20260515T214233Z_1778887365.log
+?? sdp/logs/Verify_T-009_20260515T214233Z_1778888471.log
+?? sdp/logs/Verify_T-010_20260515T214233Z_1778889487.log
+?? sdp/logs/Verify_T-011_20260515T214233Z_1778890244.log
+?? sdp/telemetry/prompt-review-2026-05-16.md
+?? sdp/templates/candidates/verify/v007.md
+?? sdp/verification/t-003@20260515t214233z-verify.md
+
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c51f4bc3713c800f35f18345cd87c621a4..01a716d41edcfb7c7ebc77c4508fb2fd86f557f5
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+codex
+Implemented and committed T-012.
+
+Commit: `1b20c15 test(vast): reject persisted API key values [T-012@20260515T214233Z]`
+
+Change: added a regression test in [tests/test_vast_connector.py](/Users/anthony/Programming/PromptClaw/tests/test_vast_connector.py) that sets `VAST_API_KEY`, persists the Vast boundary payload to JSON, and rejects the raw key value appearing in persisted text.
+
+Validation passed:
+- `pip install -e '.[dev]'`
+- `pytest tests/ -x --tb=short`
+- `ruff check src/ tests/`
+- `mypy src/`
+
+Only the T-012 test file was committed. The existing unrelated SDP/log worktree changes are still uncommitted and untouched.
+diff --git a/tests/test_vast_connector.py b/tests/test_vast_connector.py
+index da8b48c51f4bc3713c800f35f18345cd87c621a4..01a716d41edcfb7c7ebc77c4508fb2fd86f557f5
+--- a/tests/test_vast_connector.py
++++ b/tests/test_vast_connector.py
+@@ -1,5 +1,8 @@
+ from __future__ import annotations
+ 
++import json
++from pathlib import Path
++
+ from promptclaw.vast_connector import VAST_LIFECYCLE_ACTIONS, default_vast_connector_boundary
+ 
+ 
+@@ -18,3 +21,18 @@
+     assert payload["callable_actions"] == []
+     assert payload["blocked_actions"] == ["rent", "destroy", "start", "stop"]
+     assert payload["status"] == "stubbed"
++
++
++def test_persisted_vast_connector_boundary_rejects_api_key_value(
++    monkeypatch,
++    tmp_path: Path,
++) -> None:
++    api_key = "vast-test-api-key-should-never-persist"
++    monkeypatch.setenv("VAST_API_KEY", api_key)
++
++    payload = default_vast_connector_boundary().to_dict()
++    target = tmp_path / "vast-boundary.json"
++    target.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
++
++    persisted = target.read_text(encoding="utf-8")
++    assert api_key not in persisted
+
+tokens used
+121,001

@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2683 chars)
+---
+
+**Verdict: PASS**
+
+The verification report is committed to `sdp/verification/t-001@20260515t214233z-verify.md`. Summary of findings:
+
+- **Correctness**: `_restart_router_action()` correctly guards with `[ -x /opt/pal/scripts/start_router.sh ]` before invoking it, with docker-compose fallback and exit-78 error case. The acceptance criterion test passes.
+- **Completeness**: All hardening checks from the mandate are satisfied — `bootstrap_identity()` is called before `FirstBootAnnouncer` in all three startup modes (daemon, cypherclaw_daemon, ASGI standalone) and in the CLI. Identity persistence integration tests exist.
+- **Quality**: 4708 tests pass, CI gate failures (ruff/mypy/pytest) fully resolved.
+- **Minor issues only**: No tests for the docker-compose fallback or no-path error branches (non-blocking for T1).

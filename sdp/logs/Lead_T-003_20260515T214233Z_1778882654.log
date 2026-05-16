@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1270 chars)
+---
+
+Done. T-003 complete.
+
+**Changes** (tests/test_pal_agent.py):
+- Added `FakeSSHRunner` — a reusable test double for `_run_ssh_command` that records calls and returns queued/default responses, letting PAL remote-action code run without a real SSH connection.
+- Refactored the existing two `_restart_router_action` tests to use it.
+- Added 5 new regression tests covering `_inspect_logs_deep_action`, `_pause_shutdown_once_action`, `_resume_shutdown_action`, `_ssh_process_check_tool`, and `skipped`-response propagation.
+
+**Validation**: 4714 passed / 10 skipped; ruff clean; mypy clean for the modified file.
+
+**Commit**: `fdd9fb6 test(pal_agent): add FakeSSHRunner so remote-action tests skip real ssh [T-003 @sdp/logs/Lead_T-003_20260515T214233Z_1778882654.log]`

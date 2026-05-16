@@ -28,32 +28,12 @@
   regression anchors and does not broaden Phase 2 readiness into startup
   rewiring.
 
-## T-015@20260515T214233Z Exploration Findings
-
-- ADP source: the active process is the task prompt's Explore -> Specify ->
-  Test -> Implement -> Verify -> Document flow, matching
-  `sdp/templates/candidates/lead_t2/v006.md`.
-- PRD source: `sdp/prd-pal-2026-agentic-ops-platform.md` maps this task to
-  PAL-020 `restart_validation`: a command must run health, direct query, smoke,
-  Tailscale, and process checks after restart or instance boot.
-- Affected implementation files: `promptclaw/pal_agent.py` for workflow/tool
-  logic, `promptclaw/cli.py` for parser/dispatch, `promptclaw/pal_client.py`
-  for health/query behavior, and `promptclaw/pal_smoke.py` for active smoke
-  execution and saved reports.
-- Existing pattern: slow-inference workflows are deterministic local allow-list
-  workflows that write standard run artifacts and record `mutating_actions: []`.
-  Restart validation should follow that pattern rather than using PAL to choose
-  tools or exposing approval-gated actions.
-- Related tests: `tests/test_pal_agent.py`, `tests/test_pal_smoke.py`, and
-  `tests/test_pal_client.py` already cover PAL workflow artifacts, fake clients,
-  fake SSH diagnostics, smoke reports, and CLI summary output.
-
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~8h 9m remaining (48 tasks, low confidence, calibrating)
-Expected completion: 10:52 PM today.
-Progress: [██████████████████████████████████░░░░] 89%  389 / 437 tasks complete
-  completed: 389, pending: 45, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
+ETC: ~6h 11m remaining (32 tasks, low confidence, calibrating)
+Expected completion: 12:28 AM tomorrow.
+Progress: [███████████████████████████████████░░░] 93%  405 / 437 tasks complete
+  completed: 405, pending: 29, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -481,22 +461,22 @@ Progress: [███████████████████████
 - **frac-0119**: complete — Completed with verdict PASS.
 - **frac-0120**: complete — Completed with verdict PASS.
 - **frac-0121**: complete — Completed with verdict PASS.
-- **T-001@20260515T214233Z**: pending — Pending.
-- **T-002@20260515T214233Z**: pending — Pending.
-- **T-003@20260515T214233Z**: pending — Pending.
-- **T-004@20260515T214233Z**: complete — Completed with verdict PASS. PAL source discovery now returns configured sample files and the full validation gate passed.
-- **T-005@20260515T214233Z**: complete — Deterministic PAL knowledge chunking is implemented with stable `pal-kb:` chunk ids for unchanged input files; focused PAL tests, startup identity hardening anchors, and the full validation gate passed.
-- **T-006@20260515T214233Z**: complete — PAL KB index writer implemented: `promptclaw pal kb build` writes `.promptclaw/pal-kb/index.jsonl` from deterministic PAL chunks; focused PAL tests, startup identity hardening anchors, and the full validation gate passed.
-- **T-007@20260515T214233Z**: complete — PAL KB query implemented: `promptclaw pal kb query` reads `.promptclaw/pal-kb/index.jsonl` locally and returns deterministic ranked snippets with source paths; red phase, focused PAL tests, startup identity hardening anchors, and the full validation gate passed.
-- **T-008@20260515T214233Z**: complete — PAL workflow prompt artifacts now include a bounded `Knowledge Context` section from the local PAL KB query path when available and a non-blocking unavailable-context note when the index is missing; red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
-- **T-009@20260515T214233Z**: complete — PAL slow-inference context collection now writes a read-only run artifact with router health, saved smoke baseline token/s, optional GPU hints, and optional PAL router/Ollama logs. Red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
-- **T-010@20260515T214233Z**: complete — PAL slow-inference diagnosis CLI implemented: `promptclaw pal diagnose slow-inference PROJECT_ROOT` writes a read-only diagnosis run artifact with deterministic findings and `mutating_actions: []`; red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
-- **T-011@20260515T214233Z**: complete — Added a typed Vast connector stub boundary with no callable default lifecycle actions, surfaced the blocked boundary in PAL action-planning prompts, and kept `rent`, `destroy`, `start`, and `stop` out of the default action registry. Focused Vast/PAL tests, startup identity hardening anchors, and the required validation gate passed.
-- **T-012@20260515T214233Z**: pending — Pending.
-- **T-013@20260515T214233Z**: pending — Pending.
-- **T-014@20260515T214233Z**: pending — Pending.
-- **T-015@20260515T214233Z**: complete — PAL restart-validation workflow implemented: `promptclaw pal validate restart PROJECT_ROOT` runs router health, one fixed direct query, active smoke, Tailscale, and process-check diagnostics into a standard read-only `restart_validation` run artifact with `validation_status` and `mutating_actions: []`; red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
-- **T-016@20260515T214233Z**: complete — PAL shutdown-audit workflow implemented: `promptclaw pal audit shutdown PROJECT_ROOT` runs a fixed read-only SSH diagnostic for shutdown config, cron, override flag, current local shutdown time, and recent logs, then writes a standard `shutdown_audit` run artifact whose summary states shutdown enabled state, override state, next shutdown window, and `mutating_actions: []`. Red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
+- **T-001@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-002@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-003@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-004@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-005@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-006@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-007@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-008@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-009@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-010@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-011@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-012@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-013@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-014@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-015@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-016@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-017@20260515T214233Z**: complete — PAL Phase 2 readiness workflow implemented: `promptclaw pal report phase2-readiness PROJECT_ROOT` writes a report-only `phase2_readiness_report` run artifact with per-prerequisite scores, `overall_score`, `readiness_status`, `mutating_actions: []`, and `phase2_execution_actions: []`. Red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
 - **T-018@20260515T214233Z**: pending — Pending.
 - **T-019@20260515T214233Z**: pending — Pending.
