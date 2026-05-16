@@ -473,7 +473,7 @@ Progress: [███████████████████████
 - **T-038@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-039@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-040@20260515T214233Z**: complete — Implemented PAL deploy backup primitive for changed fake-remote managed files; focused PAL deploy tests, startup identity hardening anchors, docs grep, dependency/migration diff check, and full validation passed.
-- **T-041@20260515T214233Z**: in_progress — Implemented approved PAL deploy apply for local fake remote inventories: `promptclaw pal deploy apply PROJECT_ROOT --remote-inventory PATH --approve-apply` now rejects unapproved writes, backs up changed managed fake-remote files, writes added/changed manifest files to the supplied snapshot, preserves unmanaged files, and reports skipped missing local sources; focused PAL deploy tests, Ruff, and focused mypy are green.
+- **T-041@20260515T214233Z**: complete — Implemented approved PAL deploy apply for local fake remote inventories; locked apply tests, full PAL deploy/fake-client regressions, startup identity hardening anchors, docs grep, dependency/migration diff check, and full validation passed (`4791 passed, 11 skipped`, Ruff clean, mypy clean).
 - **T-042@20260515T214233Z**: pending — Pending.
 - **T-043@20260515T214233Z**: pending — Pending.
 - **T-044@20260515T214233Z**: pending — Pending.
