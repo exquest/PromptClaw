@@ -444,6 +444,7 @@ def replay_pal_approved_actions(
     saved = load_pal_action_results(project_root, run_id)
     config = load_config(project_root)
     paths = ProjectPaths(project_root=project_root, config=config)
+    source_action_plan_path = paths.run_outputs(run_id) / "action-results.json"
 
     if action_registry is None:
         pal_client = client or PALRouterClient.from_config(config)
@@ -476,6 +477,8 @@ def replay_pal_approved_actions(
     replayed_at = now()
     artifact_payload = {
         "run_id": run_id,
+        "source_run_id": run_id,
+        "source_action_plan_path": str(source_action_plan_path),
         "replayed_at": replayed_at,
         "executions": executions,
     }
@@ -484,6 +487,8 @@ def replay_pal_approved_actions(
 
     return {
         "run_id": run_id,
+        "source_run_id": run_id,
+        "source_action_plan_path": str(source_action_plan_path),
         "status": "complete",
         "approved_actions": list(approved),
         "proposed_actions": proposed,

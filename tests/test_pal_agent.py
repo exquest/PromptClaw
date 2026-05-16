@@ -535,6 +535,77 @@ def test_replay_pal_approved_actions_writes_redacted_execution_artifact(tmp_path
     assert result["artifact_path"] == str(artifact_path)
 
 
+def test_replay_pal_approved_actions_artifact_links_to_source_plan(tmp_path: Path) -> None:
+    from promptclaw.pal_agent import replay_pal_approved_actions
+    from promptclaw.paths import ProjectPaths
+
+    config = default_project_config("PAL Replay Source Link")
+    save_config(tmp_path, config)
+
+    tool_registry = {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Check PAL router health.",
+            run=lambda: {"summary": "router is green"},
+        ),
+    }
+    seed_action_registry = {
+        "inspect_logs_deep": PALOpsAction(
+            name="inspect_logs_deep",
+            description="Inspect PAL logs.",
+            approval_required=True,
+            mutating=False,
+            run=lambda: {"summary": "seed should never run"},
+        ),
+    }
+    seed_client = FakePALClient([
+        json.dumps({
+            "actions": ["inspect_logs_deep"],
+            "rationale": "Seed plan for source-link test.",
+        }),
+        "Proposal only.",
+    ])
+    seed_result = run_pal_ops_actions(
+        tmp_path,
+        client=seed_client,
+        tool_registry=tool_registry,
+        action_registry=seed_action_registry,
+        default_tools=("pal_health",),
+        now=_fake_now(),
+    )
+    run_id = seed_result["run_id"]
+
+    replay_action_registry = {
+        "inspect_logs_deep": PALOpsAction(
+            name="inspect_logs_deep",
+            description="Inspect PAL logs.",
+            approval_required=True,
+            mutating=False,
+            run=lambda: {"status": "ok", "summary": "inspected"},
+        ),
+    }
+
+    result = replay_pal_approved_actions(
+        tmp_path,
+        run_id,
+        approved_actions=("inspect_logs_deep",),
+        client=FakePALClient([]),
+        action_registry=replay_action_registry,
+        now=_fake_now(),
+    )
+
+    paths = ProjectPaths(project_root=tmp_path.resolve(), config=config)
+    expected_plan_path = paths.run_outputs(run_id) / "action-results.json"
+    artifact_path = paths.run_outputs(run_id) / "approval-executions.json"
+    payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+
+    assert payload["source_run_id"] == run_id
+    assert payload["source_action_plan_path"] == str(expected_plan_path)
+    assert expected_plan_path.is_file()
+    assert result["source_run_id"] == run_id
+    assert result["source_action_plan_path"] == str(expected_plan_path)
+
+
 def test_pal_ops_actions_executes_only_approved_allowlisted_actions(tmp_path: Path) -> None:
     config = default_project_config("PAL Actions Approved")
     save_config(tmp_path, config)
