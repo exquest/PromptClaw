@@ -85,6 +85,11 @@ def test_pytest_addoption_registers_live_flags() -> None:
         "default": False,
         "help": "run live Replicate tests",
     }
+    assert registered["--run-live-pal"] == {
+        "action": "store_true",
+        "default": False,
+        "help": "run live PAL router tests",
+    }
 
 
 def test_pytest_configure_registers_expected_markers() -> None:
@@ -102,6 +107,7 @@ def test_pytest_configure_registers_expected_markers() -> None:
             "markers",
             "cypherclaw_e2e: mark test as requiring the live CypherClaw audio host",
         ),
+        ("markers", "live_pal: mark test as requiring a live PAL router"),
     ]
 
 
@@ -110,11 +116,12 @@ def test_default_gate_application_skips_live_markers_only() -> None:
     live_modal = FakeItem("live_modal")
     live_replicate = FakeItem("live_replicate")
     cypherclaw_e2e = FakeItem("cypherclaw_e2e")
+    live_pal = FakeItem("live_pal")
     ordinary = FakeItem()
 
     decisions = conftest.apply_collection_gate_decisions(
         config,
-        [live_modal, live_replicate, cypherclaw_e2e, ordinary],  # type: ignore[list-item]
+        [live_modal, live_replicate, cypherclaw_e2e, live_pal, ordinary],  # type: ignore[list-item]
         environ={},
     )
 
@@ -125,26 +132,34 @@ def test_default_gate_application_skips_live_markers_only() -> None:
     assert by_marker["live_replicate"].skipped_count == 1
     assert by_marker["cypherclaw_e2e"].matched_count == 1
     assert by_marker["cypherclaw_e2e"].skipped_count == 0
+    assert by_marker["live_pal"].matched_count == 1
+    assert by_marker["live_pal"].skipped_count == 1
 
     assert _skip_reasons(live_modal) == ["need --run-live-modal option to run"]
     assert _skip_reasons(live_replicate) == [
         "need --run-live-replicate option to run"
     ]
     assert _skip_reasons(cypherclaw_e2e) == []
+    assert _skip_reasons(live_pal) == ["need --run-live-pal option to run"]
     assert _skip_reasons(ordinary) == []
 
 
 def test_enabled_live_flags_and_ci_gate_apply_expected_skips() -> None:
     config = FakeConfig(
-        {"--run-live-modal": True, "--run-live-replicate": True}
+        {
+            "--run-live-modal": True,
+            "--run-live-replicate": True,
+            "--run-live-pal": True,
+        }
     )
     live_modal = FakeItem("live_modal")
     live_replicate = FakeItem("live_replicate")
     cypherclaw_e2e = FakeItem("cypherclaw_e2e")
+    live_pal = FakeItem("live_pal")
 
     decisions = conftest.apply_collection_gate_decisions(
         config,
-        [live_modal, live_replicate, cypherclaw_e2e],  # type: ignore[list-item]
+        [live_modal, live_replicate, cypherclaw_e2e, live_pal],  # type: ignore[list-item]
         environ={"CI": "true"},
     )
 
@@ -155,10 +170,13 @@ def test_enabled_live_flags_and_ci_gate_apply_expected_skips() -> None:
     assert by_marker["live_replicate"].skipped_count == 0
     assert by_marker["cypherclaw_e2e"].enabled is False
     assert by_marker["cypherclaw_e2e"].skipped_count == 1
+    assert by_marker["live_pal"].enabled is True
+    assert by_marker["live_pal"].skipped_count == 0
 
     assert _skip_reasons(live_modal) == []
     assert _skip_reasons(live_replicate) == []
     assert _skip_reasons(cypherclaw_e2e) == ["cypherclaw e2e skipped on CI"]
+    assert _skip_reasons(live_pal) == []
 
 
 def test_collection_gate_summary_is_json_safe() -> None:
@@ -171,7 +189,7 @@ def test_collection_gate_summary_is_json_safe() -> None:
 
     summary = conftest.summarize_collection_gate_decisions(decisions)
 
-    assert summary["marker_count"] == 3
+    assert summary["marker_count"] == 4
     assert summary["enabled_count"] == 1
     assert summary["matched_item_count"] == 2
     assert summary["skipped_item_count"] == 2

@@ -19,11 +19,13 @@ SRC_DIR = REPO_ROOT / "src"
 LIVE_PYTEST_OPTIONS: tuple[tuple[str, str], ...] = (
     ("--run-live-modal", "run live Modal tests"),
     ("--run-live-replicate", "run live Replicate tests"),
+    ("--run-live-pal", "run live PAL router tests"),
 )
 PYTEST_MARKER_DEFINITIONS: tuple[tuple[str, str], ...] = (
     ("live_modal", "mark test as requiring a live Modal environment"),
     ("live_replicate", "mark test as requiring a live Replicate environment"),
     ("cypherclaw_e2e", "mark test as requiring the live CypherClaw audio host"),
+    ("live_pal", "mark test as requiring a live PAL router"),
 )
 
 if str(SRC_DIR) not in sys.path:
@@ -68,6 +70,12 @@ def collection_gate_decisions(
             None,
             "CI" not in environment,
             "cypherclaw e2e skipped on CI",
+        ),
+        (
+            "live_pal",
+            "--run-live-pal",
+            bool(config.getoption("--run-live-pal")),
+            "need --run-live-pal option to run",
         ),
     )
 
