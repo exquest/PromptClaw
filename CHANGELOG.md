@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+- Shipped PAL 2026 agentic ops platform (T-030@20260515T214233Z): this release
+  consolidates the PAL operator loop across four areas. **Approval replay** —
+  `promptclaw pal agent actions PROJECT_ROOT [--approve ACTION_ID]` records
+  proposed, pending, executed, ignored, and approved actions in run artifacts
+  and executes only allow-listed action ids from the saved plan, with
+  fake-client tests asserting the approval path runs exactly the approved
+  action. **KB** — `promptclaw pal kb build` writes
+  `.promptclaw/pal-kb/index.jsonl` from deterministic source chunks,
+  `promptclaw pal kb query` returns ranked snippets locally without contacting
+  the PAL router, and `promptclaw pal agent triage`/`actions` inject a bounded
+  `Knowledge Context` section into their prompt artifacts. **Workflows** —
+  `promptclaw pal validate restart`, `promptclaw pal audit shutdown`,
+  `promptclaw pal diagnose slow-inference`, and
+  `promptclaw pal report phase2-readiness` each write read-only run artifacts
+  with standardized `mutating_actions: []`, and the PAL workflow artifact and
+  secret-redaction verifiers plus the escalation-artifact helper enforce the
+  shared artifact contract. **Deploy plan** —
+  `pal-2026/ops/deployment-manifest.json` lists intended `/opt/pal` files,
+  `promptclaw.pal_deploy.diff_pal_deployment(...)` reports
+  `added`/`changed`/`missing`/`unchanged`/`unmanaged_remote` sets against fake
+  remote inventories, and `promptclaw pal deploy plan PROJECT_ROOT` prints a
+  stdout-only dry-run plan with `dry_run=true` and `remote_writes=false`.
+  Live PAL verification stays opt-in behind the `--run-live-pal` pytest gate,
+  and the SDP handoff page documents the analyze and run-loop commands.
+
 - Added fake-client CLI coverage for PAL workflows (T-026@20260515T214233Z):
   `tests/test_pal_cli_fake_client.py` now drives `promptclaw.cli.main(...)`
   through local-only `pal kb build/query`, approval-gated
