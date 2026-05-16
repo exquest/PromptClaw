@@ -152,6 +152,26 @@ diagnosis payload and route metadata both record `mutating_actions: []`; the
 command writes only local PromptClaw run artifacts and does not approve or
 execute infrastructure changes.
 
+The restart-validation CLI uses the same local workflow transport:
+
+```text
+.promptclaw/runs/<run-id>/
+├── input/task.md
+├── routing/route.json
+├── routing/route.md
+├── outputs/restart-validation.json
+├── handoffs/restart-validation.md
+├── summary/final-summary.md
+├── logs/events.jsonl
+└── state.json
+```
+
+`promptclaw pal validate restart PROJECT_ROOT` records router health, one fixed
+direct query, an active PAL smoke run with its saved report path, local
+Tailscale status, and the fixed read-only SSH process check. The payload and
+route metadata record `workflow_id: restart_validation`, `validation_status`,
+the executed tool list, and `mutating_actions: []`.
+
 ## Benefits
 
 - deterministic transfer point

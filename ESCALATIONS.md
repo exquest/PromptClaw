@@ -1,5 +1,12 @@
 # Escalations
 
+## T-015@20260515T214233Z (2026-05-15T21:42:33Z)
+
+- **Reason:** PAL restart-validation workflow scope and startup-hardening assumptions
+- **Details:** Exploration found PAL-020 builds on the existing deterministic PAL workflow path in `promptclaw/pal_agent.py`, with CLI integration in `promptclaw/cli.py`, health/query behavior in `promptclaw/pal_client.py`, and active smoke reporting in `promptclaw/pal_smoke.py`. The implementation is assumed to be a local read-only validation command exposed as `promptclaw pal validate restart PROJECT_ROOT`. It will actively run router health, one fixed direct query, the PAL smoke suite, local Tailscale status, and the fixed SSH process check, then write a standard `restart_validation` run artifact. The workflow will not expose action ids, restart services, write remote files, change shutdown behavior, alter cloud rentals, add dependencies, add migrations, add provider secrets, or change database columns. The generated startup hardening bullets target the existing identity startup subsystem; current CLI, first-boot, daemon-ordering, and narrative ASGI tests already cover `bootstrap_identity()` persistence and ordering before `FirstBootAnnouncer`, so those remain mandatory regression anchors rather than broadening this PAL validation task into startup rewiring.
+- **Reason:** Red phase, implementation verification, and hardening-anchor results
+- **Details:** Red phase was confirmed with `pytest tests/test_pal_agent.py::test_pal_restart_validation_runs_health_query_smoke_tailscale_and_process_checks tests/test_pal_agent.py::test_pal_validate_restart_cli_prints_summary -q` failing on the missing `run_pal_restart_validation` workflow and `pal validate` parser wiring before production code changed. After implementation, the same locked tests passed with `2 passed`, the focused PAL regression suite passed with `39 passed`, and the mandatory startup identity hardening anchors passed with `45 passed`. The required validation command `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` passed with `4743 passed, 10 skipped`, Ruff clean, and mypy clean. No new dependencies or migrations were introduced.
+
 ## T-011@20260515T214233Z (2026-05-15T21:42:33Z)
 
 - **Reason:** Vast connector boundary scope and startup-hardening assumptions

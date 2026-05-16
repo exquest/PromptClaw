@@ -1,5 +1,25 @@
 # Progress
 
+## T-015@20260515T214233Z Exploration Findings
+
+- ADP source: the active process is the task prompt's Explore -> Specify ->
+  Test -> Implement -> Verify -> Document flow, matching
+  `sdp/templates/candidates/lead_t2/v006.md`.
+- PRD source: `sdp/prd-pal-2026-agentic-ops-platform.md` maps this task to
+  PAL-020 `restart_validation`: a command must run health, direct query, smoke,
+  Tailscale, and process checks after restart or instance boot.
+- Affected implementation files: `promptclaw/pal_agent.py` for workflow/tool
+  logic, `promptclaw/cli.py` for parser/dispatch, `promptclaw/pal_client.py`
+  for health/query behavior, and `promptclaw/pal_smoke.py` for active smoke
+  execution and saved reports.
+- Existing pattern: slow-inference workflows are deterministic local allow-list
+  workflows that write standard run artifacts and record `mutating_actions: []`.
+  Restart validation should follow that pattern rather than using PAL to choose
+  tools or exposing approval-gated actions.
+- Related tests: `tests/test_pal_agent.py`, `tests/test_pal_smoke.py`, and
+  `tests/test_pal_client.py` already cover PAL workflow artifacts, fake clients,
+  fake SSH diagnostics, smoke reports, and CLI summary output.
+
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
 ETC: ~8h 9m remaining (48 tasks, low confidence, calibrating)
@@ -447,7 +467,7 @@ Progress: [███████████████████████
 - **T-012@20260515T214233Z**: pending — Pending.
 - **T-013@20260515T214233Z**: pending — Pending.
 - **T-014@20260515T214233Z**: pending — Pending.
-- **T-015@20260515T214233Z**: pending — Pending.
+- **T-015@20260515T214233Z**: complete — PAL restart-validation workflow implemented: `promptclaw pal validate restart PROJECT_ROOT` runs router health, one fixed direct query, active smoke, Tailscale, and process-check diagnostics into a standard read-only `restart_validation` run artifact with `validation_status` and `mutating_actions: []`; red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
 - **T-016@20260515T214233Z**: pending — Pending.
 - **T-017@20260515T214233Z**: pending — Pending.
 - **T-018@20260515T214233Z**: pending — Pending.

@@ -833,6 +833,203 @@ def test_pal_diagnose_slow_inference_cli_prints_summary(
     assert payload["mutating_actions"] == []
 
 
+def test_pal_restart_validation_runs_health_query_smoke_tailscale_and_process_checks(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from promptclaw.pal_agent import run_pal_restart_validation
+
+    config = default_project_config("PAL Restart Validation")
+    save_config(tmp_path, config)
+    calls: list[str] = []
+
+    class RestartFakePALClient:
+        base_url = "http://pal-cloud-a6000:8000"
+        default_model = "llama3.3:70b-instruct-q4_K_M"
+
+        def health(self) -> dict[str, Any]:
+            calls.append("pal_health")
+            return {"status": "green", "phase": "phase-1-a6000"}
+
+        def query(
+            self,
+            prompt: str,
+            *,
+            system: str | None = None,
+            model: str | None = None,
+            temperature: float | None = 0.7,
+        ) -> PALQueryResult:
+            calls.append("pal_direct_query")
+            assert "restart validation" in prompt.lower()
+            return PALQueryResult(
+                text="PAL restart validation query succeeded.",
+                raw={
+                    "response": "PAL restart validation query succeeded.",
+                    "model": self.default_model,
+                },
+            )
+
+    fake_client = RestartFakePALClient()
+
+    def fake_run_pal_smoke(client: Any) -> dict[str, Any]:
+        calls.append("pal_smoke")
+        assert client is fake_client
+        return {
+            "status": "pass",
+            "started_at": "2026-05-15T20:00:00+00:00",
+            "summary": {"passed": 3, "failed": 0, "total_latency_s": 12.5},
+            "checks": [],
+        }
+
+    def fake_write_smoke_report(
+        project_root: Path,
+        report: dict[str, Any],
+        output: Path | None = None,
+    ) -> Path:
+        report_path = project_root / ".promptclaw" / "pal-smoke" / "pal-smoke-restart.json"
+        report_path.parent.mkdir(parents=True)
+        report_path.write_text(json.dumps(report), encoding="utf-8")
+        return report_path
+
+    def fake_tailscale_status() -> dict[str, Any]:
+        calls.append("tailscale_status")
+        return {
+            "status": "ok",
+            "summary": "pal-cloud-a6000 is visible in local Tailscale status.",
+            "node_visible": True,
+        }
+
+    def fake_process_check() -> dict[str, Any]:
+        calls.append("ssh_process_check")
+        return {
+            "status": "ok",
+            "summary": "Read-only SSH process/log diagnostic completed.",
+            "command": {
+                "stdout": "tailscaled\nollama serve\nuvicorn app:app --host 0.0.0.0 --port 8000",
+                "stderr": "",
+                "exit_code": 0,
+            },
+        }
+
+    monkeypatch.setattr("promptclaw.pal_agent.run_pal_smoke", fake_run_pal_smoke)
+    monkeypatch.setattr("promptclaw.pal_agent.write_smoke_report", fake_write_smoke_report)
+    monkeypatch.setattr("promptclaw.pal_agent._tailscale_status_tool", fake_tailscale_status)
+    monkeypatch.setattr("promptclaw.pal_agent._ssh_process_check_tool", fake_process_check)
+
+    result = run_pal_restart_validation(
+        tmp_path,
+        task="Validate PAL after restart.",
+        client=fake_client,
+        now=_fake_now(),
+    )
+
+    expected_tools = [
+        "pal_health",
+        "pal_direct_query",
+        "pal_smoke",
+        "tailscale_status",
+        "ssh_process_check",
+    ]
+    assert calls == expected_tools
+    assert result["status"] == "complete"
+    assert result["workflow_id"] == "restart_validation"
+    assert result["validation_status"] == "pass"
+    assert result["mutating_actions"] == []
+    assert result["executed_tools"] == expected_tools
+
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    payload = json.loads((run_root / "outputs" / "restart-validation.json").read_text())
+    route = json.loads((run_root / "routing" / "route.json").read_text())
+    state = json.loads((run_root / "state.json").read_text())
+    events = (run_root / "logs" / "events.jsonl").read_text()
+    observations = {row["tool"]: row for row in payload["observations"]}
+
+    assert payload["workflow_id"] == "restart_validation"
+    assert payload["validation_status"] == "pass"
+    assert payload["mutating_actions"] == []
+    assert payload["executed_tools"] == expected_tools
+    assert observations["pal_health"]["health"]["status"] == "green"
+    assert observations["pal_direct_query"]["query"]["response"] == "PAL restart validation query succeeded."
+    assert observations["pal_smoke"]["report"]["status"] == "pass"
+    assert observations["pal_smoke"]["report_path"].endswith(".promptclaw/pal-smoke/pal-smoke-restart.json")
+    assert observations["tailscale_status"]["node_visible"] is True
+    assert "ollama serve" in observations["ssh_process_check"]["command"]["stdout"]
+    assert route["workflow_id"] == "restart_validation"
+    assert route["mutating_actions"] == []
+    assert "Mutating actions: none" in (run_root / "routing" / "route.md").read_text()
+    assert "PAL Restart Validation" in (run_root / "summary" / "final-summary.md").read_text()
+    assert (run_root / "handoffs" / "restart-validation.md").exists()
+    assert "restart_validation_started" in events
+    assert "restart_validation_completed" in events
+    assert state["status"] == "complete"
+    assert state["lead_agent"] == "local-allowlist"
+    assert state["verifier_agent"] == "local-allowlist"
+
+
+def test_pal_validate_restart_cli_prints_summary(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    parser = promptclaw_cli.build_parser()
+    parsed = parser.parse_args([
+        "pal",
+        "validate",
+        "restart",
+        str(tmp_path),
+        "--task",
+        "Validate restart.",
+        "--json",
+    ])
+    assert parsed.pal_command == "validate"
+    assert parsed.pal_validate_command == "restart"
+    assert parsed.project_root == tmp_path
+    assert parsed.task == "Validate restart."
+    assert parsed.json is True
+
+    result = {
+        "run_id": "20260515t200000z-pal-restart-validation",
+        "workflow_id": "restart_validation",
+        "status": "complete",
+        "validation_status": "pass",
+        "summary_path": ".promptclaw/runs/20260515t200000z-pal-restart-validation/summary/final-summary.md",
+        "validation_path": ".promptclaw/runs/20260515t200000z-pal-restart-validation/outputs/restart-validation.json",
+        "executed_tools": ["pal_health", "pal_direct_query", "pal_smoke"],
+        "tool_count": 3,
+        "mutating_actions": [],
+    }
+    calls: list[dict[str, Any]] = []
+
+    def fake_run(project_root: Path, *, task: str) -> dict[str, Any]:
+        calls.append({"project_root": project_root, "task": task})
+        return dict(result)
+
+    monkeypatch.setattr("promptclaw.cli.run_pal_restart_validation", fake_run)
+
+    text_output = io.StringIO()
+    args = argparse.Namespace(project_root=tmp_path, task="Validate restart.", json=False)
+    with redirect_stdout(text_output):
+        rc = promptclaw_cli.cmd_pal_validate_restart(args)
+
+    assert rc == 0
+    rendered = text_output.getvalue()
+    assert "PAL restart validation: COMPLETE" in rendered
+    assert "validation_status=pass" in rendered
+    assert "executed_tools=pal_health,pal_direct_query,pal_smoke" in rendered
+    assert "mutating_actions=none" in rendered
+    assert calls == [{"project_root": tmp_path, "task": "Validate restart."}]
+
+    json_output = io.StringIO()
+    args = argparse.Namespace(project_root=tmp_path, task="Validate restart.", json=True)
+    with redirect_stdout(json_output):
+        rc = promptclaw_cli.cmd_pal_validate_restart(args)
+
+    assert rc == 0
+    payload = json.loads(json_output.getvalue())
+    assert payload["workflow_id"] == "restart_validation"
+    assert payload["validation_status"] == "pass"
+    assert payload["mutating_actions"] == []
+
+
 def test_pal_agent_cli_actions_prints_approval_summary(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr("promptclaw.cli.run_pal_ops_actions", lambda project_root, task, approved_actions: {
         "run_id": "20260515t191000z-pal-ops-actions",

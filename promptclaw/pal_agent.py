@@ -102,6 +102,27 @@ DEFAULT_SLOW_INFERENCE_CONTEXT_TOOL_ORDER: tuple[str, ...] = (
 
 DEFAULT_SLOW_INFERENCE_DIAGNOSIS_TOOL_ORDER = DEFAULT_SLOW_INFERENCE_CONTEXT_TOOL_ORDER
 
+DEFAULT_RESTART_VALIDATION_TASK = (
+    "Validate PAL 2026 after a restart or instance boot. Capture router health, "
+    "one direct query, an active smoke run, local Tailscale reachability, and "
+    "remote process hints when SSH diagnostics are configured."
+)
+
+RESTART_VALIDATION_WORKFLOW_ID = "restart_validation"
+
+RESTART_VALIDATION_QUERY_PROMPT = (
+    "Restart validation check: confirm PAL 2026 is reachable and ready after restart "
+    "in one concise operational sentence."
+)
+
+DEFAULT_RESTART_VALIDATION_TOOL_ORDER: tuple[str, ...] = (
+    "pal_health",
+    "pal_direct_query",
+    "pal_smoke",
+    "tailscale_status",
+    "ssh_process_check",
+)
+
 PAL_AGENT_SYSTEM_PROMPT = (
     "You are PAL 2026 operating through PromptClaw's bounded agent runtime. "
     "You may choose diagnostics from the provided allow-list only. You cannot run "
@@ -739,6 +760,137 @@ def run_pal_slow_inference_diagnosis(
     }
 
 
+def run_pal_restart_validation(
+    project_root: Path,
+    *,
+    task: str = DEFAULT_RESTART_VALIDATION_TASK,
+    client: PALAgentClient | None = None,
+    tool_registry: dict[str, PALOpsTool] | None = None,
+    default_tools: tuple[str, ...] = DEFAULT_RESTART_VALIDATION_TOOL_ORDER,
+    now: Callable[[], str] = utc_now,
+) -> dict[str, Any]:
+    project_root = project_root.resolve()
+    config = load_config(project_root)
+    paths = ProjectPaths(project_root=project_root, config=config)
+    pal_client = client or PALRouterClient.from_config(config)
+    tools = tool_registry or build_restart_validation_tool_registry(project_root, pal_client)
+
+    created_at = now()
+    run_id = _build_run_id(created_at, "pal-restart-validation")
+    artifacts = ArtifactManager(paths, run_id)
+    artifacts.create_run_layout()
+    artifacts.write_task(task)
+
+    state = RunState(
+        run_id=run_id,
+        title="PAL Restart Validation",
+        status="running",
+        current_phase="validation",
+        created_at=created_at,
+        updated_at=created_at,
+        task_text=task,
+        lead_agent="local-allowlist",
+        verifier_agent="local-allowlist",
+        route_decision={
+            "task_type": RESTART_VALIDATION_WORKFLOW_ID,
+            "workflow_id": RESTART_VALIDATION_WORKFLOW_ID,
+            "lead_agent": "local-allowlist",
+            "verifier_agent": "local-allowlist",
+            "reason": "PromptClaw validates restart health through fixed read-only diagnostics.",
+            "mutating_actions": [],
+        },
+    )
+
+    _record_event(
+        artifacts,
+        state,
+        now,
+        event_type="pal_agent.restart_validation_started",
+        message="PAL restart validation started.",
+        phase="validation",
+        agent="local-allowlist",
+        role="verifier",
+    )
+
+    validation_tools = [name for name in default_tools if name in tools]
+    observations: list[dict[str, Any]] = []
+    for tool_name in validation_tools:
+        observation = _run_tool(tools[tool_name])
+        observations.append(observation)
+        _record_event(
+            artifacts,
+            state,
+            now,
+            event_type="pal_agent.restart_validation_observed",
+            message=f"{tool_name} returned {observation['status']}.",
+            phase="validation",
+            agent="local-allowlist",
+            role="verifier",
+            extra={"tool": tool_name, "status": observation["status"]},
+        )
+
+    validation_status = _restart_validation_status_from_observations(observations)
+    payload = {
+        "workflow_id": RESTART_VALIDATION_WORKFLOW_ID,
+        "task": task,
+        "executed_tools": validation_tools,
+        "mutating_actions": [],
+        "validation_status": validation_status,
+        "observations": observations,
+    }
+    validation_path = artifacts.write_output("restart-validation.json", _json_dumps(payload))
+    artifacts.write_route_json({
+        "lead_agent": "local-allowlist",
+        "verifier_agent": "local-allowlist",
+        "task_type": RESTART_VALIDATION_WORKFLOW_ID,
+        "workflow_id": RESTART_VALIDATION_WORKFLOW_ID,
+        "tools": validation_tools,
+        "mutating_actions": [],
+        "output_path": _relative_path(project_root, validation_path),
+    })
+    artifacts.write_route_markdown(_render_restart_validation_route_markdown(validation_tools))
+
+    state.current_phase = "summary"
+    summary_text = _render_restart_validation_summary(payload)
+    summary_path = artifacts.write_summary("final-summary.md", summary_text)
+    artifacts.write_handoff(
+        "restart-validation.md",
+        _render_restart_validation_handoff(payload),
+    )
+
+    state.status = "complete"
+    state.current_phase = "complete"
+    state.updated_at = now()
+    state.final_summary_path = _relative_path(project_root, summary_path)
+    _record_event(
+        artifacts,
+        state,
+        now,
+        event_type="pal_agent.restart_validation_completed",
+        message="PAL restart validation completed.",
+        phase="complete",
+        agent="local-allowlist",
+        role="verifier",
+        extra={
+            "summary_path": state.final_summary_path,
+            "validation_status": validation_status,
+        },
+    )
+    StateStore(paths).save(state)
+
+    return {
+        "run_id": run_id,
+        "workflow_id": RESTART_VALIDATION_WORKFLOW_ID,
+        "status": state.status,
+        "validation_status": validation_status,
+        "summary_path": state.final_summary_path,
+        "validation_path": _relative_path(project_root, validation_path),
+        "executed_tools": validation_tools,
+        "tool_count": len(validation_tools),
+        "mutating_actions": [],
+    }
+
+
 def build_default_tool_registry(project_root: Path, client: PALAgentClient) -> dict[str, PALOpsTool]:
     return {
         "pal_health": PALOpsTool(
@@ -750,6 +902,39 @@ def build_default_tool_registry(project_root: Path, client: PALAgentClient) -> d
             name="pal_smoke_baseline",
             description="Summarize saved PAL smoke reports under .promptclaw/pal-smoke.",
             run=lambda: _pal_smoke_baseline_tool(project_root),
+        ),
+        "tailscale_status": PALOpsTool(
+            name="tailscale_status",
+            description="Run a fixed local Tailscale status check and look for pal-cloud-a6000.",
+            run=_tailscale_status_tool,
+        ),
+        "ssh_process_check": PALOpsTool(
+            name="ssh_process_check",
+            description="If PAL_SSH_* env vars are configured, run a fixed read-only remote process/log check.",
+            run=_ssh_process_check_tool,
+        ),
+    }
+
+
+def build_restart_validation_tool_registry(
+    project_root: Path,
+    client: PALAgentClient,
+) -> dict[str, PALOpsTool]:
+    return {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Call the configured PAL router /health endpoint.",
+            run=lambda: _pal_health_tool(client),
+        ),
+        "pal_direct_query": PALOpsTool(
+            name="pal_direct_query",
+            description="Send one fixed restart-validation prompt to the configured PAL router.",
+            run=lambda: _pal_direct_query_tool(client),
+        ),
+        "pal_smoke": PALOpsTool(
+            name="pal_smoke",
+            description="Run the active PAL smoke suite and save a fresh smoke report.",
+            run=lambda: _pal_smoke_run_tool(project_root, client),
         ),
         "tailscale_status": PALOpsTool(
             name="tailscale_status",
@@ -890,6 +1075,43 @@ def _pal_health_tool(client: PALAgentClient) -> dict[str, Any]:
         "status": "ok" if str(health.get("status", "")).lower() == "green" else "warn",
         "summary": f"PAL router status is {health.get('status', 'unknown')}.",
         "health": health,
+    }
+
+
+def _pal_direct_query_tool(client: PALAgentClient) -> dict[str, Any]:
+    result = client.query(
+        RESTART_VALIDATION_QUERY_PROMPT,
+        system=PAL_AGENT_SYSTEM_PROMPT,
+        temperature=0.1,
+    )
+    response = result.text.strip()
+    return {
+        "status": "ok" if response else "warn",
+        "summary": "Direct PAL restart-validation query returned a response."
+        if response
+        else "Direct PAL restart-validation query returned an empty response.",
+        "query": {
+            "prompt": RESTART_VALIDATION_QUERY_PROMPT,
+            "response": truncate(response, 1200),
+            "model": result.raw.get("model", client.default_model),
+            "raw": result.raw,
+        },
+    }
+
+
+def _pal_smoke_run_tool(project_root: Path, client: PALAgentClient) -> dict[str, Any]:
+    report = run_pal_smoke(client)
+    report_path = write_smoke_report(project_root, report)
+    summary = report.get("summary", {})
+    status = "ok" if report.get("status") == "pass" else "warn"
+    return {
+        "status": status,
+        "summary": (
+            f"PAL smoke suite {report.get('status', 'unknown')} with "
+            f"{summary.get('passed', 0)} passed and {summary.get('failed', 0)} failed checks."
+        ),
+        "report_path": str(report_path),
+        "report": report,
     }
 
 
@@ -1096,6 +1318,15 @@ def _slow_inference_recommendations(findings: list[dict[str, Any]]) -> list[str]
     if not recommendations:
         recommendations.append("No slow-inference fault was detected from the available read-only evidence.")
     return recommendations
+
+
+def _restart_validation_status_from_observations(observations: list[dict[str, Any]]) -> str:
+    statuses = {str(observation.get("status", "")) for observation in observations}
+    if "error" in statuses:
+        return "fail"
+    if statuses.intersection({"warn", "skipped"}):
+        return "warn"
+    return "pass"
 
 
 def _tailscale_status_tool() -> dict[str, Any]:
@@ -1754,6 +1985,18 @@ def _render_slow_inference_diagnosis_route_markdown(context_tools: list[str]) ->
     )
 
 
+def _render_restart_validation_route_markdown(validation_tools: list[str]) -> str:
+    tools = ", ".join(validation_tools) if validation_tools else "none"
+    return (
+        "# PAL Restart Validation Route\n\n"
+        f"- Workflow id: {RESTART_VALIDATION_WORKFLOW_ID}\n"
+        f"- Lead agent: local allow-list\n"
+        f"- Verifier/executor: local allow-list\n"
+        f"- Tools: {tools}\n"
+        "- Mutating actions: none\n"
+    )
+
+
 def _render_slow_inference_context_summary(context_payload: dict[str, Any]) -> str:
     lines = ["# PAL Slow-Inference Context", ""]
     baseline_tps = context_payload.get("baseline_tokens_per_second")
@@ -1803,6 +2046,21 @@ def _render_slow_inference_diagnosis_summary(payload: dict[str, Any]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+def _render_restart_validation_summary(payload: dict[str, Any]) -> str:
+    lines = ["# PAL Restart Validation", ""]
+    lines.append(f"Workflow id: {payload['workflow_id']}")
+    lines.append(f"Validation status: {payload['validation_status']}")
+    lines.append("Mutating actions: none")
+    lines.append("")
+    lines.append("Observations:")
+    for observation in payload["observations"]:
+        lines.append(
+            f"- {observation.get('tool', 'unknown')}: "
+            f"{observation.get('status', 'unknown')} - {observation.get('summary', '')}"
+        )
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def _render_slow_inference_context_handoff(context_payload: dict[str, Any]) -> str:
     executed = ", ".join(context_payload["executed_tools"]) or "none"
     return (
@@ -1826,6 +2084,20 @@ def _render_slow_inference_diagnosis_handoff(payload: dict[str, Any]) -> str:
         f"Severity: {diagnosis['severity']}\n\n"
         "This diagnosis is read-only except for local PromptClaw run artifacts. "
         "It does not approve or execute infrastructure changes.\n"
+    )
+
+
+def _render_restart_validation_handoff(payload: dict[str, Any]) -> str:
+    executed = ", ".join(payload["executed_tools"]) or "none"
+    return (
+        "# PAL Restart Validation Handoff\n\n"
+        f"Workflow id: {payload['workflow_id']}\n\n"
+        f"Executed diagnostics: {executed}\n\n"
+        "Mutating actions: none\n\n"
+        f"Validation status: {payload['validation_status']}\n\n"
+        "This validation is read-only except for local PromptClaw run artifacts "
+        "and local PAL smoke report storage. It does not approve or execute "
+        "infrastructure changes.\n"
     )
 
 

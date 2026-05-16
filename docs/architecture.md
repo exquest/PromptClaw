@@ -167,6 +167,15 @@ route and diagnosis artifacts record `mutating_actions: []`; the command has no
 approval surface and does not restart services, change config, alter cloud
 rentals, or write remote files.
 
+The restart-validation workflow is exposed as
+`promptclaw pal validate restart PROJECT_ROOT`. It is also deterministic and
+local-authority only: PromptClaw calls router health, sends one fixed direct
+query, runs and saves the PAL smoke suite, checks local Tailscale status, and
+runs the fixed read-only SSH process check when configured. The workflow writes
+`outputs/restart-validation.json` with `workflow_id: restart_validation`,
+`validation_status`, all observations, and `mutating_actions: []`; it validates
+post-restart state but does not perform the restart itself.
+
 Every PAL agent run uses the standard `.promptclaw/runs/<run-id>/` layout so the
 plan, observations, approvals, results, summary, events, and state remain
 reproducible.

@@ -152,6 +152,8 @@ promptclaw pal kb query PROJECT_ROOT --query "router restart"
 promptclaw pal kb query PROJECT_ROOT --query "router restart" --limit 3 --json
 promptclaw pal diagnose slow-inference PROJECT_ROOT
 promptclaw pal diagnose slow-inference PROJECT_ROOT --json
+promptclaw pal validate restart PROJECT_ROOT
+promptclaw pal validate restart PROJECT_ROOT --json
 promptclaw pal agent triage PROJECT_ROOT
 promptclaw pal agent actions PROJECT_ROOT
 promptclaw pal agent actions PROJECT_ROOT --approve inspect_logs_deep
@@ -215,6 +217,15 @@ when those signals are available. It exposes no action ids and records
 `mutating_actions: []`; any restart, shutdown, rental, key, firewall, or config
 change remains outside this command and requires a separate approval-gated
 workflow.
+
+`pal validate restart` runs the restart-validation workflow for post-restart or
+post-boot checks. It actively calls router health, sends one fixed direct query,
+runs and saves a fresh PAL smoke report, checks local Tailscale visibility, and
+runs the fixed read-only SSH process check when PAL SSH variables are configured.
+It writes `.promptclaw/runs/<run-id>/outputs/restart-validation.json`,
+route/event/state artifacts, a handoff, and a final summary with
+`workflow_id: restart_validation`, `validation_status`, the executed tool list,
+and `mutating_actions: []`.
 
 Current action ids:
 

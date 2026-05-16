@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added PAL restart-validation workflow (T-015@20260515T214233Z):
+  `promptclaw pal validate restart PROJECT_ROOT` now writes a read-only
+  `restart_validation` run artifact after running router health, one fixed
+  direct query, an active PAL smoke run, local Tailscale status, and the fixed
+  SSH process check, recording `validation_status` and `mutating_actions: []`.
+
 - Added Vast connector stub boundary (T-011@20260515T214233Z):
   `promptclaw.vast_connector` now records Vast lifecycle operations as blocked
   metadata, PAL action-planning prompts surface the non-executing boundary, and
