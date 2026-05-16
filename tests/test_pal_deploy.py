@@ -13,6 +13,7 @@ from promptclaw import cli as promptclaw_cli
 from promptclaw.pal_deploy import (
     PALDeploymentManifest,
     PALDeploymentManifestError,
+    PALDeploymentMetadata,
     backup_pal_deployment_changes,
     build_fake_pal_remote_inventory,
     diff_pal_deployment,
@@ -856,6 +857,37 @@ def _write_diff_manifest_project(tmp_path: Path) -> PALDeploymentManifest:
     }
     manifest_path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
     return load_pal_deployment_manifest(tmp_path, manifest_path=manifest_path)
+
+
+def test_pal_deployment_metadata_stores_rate_runtime_and_optional_vast_instance() -> None:
+    full = PALDeploymentMetadata(
+        hourly_rate_usd=0.55,
+        runtime_estimate_hours=4.0,
+        vast_instance_id="vast-12345",
+    )
+    minimal = PALDeploymentMetadata(
+        hourly_rate_usd=0.40,
+        runtime_estimate_hours=2.5,
+    )
+
+    assert full.hourly_rate_usd == 0.55
+    assert full.runtime_estimate_hours == 4.0
+    assert full.vast_instance_id == "vast-12345"
+    assert full.estimated_cost_usd == pytest.approx(2.2)
+    assert full.to_dict() == {
+        "hourly_rate_usd": 0.55,
+        "runtime_estimate_hours": 4.0,
+        "vast_instance_id": "vast-12345",
+    }
+
+    assert minimal.vast_instance_id is None
+    assert minimal.to_dict()["vast_instance_id"] is None
+    assert minimal.estimated_cost_usd == pytest.approx(1.0)
+
+    with pytest.raises(ValueError, match="hourly_rate_usd"):
+        PALDeploymentMetadata(hourly_rate_usd=-0.01, runtime_estimate_hours=1.0)
+    with pytest.raises(ValueError, match="runtime_estimate_hours"):
+        PALDeploymentMetadata(hourly_rate_usd=0.50, runtime_estimate_hours=-1.0)
 
 
 def _diff_file_entry(source: str, target: str, *, required: bool = True) -> dict[str, object]:

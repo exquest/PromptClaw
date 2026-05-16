@@ -88,6 +88,36 @@ class PALDeploymentManifest:
 
 
 @dataclass(frozen=True)
+class PALDeploymentMetadata:
+    """Cost-tracking metadata for a single PAL deployment instance."""
+
+    hourly_rate_usd: float
+    runtime_estimate_hours: float
+    vast_instance_id: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.hourly_rate_usd < 0:
+            raise ValueError(
+                f"hourly_rate_usd must be non-negative: {self.hourly_rate_usd}"
+            )
+        if self.runtime_estimate_hours < 0:
+            raise ValueError(
+                f"runtime_estimate_hours must be non-negative: {self.runtime_estimate_hours}"
+            )
+
+    @property
+    def estimated_cost_usd(self) -> float:
+        return self.hourly_rate_usd * self.runtime_estimate_hours
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "hourly_rate_usd": self.hourly_rate_usd,
+            "runtime_estimate_hours": self.runtime_estimate_hours,
+            "vast_instance_id": self.vast_instance_id,
+        }
+
+
+@dataclass(frozen=True)
 class PALDeploymentManifestValidation:
     errors: tuple[str, ...]
     warnings: tuple[str, ...] = ()
