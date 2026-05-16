@@ -424,6 +424,59 @@ def load_pal_action_results(project_root: Path, run_id: str) -> dict[str, Any]:
     return payload
 
 
+def replay_pal_approved_actions(
+    project_root: Path,
+    run_id: str,
+    *,
+    approved_actions: tuple[str, ...],
+    client: PALAgentClient | None = None,
+    action_registry: dict[str, PALOpsAction] | None = None,
+    now: Callable[[], str] = utc_now,
+) -> dict[str, Any]:
+    """Execute approved actions from a saved PAL plan without a model call.
+
+    Loads the saved action plan via :func:`load_pal_action_results`, then
+    invokes the runner for each approved action that is present in both the
+    saved ``proposed_actions`` list and the supplied ``action_registry``. The
+    PAL client is never queried during replay.
+    """
+    project_root = project_root.resolve()
+    saved = load_pal_action_results(project_root, run_id)
+
+    if action_registry is None:
+        config = load_config(project_root)
+        pal_client = client or PALRouterClient.from_config(config)
+        actions = build_default_action_registry(project_root, pal_client)
+    else:
+        actions = action_registry
+
+    approved = tuple(dict.fromkeys(str(action_id) for action_id in approved_actions))
+    proposed = list(saved.get("proposed_actions") or [])
+    proposed_set = set(proposed)
+
+    executed_actions: list[str] = []
+    unknown_actions: list[str] = []
+    action_rows: list[dict[str, Any]] = []
+    for action_id in approved:
+        if action_id not in proposed_set or action_id not in actions:
+            unknown_actions.append(action_id)
+            continue
+        result = _run_action(actions[action_id])
+        executed_actions.append(action_id)
+        action_rows.append(result)
+
+    return {
+        "run_id": run_id,
+        "status": "complete",
+        "approved_actions": list(approved),
+        "proposed_actions": proposed,
+        "unknown_actions": unknown_actions,
+        "executed_actions": executed_actions,
+        "actions": action_rows,
+        "replayed_at": now(),
+    }
+
+
 def run_pal_ops_triage(
     project_root: Path,
     *,

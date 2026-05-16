@@ -376,6 +376,74 @@ def test_load_pal_action_results_raises_when_run_missing(tmp_path: Path) -> None
         raise AssertionError("expected FileNotFoundError for missing run")
 
 
+def test_replay_pal_approved_actions_executes_without_model_call(tmp_path: Path) -> None:
+    from promptclaw.pal_agent import replay_pal_approved_actions
+
+    config = default_project_config("PAL Replay No Model Call")
+    save_config(tmp_path, config)
+
+    tool_registry = {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Check PAL router health.",
+            run=lambda: {"summary": "router is green"},
+        ),
+    }
+    seed_action_registry = {
+        "inspect_logs_deep": PALOpsAction(
+            name="inspect_logs_deep",
+            description="Inspect PAL logs.",
+            approval_required=True,
+            mutating=False,
+            run=lambda: {"summary": "seed should never run"},
+        ),
+    }
+    seed_client = FakePALClient([
+        json.dumps({
+            "actions": ["inspect_logs_deep"],
+            "rationale": "Seed plan for replay.",
+        }),
+        "Proposal only: no actions approved.",
+    ])
+    seed_result = run_pal_ops_actions(
+        tmp_path,
+        client=seed_client,
+        tool_registry=tool_registry,
+        action_registry=seed_action_registry,
+        default_tools=("pal_health",),
+        now=_fake_now(),
+    )
+    run_id = seed_result["run_id"]
+
+    executed: list[str] = []
+    replay_action_registry = {
+        "inspect_logs_deep": PALOpsAction(
+            name="inspect_logs_deep",
+            description="Inspect PAL logs.",
+            approval_required=True,
+            mutating=False,
+            run=lambda: _recorded_tool_result(executed, "inspect_logs_deep"),
+        ),
+    }
+    replay_client = FakePALClient([])
+
+    result = replay_pal_approved_actions(
+        tmp_path,
+        run_id,
+        approved_actions=("inspect_logs_deep",),
+        client=replay_client,
+        action_registry=replay_action_registry,
+        now=_fake_now(),
+    )
+
+    assert replay_client.prompts == []
+    assert executed == ["inspect_logs_deep"]
+    assert result["run_id"] == run_id
+    assert result["executed_actions"] == ["inspect_logs_deep"]
+    assert result["actions"][0]["action"] == "inspect_logs_deep"
+    assert result["actions"][0]["status"] == "ok"
+
+
 def test_pal_ops_actions_executes_only_approved_allowlisted_actions(tmp_path: Path) -> None:
     config = default_project_config("PAL Actions Approved")
     save_config(tmp_path, config)
