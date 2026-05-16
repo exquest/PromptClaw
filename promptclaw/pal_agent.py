@@ -1663,6 +1663,31 @@ def build_default_action_registry(project_root: Path, client: PALAgentClient) ->
     }
 
 
+def export_pal_action_metadata(
+    project_root: Path | None = None,
+    client: PALAgentClient | None = None,
+) -> list[dict[str, Any]]:
+    """Return JSON-serializable metadata for every default PAL action.
+
+    The action runners are never invoked here, so a stub project_root and
+    client are sufficient when callers only need the allow-list surface.
+    """
+    actions = build_default_action_registry(
+        project_root or Path(),
+        client,  # type: ignore[arg-type]
+    )
+    return [
+        {
+            "id": action_id,
+            "name": action.name,
+            "description": action.description,
+            "approval_required": action.approval_required,
+            "mutating": action.mutating,
+        }
+        for action_id, action in actions.items()
+    ]
+
+
 def _run_tool(tool: PALOpsTool) -> dict[str, Any]:
     try:
         result = tool.run()

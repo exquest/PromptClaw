@@ -445,6 +445,26 @@ def test_pal_ops_actions_prompt_artifacts_include_bounded_knowledge_context(tmp_
     assert result["pending_approval"] == ["inspect_logs_deep", "restart_router"]
 
 
+def test_export_pal_action_metadata_includes_mutating_and_approval_fields(tmp_path: Path) -> None:
+    from promptclaw.pal_agent import build_default_action_registry, export_pal_action_metadata
+
+    expected_actions = build_default_action_registry(tmp_path, FakePALClient([]))
+    metadata = export_pal_action_metadata(tmp_path, FakePALClient([]))
+
+    exported_ids = {entry["id"] for entry in metadata}
+    assert exported_ids == set(expected_actions.keys())
+
+    payload = json.loads(json.dumps(metadata))
+    for entry in payload:
+        action = expected_actions[entry["id"]]
+        assert entry["name"] == action.name
+        assert entry["description"] == action.description
+        assert entry["approval_required"] is action.approval_required
+        assert entry["mutating"] is action.mutating
+        assert isinstance(entry["approval_required"], bool)
+        assert isinstance(entry["mutating"], bool)
+
+
 def test_default_pal_action_registry_excludes_vast_lifecycle_actions(tmp_path: Path) -> None:
     from promptclaw.pal_agent import build_default_action_registry, _parse_action_plan
 
