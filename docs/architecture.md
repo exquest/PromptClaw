@@ -198,16 +198,23 @@ and `phase2_execution_actions: []`. It is a report only: it does not rent,
 start, stop, destroy, or resize instances, load Phase 2 models, migrate volumes,
 restart services, or expose approval action ids.
 
-PAL deployment tooling starts with a repo-managed manifest, not remote write
-authority. `pal-2026/ops/deployment-manifest.json` is loaded through
-`promptclaw.pal_deploy` and lists the intended `/opt/pal` managed files for the
-host-managed Phase 1 runtime: startup scripts, router app, shutdown config,
-deployment-info template, and Docker fallback files. Runtime state such as logs,
-Ollama model storage, and the shutdown override flag is recorded as excluded
-metadata rather than as files to sync, and the manifest validator rejects
-targets outside `/opt/pal`, duplicate targets, malformed modes, missing required
-sources, and secret-looking content. This is dry local metadata only; deploy
-diff, plan, apply, backup, and rollback remain future approval-gated work.
+PAL deployment tooling starts with a repo-managed manifest and dry-run deploy
+diff model, not remote write authority. `pal-2026/ops/deployment-manifest.json`
+is loaded through `promptclaw.pal_deploy` and lists the intended `/opt/pal`
+managed files for the host-managed Phase 1 runtime: startup scripts, router app,
+shutdown config, deployment-info template, and Docker fallback files. Runtime
+state such as logs, Ollama model storage, and the shutdown override flag is
+recorded as excluded metadata rather than as files to sync, and the manifest
+validator rejects targets outside `/opt/pal`, duplicate targets, malformed
+modes, missing required sources, and secret-looking content.
+
+`promptclaw.pal_deploy.diff_pal_deployment(...)` compares those manifest-managed
+local files with remote file snapshots and reports deterministic `added`,
+`changed`, `missing`, `unchanged`, and `unmanaged_remote` diff sets. Tests use
+`build_fake_pal_remote_inventory(...)` so the diff model can be exercised without
+live SSH; excluded runtime paths are ignored as unmanaged remote files. This is
+still dry local modeling only: deploy plan CLI, apply, backup, rollback, remote
+writes, and service restarts remain future approval-gated work.
 
 Every PAL agent run uses the standard `.promptclaw/runs/<run-id>/` layout so the
 plan, observations, approvals, results, summary, events, and state remain

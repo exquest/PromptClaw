@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import fnmatch
+import hashlib
 import json
 import re
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Any, Iterable, Mapping
 
 
 DEFAULT_PAL_DEPLOYMENT_MANIFEST = Path("ops/deployment-manifest.json")
@@ -93,6 +95,129 @@ class PALDeploymentManifestValidation:
         return not self.errors
 
 
+@dataclass(frozen=True)
+class PALDeploymentLocalFile:
+    source: str
+    target: str
+    mode: str
+    owner: str
+    group: str
+    kind: str
+    service_impact: str
+    required: bool
+    exists: bool
+    sha256: str | None
+    size_bytes: int | None
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "source": self.source,
+            "target": self.target,
+            "mode": self.mode,
+            "owner": self.owner,
+            "group": self.group,
+            "kind": self.kind,
+            "service_impact": self.service_impact,
+            "required": self.required,
+            "exists": self.exists,
+            "sha256": self.sha256,
+            "size_bytes": self.size_bytes,
+        }
+
+
+@dataclass(frozen=True)
+class PALDeploymentRemoteFile:
+    target: str
+    exists: bool
+    sha256: str | None
+    mode: str | None
+    owner: str | None
+    group: str | None
+    size_bytes: int | None
+    source: str = "fake-remote"
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "target": self.target,
+            "exists": self.exists,
+            "sha256": self.sha256,
+            "mode": self.mode,
+            "owner": self.owner,
+            "group": self.group,
+            "size_bytes": self.size_bytes,
+            "source": self.source,
+        }
+
+
+@dataclass(frozen=True)
+class PALDeploymentDiffEntry:
+    target: str
+    status: str
+    source: str | None
+    kind: str | None
+    service_impact: str | None
+    local_sha256: str | None
+    remote_sha256: str | None
+    local_mode: str | None
+    remote_mode: str | None
+    local_owner: str | None
+    remote_owner: str | None
+    local_group: str | None
+    remote_group: str | None
+    changed_fields: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "target": self.target,
+            "status": self.status,
+            "source": self.source,
+            "kind": self.kind,
+            "service_impact": self.service_impact,
+            "local_sha256": self.local_sha256,
+            "remote_sha256": self.remote_sha256,
+            "local_mode": self.local_mode,
+            "remote_mode": self.remote_mode,
+            "local_owner": self.local_owner,
+            "remote_owner": self.remote_owner,
+            "local_group": self.local_group,
+            "remote_group": self.remote_group,
+            "changed_fields": list(self.changed_fields),
+        }
+
+
+@dataclass(frozen=True)
+class PALDeploymentDiff:
+    manifest_path: Path
+    deployment_root: str
+    added: tuple[PALDeploymentDiffEntry, ...]
+    changed: tuple[PALDeploymentDiffEntry, ...]
+    missing: tuple[PALDeploymentDiffEntry, ...]
+    unchanged: tuple[PALDeploymentDiffEntry, ...]
+    unmanaged_remote: tuple[PALDeploymentDiffEntry, ...]
+
+    @property
+    def summary_counts(self) -> dict[str, int]:
+        return {
+            "added": len(self.added),
+            "changed": len(self.changed),
+            "missing": len(self.missing),
+            "unchanged": len(self.unchanged),
+            "unmanaged_remote": len(self.unmanaged_remote),
+        }
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "manifest_path": str(self.manifest_path),
+            "deployment_root": self.deployment_root,
+            "summary_counts": self.summary_counts,
+            "added": [entry.to_dict() for entry in self.added],
+            "changed": [entry.to_dict() for entry in self.changed],
+            "missing": [entry.to_dict() for entry in self.missing],
+            "unchanged": [entry.to_dict() for entry in self.unchanged],
+            "unmanaged_remote": [entry.to_dict() for entry in self.unmanaged_remote],
+        }
+
+
 def load_pal_deployment_manifest(
     project_root: Path,
     *,
@@ -159,6 +284,110 @@ def validate_pal_deployment_manifest(
             errors.append(f"excluded path must be under {deployment_root}: {excluded_path}")
 
     return PALDeploymentManifestValidation(errors=tuple(errors))
+
+
+def build_fake_pal_remote_inventory(
+    files: Mapping[str, object],
+    *,
+    default_mode: str = "0644",
+    default_owner: str = "root",
+    default_group: str = "root",
+) -> tuple[PALDeploymentRemoteFile, ...]:
+    """Build deterministic remote file snapshots for deploy diff tests."""
+    remote_files: list[PALDeploymentRemoteFile] = []
+    for target in sorted(files):
+        value = files[target]
+        if isinstance(value, PALDeploymentRemoteFile):
+            remote_files.append(value)
+            continue
+        if isinstance(value, Mapping):
+            content = value.get("content", "")
+            exists = bool(value.get("exists", True))
+            mode = str(value.get("mode", default_mode)) if exists else None
+            owner = str(value.get("owner", default_owner)) if exists else None
+            group = str(value.get("group", default_group)) if exists else None
+            source = str(value.get("source", "fake-remote"))
+        else:
+            content = value
+            exists = True
+            mode = default_mode
+            owner = default_owner
+            group = default_group
+            source = "fake-remote"
+        content_bytes = _coerce_content_bytes(content)
+        remote_files.append(
+            PALDeploymentRemoteFile(
+                target=target,
+                exists=exists,
+                sha256=_sha256_bytes(content_bytes) if exists else None,
+                mode=mode,
+                owner=owner,
+                group=group,
+                size_bytes=len(content_bytes) if exists else None,
+                source=source,
+            )
+        )
+    return tuple(remote_files)
+
+
+def diff_pal_deployment(
+    manifest: PALDeploymentManifest,
+    project_root: Path,
+    *,
+    remote_inventory: Iterable[PALDeploymentRemoteFile],
+) -> PALDeploymentDiff:
+    """Compare manifest-managed local files against a remote inventory."""
+    local_files = tuple(
+        _local_file_from_manifest_entry(entry, project_root.resolve()) for entry in manifest.files
+    )
+    managed_targets = {entry.target for entry in local_files}
+    remote_by_target = {
+        entry.target: entry
+        for entry in sorted(remote_inventory, key=lambda item: item.target)
+        if entry.exists
+    }
+
+    added: list[PALDeploymentDiffEntry] = []
+    changed: list[PALDeploymentDiffEntry] = []
+    missing: list[PALDeploymentDiffEntry] = []
+    unchanged: list[PALDeploymentDiffEntry] = []
+
+    for local_file in sorted(local_files, key=lambda item: item.target):
+        remote_file = remote_by_target.get(local_file.target)
+        if not local_file.exists:
+            missing.append(_diff_entry(local_file, remote_file, status="missing"))
+        elif remote_file is None:
+            added.append(_diff_entry(local_file, None, status="added"))
+        else:
+            changed_fields = _changed_fields(local_file, remote_file)
+            if changed_fields:
+                changed.append(
+                    _diff_entry(
+                        local_file,
+                        remote_file,
+                        status="changed",
+                        changed_fields=changed_fields,
+                    )
+                )
+            else:
+                unchanged.append(_diff_entry(local_file, remote_file, status="unchanged"))
+
+    unmanaged_remote = tuple(
+        _remote_only_diff_entry(remote_file)
+        for remote_file in sorted(remote_by_target.values(), key=lambda item: item.target)
+        if remote_file.target not in managed_targets
+        and not _matches_excluded_path(remote_file.target, manifest.excluded_paths)
+    )
+
+    return PALDeploymentDiff(
+        manifest_path=manifest.manifest_path,
+        deployment_root=manifest.deployment_root,
+        added=tuple(added),
+        changed=tuple(changed),
+        missing=tuple(missing),
+        unchanged=tuple(unchanged),
+        unmanaged_remote=unmanaged_remote,
+    )
 
 
 def _manifest_from_payload(
@@ -228,3 +457,113 @@ def _secret_errors(text: str) -> tuple[str, ...]:
         if pattern.search(text):
             errors.append("secret-like value found in PAL deployment manifest")
     return tuple(errors)
+
+
+def _local_file_from_manifest_entry(
+    entry: PALDeploymentFile,
+    project_root: Path,
+) -> PALDeploymentLocalFile:
+    source_path = entry.source_path(project_root)
+    if not source_path.is_file():
+        return PALDeploymentLocalFile(
+            source=entry.source,
+            target=entry.target,
+            mode=entry.mode,
+            owner=entry.owner,
+            group=entry.group,
+            kind=entry.kind,
+            service_impact=entry.service_impact,
+            required=entry.required,
+            exists=False,
+            sha256=None,
+            size_bytes=None,
+        )
+    content = source_path.read_bytes()
+    return PALDeploymentLocalFile(
+        source=entry.source,
+        target=entry.target,
+        mode=entry.mode,
+        owner=entry.owner,
+        group=entry.group,
+        kind=entry.kind,
+        service_impact=entry.service_impact,
+        required=entry.required,
+        exists=True,
+        sha256=_sha256_bytes(content),
+        size_bytes=len(content),
+    )
+
+
+def _diff_entry(
+    local_file: PALDeploymentLocalFile,
+    remote_file: PALDeploymentRemoteFile | None,
+    *,
+    status: str,
+    changed_fields: tuple[str, ...] = (),
+) -> PALDeploymentDiffEntry:
+    return PALDeploymentDiffEntry(
+        target=local_file.target,
+        status=status,
+        source=local_file.source,
+        kind=local_file.kind,
+        service_impact=local_file.service_impact,
+        local_sha256=local_file.sha256,
+        remote_sha256=remote_file.sha256 if remote_file else None,
+        local_mode=local_file.mode,
+        remote_mode=remote_file.mode if remote_file else None,
+        local_owner=local_file.owner,
+        remote_owner=remote_file.owner if remote_file else None,
+        local_group=local_file.group,
+        remote_group=remote_file.group if remote_file else None,
+        changed_fields=changed_fields,
+    )
+
+
+def _remote_only_diff_entry(remote_file: PALDeploymentRemoteFile) -> PALDeploymentDiffEntry:
+    return PALDeploymentDiffEntry(
+        target=remote_file.target,
+        status="unmanaged_remote",
+        source=None,
+        kind=None,
+        service_impact=None,
+        local_sha256=None,
+        remote_sha256=remote_file.sha256,
+        local_mode=None,
+        remote_mode=remote_file.mode,
+        local_owner=None,
+        remote_owner=remote_file.owner,
+        local_group=None,
+        remote_group=remote_file.group,
+    )
+
+
+def _changed_fields(
+    local_file: PALDeploymentLocalFile,
+    remote_file: PALDeploymentRemoteFile,
+) -> tuple[str, ...]:
+    fields: list[str] = []
+    if local_file.sha256 != remote_file.sha256:
+        fields.append("content_sha256")
+    if local_file.mode != remote_file.mode:
+        fields.append("mode")
+    if local_file.owner != remote_file.owner:
+        fields.append("owner")
+    if local_file.group != remote_file.group:
+        fields.append("group")
+    return tuple(fields)
+
+
+def _matches_excluded_path(target: str, excluded_paths: Iterable[str]) -> bool:
+    return any(fnmatch.fnmatchcase(target, pattern) for pattern in excluded_paths)
+
+
+def _coerce_content_bytes(value: object) -> bytes:
+    if isinstance(value, bytes):
+        return value
+    if isinstance(value, str):
+        return value.encode("utf-8")
+    raise TypeError(f"fake PAL remote content must be str or bytes, got {type(value).__name__}")
+
+
+def _sha256_bytes(content: bytes) -> str:
+    return hashlib.sha256(content).hexdigest()

@@ -483,3 +483,16 @@ Progress: [███████████████████████
 
 - Explore: PAL-027 is the deployment-manifest slice before deploy diff/plan/apply. Relevant patterns live in `sdp/prd-pal-2026-agentic-ops-platform.md`, `pal-2026/ops/`, `promptclaw/pal_knowledge.py`, `promptclaw/vast_connector.py`, and PAL tests. The manifest should be local JSON plus a typed stdlib loader, list intended `/opt/pal` managed files, exclude runtime logs/model data, and contain no secrets. Startup identity hardening remains covered by existing regression anchors, not new startup changes in this task.
 - Verify: Added `promptclaw.pal_deploy`, `pal-2026/ops/deployment-manifest.json`, host-managed startup script templates, PAL knowledge-source coverage, and docs/changelog updates. Red phase failed on the missing module before implementation; focused PAL tests, startup identity anchors, focused Ruff/mypy, `git diff --check`, and the full required validation gate all passed.
+
+## T-023@20260515T214233Z Notes
+
+- Explore: PAL-028 follows the T-022 deployment manifest slice. Relevant
+  patterns live in `sdp/prd-pal-2026-agentic-ops-platform.md`,
+  `promptclaw/pal_deploy.py`, `tests/test_pal_deploy.py`,
+  `pal-2026/ops/deployment-manifest.json`, and the PAL product docs. The
+  implementation should stay stdlib-only and dry-run: compare manifest-managed
+  local files to fake remote snapshots, report deterministic diff sets, honor
+  excluded runtime paths, and avoid SSH, remote writes, service restarts,
+  backups, apply, rollback, migrations, dependencies, and secrets. Startup
+  identity hardening remains covered by existing regression anchors rather than
+  new startup changes in this task.

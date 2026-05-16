@@ -7,7 +7,10 @@ from pathlib import Path
 import pytest
 
 from promptclaw.pal_deploy import (
+    PALDeploymentManifest,
     PALDeploymentManifestError,
+    build_fake_pal_remote_inventory,
+    diff_pal_deployment,
     load_pal_deployment_manifest,
     validate_pal_deployment_manifest,
 )
@@ -153,6 +156,82 @@ def test_pal_deployment_manifest_validation_rejects_invalid_entries(tmp_path: Pa
             load_pal_deployment_manifest(tmp_path, manifest_path=manifest_path)
 
 
+def test_pal_deployment_diff_reports_fake_remote_diff_sets(tmp_path: Path) -> None:
+    manifest = _write_diff_manifest_project(tmp_path)
+    remote_inventory = build_fake_pal_remote_inventory({
+        "/opt/pal/changed.txt": {"content": "remote old\n"},
+        "/opt/pal/manual.txt": {"content": "operator managed\n"},
+        "/opt/pal/unchanged.txt": {"content": "same\n"},
+    })
+
+    diff = diff_pal_deployment(manifest, tmp_path, remote_inventory=remote_inventory)
+
+    assert [entry.target for entry in diff.added] == ["/opt/pal/added.txt"]
+    assert [entry.target for entry in diff.changed] == ["/opt/pal/changed.txt"]
+    assert [entry.target for entry in diff.missing] == ["/opt/pal/missing.txt"]
+    assert [entry.target for entry in diff.unchanged] == ["/opt/pal/unchanged.txt"]
+    assert [entry.target for entry in diff.unmanaged_remote] == ["/opt/pal/manual.txt"]
+    assert diff.summary_counts == {
+        "added": 1,
+        "changed": 1,
+        "missing": 1,
+        "unchanged": 1,
+        "unmanaged_remote": 1,
+    }
+    assert json.dumps(diff.to_dict(), sort_keys=True)
+
+
+def test_pal_deployment_diff_detects_metadata_only_changes(tmp_path: Path) -> None:
+    manifest = _write_diff_manifest_project(tmp_path)
+    remote_inventory = build_fake_pal_remote_inventory({
+        "/opt/pal/unchanged.txt": {
+            "content": "same\n",
+            "mode": "0600",
+            "owner": "pal",
+            "group": "root",
+        },
+    })
+
+    diff = diff_pal_deployment(manifest, tmp_path, remote_inventory=remote_inventory)
+
+    assert [entry.target for entry in diff.changed] == ["/opt/pal/unchanged.txt"]
+    assert diff.changed[0].changed_fields == ("mode", "owner")
+    assert diff.changed[0].local_sha256 == diff.changed[0].remote_sha256
+
+
+def test_pal_deployment_diff_ignores_excluded_runtime_remote_paths(tmp_path: Path) -> None:
+    manifest = _write_diff_manifest_project(tmp_path)
+    remote_inventory = build_fake_pal_remote_inventory({
+        "/opt/pal/config/override.flag": {"content": "skip shutdown\n"},
+        "/opt/pal/logs/router.log": {"content": "runtime log\n"},
+        "/opt/pal/manual.txt": {"content": "operator managed\n"},
+        "/opt/pal/ollama/models/blobs/sha256-aa": {"content": "model blob"},
+        "/opt/pal/router/__pycache__/app.cpython-311.pyc": {"content": b"\x00\x01"},
+    })
+
+    diff = diff_pal_deployment(manifest, tmp_path, remote_inventory=remote_inventory)
+
+    assert [entry.target for entry in diff.unmanaged_remote] == ["/opt/pal/manual.txt"]
+
+
+def test_default_pal_deployment_manifest_diff_against_empty_fake_remote_is_json_safe() -> None:
+    manifest = load_pal_deployment_manifest(PAL_PROJECT_ROOT)
+
+    diff = diff_pal_deployment(
+        manifest,
+        PAL_PROJECT_ROOT,
+        remote_inventory=build_fake_pal_remote_inventory({}),
+    )
+
+    assert len(diff.added) == len(manifest.files)
+    assert diff.changed == ()
+    assert diff.missing == ()
+    assert diff.unchanged == ()
+    assert diff.unmanaged_remote == ()
+    assert diff.summary_counts["added"] == len(manifest.files)
+    assert json.dumps(diff.to_dict(), sort_keys=True)
+
+
 def _valid_manifest_payload() -> dict[str, object]:
     return {
         "manifest_version": 1,
@@ -173,4 +252,47 @@ def _valid_manifest_payload() -> dict[str, object]:
         ],
         "runtime_directories": ["/opt/pal/logs"],
         "excluded_paths": ["/opt/pal/logs/*.log"],
+    }
+
+
+def _write_diff_manifest_project(tmp_path: Path) -> PALDeploymentManifest:
+    templates = tmp_path / "ops" / "templates"
+    templates.mkdir(parents=True)
+    (templates / "added.txt").write_text("add me\n", encoding="utf-8")
+    (templates / "changed.txt").write_text("local new\n", encoding="utf-8")
+    (templates / "unchanged.txt").write_text("same\n", encoding="utf-8")
+    manifest_path = tmp_path / "ops" / "deployment-manifest.json"
+    payload = {
+        "manifest_version": 1,
+        "name": "test-pal-diff",
+        "deployment_root": "/opt/pal",
+        "mode": "host-managed",
+        "files": [
+            _diff_file_entry("ops/templates/added.txt", "/opt/pal/added.txt"),
+            _diff_file_entry("ops/templates/changed.txt", "/opt/pal/changed.txt"),
+            _diff_file_entry("ops/templates/missing.txt", "/opt/pal/missing.txt", required=False),
+            _diff_file_entry("ops/templates/unchanged.txt", "/opt/pal/unchanged.txt"),
+        ],
+        "runtime_directories": ["/opt/pal/logs", "/opt/pal/ollama"],
+        "excluded_paths": [
+            "/opt/pal/config/override.flag",
+            "/opt/pal/logs/*.log",
+            "/opt/pal/ollama/**",
+            "/opt/pal/router/__pycache__/**",
+        ],
+    }
+    manifest_path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
+    return load_pal_deployment_manifest(tmp_path, manifest_path=manifest_path)
+
+
+def _diff_file_entry(source: str, target: str, *, required: bool = True) -> dict[str, object]:
+    return {
+        "source": source,
+        "target": target,
+        "mode": "0644",
+        "owner": "root",
+        "group": "root",
+        "kind": "config",
+        "service_impact": "none",
+        "required": required,
     }

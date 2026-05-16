@@ -1,5 +1,10 @@
 # Escalations
 
+## T-023@20260515T214233Z (2026-05-16)
+
+- **Reason:** PAL deploy diff model scope and startup-hardening assumptions
+- **Details:** Exploration found PAL-028 should extend the manifest-only deployment surface in `promptclaw/pal_deploy.py` with a deterministic dry-run diff model and fake remote inventory coverage in `tests/test_pal_deploy.py`. The implementation is assumed to compare manifest-managed local source files against target-path keyed fake remote snapshots, reporting added, changed, missing, unchanged, and unmanaged remote diff sets while honoring manifest excluded runtime paths. It will not add deploy-plan CLI wiring, SSH reads, remote writes, backups, apply, rollback, service restarts, dependencies, migrations, provider secrets, database columns, or startup rewiring. The generated startup hardening bullets target the existing identity startup subsystem; current CLI, first-boot, daemon-ordering, and narrative ASGI tests already cover `bootstrap_identity()` persistence and ordering before `FirstBootAnnouncer`, so those remain mandatory regression anchors rather than broadening this PAL deploy diff task into startup changes.
+
 ## T-022@20260515T214233Z (2026-05-16)
 
 - **Reason:** PAL deployment manifest scope and startup-hardening assumptions

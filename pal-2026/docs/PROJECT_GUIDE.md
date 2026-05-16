@@ -37,8 +37,11 @@ The query command returns ranked snippets with source paths and line ranges and
 does not contact the live PAL router.
 
 Use `ops/deployment-manifest.json` as the local deployment file source of truth.
-It is manifest metadata only: deploy diff, apply, rollback, and service restarts
-remain separate future approval-gated work.
+`promptclaw.pal_deploy` can compare that manifest to fake remote snapshots and
+report deploy diff sets for added, changed, missing, unchanged, and unmanaged
+remote files. This is still dry-run modeling only: deploy CLI planning, apply,
+backup, rollback, and service restarts remain separate future approval-gated
+work.
 
 ## Validation
 

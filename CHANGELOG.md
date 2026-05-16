@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Added PAL deploy diff model (T-023@20260515T214233Z):
+  `promptclaw.pal_deploy.diff_pal_deployment(...)` now compares the
+  repo-managed PAL deployment manifest against remote file snapshots and reports
+  deterministic `added`, `changed`, `missing`, `unchanged`, and
+  `unmanaged_remote` sets. Tests use `build_fake_pal_remote_inventory(...)` to
+  exercise fake remote diffs without SSH, while excluded runtime paths remain
+  ignored. This adds no deploy CLI, remote writes, backups, apply, rollback, or
+  service restart behavior.
+
 - Added repo-managed PAL deployment manifest (T-022@20260515T214233Z):
   `pal-2026/ops/deployment-manifest.json` now lists intended host-managed
   `/opt/pal` files, `promptclaw.pal_deploy` loads and validates the manifest,

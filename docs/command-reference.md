@@ -251,11 +251,15 @@ route/event/state artifacts, a handoff, and a final summary with
 `--approve` flag and cannot rent, start, stop, destroy, resize, migrate, or load
 Phase 2 hardware/model work.
 
-PAL deployment metadata is currently manifest-only. The repo-managed manifest at
-`pal-2026/ops/deployment-manifest.json` is loaded by `promptclaw.pal_deploy` and
-lists intended `/opt/pal` files for the host-managed Phase 1 runtime, including
-startup scripts, the router app, shutdown config/script, deployment info, and
-Docker fallback files. It is not a deploy command and performs no SSH writes,
+PAL deployment metadata currently includes a manifest and reusable dry-run diff
+model. The repo-managed manifest at `pal-2026/ops/deployment-manifest.json` is
+loaded by `promptclaw.pal_deploy` and lists intended `/opt/pal` files for the
+host-managed Phase 1 runtime, including startup scripts, the router app,
+shutdown config/script, deployment info, and Docker fallback files.
+`diff_pal_deployment(...)` compares those local files with remote snapshots and
+reports `added`, `changed`, `missing`, `unchanged`, and `unmanaged_remote` sets;
+`build_fake_pal_remote_inventory(...)` supports tests without SSH. There is not
+yet a `promptclaw pal deploy` command, and this surface performs no SSH writes,
 restarts, backups, apply, or rollback.
 
 Current action ids:
