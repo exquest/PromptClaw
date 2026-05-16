@@ -18,7 +18,7 @@ from .pal_knowledge import PALKnowledgeQueryResult, query_pal_knowledge_index
 from .pal_smoke import load_smoke_reports, run_pal_smoke, summarize_smoke_reports, write_smoke_report
 from .paths import ProjectPaths
 from .state_store import StateStore
-from .utils import extract_json_object, slugify, truncate, utc_now, write_text
+from .utils import extract_json_object, slugify, truncate, utc_now, write_json, write_text
 from .vast_connector import default_vast_connector_boundary
 
 
@@ -442,9 +442,10 @@ def replay_pal_approved_actions(
     """
     project_root = project_root.resolve()
     saved = load_pal_action_results(project_root, run_id)
+    config = load_config(project_root)
+    paths = ProjectPaths(project_root=project_root, config=config)
 
     if action_registry is None:
-        config = load_config(project_root)
         pal_client = client or PALRouterClient.from_config(config)
         actions = build_default_action_registry(project_root, pal_client)
     else:
@@ -457,6 +458,7 @@ def replay_pal_approved_actions(
     executed_actions: list[str] = []
     unknown_actions: list[str] = []
     action_rows: list[dict[str, Any]] = []
+    executions: list[dict[str, Any]] = []
     for action_id in approved:
         if action_id not in proposed_set or action_id not in actions:
             unknown_actions.append(action_id)
@@ -464,6 +466,21 @@ def replay_pal_approved_actions(
         result = _run_action(actions[action_id])
         executed_actions.append(action_id)
         action_rows.append(result)
+        executions.append({
+            "action_id": action_id,
+            "status": str(result.get("status", "")),
+            "timestamp": now(),
+            "command_output": _redact_command_output(result.get("command", {})),
+        })
+
+    replayed_at = now()
+    artifact_payload = {
+        "run_id": run_id,
+        "replayed_at": replayed_at,
+        "executions": executions,
+    }
+    artifact_path = paths.run_outputs(run_id) / "approval-executions.json"
+    write_json(artifact_path, artifact_payload)
 
     return {
         "run_id": run_id,
@@ -473,7 +490,9 @@ def replay_pal_approved_actions(
         "unknown_actions": unknown_actions,
         "executed_actions": executed_actions,
         "actions": action_rows,
-        "replayed_at": now(),
+        "executions": executions,
+        "artifact_path": str(artifact_path),
+        "replayed_at": replayed_at,
     }
 
 
@@ -2866,6 +2885,24 @@ def _action_status_summary(status: str, *, ok: str, skipped: str, problem: str) 
     if status == "skipped":
         return skipped
     return problem
+
+
+def _redact_secret_text(text: str) -> str:
+    redacted = text
+    for _, pattern in PAL_SECRET_PATTERNS:
+        redacted = pattern.sub("<redacted>", redacted)
+    return redacted
+
+
+def _redact_command_output(command: Any) -> Any:
+    if not isinstance(command, dict):
+        return command
+    redacted = dict(command)
+    for key in ("stdout", "stderr"):
+        value = redacted.get(key)
+        if isinstance(value, str):
+            redacted[key] = _redact_secret_text(value)
+    return redacted
 
 
 def _redact_args(args: list[str]) -> list[str]:
