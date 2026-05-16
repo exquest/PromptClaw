@@ -397,6 +397,71 @@ class PALDeploymentApply:
         }
 
 
+@dataclass(frozen=True)
+class PALDeploymentRollbackEntry:
+    target: str
+    status: str
+    backup_path: str
+    restored_sha256: str
+    restored_mode: str | None
+    restored_owner: str | None
+    restored_group: str | None
+    size_bytes: int
+    source: str
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "target": self.target,
+            "status": self.status,
+            "backup_path": self.backup_path,
+            "restored_sha256": self.restored_sha256,
+            "restored_mode": self.restored_mode,
+            "restored_owner": self.restored_owner,
+            "restored_group": self.restored_group,
+            "size_bytes": self.size_bytes,
+            "source": self.source,
+        }
+
+
+@dataclass(frozen=True)
+class PALDeploymentRollback:
+    status: str
+    approved: bool
+    manifest_path: Path
+    deployment_root: str
+    remote_inventory_path: Path
+    backup_id: str
+    backup_path: Path
+    restored_entries: tuple[PALDeploymentRollbackEntry, ...]
+    workflow_id: str = "pal_deploy_rollback"
+    remote_writes: bool = True
+    remote_transport: str = "fake-remote-inventory"
+    live_ssh: bool = False
+    service_restarts: bool = False
+
+    @property
+    def summary_counts(self) -> dict[str, int]:
+        return {"restored": len(self.restored_entries)}
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "workflow_id": self.workflow_id,
+            "status": self.status,
+            "approved": self.approved,
+            "remote_writes": self.remote_writes,
+            "remote_transport": self.remote_transport,
+            "live_ssh": self.live_ssh,
+            "service_restarts": self.service_restarts,
+            "manifest_path": str(self.manifest_path),
+            "deployment_root": self.deployment_root,
+            "remote_inventory_path": str(self.remote_inventory_path),
+            "backup_id": self.backup_id,
+            "backup_path": str(self.backup_path),
+            "summary_counts": self.summary_counts,
+            "restored_entries": [entry.to_dict() for entry in self.restored_entries],
+        }
+
+
 def load_pal_deployment_manifest(
     project_root: Path,
     *,
@@ -741,6 +806,72 @@ def apply_pal_deployment_changes(
         applied_entries=tuple(applied_entries),
         skipped_entries=skipped_entries,
         unmanaged_remote=diff.unmanaged_remote,
+    )
+
+
+def rollback_pal_deployment_backup(
+    backup: PALDeploymentBackup,
+    *,
+    remote_inventory: Iterable[PALDeploymentRemoteFile],
+    remote_inventory_path: Path,
+    approved: bool,
+) -> PALDeploymentRollback:
+    """Restore backed-up PAL files into a local fake remote inventory snapshot."""
+    if not approved:
+        raise PALDeploymentManifestError("PAL deploy rollback requires --approve-rollback")
+
+    remote_by_target = {entry.target: entry for entry in remote_inventory if entry.exists}
+    restored_entries: list[PALDeploymentRollbackEntry] = []
+
+    for backup_entry in sorted(backup.entries, key=lambda item: item.target):
+        backup_file = _backup_entry_file_path(backup, backup_entry)
+        if not backup_file.is_file():
+            raise PALDeploymentManifestError(
+                f"PAL rollback backup file is missing: {backup_entry.backup_path}"
+            )
+        content = backup_file.read_bytes()
+        restored_sha256 = _sha256_bytes(content)
+        if backup_entry.remote_sha256 is not None and backup_entry.remote_sha256 != restored_sha256:
+            raise PALDeploymentManifestError(
+                f"PAL rollback backup sha256 mismatch: {backup_entry.target}"
+            )
+
+        remote_by_target[backup_entry.target] = PALDeploymentRemoteFile(
+            target=backup_entry.target,
+            exists=True,
+            sha256=restored_sha256,
+            mode=backup_entry.remote_mode,
+            owner=backup_entry.remote_owner,
+            group=backup_entry.remote_group,
+            size_bytes=len(content),
+            source="pal-deploy-rollback",
+            content_bytes=content,
+        )
+        restored_entries.append(
+            PALDeploymentRollbackEntry(
+                target=backup_entry.target,
+                status="restored",
+                backup_path=backup_entry.backup_path,
+                restored_sha256=restored_sha256,
+                restored_mode=backup_entry.remote_mode,
+                restored_owner=backup_entry.remote_owner,
+                restored_group=backup_entry.remote_group,
+                size_bytes=len(content),
+                source=backup_entry.source,
+            )
+        )
+
+    write_pal_remote_inventory_snapshot(remote_inventory_path, remote_by_target.values())
+
+    return PALDeploymentRollback(
+        status="complete",
+        approved=True,
+        manifest_path=backup.manifest_path,
+        deployment_root=backup.deployment_root,
+        remote_inventory_path=remote_inventory_path,
+        backup_id=backup.backup_id,
+        backup_path=backup.backup_path,
+        restored_entries=tuple(restored_entries),
     )
 
 
@@ -1092,6 +1223,16 @@ def _backup_relative_target_path(target: str) -> PurePosixPath:
     if not parts:
         raise PALDeploymentManifestError(f"unsafe PAL backup target path: {target}")
     return PurePosixPath(*parts)
+
+
+def _backup_entry_file_path(
+    backup: PALDeploymentBackup,
+    entry: PALDeploymentBackupEntry,
+) -> Path:
+    relative_path = PurePosixPath(entry.backup_path)
+    if relative_path.is_absolute() or ".." in relative_path.parts or not relative_path.parts:
+        raise PALDeploymentManifestError(f"unsafe PAL rollback backup path: {entry.backup_path}")
+    return backup.backup_path / Path(relative_path.as_posix())
 
 
 def _coerce_content_bytes(value: object) -> bytes:

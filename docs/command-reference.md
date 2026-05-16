@@ -279,6 +279,14 @@ uses `workflow_id: pal_deploy_apply`, `approved: true`,
 `live_ssh: false`, and `service_restarts: false`. This command does not perform
 live SSH deployment, rollback, or service restarts.
 
+The API-level rollback primitive is
+`promptclaw.pal_deploy.rollback_pal_deployment_backup(...)`. It restores
+backed-up managed fake-remote files and metadata into a supplied local remote
+inventory snapshot and reports `workflow_id: pal_deploy_rollback`,
+`live_ssh: false`, and `service_restarts: false`. There is no rollback command
+or `--approve-rollback` parser surface yet; that is reserved for the later
+approval-gated CLI task.
+
 Current action ids:
 
 - `rerun_smoke`: run the PAL smoke suite and save a fresh local report

@@ -1,5 +1,12 @@
 # Escalations
 
+## T-042@20260515T214233Z (2026-05-16)
+
+- **Reason:** PAL rollback primitive fake-remote scope and startup-hardening assumptions
+- **Details:** Exploration found PAL-032 builds directly on the existing PAL deployment manifest, fake remote inventory, diff, backup, and apply primitives in `promptclaw/pal_deploy.py`, with CLI wiring in `promptclaw/cli.py`, coverage in `tests/test_pal_deploy.py`, and product context in `sdp/prd-pal-2026-agentic-ops-platform.md`. The implementation is assumed to add a typed local rollback primitive that restores backed-up managed fake-remote file content and metadata into a supplied local fake remote inventory snapshot. It will not add a rollback CLI, approval flag parser, live SSH capture or writes, service restarts, new dependencies, migrations, provider secrets, database columns, or startup rewiring. T-043 owns `promptclaw pal deploy rollback --approve-rollback`. The generated startup hardening bullets target the existing identity startup subsystem; current CLI, first-boot, daemon-ordering, and narrative ASGI tests already cover `bootstrap_identity()` persistence and ordering before `FirstBootAnnouncer`, including standalone and federated modes, so those remain mandatory regression anchors rather than broadening this PAL rollback primitive task into startup changes.
+- **Reason:** Red phase, implementation verification, and hardening-anchor results
+- **Details:** Red phase was confirmed with `pytest tests/test_pal_deploy.py::test_pal_deploy_rollback_primitive_restores_backed_up_fake_remote_files tests/test_pal_deploy.py::test_pal_deploy_rollback_primitive_requires_explicit_approval -q` failing on the missing `rollback_pal_deployment_backup` API before production code changed. After implementation, the locked rollback tests passed with `2 passed`, `pytest tests/test_pal_deploy.py -q` passed with `19 passed`, focused Ruff and mypy passed for touched PAL deploy code, the product-doc grep and dependency/migration diff checks passed, the startup identity hardening anchor command passed with `11 passed`, and the required validation command `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` passed with `4793 passed, 11 skipped`, Ruff clean, and mypy clean. No new dependencies, migrations, provider secrets, database columns, rollback CLI, live SSH writes, service restarts, or startup rewiring were introduced.
+
 ## T-041@20260515T214233Z (2026-05-16)
 
 - **Reason:** PAL approved deploy-apply fake-remote scope and startup-hardening assumptions

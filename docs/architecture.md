@@ -230,7 +230,12 @@ supplied local remote-inventory JSON snapshot, preserves unmanaged and excluded
 runtime paths, and reports missing local sources as skipped rather than deleting
 remote files. Its JSON payload records `remote_writes=true` only for that fake
 inventory transport, with `live_ssh=false` and `service_restarts=false`.
-Rollback, live SSH deployment, and service restart orchestration remain future
+`promptclaw.pal_deploy.rollback_pal_deployment_backup(...)` is the matching
+local PAL deploy rollback primitive: it restores files and metadata from a local
+backup artifact into the supplied fake remote inventory snapshot after an
+explicit approval argument. The primitive reports `workflow_id:
+pal_deploy_rollback`, `live_ssh=false`, and `service_restarts=false`; rollback
+CLI wiring, live SSH deployment, and service restart orchestration remain future
 approval-gated work.
 
 Every PAL agent run uses the standard `.promptclaw/runs/<run-id>/` layout so the

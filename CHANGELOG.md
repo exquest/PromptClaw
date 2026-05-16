@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Added PAL deploy rollback primitive (T-042@20260515T214233Z):
+  `promptclaw.pal_deploy.rollback_pal_deployment_backup(...)` now restores
+  backed-up managed fake-remote file content and metadata into a supplied local
+  fake remote inventory snapshot after an explicit approval argument. It
+  preserves unmanaged and non-backed-up entries and reports `workflow_id:
+  pal_deploy_rollback`, `live_ssh=false`, and `service_restarts=false`. This
+  adds no rollback CLI, live SSH deployment, service restart, provider secret,
+  dependency, migration, or database behavior.
+
 - Added approval-gated PAL deploy apply for fake remote inventories
   (T-041@20260515T214233Z): `promptclaw pal deploy apply PROJECT_ROOT
   --remote-inventory PATH --approve-apply` now updates the supplied local fake

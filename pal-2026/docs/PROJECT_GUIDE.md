@@ -68,8 +68,11 @@ promptclaw pal deploy apply pal-2026 --remote-inventory remote-inventory.json --
 The apply command mutates only the named local fake remote inventory JSON
 snapshot. It backs up changed managed fake-remote files first, writes added and
 changed managed files from the manifest, preserves unmanaged files, and reports
-missing local sources as skipped. It does not perform live SSH deployment,
-rollback, or service restarts.
+missing local sources as skipped. The local rollback primitive
+`promptclaw.pal_deploy.rollback_pal_deployment_backup(...)` can restore those
+backed-up files and metadata into a fake remote inventory for testable recovery
+work. There is not yet a rollback CLI, and neither path performs live SSH
+deployment or service restarts.
 
 ## Live PAL Verification Commands
 

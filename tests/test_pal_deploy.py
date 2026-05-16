@@ -18,7 +18,9 @@ from promptclaw.pal_deploy import (
     diff_pal_deployment,
     load_pal_deployment_manifest,
     load_pal_remote_inventory_snapshot,
+    rollback_pal_deployment_backup,
     validate_pal_deployment_manifest,
+    write_pal_remote_inventory_snapshot,
 )
 
 
@@ -283,6 +285,114 @@ def test_pal_deploy_backup_primitive_stores_changed_fake_remote_files(tmp_path: 
     ]
     assert manifest_payload["entries"][0]["backup_path"] == "files/opt/pal/changed.txt"
     assert json.dumps(backup.to_dict(), sort_keys=True)
+
+
+def test_pal_deploy_rollback_primitive_restores_backed_up_fake_remote_files(
+    tmp_path: Path,
+) -> None:
+    manifest = _write_diff_manifest_project(tmp_path)
+    original_remote_inventory = build_fake_pal_remote_inventory({
+        "/opt/pal/changed.txt": {
+            "content": "remote old\n",
+            "mode": "0600",
+            "owner": "pal",
+            "group": "pal",
+        },
+        "/opt/pal/manual.txt": {"content": "operator managed\n"},
+        "/opt/pal/unchanged.txt": {
+            "content": "same\n",
+            "mode": "0600",
+            "owner": "pal",
+            "group": "pal",
+        },
+    })
+    backup_root = tmp_path / ".promptclaw" / "pal-deploy" / "backups"
+    backup = backup_pal_deployment_changes(
+        manifest,
+        tmp_path,
+        remote_inventory=original_remote_inventory,
+        backup_root=backup_root,
+        backup_id="test-rollback",
+    )
+    remote_inventory_path = tmp_path / "remote-inventory.json"
+    write_pal_remote_inventory_snapshot(
+        remote_inventory_path,
+        build_fake_pal_remote_inventory({
+            "/opt/pal/added.txt": {"content": "add me\n", "source": "fake-apply"},
+            "/opt/pal/changed.txt": {"content": "local new\n", "source": "fake-apply"},
+            "/opt/pal/manual.txt": {"content": "operator managed\n"},
+            "/opt/pal/unchanged.txt": {"content": "same\n", "source": "fake-apply"},
+        }),
+    )
+
+    rollback = rollback_pal_deployment_backup(
+        backup,
+        remote_inventory=load_pal_remote_inventory_snapshot(remote_inventory_path),
+        remote_inventory_path=remote_inventory_path,
+        approved=True,
+    )
+
+    assert rollback.workflow_id == "pal_deploy_rollback"
+    assert rollback.status == "complete"
+    assert rollback.approved is True
+    assert rollback.remote_writes is True
+    assert rollback.live_ssh is False
+    assert rollback.service_restarts is False
+    assert rollback.summary_counts == {"restored": 2}
+    assert [entry.target for entry in rollback.restored_entries] == [
+        "/opt/pal/changed.txt",
+        "/opt/pal/unchanged.txt",
+    ]
+    assert [entry.backup_path for entry in rollback.restored_entries] == [
+        "files/opt/pal/changed.txt",
+        "files/opt/pal/unchanged.txt",
+    ]
+    assert json.dumps(rollback.to_dict(), sort_keys=True)
+
+    snapshot = json.loads(remote_inventory_path.read_text(encoding="utf-8"))
+    assert snapshot["/opt/pal/changed.txt"]["content"] == "remote old\n"
+    assert snapshot["/opt/pal/changed.txt"]["mode"] == "0600"
+    assert snapshot["/opt/pal/changed.txt"]["owner"] == "pal"
+    assert snapshot["/opt/pal/changed.txt"]["group"] == "pal"
+    assert snapshot["/opt/pal/changed.txt"]["source"] == "pal-deploy-rollback"
+    assert snapshot["/opt/pal/unchanged.txt"]["content"] == "same\n"
+    assert snapshot["/opt/pal/unchanged.txt"]["mode"] == "0600"
+    assert snapshot["/opt/pal/unchanged.txt"]["owner"] == "pal"
+    assert snapshot["/opt/pal/unchanged.txt"]["group"] == "pal"
+    assert snapshot["/opt/pal/added.txt"]["content"] == "add me\n"
+    assert snapshot["/opt/pal/manual.txt"]["content"] == "operator managed\n"
+
+
+def test_pal_deploy_rollback_primitive_requires_explicit_approval(tmp_path: Path) -> None:
+    manifest = _write_diff_manifest_project(tmp_path)
+    original_remote_inventory = build_fake_pal_remote_inventory({
+        "/opt/pal/changed.txt": {"content": "remote old\n"},
+    })
+    backup = backup_pal_deployment_changes(
+        manifest,
+        tmp_path,
+        remote_inventory=original_remote_inventory,
+        backup_root=tmp_path / ".promptclaw" / "pal-deploy" / "backups",
+        backup_id="test-rollback-rejected",
+    )
+    remote_inventory_path = tmp_path / "remote-inventory.json"
+    write_pal_remote_inventory_snapshot(
+        remote_inventory_path,
+        build_fake_pal_remote_inventory({
+            "/opt/pal/changed.txt": {"content": "local new\n", "source": "fake-apply"},
+        }),
+    )
+    original_snapshot = remote_inventory_path.read_text(encoding="utf-8")
+
+    with pytest.raises(PALDeploymentManifestError, match="--approve-rollback"):
+        rollback_pal_deployment_backup(
+            backup,
+            remote_inventory=load_pal_remote_inventory_snapshot(remote_inventory_path),
+            remote_inventory_path=remote_inventory_path,
+            approved=False,
+        )
+
+    assert remote_inventory_path.read_text(encoding="utf-8") == original_snapshot
 
 
 def test_pal_deploy_plan_cli_prints_dry_run_summary_without_remote_writes(tmp_path: Path) -> None:
