@@ -117,6 +117,60 @@ class PALDeploymentMetadata:
         }
 
 
+PAL_COST_DAILY_HOURS = 24
+PAL_COST_MONTHLY_DAYS = 30
+
+
+@dataclass(frozen=True)
+class PALCostBurn:
+    """Hourly/daily/monthly burn projection for a PAL deployment instance."""
+
+    hourly_rate_usd: float
+    daily_burn_usd: float
+    monthly_burn_usd: float
+    vast_instance_id: str | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "hourly_rate_usd": self.hourly_rate_usd,
+            "daily_burn_usd": self.daily_burn_usd,
+            "monthly_burn_usd": self.monthly_burn_usd,
+            "monthly_days": PAL_COST_MONTHLY_DAYS,
+            "vast_instance_id": self.vast_instance_id,
+        }
+
+
+def compute_pal_cost_burn(
+    hourly_rate_usd: float,
+    *,
+    vast_instance_id: str | None = None,
+) -> PALCostBurn:
+    """Project hourly, daily, and 30-day monthly burn from an hourly rate."""
+    if hourly_rate_usd < 0:
+        raise ValueError(
+            f"hourly_rate_usd must be non-negative: {hourly_rate_usd}"
+        )
+    return PALCostBurn(
+        hourly_rate_usd=hourly_rate_usd,
+        daily_burn_usd=hourly_rate_usd * PAL_COST_DAILY_HOURS,
+        monthly_burn_usd=hourly_rate_usd * PAL_COST_DAILY_HOURS * PAL_COST_MONTHLY_DAYS,
+        vast_instance_id=vast_instance_id,
+    )
+
+
+def format_pal_cost_burn(burn: PALCostBurn) -> str:
+    """Render a single-line burn summary suitable for terminal output."""
+    instance = burn.vast_instance_id or "unset"
+    return (
+        "PAL cost burn: "
+        f"hourly=${burn.hourly_rate_usd:.4f} "
+        f"daily=${burn.daily_burn_usd:.4f} "
+        f"monthly=${burn.monthly_burn_usd:.4f} "
+        f"monthly_days={PAL_COST_MONTHLY_DAYS} "
+        f"vast_instance_id={instance}"
+    )
+
+
 @dataclass(frozen=True)
 class PALDeploymentManifestValidation:
     errors: tuple[str, ...]

@@ -16,6 +16,7 @@ from promptclaw.pal_deploy import (
     PALDeploymentMetadata,
     backup_pal_deployment_changes,
     build_fake_pal_remote_inventory,
+    compute_pal_cost_burn,
     diff_pal_deployment,
     load_pal_deployment_manifest,
     load_pal_remote_inventory_snapshot,
@@ -888,6 +889,82 @@ def test_pal_deployment_metadata_stores_rate_runtime_and_optional_vast_instance(
         PALDeploymentMetadata(hourly_rate_usd=-0.01, runtime_estimate_hours=1.0)
     with pytest.raises(ValueError, match="runtime_estimate_hours"):
         PALDeploymentMetadata(hourly_rate_usd=0.50, runtime_estimate_hours=-1.0)
+
+
+def test_compute_pal_cost_burn_projects_hourly_daily_and_monthly() -> None:
+    burn = compute_pal_cost_burn(0.55, vast_instance_id="vast-12345")
+
+    assert burn.hourly_rate_usd == pytest.approx(0.55)
+    assert burn.daily_burn_usd == pytest.approx(0.55 * 24)
+    assert burn.monthly_burn_usd == pytest.approx(0.55 * 24 * 30)
+    assert burn.vast_instance_id == "vast-12345"
+    assert burn.to_dict() == {
+        "hourly_rate_usd": pytest.approx(0.55),
+        "daily_burn_usd": pytest.approx(0.55 * 24),
+        "monthly_burn_usd": pytest.approx(0.55 * 24 * 30),
+        "monthly_days": 30,
+        "vast_instance_id": "vast-12345",
+    }
+
+    minimal = compute_pal_cost_burn(0.0)
+    assert minimal.vast_instance_id is None
+    assert minimal.daily_burn_usd == 0.0
+    assert minimal.monthly_burn_usd == 0.0
+
+    with pytest.raises(ValueError, match="hourly_rate_usd"):
+        compute_pal_cost_burn(-0.01)
+
+
+def test_pal_cost_cli_prints_hourly_daily_and_monthly_burn() -> None:
+    output = io.StringIO()
+    args = argparse.Namespace(
+        hourly_rate_usd=0.55,
+        vast_instance_id="vast-12345",
+        json=False,
+    )
+    with redirect_stdout(output):
+        rc = promptclaw_cli.cmd_pal_cost(args)
+
+    assert rc == 0
+    rendered = output.getvalue()
+    assert "PAL cost burn:" in rendered
+    assert "hourly=$0.5500" in rendered
+    assert f"daily=${0.55 * 24:.4f}" in rendered
+    assert f"monthly=${0.55 * 24 * 30:.4f}" in rendered
+    assert "monthly_days=30" in rendered
+    assert "vast_instance_id=vast-12345" in rendered
+
+
+def test_pal_cost_cli_json_includes_burn_breakdown() -> None:
+    output = io.StringIO()
+    args = argparse.Namespace(
+        hourly_rate_usd=0.40,
+        vast_instance_id=None,
+        json=True,
+    )
+    with redirect_stdout(output):
+        rc = promptclaw_cli.cmd_pal_cost(args)
+
+    assert rc == 0
+    payload = json.loads(output.getvalue())
+    assert payload["hourly_rate_usd"] == pytest.approx(0.40)
+    assert payload["daily_burn_usd"] == pytest.approx(0.40 * 24)
+    assert payload["monthly_burn_usd"] == pytest.approx(0.40 * 24 * 30)
+    assert payload["monthly_days"] == 30
+    assert payload["vast_instance_id"] is None
+
+
+def test_pal_cost_parser_requires_hourly_rate(tmp_path: Path) -> None:
+    parser = promptclaw_cli.build_parser()
+
+    with pytest.raises(SystemExit):
+        parser.parse_args(["pal", "cost"])
+
+    args = parser.parse_args(["pal", "cost", "--hourly-rate-usd", "0.55"])
+    assert args.pal_command == "cost"
+    assert args.hourly_rate_usd == pytest.approx(0.55)
+    assert args.vast_instance_id is None
+    assert args.json is False
 
 
 def _diff_file_entry(source: str, target: str, *, required: bool = True) -> dict[str, object]:

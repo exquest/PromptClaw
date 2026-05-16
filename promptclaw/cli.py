@@ -30,7 +30,9 @@ from .pal_client import PALRouterClient
 from .pal_deploy import (
     apply_pal_deployment_changes,
     build_pal_deploy_plan,
+    compute_pal_cost_burn,
     default_pal_deploy_apply_backup_id,
+    format_pal_cost_burn,
     format_pal_deploy_apply_result,
     format_pal_deploy_plan,
     format_pal_deploy_rollback_result,
@@ -240,6 +242,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="Approve writing restored backup content to the supplied fake remote inventory snapshot",
     )
     pal_deploy_rollback_parser.add_argument("--json", action="store_true", help="Print deploy rollback JSON")
+
+    pal_cost_parser = pal_sub.add_parser(
+        "cost",
+        help="Print hourly, daily, and monthly PAL burn estimates",
+    )
+    pal_cost_parser.add_argument(
+        "--hourly-rate-usd",
+        type=float,
+        required=True,
+        help="Hourly USD rate for the PAL instance (e.g. Vast.ai listing price)",
+    )
+    pal_cost_parser.add_argument(
+        "--vast-instance-id",
+        help="Optional Vast.ai instance id to include in the burn summary",
+    )
+    pal_cost_parser.add_argument("--json", action="store_true", help="Print burn summary JSON")
 
     pal_kb_parser = pal_sub.add_parser("kb", help="PAL local knowledge-base commands")
     pal_kb_sub = pal_kb_parser.add_subparsers(dest="pal_kb_command", required=True)
@@ -984,6 +1002,18 @@ def cmd_pal_deploy_rollback(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_pal_cost(args: argparse.Namespace) -> int:
+    burn = compute_pal_cost_burn(
+        args.hourly_rate_usd,
+        vast_instance_id=args.vast_instance_id,
+    )
+    if args.json:
+        print(json.dumps(burn.to_dict(), indent=2))
+    else:
+        print(format_pal_cost_burn(burn))
+    return 0
+
+
 def cmd_pal_kb_build(args: argparse.Namespace) -> int:
     result = write_pal_knowledge_index(
         args.project_root,
@@ -1198,6 +1228,8 @@ def _dispatch_pal(args: argparse.Namespace) -> int:
         return cmd_pal_deploy_apply(args)
     if args.pal_command == "deploy" and args.pal_deploy_command == "rollback":
         return cmd_pal_deploy_rollback(args)
+    if args.pal_command == "cost":
+        return cmd_pal_cost(args)
     if args.pal_command == "kb" and args.pal_kb_command == "build":
         return cmd_pal_kb_build(args)
     if args.pal_command == "kb" and args.pal_kb_command == "query":
