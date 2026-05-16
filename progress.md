@@ -458,7 +458,7 @@ Progress: [███████████████████████
 - **T-023@20260515T214233Z**: pending — Pending.
 - **T-024@20260515T214233Z**: pending — Pending.
 - **T-025@20260515T214233Z**: pending — Pending.
-- **T-026@20260515T214233Z**: pending — Pending.
+- **T-026@20260515T214233Z**: complete — Completed with local verification PASS.
 - **T-027@20260515T214233Z**: pending — Pending.
 - **T-028@20260515T214233Z**: pending — Pending.
 - **T-029@20260515T214233Z**: pending — Pending.
@@ -523,3 +523,28 @@ Progress: [███████████████████████
   skipped`, Ruff clean, and mypy clean. No dependencies, migrations, live SSH
   reads, remote writes, backups, apply, rollback, approval flags, or service
   restarts were added.
+
+## T-026@20260515T214233Z Notes
+
+- Explore: PAL-041 is a test-hardening slice over the existing PAL CLI surface.
+  Relevant patterns live in `sdp/prd-pal-2026-agentic-ops-platform.md`,
+  `sdp/task-graph.md`, `promptclaw/cli.py`, `promptclaw/pal_agent.py`,
+  `promptclaw/pal_knowledge.py`, `promptclaw/pal_deploy.py`,
+  `tests/test_pal_agent.py`, `tests/test_pal_knowledge.py`,
+  `tests/test_pal_deploy.py`, and `tests/test_cli_identity_hardening.py`.
+  Existing tests exercise command functions and workflow helpers directly; this
+  task should add parser/dispatch coverage through `promptclaw.cli.main(...)`
+  with fake PAL clients. `pal kb` and `pal deploy plan` should remain local-only
+  with no router client construction, `pal agent actions --approve` is the
+  shipped approval surface for this task, and `pal validate restart` is the
+  representative read-only workflow CLI because T-026 depends on T-015. Startup
+  identity hardening remains covered by existing regression anchors rather than
+  new startup changes in this PAL CLI test task.
+- Verify: Added `tests/test_pal_cli_fake_client.py` and
+  `tests/test_test_pal_cli_fake_client_depth.py`. Red phase failed on the
+  missing fake-client CLI test module before coverage was added. Afterward, the
+  new fake-client CLI suite plus structural gate passed with `5 passed`, the
+  focused PAL regression set passed with `66 passed`, touched-test Ruff passed,
+  the startup identity hardening anchors passed with `11 passed`, and the full
+  required validation gate passed with `4772 passed, 10 skipped`, Ruff clean,
+  and mypy clean. No production code, dependencies, migrations, live PAL calls,

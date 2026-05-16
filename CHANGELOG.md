@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Added fake-client CLI coverage for PAL workflows (T-026@20260515T214233Z):
+  `tests/test_pal_cli_fake_client.py` now drives `promptclaw.cli.main(...)`
+  through local-only `pal kb build/query`, approval-gated
+  `pal agent actions --approve inspect_logs_deep`, read-only
+  `pal validate restart`, and dry-run `pal deploy plan` paths with fake PAL
+  clients or fake remote inventory. The tests assert KB and deploy-plan commands
+  avoid router-client construction, the approval path executes only the approved
+  allow-listed fake-client action, and restart validation writes workflow
+  artifacts without live PAL, SSH, or remote writes.
+
 - Added PAL deploy-plan CLI (T-024@20260515T214233Z):
   `promptclaw pal deploy plan PROJECT_ROOT` now prints a stdout-only dry-run
   plan from the repo-managed PAL deployment manifest, optionally comparing
