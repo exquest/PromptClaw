@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~4h 31m remaining (26 tasks, low confidence, calibrating)
-Expected completion: 12:47 AM tomorrow.
-Progress: [████████████████████████████████████░░] 94%  411 / 437 tasks complete
-  completed: 411, pending: 23, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
+ETC: ~2h 53m remaining (18 tasks, low confidence, calibrating)
+Expected completion: 12:25 AM tomorrow.
+Progress: [████████████████████████████████████░░] 96%  419 / 437 tasks complete
+  completed: 419, pending: 15, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -455,15 +455,15 @@ Progress: [███████████████████████
 - **T-020@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-021@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-022@20260515T214233Z**: complete — Completed with verdict PASS.
-- **T-023@20260515T214233Z**: pending — Pending.
-- **T-024@20260515T214233Z**: pending — Pending.
-- **T-025@20260515T214233Z**: pending — Pending.
-- **T-026@20260515T214233Z**: complete — Completed with local verification PASS.
-- **T-027@20260515T214233Z**: pending — Pending.
-- **T-028@20260515T214233Z**: pending — Pending.
-- **T-029@20260515T214233Z**: pending — Pending.
-- **T-030@20260515T214233Z**: pending — Pending.
-- **T-031@20260515T214233Z**: pending — Pending.
+- **T-023@20260515T214233Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-024@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-025@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-026@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-027@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-028@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-029@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-030@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-031@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-032@20260515T214233Z**: pending — Pending.
 - **T-033@20260515T214233Z**: pending — Pending.
 - **T-034@20260515T214233Z**: pending — Pending.
@@ -478,73 +478,3 @@ Progress: [███████████████████████
 - **T-043@20260515T214233Z**: pending — Pending.
 - **T-044@20260515T214233Z**: pending — Pending.
 - **T-045@20260515T214233Z**: pending — Pending.
-
-## T-023@20260515T214233Z Notes
-
-- Explore: PAL-028 follows the T-022 deployment manifest slice. Relevant
-  patterns live in `sdp/prd-pal-2026-agentic-ops-platform.md`,
-  `promptclaw/pal_deploy.py`, `tests/test_pal_deploy.py`,
-  `pal-2026/ops/deployment-manifest.json`, and the PAL product docs. The
-  implementation should stay stdlib-only and dry-run: compare manifest-managed
-  local files to fake remote snapshots, report deterministic diff sets, honor
-  excluded runtime paths, and avoid SSH, remote writes, service restarts,
-  backups, apply, rollback, migrations, dependencies, and secrets. Startup
-  identity hardening remains covered by existing regression anchors rather than
-  new startup changes in this task.
-- Verify: Added the PAL deploy diff model, fake remote inventory builder,
-  locked fake-remote diff tests, and product docs/changelog updates. Red phase
-  failed on the missing diff API before implementation; focused deploy tests,
-  focused Ruff/mypy, `git diff --check`, and the full required validation gate
-  all passed.
-
-## T-024@20260515T214233Z Notes
-
-- Explore: PAL-029 follows the T-022 manifest and T-023 deploy-diff model.
-  Relevant patterns live in `sdp/prd-pal-2026-agentic-ops-platform.md`,
-  `sdp/templates/candidates/lead_t2/v006.md`, `promptclaw/pal_deploy.py`,
-  `promptclaw/cli.py`, `tests/test_pal_deploy.py`,
-  `docs/architecture.md`, `docs/command-reference.md`, and
-  `pal-2026/docs/PROJECT_GUIDE.md`. The dry-run deploy plan command should
-  remain stdlib-only and stdout-focused: load the manifest, optionally read a
-  local JSON inventory snapshot, report diff counts and service impact, and expose
-  `dry_run=true` plus `remote_writes=false`. It must not add live SSH reads,
-  remote writes, backups, apply, rollback, service restarts, approval flags,
-  migrations, dependencies, provider secrets, database columns, or cloud
-  lifecycle operations. Startup identity hardening remains covered by existing
-  regression anchors rather than new startup changes in this task.
-- Verify: Added `promptclaw pal deploy plan PROJECT_ROOT` as a stdout-only
-  dry-run command backed by the existing manifest and diff model, with optional
-  local JSON remote-inventory snapshots, human and JSON output, service-impact
-  summaries, and explicit `dry_run=true` / `remote_writes=false` metadata. Red
-  phase failed on the missing CLI API and parser wiring before implementation.
-  The locked deploy-plan tests passed with `3 passed`, all PAL deploy tests
-  passed with `13 passed`, the startup identity hardening anchors passed with
-  `11 passed`, and the required validation gate passed with `4766 passed, 10
-  skipped`, Ruff clean, and mypy clean. No dependencies, migrations, live SSH
-  reads, remote writes, backups, apply, rollback, approval flags, or service
-  restarts were added.
-
-## T-026@20260515T214233Z Notes
-
-- Explore: PAL-041 is a test-hardening slice over the existing PAL CLI surface.
-  Relevant patterns live in `sdp/prd-pal-2026-agentic-ops-platform.md`,
-  `sdp/task-graph.md`, `promptclaw/cli.py`, `promptclaw/pal_agent.py`,
-  `promptclaw/pal_knowledge.py`, `promptclaw/pal_deploy.py`,
-  `tests/test_pal_agent.py`, `tests/test_pal_knowledge.py`,
-  `tests/test_pal_deploy.py`, and `tests/test_cli_identity_hardening.py`.
-  Existing tests exercise command functions and workflow helpers directly; this
-  task should add parser/dispatch coverage through `promptclaw.cli.main(...)`
-  with fake PAL clients. `pal kb` and `pal deploy plan` should remain local-only
-  with no router client construction, `pal agent actions --approve` is the
-  shipped approval surface for this task, and `pal validate restart` is the
-  representative read-only workflow CLI because T-026 depends on T-015. Startup
-  identity hardening remains covered by existing regression anchors rather than
-  new startup changes in this PAL CLI test task.
-- Verify: Added `tests/test_pal_cli_fake_client.py` and
-  `tests/test_test_pal_cli_fake_client_depth.py`. Red phase failed on the
-  missing fake-client CLI test module before coverage was added. Afterward, the
-  new fake-client CLI suite plus structural gate passed with `5 passed`, the
-  focused PAL regression set passed with `66 passed`, touched-test Ruff passed,
-  the startup identity hardening anchors passed with `11 passed`, and the full
-  required validation gate passed with `4772 passed, 10 skipped`, Ruff clean,
-  and mypy clean. No production code, dependencies, migrations, live PAL calls,
