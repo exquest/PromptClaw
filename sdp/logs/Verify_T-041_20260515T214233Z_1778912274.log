@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2735 chars)
+---
+
+**Verdict: PASS**
+
+All six acceptance criteria verified independently:
+
+- `--approve-apply` gate enforced: CLI returns exit code 1, no files written, no `.promptclaw` directory created
+- Approved path: backs up changed remote files, applies added/changed, skips missing sources (not deleted), preserves unmanaged — post-apply diff closes to zero delta
+- 17 PAL deploy tests pass with no regressions
+- 11 startup identity hardening anchors pass; spec correctly carves these as existing coverage, not this task's scope
+- All required docs (`architecture.md`, `command-reference.md`, `PROJECT_GUIDE.md`, `CHANGELOG.md`, `progress.md`, `ESCALATIONS.md`) reference the apply command without claiming rollback/SSH/restart support
+- No new dependencies, migrations, or out-of-scope scope introduced; full suite (4791 tests) Ruff+mypy clean

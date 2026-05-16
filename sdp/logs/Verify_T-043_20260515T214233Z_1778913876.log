@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2762 chars)
+---
+
+**Verdict: PASS**
+
+T-043 passes cleanly across all five dimensions:
+
+- **Correctness**: Rollback refuses without `--approve-rollback` (rc=1, `status: rejected`, no inventory mutation). Approved path restores managed entries, preserves unmanaged. All three spec-targeted tests pass.
+- **Completeness**: All 8 acceptance criteria met. Edge cases covered: missing manifest, malformed JSON, missing payload fields, path traversal on backup-id, unmanaged entry preservation.
+- **Consistency**: Parser, command handler, dispatch, and formatter all follow the existing `plan`/`apply` patterns precisely.
+- **Security**: `_pal_deploy_backup_path` blocks path traversal. No new deps, no migrations, no SSH, no secrets. Rejection path performs zero file I/O on the inventory.
+- **Quality**: 4796/4796 tests pass. 11/11 startup identity hardening anchors pass. Docs comprehensively updated. No "future rollback CLI" language remains.
+
+One minor note in the report: `--manifest` is accepted-but-ignored on the rollback subcommand by design (CLI consistency per spec), not a defect.

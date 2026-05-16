@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~1h 52m remaining (9 tasks, low confidence, calibrating)
-Expected completion: 12:44 AM tomorrow.
-Progress: [█████████████████████████████████████░] 98%  428 / 437 tasks complete
-  completed: 428, pending: 6, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
+ETC: ~35m remaining (3 tasks, low confidence, calibrating)
+Expected completion: 12:38 AM today.
+Progress: [██████████████████████████████████████] 99%  434 / 437 tasks complete
+  completed: 434, pending: 0, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -472,9 +472,9 @@ Progress: [███████████████████████
 - **T-037@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-038@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-039@20260515T214233Z**: complete — Completed with verdict PASS.
-- **T-040@20260515T214233Z**: complete — Implemented PAL deploy backup primitive for changed fake-remote managed files; focused PAL deploy tests, startup identity hardening anchors, docs grep, dependency/migration diff check, and full validation passed.
-- **T-041@20260515T214233Z**: complete — Implemented approved PAL deploy apply for local fake remote inventories; locked apply tests, full PAL deploy/fake-client regressions, startup identity hardening anchors, docs grep, dependency/migration diff check, and full validation passed (`4791 passed, 11 skipped`, Ruff clean, mypy clean).
-- **T-042@20260515T214233Z**: complete — Implemented PAL deploy rollback primitive for local fake remote inventories; locked rollback tests, full PAL deploy tests, startup identity hardening anchors, docs grep, dependency/migration diff check, and full validation passed (`4793 passed, 11 skipped`, Ruff clean, mypy clean).
-- **T-043@20260515T214233Z**: complete — Implemented approval-gated PAL deploy rollback CLI for local fake remote inventories; locked rollback CLI tests, PAL deploy/fake-client regressions, startup identity hardening anchors, docs grep, dependency/migration diff check, and full validation passed (`4796 passed, 11 skipped`, Ruff clean, mypy clean).
-- **T-044@20260515T214233Z**: pending — Pending.
-- **T-045@20260515T214233Z**: pending — Pending.
+- **T-040@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-041@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-042@20260515T214233Z**: complete — Completed with verdict PASS WITH NOTES.
+- **T-043@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-044@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-045@20260515T214233Z**: complete — Completed with verdict PASS.
