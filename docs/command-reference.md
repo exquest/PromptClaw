@@ -263,7 +263,10 @@ snapshot for deterministic diagnostics without SSH. Human output shows summary
 counts, planned file changes, unmanaged remote files, and service impacts.
 `--json` includes the same diff data plus `dry_run: true` and
 `remote_writes: false`. The command writes no run artifact, performs no SSH
-writes, and exposes no apply, approval, restart, backup, or rollback flag.
+writes, and exposes no apply, approval, restart, backup, or rollback flag. The
+underlying PAL deploy backup primitive exists as a code API for future approved
+deploy-apply work: it stores changed managed fake-remote file content in a local
+backup artifact without adding a CLI or remote-write path.
 
 Current action ids:
 

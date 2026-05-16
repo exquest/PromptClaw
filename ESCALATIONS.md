@@ -1,5 +1,12 @@
 # Escalations
 
+## T-040@20260515T214233Z (2026-05-16)
+
+- **Reason:** PAL deploy backup primitive scope and startup-hardening assumptions
+- **Details:** Exploration found PAL-030 builds directly on the existing PAL deployment manifest, fake remote inventory, diff, and dry-run plan code in `promptclaw/pal_deploy.py`, with coverage in `tests/test_pal_deploy.py` and product context in `sdp/prd-pal-2026-agentic-ops-platform.md`. The implementation is assumed to add a typed local backup primitive that stores changed managed fake-remote file content under a local `.promptclaw/pal-deploy` style backup artifact for future apply/rollback work. It will not add a deploy apply CLI, rollback CLI, approval flags, live SSH backup capture, remote writes, service restarts, dependencies, migrations, provider secrets, database columns, or startup rewiring. The generated startup hardening bullets target the existing identity startup subsystem; current CLI, first-boot, daemon-ordering, and narrative ASGI tests already cover `bootstrap_identity()` persistence and ordering before `FirstBootAnnouncer`, including standalone and federated modes, so those remain mandatory regression anchors rather than broadening this PAL backup task into startup changes.
+- **Reason:** Red phase, implementation verification, and hardening-anchor results
+- **Details:** Red phase was confirmed with `pytest tests/test_pal_deploy.py::test_pal_deploy_backup_primitive_stores_changed_fake_remote_files -q` failing on the missing `backup_pal_deployment_changes` API before production code changed. After implementation, the locked backup test passed, `pytest tests/test_pal_deploy.py -q` passed with `14 passed`, the startup identity hardening anchor command passed with `11 passed`, the product-doc grep and dependency/migration diff checks passed, and the required validation command `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` passed with `4788 passed, 11 skipped`, Ruff clean, and mypy clean. No new dependencies, migrations, provider secrets, database columns, live SSH capture, remote writes, deploy apply CLI, rollback CLI, approval flags, service restarts, or startup rewiring were introduced.
+
 ## T-026@20260515T214233Z (2026-05-16)
 
 - **Reason:** PAL fake-client CLI test scope and approval-command assumption

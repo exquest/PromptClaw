@@ -217,8 +217,11 @@ live SSH; excluded runtime paths are ignored as unmanaged remote files.
 stdout-only deploy plan. It loads the local manifest, optionally reads a local
 JSON remote-inventory snapshot, prints file diff counts plus service impacts,
 and records `dry_run=true` / `remote_writes=false` in JSON output. Apply,
-backup, rollback, remote writes, approval flags, and service restarts remain
-future approval-gated work.
+rollback, remote writes, approval flags, and service restarts remain future
+approval-gated work. `promptclaw.pal_deploy.backup_pal_deployment_changes(...)`
+is the local PAL deploy backup primitive for that future path: it stores changed
+managed fake-remote file bytes and metadata under a local backup artifact
+without contacting SSH or writing remote files.
 
 Every PAL agent run uses the standard `.promptclaw/runs/<run-id>/` layout so the
 plan, observations, approvals, results, summary, events, and state remain

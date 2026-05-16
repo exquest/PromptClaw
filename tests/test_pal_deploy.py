@@ -13,6 +13,7 @@ from promptclaw import cli as promptclaw_cli
 from promptclaw.pal_deploy import (
     PALDeploymentManifest,
     PALDeploymentManifestError,
+    backup_pal_deployment_changes,
     build_fake_pal_remote_inventory,
     diff_pal_deployment,
     load_pal_deployment_manifest,
@@ -234,6 +235,53 @@ def test_default_pal_deployment_manifest_diff_against_empty_fake_remote_is_json_
     assert diff.unmanaged_remote == ()
     assert diff.summary_counts["added"] == len(manifest.files)
     assert json.dumps(diff.to_dict(), sort_keys=True)
+
+
+def test_pal_deploy_backup_primitive_stores_changed_fake_remote_files(tmp_path: Path) -> None:
+    manifest = _write_diff_manifest_project(tmp_path)
+    remote_inventory = build_fake_pal_remote_inventory({
+        "/opt/pal/changed.txt": {"content": "remote old\n"},
+        "/opt/pal/manual.txt": {"content": "operator managed\n"},
+        "/opt/pal/unchanged.txt": {"content": "same\n", "mode": "0600"},
+    })
+    backup_root = tmp_path / ".promptclaw" / "pal-deploy" / "backups"
+
+    backup = backup_pal_deployment_changes(
+        manifest,
+        tmp_path,
+        remote_inventory=remote_inventory,
+        backup_root=backup_root,
+        backup_id="test-backup",
+    )
+
+    assert backup.workflow_id == "pal_deploy_backup"
+    assert backup.remote_writes is False
+    assert [entry.target for entry in backup.entries] == [
+        "/opt/pal/changed.txt",
+        "/opt/pal/unchanged.txt",
+    ]
+    assert backup.summary_counts == {"stored": 2}
+    assert (
+        backup_root / "test-backup" / "files" / "opt" / "pal" / "changed.txt"
+    ).read_text(encoding="utf-8") == "remote old\n"
+    assert (
+        backup_root / "test-backup" / "files" / "opt" / "pal" / "unchanged.txt"
+    ).read_text(encoding="utf-8") == "same\n"
+    assert not (backup_root / "test-backup" / "files" / "opt" / "pal" / "added.txt").exists()
+    assert not (backup_root / "test-backup" / "files" / "opt" / "pal" / "manual.txt").exists()
+
+    manifest_payload = json.loads(
+        (backup_root / "test-backup" / "backup-manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest_payload["workflow_id"] == "pal_deploy_backup"
+    assert manifest_payload["backup_id"] == "test-backup"
+    assert manifest_payload["summary_counts"] == {"stored": 2}
+    assert [entry["target"] for entry in manifest_payload["entries"]] == [
+        "/opt/pal/changed.txt",
+        "/opt/pal/unchanged.txt",
+    ]
+    assert manifest_payload["entries"][0]["backup_path"] == "files/opt/pal/changed.txt"
+    assert json.dumps(backup.to_dict(), sort_keys=True)
 
 
 def test_pal_deploy_plan_cli_prints_dry_run_summary_without_remote_writes(tmp_path: Path) -> None:

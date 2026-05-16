@@ -55,6 +55,11 @@ Use `--remote-inventory PATH --json` when comparing against a saved local remote
 snapshot. This is still dry-run planning only: apply, backup, rollback, service
 restarts, and approval flags remain separate future approval-gated work.
 
+The PAL deploy backup primitive is available to future approved deploy-apply
+code as `promptclaw.pal_deploy.backup_pal_deployment_changes(...)`. It stores
+changed managed fake-remote file content and metadata in a local backup artifact;
+it does not contact the live PAL host or expose a deploy command by itself.
+
 ## Live PAL Verification Commands
 
 Operators verifying a live PAL router run these checks in order. Every command

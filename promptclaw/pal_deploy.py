@@ -135,6 +135,7 @@ class PALDeploymentRemoteFile:
     group: str | None
     size_bytes: int | None
     source: str = "fake-remote"
+    content_bytes: bytes | None = None
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -146,6 +147,7 @@ class PALDeploymentRemoteFile:
             "group": self.group,
             "size_bytes": self.size_bytes,
             "source": self.source,
+            "content_available": self.content_bytes is not None,
         }
 
 
@@ -268,6 +270,61 @@ class PALDeploymentPlan:
         }
 
 
+@dataclass(frozen=True)
+class PALDeploymentBackupEntry:
+    target: str
+    status: str
+    backup_path: str
+    remote_sha256: str | None
+    remote_mode: str | None
+    remote_owner: str | None
+    remote_group: str | None
+    size_bytes: int | None
+    changed_fields: tuple[str, ...]
+    source: str
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "target": self.target,
+            "status": self.status,
+            "backup_path": self.backup_path,
+            "remote_sha256": self.remote_sha256,
+            "remote_mode": self.remote_mode,
+            "remote_owner": self.remote_owner,
+            "remote_group": self.remote_group,
+            "size_bytes": self.size_bytes,
+            "changed_fields": list(self.changed_fields),
+            "source": self.source,
+        }
+
+
+@dataclass(frozen=True)
+class PALDeploymentBackup:
+    backup_id: str
+    backup_path: Path
+    manifest_path: Path
+    deployment_root: str
+    entries: tuple[PALDeploymentBackupEntry, ...]
+    workflow_id: str = "pal_deploy_backup"
+    remote_writes: bool = False
+
+    @property
+    def summary_counts(self) -> dict[str, int]:
+        return {"stored": len(self.entries)}
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "workflow_id": self.workflow_id,
+            "backup_id": self.backup_id,
+            "backup_path": str(self.backup_path),
+            "manifest_path": str(self.manifest_path),
+            "deployment_root": self.deployment_root,
+            "remote_writes": self.remote_writes,
+            "summary_counts": self.summary_counts,
+            "entries": [entry.to_dict() for entry in self.entries],
+        }
+
+
 def load_pal_deployment_manifest(
     project_root: Path,
     *,
@@ -364,17 +421,18 @@ def build_fake_pal_remote_inventory(
             owner = default_owner
             group = default_group
             source = "fake-remote"
-        content_bytes = _coerce_content_bytes(content)
+        content_bytes = _coerce_content_bytes(content) if exists else None
         remote_files.append(
             PALDeploymentRemoteFile(
                 target=target,
                 exists=exists,
-                sha256=_sha256_bytes(content_bytes) if exists else None,
+                sha256=_sha256_bytes(content_bytes) if content_bytes is not None else None,
                 mode=mode,
                 owner=owner,
                 group=group,
-                size_bytes=len(content_bytes) if exists else None,
+                size_bytes=len(content_bytes) if content_bytes is not None else None,
                 source=source,
+                content_bytes=content_bytes,
             )
         )
     return tuple(remote_files)
@@ -447,6 +505,63 @@ def diff_pal_deployment(
         unchanged=tuple(unchanged),
         unmanaged_remote=unmanaged_remote,
     )
+
+
+def backup_pal_deployment_changes(
+    manifest: PALDeploymentManifest,
+    project_root: Path,
+    *,
+    remote_inventory: Iterable[PALDeploymentRemoteFile],
+    backup_root: Path,
+    backup_id: str,
+) -> PALDeploymentBackup:
+    """Store existing remote bytes for changed managed PAL deployment files."""
+    remote_files = tuple(remote_inventory)
+    diff = diff_pal_deployment(manifest, project_root, remote_inventory=remote_files)
+    remote_by_target = {entry.target: entry for entry in remote_files if entry.exists}
+
+    backup_path = backup_root / backup_id
+    files_root = backup_path / "files"
+    entries: list[PALDeploymentBackupEntry] = []
+    for diff_entry in diff.changed:
+        remote_file = remote_by_target[diff_entry.target]
+        if remote_file.content_bytes is None:
+            raise PALDeploymentManifestError(
+                f"changed remote file has no backup content: {diff_entry.target}"
+            )
+        relative_target = _backup_relative_target_path(diff_entry.target)
+        relative_backup_path = PurePosixPath("files", relative_target.as_posix())
+        output_path = files_root / Path(relative_target.as_posix())
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(remote_file.content_bytes)
+        entries.append(
+            PALDeploymentBackupEntry(
+                target=diff_entry.target,
+                status=diff_entry.status,
+                backup_path=relative_backup_path.as_posix(),
+                remote_sha256=remote_file.sha256,
+                remote_mode=remote_file.mode,
+                remote_owner=remote_file.owner,
+                remote_group=remote_file.group,
+                size_bytes=remote_file.size_bytes,
+                changed_fields=diff_entry.changed_fields,
+                source=remote_file.source,
+            )
+        )
+
+    backup_path.mkdir(parents=True, exist_ok=True)
+    backup = PALDeploymentBackup(
+        backup_id=backup_id,
+        backup_path=backup_path,
+        manifest_path=manifest.manifest_path,
+        deployment_root=manifest.deployment_root,
+        entries=tuple(entries),
+    )
+    (backup_path / "backup-manifest.json").write_text(
+        json.dumps(backup.to_dict(), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    return backup
 
 
 def build_pal_deploy_plan(
@@ -714,6 +829,16 @@ def _changed_fields(
 
 def _matches_excluded_path(target: str, excluded_paths: Iterable[str]) -> bool:
     return any(fnmatch.fnmatchcase(target, pattern) for pattern in excluded_paths)
+
+
+def _backup_relative_target_path(target: str) -> PurePosixPath:
+    path = PurePosixPath(target)
+    if not path.is_absolute() or ".." in path.parts:
+        raise PALDeploymentManifestError(f"unsafe PAL backup target path: {target}")
+    parts = tuple(part for part in path.parts if part != "/")
+    if not parts:
+        raise PALDeploymentManifestError(f"unsafe PAL backup target path: {target}")
+    return PurePosixPath(*parts)
 
 
 def _coerce_content_bytes(value: object) -> bytes:

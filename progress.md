@@ -472,7 +472,7 @@ Progress: [███████████████████████
 - **T-037@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-038@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-039@20260515T214233Z**: pending — Pending.
-- **T-040@20260515T214233Z**: pending — Pending.
+- **T-040@20260515T214233Z**: complete — Implemented PAL deploy backup primitive for changed fake-remote managed files; focused PAL deploy tests, startup identity hardening anchors, docs grep, dependency/migration diff check, and full validation passed.
 - **T-041@20260515T214233Z**: pending — Pending.
 - **T-042@20260515T214233Z**: pending — Pending.
 - **T-043@20260515T214233Z**: pending — Pending.

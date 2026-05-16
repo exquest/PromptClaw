@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added PAL deploy backup primitive (T-040@20260515T214233Z):
+  `promptclaw.pal_deploy.backup_pal_deployment_changes(...)` now stores changed
+  managed fake-remote file content and metadata under a local backup artifact,
+  with JSON-safe backup metadata and `remote_writes=false`. This adds no deploy
+  apply CLI, rollback CLI, live SSH capture, approval flag, remote write, or
+  service restart behavior.
+
 - Shipped PAL 2026 agentic ops platform (T-030@20260515T214233Z): this release
   consolidates the PAL operator loop across four areas. **Approval replay** —
   `promptclaw pal agent actions PROJECT_ROOT [--approve ACTION_ID]` records
