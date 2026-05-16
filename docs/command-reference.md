@@ -158,6 +158,8 @@ promptclaw pal audit shutdown PROJECT_ROOT
 promptclaw pal audit shutdown PROJECT_ROOT --json
 promptclaw pal deploy plan PROJECT_ROOT
 promptclaw pal deploy plan PROJECT_ROOT --remote-inventory remote-inventory.json --json
+promptclaw pal deploy apply PROJECT_ROOT --remote-inventory remote-inventory.json --approve-apply
+promptclaw pal deploy apply PROJECT_ROOT --remote-inventory remote-inventory.json --approve-apply --json
 promptclaw pal agent triage PROJECT_ROOT
 promptclaw pal agent actions PROJECT_ROOT
 promptclaw pal agent actions PROJECT_ROOT --approve inspect_logs_deep
@@ -263,10 +265,19 @@ snapshot for deterministic diagnostics without SSH. Human output shows summary
 counts, planned file changes, unmanaged remote files, and service impacts.
 `--json` includes the same diff data plus `dry_run: true` and
 `remote_writes: false`. The command writes no run artifact, performs no SSH
-writes, and exposes no apply, approval, restart, backup, or rollback flag. The
-underlying PAL deploy backup primitive exists as a code API for future approved
-deploy-apply work: it stores changed managed fake-remote file content in a local
-backup artifact without adding a CLI or remote-write path.
+writes, and exposes no apply, approval, restart, backup, or rollback flag.
+
+`pal deploy apply` is the approval-gated fake-remote apply path. It requires
+`--remote-inventory PATH --approve-apply`; without that approval flag it returns
+nonzero and does not create backups or mutate the snapshot. With approval, it
+loads the manifest and local fake remote inventory, backs up changed managed
+remote file content under `.promptclaw/pal-deploy/backups/<backup-id>/`, writes
+added and changed managed files into the supplied inventory JSON, preserves
+unmanaged files, and reports missing local source files as skipped. JSON output
+uses `workflow_id: pal_deploy_apply`, `approved: true`,
+`remote_transport: fake-remote-inventory`, `remote_writes: true`,
+`live_ssh: false`, and `service_restarts: false`. This command does not perform
+live SSH deployment, rollback, or service restarts.
 
 Current action ids:
 

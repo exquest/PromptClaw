@@ -216,12 +216,22 @@ live SSH; excluded runtime paths are ignored as unmanaged remote files.
 `promptclaw pal deploy plan PROJECT_ROOT` exposes that model as a dry-run,
 stdout-only deploy plan. It loads the local manifest, optionally reads a local
 JSON remote-inventory snapshot, prints file diff counts plus service impacts,
-and records `dry_run=true` / `remote_writes=false` in JSON output. Apply,
-rollback, remote writes, approval flags, and service restarts remain future
-approval-gated work. `promptclaw.pal_deploy.backup_pal_deployment_changes(...)`
-is the local PAL deploy backup primitive for that future path: it stores changed
-managed fake-remote file bytes and metadata under a local backup artifact
-without contacting SSH or writing remote files.
+and records `dry_run=true` / `remote_writes=false` in JSON output.
+`promptclaw.pal_deploy.backup_pal_deployment_changes(...)` is the local PAL
+deploy backup primitive for the apply path: it stores changed managed
+fake-remote file bytes and metadata under a local backup artifact without
+contacting SSH or writing remote files.
+
+`promptclaw pal deploy apply PROJECT_ROOT --remote-inventory PATH
+--approve-apply` is the first approved deploy-apply surface, but it is still
+fake-remote only. It requires the explicit approval flag before any write,
+backs up changed managed files, writes added and changed manifest files into the
+supplied local remote-inventory JSON snapshot, preserves unmanaged and excluded
+runtime paths, and reports missing local sources as skipped rather than deleting
+remote files. Its JSON payload records `remote_writes=true` only for that fake
+inventory transport, with `live_ssh=false` and `service_restarts=false`.
+Rollback, live SSH deployment, and service restart orchestration remain future
+approval-gated work.
 
 Every PAL agent run uses the standard `.promptclaw/runs/<run-id>/` layout so the
 plan, observations, approvals, results, summary, events, and state remain

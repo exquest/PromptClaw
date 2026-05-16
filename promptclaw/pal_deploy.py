@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+from datetime import datetime, timezone
 import fnmatch
 import hashlib
 import json
@@ -325,6 +327,76 @@ class PALDeploymentBackup:
         }
 
 
+@dataclass(frozen=True)
+class PALDeploymentApplyEntry:
+    target: str
+    status: str
+    source: str | None
+    kind: str | None
+    service_impact: str | None
+    changed_fields: tuple[str, ...] = ()
+    backup_path: str | None = None
+    reason: str | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "target": self.target,
+            "status": self.status,
+            "source": self.source,
+            "kind": self.kind,
+            "service_impact": self.service_impact,
+            "changed_fields": list(self.changed_fields),
+            "backup_path": self.backup_path,
+            "reason": self.reason,
+        }
+
+
+@dataclass(frozen=True)
+class PALDeploymentApply:
+    status: str
+    approved: bool
+    manifest_path: Path
+    deployment_root: str
+    remote_inventory_path: Path
+    backup: PALDeploymentBackup
+    applied_entries: tuple[PALDeploymentApplyEntry, ...]
+    skipped_entries: tuple[PALDeploymentApplyEntry, ...]
+    unmanaged_remote: tuple[PALDeploymentDiffEntry, ...]
+    workflow_id: str = "pal_deploy_apply"
+    remote_writes: bool = True
+    remote_transport: str = "fake-remote-inventory"
+    live_ssh: bool = False
+    service_restarts: bool = False
+
+    @property
+    def summary_counts(self) -> dict[str, int]:
+        return {
+            "applied": len(self.applied_entries),
+            "backed_up": self.backup.summary_counts["stored"],
+            "skipped": len(self.skipped_entries),
+            "unmanaged_remote": len(self.unmanaged_remote),
+        }
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "workflow_id": self.workflow_id,
+            "status": self.status,
+            "approved": self.approved,
+            "remote_writes": self.remote_writes,
+            "remote_transport": self.remote_transport,
+            "live_ssh": self.live_ssh,
+            "service_restarts": self.service_restarts,
+            "manifest_path": str(self.manifest_path),
+            "deployment_root": self.deployment_root,
+            "remote_inventory_path": str(self.remote_inventory_path),
+            "backup": self.backup.to_dict(),
+            "summary_counts": self.summary_counts,
+            "applied_entries": [entry.to_dict() for entry in self.applied_entries],
+            "skipped_entries": [entry.to_dict() for entry in self.skipped_entries],
+            "unmanaged_remote": [entry.to_dict() for entry in self.unmanaged_remote],
+        }
+
+
 def load_pal_deployment_manifest(
     project_root: Path,
     *,
@@ -408,12 +480,35 @@ def build_fake_pal_remote_inventory(
             remote_files.append(value)
             continue
         if isinstance(value, Mapping):
-            content = value.get("content", "")
             exists = bool(value.get("exists", True))
             mode = str(value.get("mode", default_mode)) if exists else None
             owner = str(value.get("owner", default_owner)) if exists else None
             group = str(value.get("group", default_group)) if exists else None
             source = str(value.get("source", "fake-remote"))
+            if "content_base64" in value:
+                content_bytes = base64.b64decode(str(value["content_base64"]))
+            elif "content" in value:
+                content_bytes = _coerce_content_bytes(value.get("content", ""))
+            elif value.get("sha256") is not None:
+                remote_files.append(
+                    PALDeploymentRemoteFile(
+                        target=target,
+                        exists=exists,
+                        sha256=str(value["sha256"]) if exists else None,
+                        mode=mode,
+                        owner=owner,
+                        group=group,
+                        size_bytes=(
+                            int(value["size_bytes"])
+                            if exists and value.get("size_bytes") is not None
+                            else None
+                        ),
+                        source=source,
+                    )
+                )
+                continue
+            else:
+                content_bytes = b""
         else:
             content = value
             exists = True
@@ -421,18 +516,27 @@ def build_fake_pal_remote_inventory(
             owner = default_owner
             group = default_group
             source = "fake-remote"
-        content_bytes = _coerce_content_bytes(content) if exists else None
+            content_bytes = _coerce_content_bytes(content)
+        snapshot_content_bytes = content_bytes if exists else None
         remote_files.append(
             PALDeploymentRemoteFile(
                 target=target,
                 exists=exists,
-                sha256=_sha256_bytes(content_bytes) if content_bytes is not None else None,
+                sha256=(
+                    _sha256_bytes(snapshot_content_bytes)
+                    if snapshot_content_bytes is not None
+                    else None
+                ),
                 mode=mode,
                 owner=owner,
                 group=group,
-                size_bytes=len(content_bytes) if content_bytes is not None else None,
+                size_bytes=(
+                    len(snapshot_content_bytes)
+                    if snapshot_content_bytes is not None
+                    else None
+                ),
                 source=source,
-                content_bytes=content_bytes,
+                content_bytes=snapshot_content_bytes,
             )
         )
     return tuple(remote_files)
@@ -564,6 +668,82 @@ def backup_pal_deployment_changes(
     return backup
 
 
+def apply_pal_deployment_changes(
+    manifest: PALDeploymentManifest,
+    project_root: Path,
+    *,
+    remote_inventory: Iterable[PALDeploymentRemoteFile],
+    remote_inventory_path: Path,
+    backup_root: Path,
+    backup_id: str,
+    approved: bool,
+) -> PALDeploymentApply:
+    """Apply managed PAL files to a local fake remote inventory snapshot."""
+    if not approved:
+        raise PALDeploymentManifestError("PAL deploy apply requires --approve-apply")
+
+    root = project_root.resolve()
+    remote_files = tuple(remote_inventory)
+    diff = diff_pal_deployment(manifest, root, remote_inventory=remote_files)
+    backup = backup_pal_deployment_changes(
+        manifest,
+        root,
+        remote_inventory=remote_files,
+        backup_root=backup_root,
+        backup_id=backup_id,
+    )
+    backup_by_target = {entry.target: entry for entry in backup.entries}
+    manifest_by_target = {entry.target: entry for entry in manifest.files}
+    remote_by_target = {entry.target: entry for entry in remote_files if entry.exists}
+
+    applied_entries: list[PALDeploymentApplyEntry] = []
+    for diff_entry in diff.added + diff.changed:
+        manifest_entry = manifest_by_target[diff_entry.target]
+        source_path = manifest_entry.source_path(root)
+        if not source_path.is_file():
+            continue
+        content = source_path.read_bytes()
+        remote_by_target[diff_entry.target] = PALDeploymentRemoteFile(
+            target=diff_entry.target,
+            exists=True,
+            sha256=_sha256_bytes(content),
+            mode=manifest_entry.mode,
+            owner=manifest_entry.owner,
+            group=manifest_entry.group,
+            size_bytes=len(content),
+            source="fake-apply",
+            content_bytes=content,
+        )
+        backup_entry = backup_by_target.get(diff_entry.target)
+        applied_entries.append(
+            _apply_entry_from_diff(
+                diff_entry,
+                backup_path=backup_entry.backup_path if backup_entry else None,
+            )
+        )
+
+    skipped_entries = tuple(
+        _apply_entry_from_diff(
+            entry,
+            reason="local source missing; no fake remote deletion performed",
+        )
+        for entry in diff.missing
+    )
+    write_pal_remote_inventory_snapshot(remote_inventory_path, remote_by_target.values())
+
+    return PALDeploymentApply(
+        status="complete",
+        approved=True,
+        manifest_path=manifest.manifest_path,
+        deployment_root=manifest.deployment_root,
+        remote_inventory_path=remote_inventory_path,
+        backup=backup,
+        applied_entries=tuple(applied_entries),
+        skipped_entries=skipped_entries,
+        unmanaged_remote=diff.unmanaged_remote,
+    )
+
+
 def build_pal_deploy_plan(
     project_root: Path,
     *,
@@ -583,6 +763,26 @@ def build_pal_deploy_plan(
         diff=diff,
         remote_inventory_source=remote_inventory_source,
     )
+
+
+def write_pal_remote_inventory_snapshot(
+    path: Path,
+    remote_inventory: Iterable[PALDeploymentRemoteFile],
+) -> None:
+    """Write a JSON-safe fake PAL remote inventory snapshot."""
+    payload = {
+        entry.target: _remote_file_snapshot_payload(entry)
+        for entry in sorted(remote_inventory, key=lambda item: item.target)
+        if entry.exists
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def default_pal_deploy_apply_backup_id() -> str:
+    """Return a deterministic-format backup id for an apply run."""
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return f"apply-{timestamp}"
 
 
 def format_pal_deploy_plan(plan: PALDeploymentPlan) -> str:
@@ -623,6 +823,41 @@ def format_pal_deploy_plan(plan: PALDeploymentPlan) -> str:
             lines.append(f"- {entry.status.upper()} {entry.target}")
     else:
         lines.append("- none")
+    return "\n".join(lines)
+
+
+def format_pal_deploy_apply_result(result: PALDeploymentApply) -> str:
+    """Render a concise human-readable deploy apply result."""
+    counts = result.summary_counts
+    lines = [
+        f"PAL deploy apply: {result.status.upper()} manifest={result.manifest_path}",
+        (
+            f"approved={str(result.approved).lower()} "
+            f"remote_writes={str(result.remote_writes).lower()} "
+            f"remote_transport={result.remote_transport} "
+            f"live_ssh={str(result.live_ssh).lower()} "
+            f"service_restarts={str(result.service_restarts).lower()}"
+        ),
+        (
+            "summary "
+            f"applied={counts['applied']} "
+            f"backed_up={counts['backed_up']} "
+            f"skipped={counts['skipped']} "
+            f"unmanaged_remote={counts['unmanaged_remote']}"
+        ),
+        f"backup={result.backup.backup_path}",
+        "applied file changes:",
+    ]
+    if result.applied_entries:
+        for entry in result.applied_entries:
+            fields = ",".join(entry.changed_fields) or "none"
+            lines.append(f"- {entry.status.upper()} {entry.target} fields={fields}")
+    else:
+        lines.append("- none")
+    if result.skipped_entries:
+        lines.append("skipped file changes:")
+        for entry in result.skipped_entries:
+            lines.append(f"- {entry.status.upper()} {entry.target} reason={entry.reason}")
     return "\n".join(lines)
 
 
@@ -690,7 +925,7 @@ def _remote_inventory_from_payload(payload: Any) -> tuple[PALDeploymentRemoteFil
 def _remote_file_from_payload(payload: Any) -> PALDeploymentRemoteFile:
     if not isinstance(payload, dict):
         raise PALDeploymentManifestError("PAL remote inventory entries must be objects")
-    if "content" in payload:
+    if "content" in payload or "content_base64" in payload:
         target = str(payload.get("target", ""))
         if not target:
             raise PALDeploymentManifestError("PAL remote inventory content entry missing target")
@@ -811,6 +1046,24 @@ def _remote_only_diff_entry(remote_file: PALDeploymentRemoteFile) -> PALDeployme
     )
 
 
+def _apply_entry_from_diff(
+    diff_entry: PALDeploymentDiffEntry,
+    *,
+    backup_path: str | None = None,
+    reason: str | None = None,
+) -> PALDeploymentApplyEntry:
+    return PALDeploymentApplyEntry(
+        target=diff_entry.target,
+        status=diff_entry.status,
+        source=diff_entry.source,
+        kind=diff_entry.kind,
+        service_impact=diff_entry.service_impact,
+        changed_fields=diff_entry.changed_fields,
+        backup_path=backup_path,
+        reason=reason,
+    )
+
+
 def _changed_fields(
     local_file: PALDeploymentLocalFile,
     remote_file: PALDeploymentRemoteFile,
@@ -847,6 +1100,25 @@ def _coerce_content_bytes(value: object) -> bytes:
     if isinstance(value, str):
         return value.encode("utf-8")
     raise TypeError(f"fake PAL remote content must be str or bytes, got {type(value).__name__}")
+
+
+def _remote_file_snapshot_payload(entry: PALDeploymentRemoteFile) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "exists": entry.exists,
+        "mode": entry.mode,
+        "owner": entry.owner,
+        "group": entry.group,
+        "source": entry.source,
+    }
+    if entry.content_bytes is None:
+        payload["sha256"] = entry.sha256
+        payload["size_bytes"] = entry.size_bytes
+        return payload
+    try:
+        payload["content"] = entry.content_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        payload["content_base64"] = base64.b64encode(entry.content_bytes).decode("ascii")
+    return payload
 
 
 def _sha256_bytes(content: bytes) -> str:

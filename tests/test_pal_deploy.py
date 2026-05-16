@@ -17,6 +17,7 @@ from promptclaw.pal_deploy import (
     build_fake_pal_remote_inventory,
     diff_pal_deployment,
     load_pal_deployment_manifest,
+    load_pal_remote_inventory_snapshot,
     validate_pal_deployment_manifest,
 )
 
@@ -358,6 +359,148 @@ def test_pal_deploy_plan_cli_json_includes_diff_and_service_impact(tmp_path: Pat
     ]
     assert payload["planned_changes"][1]["changed_fields"] == ["content_sha256"]
     assert [entry["target"] for entry in payload["unmanaged_remote"]] == ["/opt/pal/manual.txt"]
+
+
+def test_pal_deploy_apply_parser_exposes_explicit_approval_flag(tmp_path: Path) -> None:
+    remote_inventory_path = tmp_path / "remote-inventory.json"
+    parser = promptclaw_cli.build_parser()
+
+    parsed_without_approval = parser.parse_args([
+        "pal",
+        "deploy",
+        "apply",
+        str(tmp_path),
+        "--remote-inventory",
+        str(remote_inventory_path),
+    ])
+    parsed_with_approval = parser.parse_args([
+        "pal",
+        "deploy",
+        "apply",
+        str(tmp_path),
+        "--remote-inventory",
+        str(remote_inventory_path),
+        "--approve-apply",
+        "--json",
+    ])
+
+    assert parsed_without_approval.pal_command == "deploy"
+    assert parsed_without_approval.pal_deploy_command == "apply"
+    assert parsed_without_approval.project_root == tmp_path
+    assert parsed_without_approval.remote_inventory == remote_inventory_path
+    assert parsed_without_approval.approve_apply is False
+    assert parsed_without_approval.json is False
+    assert parsed_with_approval.approve_apply is True
+    assert parsed_with_approval.json is True
+    assert not hasattr(parsed_with_approval, "approve_rollback")
+
+
+def test_pal_deploy_apply_cli_requires_approval_flag_for_fake_remote_writes(
+    tmp_path: Path,
+) -> None:
+    manifest = _write_diff_manifest_project(tmp_path)
+    remote_inventory_path = _write_remote_inventory_snapshot(tmp_path)
+    original_inventory = remote_inventory_path.read_text(encoding="utf-8")
+
+    output = io.StringIO()
+    args = argparse.Namespace(
+        project_root=tmp_path,
+        manifest=manifest.manifest_path,
+        remote_inventory=remote_inventory_path,
+        backup_id="rejected-apply",
+        approve_apply=False,
+        json=True,
+    )
+    with redirect_stdout(output):
+        rc = promptclaw_cli.cmd_pal_deploy_apply(args)
+
+    assert rc == 1
+    payload = json.loads(output.getvalue())
+    assert payload["workflow_id"] == "pal_deploy_apply"
+    assert payload["status"] == "rejected"
+    assert payload["approved"] is False
+    assert payload["remote_writes"] is False
+    assert payload["live_ssh"] is False
+    assert payload["service_restarts"] is False
+    assert "--approve-apply" in payload["reason"]
+    assert payload["remote_inventory_path"] == str(remote_inventory_path)
+    assert remote_inventory_path.read_text(encoding="utf-8") == original_inventory
+    assert not (tmp_path / ".promptclaw").exists()
+
+
+def test_pal_deploy_apply_cli_writes_approved_fake_remote_inventory_and_backup(
+    tmp_path: Path,
+) -> None:
+    manifest = _write_diff_manifest_project(tmp_path)
+    remote_inventory_path = _write_remote_inventory_snapshot(tmp_path)
+
+    output = io.StringIO()
+    args = argparse.Namespace(
+        project_root=tmp_path,
+        manifest=manifest.manifest_path,
+        remote_inventory=remote_inventory_path,
+        backup_id="test-apply",
+        approve_apply=True,
+        json=True,
+    )
+    with redirect_stdout(output):
+        rc = promptclaw_cli.cmd_pal_deploy_apply(args)
+
+    assert rc == 0
+    payload = json.loads(output.getvalue())
+    assert payload["workflow_id"] == "pal_deploy_apply"
+    assert payload["status"] == "complete"
+    assert payload["approved"] is True
+    assert payload["remote_writes"] is True
+    assert payload["live_ssh"] is False
+    assert payload["service_restarts"] is False
+    assert payload["remote_inventory_path"] == str(remote_inventory_path)
+    assert payload["backup"]["backup_id"] == "test-apply"
+    assert payload["summary_counts"] == {
+        "applied": 2,
+        "backed_up": 1,
+        "skipped": 1,
+        "unmanaged_remote": 1,
+    }
+    assert [entry["target"] for entry in payload["applied_entries"]] == [
+        "/opt/pal/added.txt",
+        "/opt/pal/changed.txt",
+    ]
+    assert [entry["status"] for entry in payload["applied_entries"]] == ["added", "changed"]
+    assert [entry["target"] for entry in payload["skipped_entries"]] == ["/opt/pal/missing.txt"]
+
+    snapshot = json.loads(remote_inventory_path.read_text(encoding="utf-8"))
+    assert snapshot["/opt/pal/added.txt"]["content"] == "add me\n"
+    assert snapshot["/opt/pal/changed.txt"]["content"] == "local new\n"
+    assert snapshot["/opt/pal/changed.txt"]["mode"] == "0644"
+    assert snapshot["/opt/pal/manual.txt"]["content"] == "operator managed\n"
+    assert "/opt/pal/missing.txt" not in snapshot
+
+    backup_file = (
+        tmp_path
+        / ".promptclaw"
+        / "pal-deploy"
+        / "backups"
+        / "test-apply"
+        / "files"
+        / "opt"
+        / "pal"
+        / "changed.txt"
+    )
+    assert backup_file.read_text(encoding="utf-8") == "remote old\n"
+
+    post_apply_diff = diff_pal_deployment(
+        manifest,
+        tmp_path,
+        remote_inventory=load_pal_remote_inventory_snapshot(remote_inventory_path),
+    )
+    assert post_apply_diff.summary_counts == {
+        "added": 0,
+        "changed": 0,
+        "missing": 1,
+        "unchanged": 3,
+        "unmanaged_remote": 1,
+    }
 
 
 def test_pal_deploy_plan_parser_has_no_apply_or_approval_surface(tmp_path: Path) -> None:

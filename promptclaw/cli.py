@@ -28,8 +28,12 @@ from .pal_agent import (
 )
 from .pal_client import PALRouterClient
 from .pal_deploy import (
+    apply_pal_deployment_changes,
     build_pal_deploy_plan,
+    default_pal_deploy_apply_backup_id,
+    format_pal_deploy_apply_result,
     format_pal_deploy_plan,
+    load_pal_deployment_manifest,
     load_pal_remote_inventory_snapshot,
 )
 from .pal_knowledge import query_pal_knowledge_index, write_pal_knowledge_index
@@ -180,6 +184,32 @@ def build_parser() -> argparse.ArgumentParser:
         help="Local JSON remote inventory snapshot; no SSH or live remote probe is performed",
     )
     pal_deploy_plan_parser.add_argument("--json", action="store_true", help="Print deploy plan JSON")
+    pal_deploy_apply_parser = pal_deploy_sub.add_parser(
+        "apply",
+        help="Apply PAL deployment changes to a local fake remote inventory after approval",
+    )
+    pal_deploy_apply_parser.add_argument("project_root", type=Path)
+    pal_deploy_apply_parser.add_argument(
+        "--manifest",
+        type=Path,
+        help="Override the deployment manifest path; relative paths resolve under PROJECT_ROOT",
+    )
+    pal_deploy_apply_parser.add_argument(
+        "--remote-inventory",
+        type=Path,
+        required=True,
+        help="Local JSON fake remote inventory snapshot to update; no SSH is performed",
+    )
+    pal_deploy_apply_parser.add_argument(
+        "--approve-apply",
+        action="store_true",
+        help="Approve writing the supplied fake remote inventory snapshot",
+    )
+    pal_deploy_apply_parser.add_argument(
+        "--backup-id",
+        help="Override the local backup artifact id for deterministic tests",
+    )
+    pal_deploy_apply_parser.add_argument("--json", action="store_true", help="Print deploy apply JSON")
 
     pal_kb_parser = pal_sub.add_parser("kb", help="PAL local knowledge-base commands")
     pal_kb_sub = pal_kb_parser.add_subparsers(dest="pal_kb_command", required=True)
@@ -836,6 +866,51 @@ def cmd_pal_deploy_plan(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_pal_deploy_apply(args: argparse.Namespace) -> int:
+    project_root = args.project_root
+    manifest_path = _resolve_project_path(project_root, args.manifest) if args.manifest else None
+    remote_inventory_path = _resolve_project_path(project_root, args.remote_inventory)
+    if not args.approve_apply:
+        payload = {
+            "workflow_id": "pal_deploy_apply",
+            "status": "rejected",
+            "approved": False,
+            "remote_writes": False,
+            "remote_transport": "fake-remote-inventory",
+            "live_ssh": False,
+            "service_restarts": False,
+            "remote_inventory_path": str(remote_inventory_path),
+            "reason": "PAL deploy apply requires --approve-apply before fake remote writes",
+        }
+        if args.json:
+            print(json.dumps(payload, indent=2))
+        else:
+            print(
+                "PAL deploy apply: REJECTED "
+                "approved=false remote_writes=false live_ssh=false "
+                "service_restarts=false reason=missing --approve-apply"
+            )
+        return 1
+
+    remote_inventory = load_pal_remote_inventory_snapshot(remote_inventory_path)
+    manifest = load_pal_deployment_manifest(project_root, manifest_path=manifest_path)
+    backup_id = args.backup_id or default_pal_deploy_apply_backup_id()
+    result = apply_pal_deployment_changes(
+        manifest,
+        project_root,
+        remote_inventory=remote_inventory,
+        remote_inventory_path=remote_inventory_path,
+        backup_root=project_root / ".promptclaw" / "pal-deploy" / "backups",
+        backup_id=backup_id,
+        approved=True,
+    )
+    if args.json:
+        print(json.dumps(result.to_dict(), indent=2))
+    else:
+        print(format_pal_deploy_apply_result(result))
+    return 0
+
+
 def cmd_pal_kb_build(args: argparse.Namespace) -> int:
     result = write_pal_knowledge_index(
         args.project_root,
@@ -1046,6 +1121,8 @@ def _dispatch_pal(args: argparse.Namespace) -> int:
         return cmd_pal_report_phase2_readiness(args)
     if args.pal_command == "deploy" and args.pal_deploy_command == "plan":
         return cmd_pal_deploy_plan(args)
+    if args.pal_command == "deploy" and args.pal_deploy_command == "apply":
+        return cmd_pal_deploy_apply(args)
     if args.pal_command == "kb" and args.pal_kb_command == "build":
         return cmd_pal_kb_build(args)
     if args.pal_command == "kb" and args.pal_kb_command == "query":

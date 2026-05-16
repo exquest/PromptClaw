@@ -111,6 +111,15 @@ handoff authority. The Vast connector is a non-executing stub: `rent`,
 callable action ids, so PAL proposals for those operations stay in
 `ignored_actions` unless future work explicitly adds a tested action.
 
+PAL deploy apply is a separate local deployment utility rather than a
+model-authored handoff. `promptclaw pal deploy apply PROJECT_ROOT
+--remote-inventory PATH --approve-apply` requires the exact approval flag before
+mutating the supplied fake remote inventory snapshot. It writes local backup
+artifacts under `.promptclaw/pal-deploy/backups/<backup-id>/`, records
+`workflow_id: pal_deploy_apply` in CLI output, and reports `live_ssh=false` /
+`service_restarts=false`; rollback and live remote deployment remain outside the
+current handoff protocol.
+
 The slow-inference context workflow uses the same artifact transport, but it is
 read-only context collection rather than a PAL-authored plan. It records:
 

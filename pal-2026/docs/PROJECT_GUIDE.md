@@ -52,13 +52,24 @@ promptclaw pal deploy plan pal-2026
 ```
 
 Use `--remote-inventory PATH --json` when comparing against a saved local remote
-snapshot. This is still dry-run planning only: apply, backup, rollback, service
-restarts, and approval flags remain separate future approval-gated work.
+snapshot. This is still dry-run planning only.
 
 The PAL deploy backup primitive is available to future approved deploy-apply
 code as `promptclaw.pal_deploy.backup_pal_deployment_changes(...)`. It stores
 changed managed fake-remote file content and metadata in a local backup artifact;
 it does not contact the live PAL host or expose a deploy command by itself.
+
+4. **Apply to a fake remote snapshot** only after explicit approval:
+
+```bash
+promptclaw pal deploy apply pal-2026 --remote-inventory remote-inventory.json --approve-apply
+```
+
+The apply command mutates only the named local fake remote inventory JSON
+snapshot. It backs up changed managed fake-remote files first, writes added and
+changed managed files from the manifest, preserves unmanaged files, and reports
+missing local sources as skipped. It does not perform live SSH deployment,
+rollback, or service restarts.
 
 ## Live PAL Verification Commands
 

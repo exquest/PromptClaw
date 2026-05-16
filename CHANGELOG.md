@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Added approval-gated PAL deploy apply for fake remote inventories
+  (T-041@20260515T214233Z): `promptclaw pal deploy apply PROJECT_ROOT
+  --remote-inventory PATH --approve-apply` now updates the supplied local fake
+  remote inventory snapshot from the PAL deployment manifest after explicit
+  approval. The command backs up changed managed fake-remote file content before
+  overwrite, writes added/changed managed files, preserves unmanaged files, and
+  reports skipped missing local sources. This adds no rollback command, live SSH
+  deployment, service restart, provider secret, dependency, migration, or
+  database behavior.
+
 - Added PAL deploy backup primitive (T-040@20260515T214233Z):
   `promptclaw.pal_deploy.backup_pal_deployment_changes(...)` now stores changed
   managed fake-remote file content and metadata under a local backup artifact,

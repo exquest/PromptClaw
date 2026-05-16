@@ -1,5 +1,10 @@
 # Escalations
 
+## T-041@20260515T214233Z (2026-05-16)
+
+- **Reason:** PAL approved deploy-apply fake-remote scope and startup-hardening assumptions
+- **Details:** Exploration found PAL-031 builds directly on the existing PAL deployment manifest, fake remote inventory, diff, dry-run plan, and backup primitive in `promptclaw/pal_deploy.py`, with CLI wiring in `promptclaw/cli.py`, coverage in `tests/test_pal_deploy.py`, and product context in `sdp/prd-pal-2026-agentic-ops-platform.md`. The implementation is assumed to expose `promptclaw pal deploy apply PROJECT_ROOT --remote-inventory PATH --approve-apply` as an explicit approval-gated local fake-remote apply path. It will mutate only the supplied local fake remote inventory snapshot, back up changed managed fake-remote content before overwrite, report skipped missing local sources, and preserve unmanaged/excluded runtime paths. It will not add rollback, live SSH capture or writes, service restarts, new dependencies, migrations, provider secrets, database columns, or startup rewiring. The generated startup hardening bullets target the existing identity startup subsystem; current CLI, first-boot, daemon-ordering, and narrative ASGI tests already cover `bootstrap_identity()` persistence and ordering before `FirstBootAnnouncer`, including standalone and federated modes, so those remain mandatory regression anchors rather than broadening this PAL apply task into startup changes.
+
 ## T-040@20260515T214233Z (2026-05-16)
 
 - **Reason:** PAL deploy backup primitive scope and startup-hardening assumptions
