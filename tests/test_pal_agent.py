@@ -1878,6 +1878,46 @@ def test_pal_escalation_artifact_writes_only_when_ssh_missing_and_approvals_pend
     assert "`PAL_SSH_KEY`" in body
 
 
+def _seed_pal_action_plan(
+    tmp_path: Path, project_name: str, proposed_actions: tuple[str, ...]
+) -> str:
+    config = default_project_config(project_name)
+    save_config(tmp_path, config)
+    tool_registry = {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Check PAL router health.",
+            run=lambda: {"summary": "router is green"},
+        ),
+    }
+    action_registry = {
+        action_id: PALOpsAction(
+            name=action_id,
+            description=f"Bounded action {action_id}.",
+            approval_required=True,
+            mutating=False,
+            run=lambda action_id=action_id: {"summary": f"executed {action_id}"},
+        )
+        for action_id in proposed_actions
+    }
+    client = FakePALClient([
+        json.dumps({
+            "actions": list(proposed_actions),
+            "rationale": "Seed plan for approval tests.",
+        }),
+        "Proposal only: no actions approved.",
+    ])
+    result = run_pal_ops_actions(
+        tmp_path,
+        client=client,
+        tool_registry=tool_registry,
+        action_registry=action_registry,
+        default_tools=("pal_health",),
+        now=_fake_now(),
+    )
+    return result["run_id"]
+
+
 def test_pal_agent_approve_parser_wires_project_root_run_id_and_action(
     tmp_path: Path,
 ) -> None:
@@ -1915,10 +1955,14 @@ def test_pal_agent_approve_parser_wires_project_root_run_id_and_action(
     assert "--run-id" in rendered
     assert "--action" in rendered
 
+    run_id = _seed_pal_action_plan(
+        tmp_path, "PAL Approve Parser Wiring", ("inspect_logs_deep",)
+    )
+
     text_output = io.StringIO()
     args = argparse.Namespace(
         project_root=tmp_path,
-        run_id="20260515t214233z-pal-ops-actions",
+        run_id=run_id,
         action=["inspect_logs_deep"],
         json=False,
     )
@@ -1927,8 +1971,68 @@ def test_pal_agent_approve_parser_wires_project_root_run_id_and_action(
     assert rc == 0
     rendered_cmd = text_output.getvalue()
     assert "PAL agent approve: PENDING" in rendered_cmd
-    assert "run_id=20260515t214233z-pal-ops-actions" in rendered_cmd
+    assert f"run_id={run_id}" in rendered_cmd
     assert "approved_actions=inspect_logs_deep" in rendered_cmd
+
+
+def test_pal_agent_approve_rejects_actions_absent_from_saved_plan(tmp_path: Path) -> None:
+    run_id = _seed_pal_action_plan(
+        tmp_path, "PAL Approve Reject Unknown", ("inspect_logs_deep",)
+    )
+    run_root = tmp_path / ".promptclaw" / "runs" / run_id
+    before = {p.relative_to(run_root) for p in run_root.rglob("*")}
+
+    text_output = io.StringIO()
+    args = argparse.Namespace(
+        project_root=tmp_path,
+        run_id=run_id,
+        action=["inspect_logs_deep", "destroy_instance"],
+        json=False,
+    )
+    with redirect_stdout(text_output):
+        rc = promptclaw_cli.cmd_pal_agent_approve(args)
+
+    assert rc == 1
+    rendered = text_output.getvalue()
+    assert "PAL agent approve: REJECTED" in rendered
+    assert "unknown_actions=destroy_instance" in rendered
+    after = {p.relative_to(run_root) for p in run_root.rglob("*")}
+    assert before == after
+
+    json_output = io.StringIO()
+    args = argparse.Namespace(
+        project_root=tmp_path,
+        run_id=run_id,
+        action=["destroy_instance"],
+        json=True,
+    )
+    with redirect_stdout(json_output):
+        rc_json = promptclaw_cli.cmd_pal_agent_approve(args)
+    assert rc_json == 1
+    payload = json.loads(json_output.getvalue())
+    assert payload["status"] == "rejected"
+    assert payload["unknown_actions"] == ["destroy_instance"]
+    assert payload["proposed_actions"] == ["inspect_logs_deep"]
+
+
+def test_pal_agent_approve_rejects_when_saved_plan_is_missing(tmp_path: Path) -> None:
+    config = default_project_config("PAL Approve Missing Run")
+    save_config(tmp_path, config)
+    runs_root = tmp_path / ".promptclaw" / "runs"
+
+    text_output = io.StringIO()
+    args = argparse.Namespace(
+        project_root=tmp_path,
+        run_id="20260515t000000z-pal-ops-actions",
+        action=["inspect_logs_deep"],
+        json=False,
+    )
+    with redirect_stdout(text_output):
+        rc = promptclaw_cli.cmd_pal_agent_approve(args)
+
+    assert rc == 1
+    assert "PAL agent approve: REJECTED" in text_output.getvalue()
+    assert not (runs_root / "20260515t000000z-pal-ops-actions").exists()
 
 
 def test_pal_ssh_env_missing_detects_blank_and_unset_values() -> None:

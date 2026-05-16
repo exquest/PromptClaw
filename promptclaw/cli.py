@@ -18,6 +18,7 @@ from .pal_agent import (
     DEFAULT_SHUTDOWN_AUDIT_TASK,
     DEFAULT_SLOW_INFERENCE_DIAGNOSIS_TASK,
     DEFAULT_TRIAGE_TASK,
+    load_pal_action_results,
     run_pal_ops_actions,
     run_pal_ops_triage,
     run_pal_phase2_readiness_report,
@@ -925,6 +926,61 @@ def cmd_pal_agent_actions(args: argparse.Namespace) -> int:
 
 def cmd_pal_agent_approve(args: argparse.Namespace) -> int:
     actions = list(args.action)
+    try:
+        saved = load_pal_action_results(args.project_root, args.run_id)
+    except (FileNotFoundError, ValueError) as exc:
+        message = str(exc)
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "status": "rejected",
+                        "run_id": args.run_id,
+                        "project_root": str(args.project_root),
+                        "approved_actions": actions,
+                        "unknown_actions": actions,
+                        "reason": message,
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            print(
+                "PAL agent approve: REJECTED "
+                f"run_id={args.run_id} "
+                f"approved_actions={','.join(actions) or 'none'} "
+                f"reason={message}"
+            )
+        return 1
+
+    proposed = list(saved.get("proposed_actions") or [])
+    proposed_set = set(proposed)
+    unknown = [action_id for action_id in actions if action_id not in proposed_set]
+    if unknown:
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "status": "rejected",
+                        "run_id": args.run_id,
+                        "project_root": str(args.project_root),
+                        "approved_actions": actions,
+                        "unknown_actions": unknown,
+                        "proposed_actions": proposed,
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            print(
+                "PAL agent approve: REJECTED "
+                f"run_id={args.run_id} "
+                f"approved_actions={','.join(actions) or 'none'} "
+                f"unknown_actions={','.join(unknown)} "
+                f"proposed_actions={','.join(proposed) or 'none'}"
+            )
+        return 1
+
     if args.json:
         print(
             json.dumps(
