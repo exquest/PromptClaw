@@ -435,6 +435,53 @@ def test_pal_ops_actions_executes_only_approved_allowlisted_actions(tmp_path: Pa
     )
 
 
+def test_pal_ops_actions_unknown_approved_ids_never_reach_action_runner(tmp_path: Path) -> None:
+    config = default_project_config("PAL Actions Unknown Approvals")
+    save_config(tmp_path, config)
+    invoked: list[str] = []
+
+    tool_registry = {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Check PAL router health.",
+            run=lambda: _recorded_tool_result(invoked, "pal_health"),
+        ),
+    }
+    action_registry = {
+        "inspect_logs_deep": PALOpsAction(
+            name="inspect_logs_deep",
+            description="Inspect PAL logs.",
+            approval_required=True,
+            mutating=False,
+            run=lambda: _recorded_tool_result(invoked, "inspect_logs_deep"),
+        ),
+    }
+    client = FakePALClient([
+        json.dumps({
+            "actions": ["inspect_logs_deep", "destroy_instance"],
+            "rationale": "PAL hallucinates an unknown id alongside a real one.",
+        }),
+        "Inspected logs; hallucinated and unregistered approvals were dropped.",
+    ])
+
+    result = run_pal_ops_actions(
+        tmp_path,
+        client=client,
+        tool_registry=tool_registry,
+        action_registry=action_registry,
+        approved_actions=("inspect_logs_deep", "destroy_instance", "format_disks"),
+        default_tools=("pal_health",),
+        now=_fake_now(),
+    )
+
+    assert "destroy_instance" not in invoked
+    assert "format_disks" not in invoked
+    assert invoked == ["pal_health", "inspect_logs_deep"]
+    assert result["executed_actions"] == ["inspect_logs_deep"]
+    assert result["ignored_actions"] == ["destroy_instance"]
+    assert result["ignored_approvals"] == ["destroy_instance", "format_disks"]
+
+
 def test_pal_ops_actions_prompt_artifacts_include_bounded_knowledge_context(tmp_path: Path) -> None:
     config = default_project_config("PAL Action Knowledge Context")
     save_config(tmp_path, config)
