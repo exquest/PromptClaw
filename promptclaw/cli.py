@@ -14,11 +14,13 @@ from .orchestrator import PromptClawOrchestrator
 from .pal_agent import (
     DEFAULT_ACTION_TASK,
     DEFAULT_RESTART_VALIDATION_TASK,
+    DEFAULT_SHUTDOWN_AUDIT_TASK,
     DEFAULT_SLOW_INFERENCE_DIAGNOSIS_TASK,
     DEFAULT_TRIAGE_TASK,
     run_pal_ops_actions,
     run_pal_ops_triage,
     run_pal_restart_validation,
+    run_pal_shutdown_audit,
     run_pal_slow_inference_diagnosis,
 )
 from .pal_client import PALRouterClient
@@ -123,6 +125,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="Operator task for restart validation",
     )
     pal_validate_restart_parser.add_argument("--json", action="store_true", help="Print validation result JSON")
+
+    pal_audit_parser = pal_sub.add_parser("audit", help="Run read-only PAL audit workflows")
+    pal_audit_sub = pal_audit_parser.add_subparsers(dest="pal_audit_command", required=True)
+    pal_audit_shutdown_parser = pal_audit_sub.add_parser(
+        "shutdown",
+        help="Audit PAL auto-shutdown config, override state, cron, and logs",
+    )
+    pal_audit_shutdown_parser.add_argument("project_root", type=Path)
+    pal_audit_shutdown_parser.add_argument(
+        "--task",
+        default=DEFAULT_SHUTDOWN_AUDIT_TASK,
+        help="Operator task for shutdown audit",
+    )
+    pal_audit_shutdown_parser.add_argument("--json", action="store_true", help="Print audit result JSON")
 
     pal_kb_parser = pal_sub.add_parser("kb", help="PAL local knowledge-base commands")
     pal_kb_sub = pal_kb_parser.add_subparsers(dest="pal_kb_command", required=True)
@@ -684,6 +700,29 @@ def cmd_pal_validate_restart(args: argparse.Namespace) -> int:
     return 0 if result["status"] == "complete" and result["validation_status"] != "fail" else 1
 
 
+def cmd_pal_audit_shutdown(args: argparse.Namespace) -> int:
+    result = run_pal_shutdown_audit(args.project_root, task=args.task)
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        executed_tools = ",".join(result["executed_tools"]) or "none"
+        mutating_actions = ",".join(result["mutating_actions"]) or "none"
+        print(
+            "PAL shutdown audit: "
+            f"{result['status'].upper()} "
+            f"run_id={result['run_id']} "
+            f"audit_status={result['audit_status']} "
+            f"shutdown_enabled={result['shutdown_enabled_state']} "
+            f"override={result['override_state']} "
+            f"next_shutdown_window={result['next_shutdown_window']} "
+            f"executed_tools={executed_tools} "
+            f"mutating_actions={mutating_actions} "
+            f"audit={result['audit_path']} "
+            f"summary={result['summary_path']}"
+        )
+    return 0 if result["status"] == "complete" and result["audit_status"] != "fail" else 1
+
+
 def cmd_pal_kb_build(args: argparse.Namespace) -> int:
     result = write_pal_knowledge_index(
         args.project_root,
@@ -809,6 +848,8 @@ def _dispatch_pal(args: argparse.Namespace) -> int:
         return cmd_pal_diagnose_slow_inference(args)
     if args.pal_command == "validate" and args.pal_validate_command == "restart":
         return cmd_pal_validate_restart(args)
+    if args.pal_command == "audit" and args.pal_audit_command == "shutdown":
+        return cmd_pal_audit_shutdown(args)
     if args.pal_command == "kb" and args.pal_kb_command == "build":
         return cmd_pal_kb_build(args)
     if args.pal_command == "kb" and args.pal_kb_command == "query":

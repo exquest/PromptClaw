@@ -172,6 +172,29 @@ Tailscale status, and the fixed read-only SSH process check. The payload and
 route metadata record `workflow_id: restart_validation`, `validation_status`,
 the executed tool list, and `mutating_actions: []`.
 
+The shutdown-audit CLI uses the same local workflow transport:
+
+```text
+.promptclaw/runs/<run-id>/
+├── input/task.md
+├── routing/route.json
+├── routing/route.md
+├── outputs/shutdown-audit.json
+├── handoffs/shutdown-audit.md
+├── summary/final-summary.md
+├── logs/events.jsonl
+└── state.json
+```
+
+`promptclaw pal audit shutdown PROJECT_ROOT` records shutdown config, the
+auto-shutdown cron entry, override flag state, current local shutdown time
+context, and recent shutdown logs through a fixed read-only SSH diagnostic. The
+payload and route metadata record `workflow_id: shutdown_audit`,
+`audit_status`, `shutdown_enabled_state`, `override_state`,
+`next_shutdown_window`, the executed tool list, and `mutating_actions: []`.
+When SSH evidence is unavailable, the summary still states unknown enabled and
+override states plus an unavailable next shutdown window.
+
 ## Benefits
 
 - deterministic transfer point

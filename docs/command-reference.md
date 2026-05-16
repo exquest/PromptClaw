@@ -154,6 +154,8 @@ promptclaw pal diagnose slow-inference PROJECT_ROOT
 promptclaw pal diagnose slow-inference PROJECT_ROOT --json
 promptclaw pal validate restart PROJECT_ROOT
 promptclaw pal validate restart PROJECT_ROOT --json
+promptclaw pal audit shutdown PROJECT_ROOT
+promptclaw pal audit shutdown PROJECT_ROOT --json
 promptclaw pal agent triage PROJECT_ROOT
 promptclaw pal agent actions PROJECT_ROOT
 promptclaw pal agent actions PROJECT_ROOT --approve inspect_logs_deep
@@ -226,6 +228,17 @@ It writes `.promptclaw/runs/<run-id>/outputs/restart-validation.json`,
 route/event/state artifacts, a handoff, and a final summary with
 `workflow_id: restart_validation`, `validation_status`, the executed tool list,
 and `mutating_actions: []`.
+
+`pal audit shutdown` runs the shutdown-audit workflow. It uses one fixed
+read-only SSH diagnostic to inspect `/opt/pal/config/shutdown.conf`, the cron
+entry for `/opt/pal/scripts/auto_shutdown.sh`, the configured override flag, the
+current local shutdown time context, and recent `/opt/pal/logs/shutdown.log`
+lines. It writes `.promptclaw/runs/<run-id>/outputs/shutdown-audit.json`,
+route/event/state artifacts, a handoff, and a final summary with
+`workflow_id: shutdown_audit`, `audit_status`, `shutdown_enabled_state`,
+`override_state`, `next_shutdown_window`, the executed tool list, and
+`mutating_actions: []`. Missing SSH diagnostics are recorded as unknown state
+instead of prompting for credentials or changing shutdown behavior.
 
 Current action ids:
 

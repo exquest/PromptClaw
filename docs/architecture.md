@@ -176,6 +176,17 @@ runs the fixed read-only SSH process check when configured. The workflow writes
 `validation_status`, all observations, and `mutating_actions: []`; it validates
 post-restart state but does not perform the restart itself.
 
+The shutdown-audit workflow is exposed as
+`promptclaw pal audit shutdown PROJECT_ROOT`. It stays inside the same
+read-only local authority boundary: PromptClaw runs one fixed SSH diagnostic to
+read shutdown config, cron registration, override flag state, current local
+shutdown time, and recent shutdown logs, then derives the enabled state,
+override state, and next five-minute shutdown window locally. The workflow
+writes `outputs/shutdown-audit.json` with `workflow_id: shutdown_audit`,
+`audit_status`, all observations, and `mutating_actions: []`; it audits shutdown
+state but does not create or remove overrides, edit cron, or power down the
+host.
+
 Every PAL agent run uses the standard `.promptclaw/runs/<run-id>/` layout so the
 plan, observations, approvals, results, summary, events, and state remain
 reproducible.

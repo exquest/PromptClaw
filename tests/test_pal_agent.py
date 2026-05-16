@@ -1030,6 +1030,203 @@ def test_pal_validate_restart_cli_prints_summary(
     assert payload["mutating_actions"] == []
 
 
+def test_pal_shutdown_audit_reports_enabled_override_and_next_window(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from promptclaw.pal_agent import run_pal_shutdown_audit
+
+    config = default_project_config("PAL Shutdown Audit")
+    save_config(tmp_path, config)
+    runner = FakeSSHRunner([
+        {
+            "exit_code": 0,
+            "stdout": "\n".join([
+                "CONFIG_PATH=/opt/pal/config/shutdown.conf",
+                "CONFIG_PRESENT=true",
+                "ENABLED=true",
+                "SHUTDOWN_TIME=01:00",
+                "TIMEZONE=America/Los_Angeles",
+                "OVERRIDE_FILE=/opt/pal/config/override.flag",
+                "OVERRIDE_PRESENT=false",
+                "CRON_ENTRY=*/5 * * * * /opt/pal/scripts/auto_shutdown.sh",
+                "CURRENT_LOCAL=2026-05-15T23:30:00-0700",
+                "--- shutdown log ---",
+                "Fri May 15 01:00:01 PDT 2026: Shutdown window skipped during test.",
+            ]),
+            "stderr": "",
+        }
+    ])
+    monkeypatch.setattr("promptclaw.pal_agent._run_ssh_command", runner)
+
+    result = run_pal_shutdown_audit(
+        tmp_path,
+        task="Audit PAL shutdown configuration.",
+        client=FakePALClient([]),
+        now=_fake_now(),
+    )
+
+    assert result["status"] == "complete"
+    assert result["workflow_id"] == "shutdown_audit"
+    assert result["audit_status"] == "pass"
+    assert result["shutdown_enabled_state"] == "enabled"
+    assert result["override_state"] == "inactive"
+    assert result["next_shutdown_window"] == "2026-05-16 01:00-01:05 America/Los_Angeles"
+    assert result["mutating_actions"] == []
+    assert result["executed_tools"] == ["shutdown_remote_audit"]
+
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    payload = json.loads((run_root / "outputs" / "shutdown-audit.json").read_text())
+    route = json.loads((run_root / "routing" / "route.json").read_text())
+    state = json.loads((run_root / "state.json").read_text())
+    events = (run_root / "logs" / "events.jsonl").read_text()
+    summary = (run_root / "summary" / "final-summary.md").read_text()
+    observation = payload["observations"][0]
+
+    assert payload["workflow_id"] == "shutdown_audit"
+    assert payload["mutating_actions"] == []
+    assert payload["audit_status"] == "pass"
+    assert payload["shutdown_enabled_state"] == "enabled"
+    assert payload["override_state"] == "inactive"
+    assert payload["next_shutdown_window"] == "2026-05-16 01:00-01:05 America/Los_Angeles"
+    assert payload["audit"]["cron_installed"] is True
+    assert payload["audit"]["shutdown_time"] == "01:00"
+    assert payload["audit"]["timezone"] == "America/Los_Angeles"
+    assert payload["audit"]["override_file"] == "/opt/pal/config/override.flag"
+    assert "Shutdown window skipped during test" in payload["audit"]["recent_log_excerpt"]
+    assert observation["tool"] == "shutdown_remote_audit"
+    assert observation["status"] == "ok"
+    assert route["workflow_id"] == "shutdown_audit"
+    assert route["mutating_actions"] == []
+    assert route["shutdown_enabled_state"] == "enabled"
+    assert route["override_state"] == "inactive"
+    assert route["next_shutdown_window"] == "2026-05-16 01:00-01:05 America/Los_Angeles"
+    assert "Mutating actions: none" in (run_root / "routing" / "route.md").read_text()
+    assert "Shutdown enabled state: enabled" in summary
+    assert "Override state: inactive" in summary
+    assert "Next shutdown window: 2026-05-16 01:00-01:05 America/Los_Angeles" in summary
+    assert (run_root / "handoffs" / "shutdown-audit.md").exists()
+    assert "shutdown_audit_started" in events
+    assert "shutdown_audit_completed" in events
+    assert state["status"] == "complete"
+    assert state["lead_agent"] == "local-allowlist"
+    assert state["verifier_agent"] == "local-allowlist"
+    assert "/opt/pal/config/shutdown.conf" in runner.last_command
+    assert "crontab -l" in runner.last_command
+    assert "/opt/pal/logs/shutdown.log" in runner.last_command
+    assert "touch /opt/pal/config/override.flag" not in runner.last_command
+    assert "rm -f /opt/pal/config/override.flag" not in runner.last_command
+    assert "shutdown -h now" not in runner.last_command
+
+
+def test_pal_shutdown_audit_without_ssh_records_unknown_states(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    from promptclaw.pal_agent import run_pal_shutdown_audit
+
+    config = default_project_config("PAL Shutdown Audit No SSH")
+    save_config(tmp_path, config)
+    for key in ("PAL_SSH_HOST", "PAL_SSH_PORT", "PAL_SSH_KEY"):
+        monkeypatch.delenv(key, raising=False)
+
+    result = run_pal_shutdown_audit(
+        tmp_path,
+        client=FakePALClient([]),
+        now=_fake_now(),
+    )
+
+    assert result["status"] == "complete"
+    assert result["workflow_id"] == "shutdown_audit"
+    assert result["audit_status"] == "incomplete"
+    assert result["shutdown_enabled_state"] == "unknown"
+    assert result["override_state"] == "unknown"
+    assert result["next_shutdown_window"] == "unavailable"
+
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    payload = json.loads((run_root / "outputs" / "shutdown-audit.json").read_text())
+    observation = payload["observations"][0]
+    summary = (run_root / "summary" / "final-summary.md").read_text()
+
+    assert observation["status"] == "skipped"
+    assert payload["audit"]["cron_installed"] is None
+    assert payload["audit"]["config_present"] is None
+    assert "Shutdown enabled state: unknown" in summary
+    assert "Override state: unknown" in summary
+    assert "Next shutdown window: unavailable" in summary
+
+
+def test_pal_audit_shutdown_cli_prints_summary(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    parser = promptclaw_cli.build_parser()
+    parsed = parser.parse_args([
+        "pal",
+        "audit",
+        "shutdown",
+        str(tmp_path),
+        "--task",
+        "Audit shutdown.",
+        "--json",
+    ])
+    assert parsed.pal_command == "audit"
+    assert parsed.pal_audit_command == "shutdown"
+    assert parsed.project_root == tmp_path
+    assert parsed.task == "Audit shutdown."
+    assert parsed.json is True
+
+    result = {
+        "run_id": "20260515t203000z-pal-shutdown-audit",
+        "workflow_id": "shutdown_audit",
+        "status": "complete",
+        "audit_status": "pass",
+        "shutdown_enabled_state": "enabled",
+        "override_state": "inactive",
+        "next_shutdown_window": "2026-05-16 01:00-01:05 America/Los_Angeles",
+        "summary_path": ".promptclaw/runs/20260515t203000z-pal-shutdown-audit/summary/final-summary.md",
+        "audit_path": ".promptclaw/runs/20260515t203000z-pal-shutdown-audit/outputs/shutdown-audit.json",
+        "executed_tools": ["shutdown_remote_audit"],
+        "tool_count": 1,
+        "mutating_actions": [],
+    }
+    calls: list[dict[str, Any]] = []
+
+    def fake_run(project_root: Path, *, task: str) -> dict[str, Any]:
+        calls.append({"project_root": project_root, "task": task})
+        return dict(result)
+
+    monkeypatch.setattr("promptclaw.cli.run_pal_shutdown_audit", fake_run)
+
+    text_output = io.StringIO()
+    args = argparse.Namespace(project_root=tmp_path, task="Audit shutdown.", json=False)
+    with redirect_stdout(text_output):
+        rc = promptclaw_cli.cmd_pal_audit_shutdown(args)
+
+    assert rc == 0
+    rendered = text_output.getvalue()
+    assert "PAL shutdown audit: COMPLETE" in rendered
+    assert "audit_status=pass" in rendered
+    assert "shutdown_enabled=enabled" in rendered
+    assert "override=inactive" in rendered
+    assert "next_shutdown_window=2026-05-16 01:00-01:05 America/Los_Angeles" in rendered
+    assert "mutating_actions=none" in rendered
+    assert calls == [{"project_root": tmp_path, "task": "Audit shutdown."}]
+
+    json_output = io.StringIO()
+    args = argparse.Namespace(project_root=tmp_path, task="Audit shutdown.", json=True)
+    with redirect_stdout(json_output):
+        rc = promptclaw_cli.cmd_pal_audit_shutdown(args)
+
+    assert rc == 0
+    payload = json.loads(json_output.getvalue())
+    assert payload["workflow_id"] == "shutdown_audit"
+    assert payload["shutdown_enabled_state"] == "enabled"
+    assert payload["override_state"] == "inactive"
+    assert payload["next_shutdown_window"] == "2026-05-16 01:00-01:05 America/Los_Angeles"
+    assert payload["mutating_actions"] == []
+
+
 def test_pal_agent_cli_actions_prints_approval_summary(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr("promptclaw.cli.run_pal_ops_actions", lambda project_root, task, approved_actions: {
         "run_id": "20260515t191000z-pal-ops-actions",

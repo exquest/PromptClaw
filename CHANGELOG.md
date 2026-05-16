@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added PAL shutdown-audit workflow (T-016@20260515T214233Z):
+  `promptclaw pal audit shutdown PROJECT_ROOT` now writes a read-only
+  `shutdown_audit` run artifact after auditing shutdown config, cron,
+  override flag state, current local shutdown time, and recent shutdown logs,
+  recording shutdown enabled state, override state, next shutdown window, and
+  `mutating_actions: []`.
+
 - Added PAL restart-validation workflow (T-015@20260515T214233Z):
   `promptclaw pal validate restart PROJECT_ROOT` now writes a read-only
   `restart_validation` run artifact after running router health, one fixed

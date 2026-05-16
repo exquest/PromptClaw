@@ -6,6 +6,7 @@ import re
 import shutil
 import subprocess
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable, Protocol
 
@@ -121,6 +122,18 @@ DEFAULT_RESTART_VALIDATION_TOOL_ORDER: tuple[str, ...] = (
     "pal_smoke",
     "tailscale_status",
     "ssh_process_check",
+)
+
+DEFAULT_SHUTDOWN_AUDIT_TASK = (
+    "Audit PAL 2026 auto-shutdown configuration. Capture whether scheduled "
+    "shutdown is enabled, whether the override flag is active, the next "
+    "shutdown window, cron registration, and recent shutdown log evidence."
+)
+
+SHUTDOWN_AUDIT_WORKFLOW_ID = "shutdown_audit"
+
+DEFAULT_SHUTDOWN_AUDIT_TOOL_ORDER: tuple[str, ...] = (
+    "shutdown_remote_audit",
 )
 
 PAL_AGENT_SYSTEM_PROMPT = (
@@ -891,6 +904,150 @@ def run_pal_restart_validation(
     }
 
 
+def run_pal_shutdown_audit(
+    project_root: Path,
+    *,
+    task: str = DEFAULT_SHUTDOWN_AUDIT_TASK,
+    client: PALAgentClient | None = None,
+    tool_registry: dict[str, PALOpsTool] | None = None,
+    default_tools: tuple[str, ...] = DEFAULT_SHUTDOWN_AUDIT_TOOL_ORDER,
+    now: Callable[[], str] = utc_now,
+) -> dict[str, Any]:
+    project_root = project_root.resolve()
+    config = load_config(project_root)
+    paths = ProjectPaths(project_root=project_root, config=config)
+    tools = tool_registry or build_shutdown_audit_tool_registry()
+
+    created_at = now()
+    run_id = _build_run_id(created_at, "pal-shutdown-audit")
+    artifacts = ArtifactManager(paths, run_id)
+    artifacts.create_run_layout()
+    artifacts.write_task(task)
+
+    state = RunState(
+        run_id=run_id,
+        title="PAL Shutdown Audit",
+        status="running",
+        current_phase="audit",
+        created_at=created_at,
+        updated_at=created_at,
+        task_text=task,
+        lead_agent="local-allowlist",
+        verifier_agent="local-allowlist",
+        route_decision={
+            "task_type": SHUTDOWN_AUDIT_WORKFLOW_ID,
+            "workflow_id": SHUTDOWN_AUDIT_WORKFLOW_ID,
+            "lead_agent": "local-allowlist",
+            "verifier_agent": "local-allowlist",
+            "reason": "PromptClaw audits shutdown state through fixed read-only diagnostics.",
+            "mutating_actions": [],
+        },
+    )
+
+    _record_event(
+        artifacts,
+        state,
+        now,
+        event_type="pal_agent.shutdown_audit_started",
+        message="PAL shutdown audit started.",
+        phase="audit",
+        agent="local-allowlist",
+        role="verifier",
+    )
+
+    audit_tools = [name for name in default_tools if name in tools]
+    observations: list[dict[str, Any]] = []
+    for tool_name in audit_tools:
+        observation = _run_tool(tools[tool_name])
+        observations.append(observation)
+        _record_event(
+            artifacts,
+            state,
+            now,
+            event_type="pal_agent.shutdown_audit_observed",
+            message=f"{tool_name} returned {observation['status']}.",
+            phase="audit",
+            agent="local-allowlist",
+            role="verifier",
+            extra={"tool": tool_name, "status": observation["status"]},
+        )
+
+    audit = _shutdown_audit_from_observations(observations)
+    payload = {
+        "workflow_id": SHUTDOWN_AUDIT_WORKFLOW_ID,
+        "task": task,
+        "executed_tools": audit_tools,
+        "mutating_actions": [],
+        "audit_status": audit["audit_status"],
+        "shutdown_enabled_state": audit["shutdown_enabled_state"],
+        "override_state": audit["override_state"],
+        "next_shutdown_window": audit["next_shutdown_window"],
+        "audit": audit,
+        "observations": observations,
+    }
+    audit_path = artifacts.write_output("shutdown-audit.json", _json_dumps(payload))
+    artifacts.write_route_json({
+        "lead_agent": "local-allowlist",
+        "verifier_agent": "local-allowlist",
+        "task_type": SHUTDOWN_AUDIT_WORKFLOW_ID,
+        "workflow_id": SHUTDOWN_AUDIT_WORKFLOW_ID,
+        "tools": audit_tools,
+        "mutating_actions": [],
+        "audit_status": audit["audit_status"],
+        "shutdown_enabled_state": audit["shutdown_enabled_state"],
+        "override_state": audit["override_state"],
+        "next_shutdown_window": audit["next_shutdown_window"],
+        "output_path": _relative_path(project_root, audit_path),
+    })
+    artifacts.write_route_markdown(_render_shutdown_audit_route_markdown(audit_tools))
+
+    state.current_phase = "summary"
+    summary_text = _render_shutdown_audit_summary(payload)
+    summary_path = artifacts.write_summary("final-summary.md", summary_text)
+    artifacts.write_handoff(
+        "shutdown-audit.md",
+        _render_shutdown_audit_handoff(payload),
+    )
+
+    state.status = "complete"
+    state.current_phase = "complete"
+    state.updated_at = now()
+    state.final_summary_path = _relative_path(project_root, summary_path)
+    _record_event(
+        artifacts,
+        state,
+        now,
+        event_type="pal_agent.shutdown_audit_completed",
+        message="PAL shutdown audit completed.",
+        phase="complete",
+        agent="local-allowlist",
+        role="verifier",
+        extra={
+            "summary_path": state.final_summary_path,
+            "audit_status": audit["audit_status"],
+            "shutdown_enabled_state": audit["shutdown_enabled_state"],
+            "override_state": audit["override_state"],
+            "next_shutdown_window": audit["next_shutdown_window"],
+        },
+    )
+    StateStore(paths).save(state)
+
+    return {
+        "run_id": run_id,
+        "workflow_id": SHUTDOWN_AUDIT_WORKFLOW_ID,
+        "status": state.status,
+        "audit_status": audit["audit_status"],
+        "shutdown_enabled_state": audit["shutdown_enabled_state"],
+        "override_state": audit["override_state"],
+        "next_shutdown_window": audit["next_shutdown_window"],
+        "summary_path": state.final_summary_path,
+        "audit_path": _relative_path(project_root, audit_path),
+        "executed_tools": audit_tools,
+        "tool_count": len(audit_tools),
+        "mutating_actions": [],
+    }
+
+
 def build_default_tool_registry(project_root: Path, client: PALAgentClient) -> dict[str, PALOpsTool]:
     return {
         "pal_health": PALOpsTool(
@@ -945,6 +1102,19 @@ def build_restart_validation_tool_registry(
             name="ssh_process_check",
             description="If PAL_SSH_* env vars are configured, run a fixed read-only remote process/log check.",
             run=_ssh_process_check_tool,
+        ),
+    }
+
+
+def build_shutdown_audit_tool_registry() -> dict[str, PALOpsTool]:
+    return {
+        "shutdown_remote_audit": PALOpsTool(
+            name="shutdown_remote_audit",
+            description=(
+                "Read PAL shutdown config, cron entry, override flag state, "
+                "current local shutdown time, and recent shutdown logs over SSH."
+            ),
+            run=_shutdown_remote_audit_tool,
         ),
     }
 
@@ -1327,6 +1497,235 @@ def _restart_validation_status_from_observations(observations: list[dict[str, An
     if statuses.intersection({"warn", "skipped"}):
         return "warn"
     return "pass"
+
+
+def _shutdown_remote_audit_tool() -> dict[str, Any]:
+    remote_command = (
+        "CONFIG=/opt/pal/config/shutdown.conf; "
+        "printf 'CONFIG_PATH=%s\\n' \"$CONFIG\"; "
+        "if [ -f \"$CONFIG\" ]; then printf 'CONFIG_PRESENT=true\\n'; "
+        "else printf 'CONFIG_PRESENT=false\\n'; fi; "
+        "ENABLED=$(test -f \"$CONFIG\" && sed -n 's/^ENABLED=//p' \"$CONFIG\" | tail -n 1); "
+        "SHUTDOWN_TIME=$(test -f \"$CONFIG\" && sed -n 's/^SHUTDOWN_TIME=//p' \"$CONFIG\" | tail -n 1); "
+        "TIMEZONE=$(test -f \"$CONFIG\" && sed -n 's/^TIMEZONE=//p' \"$CONFIG\" | tail -n 1); "
+        "OVERRIDE_FILE=$(test -f \"$CONFIG\" && sed -n 's/^OVERRIDE_FILE=//p' \"$CONFIG\" | tail -n 1); "
+        "OVERRIDE_FILE=${OVERRIDE_FILE:-/opt/pal/config/override.flag}; "
+        "printf 'ENABLED=%s\\n' \"$ENABLED\"; "
+        "printf 'SHUTDOWN_TIME=%s\\n' \"$SHUTDOWN_TIME\"; "
+        "printf 'TIMEZONE=%s\\n' \"$TIMEZONE\"; "
+        "printf 'OVERRIDE_FILE=%s\\n' \"$OVERRIDE_FILE\"; "
+        "if [ -f \"$OVERRIDE_FILE\" ]; then printf 'OVERRIDE_PRESENT=true\\n'; "
+        "else printf 'OVERRIDE_PRESENT=false\\n'; fi; "
+        "CRON_ENTRY=$(crontab -l 2>/dev/null | grep -F '/opt/pal/scripts/auto_shutdown.sh' | tail -n 1 || true); "
+        "printf 'CRON_ENTRY=%s\\n' \"$CRON_ENTRY\"; "
+        "CURRENT_LOCAL=$(TZ=\"${TIMEZONE:-America/Los_Angeles}\" date +%Y-%m-%dT%H:%M:%S%z 2>/dev/null || "
+        "date +%Y-%m-%dT%H:%M:%S%z); "
+        "printf 'CURRENT_LOCAL=%s\\n' \"$CURRENT_LOCAL\"; "
+        "printf '%s\\n' '--- shutdown log ---'; "
+        "tail -n 40 /opt/pal/logs/shutdown.log 2>/dev/null || true"
+    )
+    result = _run_ssh_command(remote_command, timeout_s=20)
+    audit = _derive_shutdown_audit(result)
+    if result.get("skipped"):
+        status = "skipped"
+    elif result.get("exit_code") == 0 and audit["audit_status"] == "pass":
+        status = "ok"
+    elif result.get("exit_code") == 0:
+        status = "warn"
+    else:
+        status = "error"
+    return {
+        "status": status,
+        "summary": _shutdown_audit_tool_summary(audit, status),
+        "audit": audit,
+        "command": result,
+    }
+
+
+def _shutdown_audit_tool_summary(audit: dict[str, Any], status: str) -> str:
+    if status == "skipped":
+        return "Shutdown audit skipped because PAL SSH diagnostics are unavailable."
+    if status == "error":
+        return "Shutdown audit remote diagnostic returned a non-zero exit."
+    return (
+        "Shutdown audit found "
+        f"enabled={audit['shutdown_enabled_state']}, "
+        f"override={audit['override_state']}, "
+        f"next_window={audit['next_shutdown_window']}."
+    )
+
+
+def _derive_shutdown_audit(command_result: dict[str, Any]) -> dict[str, Any]:
+    if command_result.get("skipped"):
+        audit = _unknown_shutdown_audit()
+        audit["audit_status"] = "incomplete"
+        return audit
+
+    fields, recent_log_excerpt = _parse_shutdown_audit_stdout(str(command_result.get("stdout", "")))
+    config_present = _parse_optional_bool(fields.get("CONFIG_PRESENT"))
+    enabled_value = _parse_optional_bool(fields.get("ENABLED"))
+    override_present = _parse_optional_bool(fields.get("OVERRIDE_PRESENT"))
+    cron_entry = fields.get("CRON_ENTRY", "").strip()
+    cron_installed = bool(cron_entry) if command_result.get("exit_code") == 0 else None
+    shutdown_time = fields.get("SHUTDOWN_TIME", "").strip()
+    timezone = fields.get("TIMEZONE", "").strip()
+    next_window = _next_shutdown_window(
+        shutdown_time=shutdown_time,
+        current_local=fields.get("CURRENT_LOCAL", ""),
+        timezone=timezone,
+    )
+    audit_status = _shutdown_audit_status(
+        exit_code=command_result.get("exit_code"),
+        enabled=enabled_value,
+        override_present=override_present,
+        cron_installed=cron_installed,
+        next_window=next_window,
+    )
+    return {
+        "audit_status": audit_status,
+        "config_path": fields.get("CONFIG_PATH", "/opt/pal/config/shutdown.conf").strip(),
+        "config_present": config_present,
+        "shutdown_enabled_state": _enabled_state(enabled_value),
+        "shutdown_time": shutdown_time,
+        "timezone": timezone,
+        "override_file": fields.get("OVERRIDE_FILE", "/opt/pal/config/override.flag").strip(),
+        "override_state": _override_state(override_present),
+        "cron_installed": cron_installed,
+        "cron_entry": cron_entry,
+        "current_local": fields.get("CURRENT_LOCAL", "").strip(),
+        "next_shutdown_window": next_window,
+        "recent_log_excerpt": recent_log_excerpt,
+    }
+
+
+def _unknown_shutdown_audit() -> dict[str, Any]:
+    return {
+        "audit_status": "incomplete",
+        "config_path": "/opt/pal/config/shutdown.conf",
+        "config_present": None,
+        "shutdown_enabled_state": "unknown",
+        "shutdown_time": "",
+        "timezone": "",
+        "override_file": "/opt/pal/config/override.flag",
+        "override_state": "unknown",
+        "cron_installed": None,
+        "cron_entry": "",
+        "current_local": "",
+        "next_shutdown_window": "unavailable",
+        "recent_log_excerpt": "",
+    }
+
+
+def _shutdown_audit_from_observations(observations: list[dict[str, Any]]) -> dict[str, Any]:
+    for observation in observations:
+        audit = observation.get("audit")
+        if isinstance(audit, dict):
+            return dict(audit)
+    return _unknown_shutdown_audit()
+
+
+def _parse_shutdown_audit_stdout(stdout: str) -> tuple[dict[str, str], str]:
+    fields: dict[str, str] = {}
+    log_lines: list[str] = []
+    in_log = False
+    for raw_line in stdout.splitlines():
+        line = raw_line.rstrip()
+        if line.strip() == "--- shutdown log ---":
+            in_log = True
+            continue
+        if in_log:
+            log_lines.append(line)
+            continue
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        fields[key.strip()] = value.strip()
+    return fields, "\n".join(log_lines).strip()
+
+
+def _parse_optional_bool(value: str | None) -> bool | None:
+    if value is None:
+        return None
+    normalized = value.strip().lower()
+    if normalized in {"true", "1", "yes", "y", "on"}:
+        return True
+    if normalized in {"false", "0", "no", "n", "off"}:
+        return False
+    return None
+
+
+def _enabled_state(enabled: bool | None) -> str:
+    if enabled is True:
+        return "enabled"
+    if enabled is False:
+        return "disabled"
+    return "unknown"
+
+
+def _override_state(override_present: bool | None) -> str:
+    if override_present is True:
+        return "active"
+    if override_present is False:
+        return "inactive"
+    return "unknown"
+
+
+def _shutdown_audit_status(
+    *,
+    exit_code: Any,
+    enabled: bool | None,
+    override_present: bool | None,
+    cron_installed: bool | None,
+    next_window: str,
+) -> str:
+    if exit_code not in {0, None}:
+        return "fail"
+    if enabled is None or override_present is None or cron_installed is None or next_window == "unavailable":
+        return "incomplete"
+    if enabled is False or override_present is True or cron_installed is False:
+        return "warn"
+    return "pass"
+
+
+def _next_shutdown_window(*, shutdown_time: str, current_local: str, timezone: str) -> str:
+    target = _parse_shutdown_time(shutdown_time)
+    current = _parse_shutdown_current_local(current_local)
+    timezone = timezone.strip()
+    if target is None or current is None or not timezone:
+        return "unavailable"
+    start = current.replace(
+        hour=target[0],
+        minute=target[1],
+        second=0,
+        microsecond=0,
+    )
+    if start <= current:
+        start = start + timedelta(days=1)
+    end = start + timedelta(minutes=5)
+    return f"{start:%Y-%m-%d %H:%M}-{end:%H:%M} {timezone}"
+
+
+def _parse_shutdown_time(value: str) -> tuple[int, int] | None:
+    match = re.fullmatch(r"\s*(\d{1,2}):(\d{2})\s*", value)
+    if not match:
+        return None
+    hour = int(match.group(1))
+    minute = int(match.group(2))
+    if hour > 23 or minute > 59:
+        return None
+    return hour, minute
+
+
+def _parse_shutdown_current_local(value: str) -> datetime | None:
+    normalized = value.strip()
+    if not normalized:
+        return None
+    if re.search(r"[+-]\d{4}$", normalized):
+        normalized = f"{normalized[:-5]}{normalized[-5:-2]}:{normalized[-2:]}"
+    try:
+        return datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
 
 
 def _tailscale_status_tool() -> dict[str, Any]:
@@ -1997,6 +2396,18 @@ def _render_restart_validation_route_markdown(validation_tools: list[str]) -> st
     )
 
 
+def _render_shutdown_audit_route_markdown(audit_tools: list[str]) -> str:
+    tools = ", ".join(audit_tools) if audit_tools else "none"
+    return (
+        "# PAL Shutdown Audit Route\n\n"
+        f"- Workflow id: {SHUTDOWN_AUDIT_WORKFLOW_ID}\n"
+        f"- Lead agent: local allow-list\n"
+        f"- Verifier/executor: local allow-list\n"
+        f"- Tools: {tools}\n"
+        "- Mutating actions: none\n"
+    )
+
+
 def _render_slow_inference_context_summary(context_payload: dict[str, Any]) -> str:
     lines = ["# PAL Slow-Inference Context", ""]
     baseline_tps = context_payload.get("baseline_tokens_per_second")
@@ -2061,6 +2472,34 @@ def _render_restart_validation_summary(payload: dict[str, Any]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+def _render_shutdown_audit_summary(payload: dict[str, Any]) -> str:
+    audit = payload["audit"]
+    lines = ["# PAL Shutdown Audit", ""]
+    lines.append(f"Workflow id: {payload['workflow_id']}")
+    lines.append(f"Audit status: {payload['audit_status']}")
+    lines.append(f"Shutdown enabled state: {payload['shutdown_enabled_state']}")
+    lines.append(f"Override state: {payload['override_state']}")
+    lines.append(f"Next shutdown window: {payload['next_shutdown_window']}")
+    lines.append(f"Cron installed: {_display_optional_bool(audit.get('cron_installed'))}")
+    lines.append("Mutating actions: none")
+    lines.append("")
+    lines.append("Observations:")
+    for observation in payload["observations"]:
+        lines.append(
+            f"- {observation.get('tool', 'unknown')}: "
+            f"{observation.get('status', 'unknown')} - {observation.get('summary', '')}"
+        )
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _display_optional_bool(value: Any) -> str:
+    if value is True:
+        return "yes"
+    if value is False:
+        return "no"
+    return "unknown"
+
+
 def _render_slow_inference_context_handoff(context_payload: dict[str, Any]) -> str:
     executed = ", ".join(context_payload["executed_tools"]) or "none"
     return (
@@ -2098,6 +2537,22 @@ def _render_restart_validation_handoff(payload: dict[str, Any]) -> str:
         "This validation is read-only except for local PromptClaw run artifacts "
         "and local PAL smoke report storage. It does not approve or execute "
         "infrastructure changes.\n"
+    )
+
+
+def _render_shutdown_audit_handoff(payload: dict[str, Any]) -> str:
+    executed = ", ".join(payload["executed_tools"]) or "none"
+    return (
+        "# PAL Shutdown Audit Handoff\n\n"
+        f"Workflow id: {payload['workflow_id']}\n\n"
+        f"Executed diagnostics: {executed}\n\n"
+        "Mutating actions: none\n\n"
+        f"Audit status: {payload['audit_status']}\n\n"
+        f"Shutdown enabled state: {payload['shutdown_enabled_state']}\n\n"
+        f"Override state: {payload['override_state']}\n\n"
+        f"Next shutdown window: {payload['next_shutdown_window']}\n\n"
+        "This audit is read-only except for local PromptClaw run artifacts. "
+        "It does not approve or execute shutdown override changes.\n"
     )
 
 

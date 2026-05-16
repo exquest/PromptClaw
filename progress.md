@@ -468,7 +468,7 @@ Progress: [███████████████████████
 - **T-013@20260515T214233Z**: pending — Pending.
 - **T-014@20260515T214233Z**: pending — Pending.
 - **T-015@20260515T214233Z**: complete — PAL restart-validation workflow implemented: `promptclaw pal validate restart PROJECT_ROOT` runs router health, one fixed direct query, active smoke, Tailscale, and process-check diagnostics into a standard read-only `restart_validation` run artifact with `validation_status` and `mutating_actions: []`; red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
-- **T-016@20260515T214233Z**: pending — Pending.
+- **T-016@20260515T214233Z**: complete — PAL shutdown-audit workflow implemented: `promptclaw pal audit shutdown PROJECT_ROOT` runs a fixed read-only SSH diagnostic for shutdown config, cron, override flag, current local shutdown time, and recent logs, then writes a standard `shutdown_audit` run artifact whose summary states shutdown enabled state, override state, next shutdown window, and `mutating_actions: []`. Red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
 - **T-017@20260515T214233Z**: pending — Pending.
 - **T-018@20260515T214233Z**: pending — Pending.
 - **T-019@20260515T214233Z**: pending — Pending.

@@ -127,6 +127,7 @@ promptclaw pal kb build PROJECT_ROOT
 promptclaw pal kb query PROJECT_ROOT --query "router restart"
 promptclaw pal diagnose slow-inference PROJECT_ROOT
 promptclaw pal validate restart PROJECT_ROOT
+promptclaw pal audit shutdown PROJECT_ROOT
 promptclaw pal agent triage PROJECT_ROOT
 promptclaw pal agent actions PROJECT_ROOT [--approve ACTION_ID]
 
