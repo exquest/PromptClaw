@@ -496,3 +496,8 @@ Progress: [███████████████████████
   backups, apply, rollback, migrations, dependencies, and secrets. Startup
   identity hardening remains covered by existing regression anchors rather than
   new startup changes in this task.
+- Verify: Added the PAL deploy diff model, fake remote inventory builder,
+  locked fake-remote diff tests, and product docs/changelog updates. Red phase
+  failed on the missing diff API before implementation; focused deploy tests,
+  focused Ruff/mypy, `git diff --check`, and the full required validation gate
+  all passed.
