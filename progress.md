@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~5h 27m remaining (29 tasks, low confidence, calibrating)
-Expected completion: 1:13 AM tomorrow.
-Progress: [███████████████████████████████████░░░] 93%  408 / 437 tasks complete
-  completed: 408, pending: 26, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
+ETC: ~5h 2m remaining (28 tasks, low confidence, calibrating)
+Expected completion: 12:56 AM tomorrow.
+Progress: [████████████████████████████████████░░] 94%  409 / 437 tasks complete
+  completed: 409, pending: 25, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -453,7 +453,7 @@ Progress: [███████████████████████
 - **T-018@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-019@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-020@20260515T214233Z**: complete — Completed with verdict PASS.
-- **T-021@20260515T214233Z**: pending — Pending.
+- **T-021@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-022@20260515T214233Z**: pending — Pending.
 - **T-023@20260515T214233Z**: pending — Pending.
 - **T-024@20260515T214233Z**: pending — Pending.
