@@ -100,11 +100,18 @@ In CypherClaw-style live command deployments, command routing can consult `sdp-c
 
 The live daemon also supports a hard local-only guard through `LOCAL_ONLY=true`. In that mode, the available-agent set collapses to `ollama`, the daemon skips cloud router CLIs entirely, and any explicit `claude`/`codex`/`gemini` step is coerced to `ollama` at execution time so fitness scores or routed step payloads cannot reintroduce cloud agent calls.
 
-### 7. PAL 2026 agent runtime
+### 7. PAL platform
 
-PAL 2026 starts as a configured router under the `pal` section of
-`promptclaw.json`. The router commands can check health, run direct queries, run
-the fixed smoke suite, and summarize saved smoke baselines.
+The PAL platform is PromptClaw's bounded reasoning and operations-assist layer.
+It combines a configured PAL router, a local file-first knowledge base,
+read-only diagnostic tools, and approval-gated action ids. PAL can plan,
+summarize, and propose known actions, but PromptClaw keeps execution authority
+in local allow-listed code and records every workflow in the standard run
+artifact tree.
+
+The PAL 2026 agent runtime starts as a configured router under the `pal`
+section of `promptclaw.json`. The router commands can check health, run direct
+queries, run the fixed smoke suite, and summarize saved smoke baselines.
 
 The local PAL knowledge-base path is file-first. Source discovery reads
 `pal.knowledge_sources`, chunking creates deterministic `pal-kb:` chunk ids, and
