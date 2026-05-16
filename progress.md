@@ -475,6 +475,6 @@ Progress: [███████████████████████
 - **T-040@20260515T214233Z**: complete — Implemented PAL deploy backup primitive for changed fake-remote managed files; focused PAL deploy tests, startup identity hardening anchors, docs grep, dependency/migration diff check, and full validation passed.
 - **T-041@20260515T214233Z**: complete — Implemented approved PAL deploy apply for local fake remote inventories; locked apply tests, full PAL deploy/fake-client regressions, startup identity hardening anchors, docs grep, dependency/migration diff check, and full validation passed (`4791 passed, 11 skipped`, Ruff clean, mypy clean).
 - **T-042@20260515T214233Z**: complete — Implemented PAL deploy rollback primitive for local fake remote inventories; locked rollback tests, full PAL deploy tests, startup identity hardening anchors, docs grep, dependency/migration diff check, and full validation passed (`4793 passed, 11 skipped`, Ruff clean, mypy clean).
-- **T-043@20260515T214233Z**: pending — Pending.
+- **T-043@20260515T214233Z**: pending — Exploration complete: PAL-033 builds on the existing local fake-remote deploy rollback primitive in `promptclaw/pal_deploy.py`, parser/dispatch patterns in `promptclaw/cli.py`, deploy tests in `tests/test_pal_deploy.py`, and PAL deployment docs. Scope is the approval-gated fake-remote rollback CLI only; live SSH, service restarts, dependencies, migrations, provider secrets, database columns, and startup rewiring stay out of scope.
 - **T-044@20260515T214233Z**: pending — Pending.
 - **T-045@20260515T214233Z**: pending — Pending.

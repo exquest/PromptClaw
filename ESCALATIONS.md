@@ -1,5 +1,10 @@
 # Escalations
 
+## T-043@20260515T214233Z (2026-05-16)
+
+- **Reason:** PAL deploy rollback CLI scope and startup-hardening assumptions
+- **Details:** Exploration found PAL-033 should wire the existing local rollback primitive into `promptclaw pal deploy rollback PROJECT_ROOT --remote-inventory PATH --backup-id ID --approve-rollback`, following the existing `pal deploy plan` and `pal deploy apply` parser/dispatch patterns in `promptclaw/cli.py` and fake-remote deploy models in `promptclaw/pal_deploy.py`. The implementation is assumed to mutate only the supplied local fake remote inventory snapshot after the explicit approval flag, restore only files recorded in the selected local backup artifact, preserve unmanaged entries, and report `live_ssh=false` and `service_restarts=false`. It will not add live SSH capture or writes, service restarts, new dependencies, migrations, provider secrets, database columns, unrestricted agent commands, or startup rewiring. The generated startup hardening bullets target the existing identity startup subsystem; current CLI, first-boot, daemon-ordering, and narrative ASGI tests already cover `bootstrap_identity()` persistence and ordering before `FirstBootAnnouncer`, including standalone and federated modes, so those remain mandatory regression anchors rather than broadening this PAL rollback CLI task into startup changes.
+
 ## T-042@20260515T214233Z (2026-05-16)
 
 - **Reason:** PAL rollback primitive fake-remote scope and startup-hardening assumptions
