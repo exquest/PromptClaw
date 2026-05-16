@@ -85,6 +85,13 @@ def test_pal_ops_triage_executes_only_allowlisted_tools_and_writes_artifacts(tmp
     assert state["status"] == "complete"
     assert state["lead_agent"] == "pal"
     assert state["verifier_agent"] == "local-allowlist"
+    _assert_run_summary_json(
+        run_root,
+        workflow="pal_ops_triage",
+        status="complete",
+        tool=["pal_health", "pal_smoke_baseline"],
+        action=[],
+    )
 
 
 def test_pal_ops_triage_falls_back_to_default_plan_when_pal_plan_is_invalid(tmp_path: Path) -> None:
@@ -349,6 +356,14 @@ def test_pal_ops_actions_executes_only_approved_allowlisted_actions(tmp_path: Pa
     assert result["executed_actions"] == ["inspect_logs_deep"]
     assert result["pending_approval"] == ["restart_router"]
     assert result["ignored_approvals"] == ["destroy_instance"]
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    _assert_run_summary_json(
+        run_root,
+        workflow="pal_ops_actions",
+        status="complete",
+        tool=["pal_health"],
+        action=["inspect_logs_deep"],
+    )
 
 
 def test_pal_ops_actions_prompt_artifacts_include_bounded_knowledge_context(tmp_path: Path) -> None:
@@ -577,6 +592,13 @@ def test_pal_slow_inference_context_captures_health_baseline_gpu_and_logs(
     assert "nvidia-smi --query-gpu" in runner.calls[0]["remote_command"]
     assert "/opt/pal/logs/router.log" in runner.calls[1]["remote_command"]
     assert (run_root / "handoffs" / "slow-inference-context.md").exists()
+    _assert_run_summary_json(
+        run_root,
+        workflow="slow_inference_context",
+        status="complete",
+        tool=["pal_health", "pal_smoke_baseline", "gpu_hints", "slow_inference_logs"],
+        action=[],
+    )
 
 
 def test_pal_slow_inference_context_skips_optional_remote_hints_without_ssh(
@@ -683,6 +705,13 @@ def test_pal_slow_inference_diagnosis_writes_artifact_and_declares_no_mutation(
     assert state["status"] == "complete"
     assert state["lead_agent"] == "local-allowlist"
     assert state["verifier_agent"] == "local-allowlist"
+    _assert_run_summary_json(
+        run_root,
+        workflow="slow_inference_diagnosis",
+        status="complete",
+        tool=["pal_health", "pal_smoke_baseline", "gpu_hints", "slow_inference_logs"],
+        action=[],
+    )
 
 
 def test_pal_slow_inference_diagnosis_derives_findings_from_context(
@@ -964,6 +993,13 @@ def test_pal_restart_validation_runs_health_query_smoke_tailscale_and_process_ch
     assert state["status"] == "complete"
     assert state["lead_agent"] == "local-allowlist"
     assert state["verifier_agent"] == "local-allowlist"
+    _assert_run_summary_json(
+        run_root,
+        workflow="restart_validation",
+        status="complete",
+        tool=expected_tools,
+        action=[],
+    )
 
 
 def test_pal_validate_restart_cli_prints_summary(
@@ -1117,6 +1153,13 @@ def test_pal_shutdown_audit_reports_enabled_override_and_next_window(
     assert "touch /opt/pal/config/override.flag" not in runner.last_command
     assert "rm -f /opt/pal/config/override.flag" not in runner.last_command
     assert "shutdown -h now" not in runner.last_command
+    _assert_run_summary_json(
+        run_root,
+        workflow="shutdown_audit",
+        status="complete",
+        tool=["shutdown_remote_audit"],
+        action=[],
+    )
 
 
 def test_pal_shutdown_audit_without_ssh_records_unknown_states(
@@ -1377,6 +1420,13 @@ def test_pal_phase2_readiness_report_scores_each_prerequisite_without_actions(
     assert state["status"] == "complete"
     assert state["lead_agent"] == "local-allowlist"
     assert state["verifier_agent"] == "local-allowlist"
+    _assert_run_summary_json(
+        run_root,
+        workflow="phase2_readiness_report",
+        status="complete",
+        tool=expected_tools,
+        action=[],
+    )
 
 
 def test_pal_report_phase2_readiness_cli_prints_summary(
@@ -1473,6 +1523,27 @@ def test_pal_agent_cli_actions_prints_approval_summary(monkeypatch, tmp_path: Pa
     assert "PAL agent actions: COMPLETE" in rendered
     assert "executed_actions=inspect_logs_deep" in rendered
     assert "pending_approval=restart_router" in rendered
+
+
+def _read_run_summary_json(run_root: Path) -> dict[str, Any]:
+    path = run_root / "summary" / "run-summary.json"
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _assert_run_summary_json(
+    run_root: Path,
+    *,
+    workflow: str,
+    status: str,
+    tool: list[str],
+    action: list[str],
+) -> None:
+    payload = _read_run_summary_json(run_root)
+    assert {"workflow", "status", "tool", "action"} <= payload.keys()
+    assert payload["workflow"] == workflow
+    assert payload["status"] == status
+    assert payload["tool"] == tool
+    assert payload["action"] == action
 
 
 def _recorded_tool_result(executed: list[str], name: str) -> dict[str, Any]:

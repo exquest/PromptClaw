@@ -56,6 +56,9 @@ class PALOpsAction:
     run: Callable[[], dict[str, Any]]
 
 
+PAL_OPS_TRIAGE_WORKFLOW_ID = "pal_ops_triage"
+PAL_OPS_ACTIONS_WORKFLOW_ID = "pal_ops_actions"
+
 DEFAULT_TRIAGE_TASK = (
     "Diagnose PAL 2026 operational health from the local PromptClaw control plane. "
     "Confirm router health, recent smoke baseline, local Tailscale visibility, and "
@@ -309,6 +312,12 @@ def run_pal_ops_triage(
     state.current_phase = "complete"
     state.updated_at = now()
     state.final_summary_path = _relative_path(project_root, summary_path)
+    artifacts.write_run_summary_json(
+        workflow=PAL_OPS_TRIAGE_WORKFLOW_ID,
+        status=state.status,
+        tool=list(plan["tools"]),
+        action=[],
+    )
     _record_event(
         artifacts,
         state,
@@ -522,6 +531,12 @@ def run_pal_ops_actions(
     state.current_phase = "complete"
     state.updated_at = now()
     state.final_summary_path = _relative_path(project_root, summary_path)
+    artifacts.write_run_summary_json(
+        workflow=PAL_OPS_ACTIONS_WORKFLOW_ID,
+        status=state.status,
+        tool=list(context_tools),
+        action=list(executed_actions),
+    )
     _record_event(
         artifacts,
         state,
@@ -647,6 +662,12 @@ def run_pal_slow_inference_context(
     state.current_phase = "complete"
     state.updated_at = now()
     state.final_summary_path = _relative_path(project_root, summary_path)
+    artifacts.write_run_summary_json(
+        workflow=SLOW_INFERENCE_WORKFLOW_ID,
+        status=state.status,
+        tool=list(context_tools),
+        action=[],
+    )
     _record_event(
         artifacts,
         state,
@@ -773,6 +794,12 @@ def run_pal_slow_inference_diagnosis(
     state.current_phase = "complete"
     state.updated_at = now()
     state.final_summary_path = _relative_path(project_root, summary_path)
+    artifacts.write_run_summary_json(
+        workflow=SLOW_INFERENCE_DIAGNOSIS_WORKFLOW_ID,
+        status=state.status,
+        tool=list(context_tools),
+        action=[],
+    )
     _record_event(
         artifacts,
         state,
@@ -902,6 +929,12 @@ def run_pal_restart_validation(
     state.current_phase = "complete"
     state.updated_at = now()
     state.final_summary_path = _relative_path(project_root, summary_path)
+    artifacts.write_run_summary_json(
+        workflow=RESTART_VALIDATION_WORKFLOW_ID,
+        status=state.status,
+        tool=list(validation_tools),
+        action=[],
+    )
     _record_event(
         artifacts,
         state,
@@ -1040,6 +1073,12 @@ def run_pal_shutdown_audit(
     state.current_phase = "complete"
     state.updated_at = now()
     state.final_summary_path = _relative_path(project_root, summary_path)
+    artifacts.write_run_summary_json(
+        workflow=SHUTDOWN_AUDIT_WORKFLOW_ID,
+        status=state.status,
+        tool=list(audit_tools),
+        action=[],
+    )
     _record_event(
         artifacts,
         state,
@@ -1186,6 +1225,12 @@ def run_pal_phase2_readiness_report(
     state.current_phase = "complete"
     state.updated_at = now()
     state.final_summary_path = _relative_path(project_root, summary_path)
+    artifacts.write_run_summary_json(
+        workflow=PHASE2_READINESS_WORKFLOW_ID,
+        status=state.status,
+        tool=list(readiness_tools),
+        action=[],
+    )
     _record_event(
         artifacts,
         state,

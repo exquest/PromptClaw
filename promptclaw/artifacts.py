@@ -9,6 +9,9 @@ from .models import Event
 from .paths import ProjectPaths
 from .utils import append_text, ensure_dir, write_json, write_text
 
+RUN_SUMMARY_JSON_FILENAME = "run-summary.json"
+RUN_SUMMARY_JSON_REQUIRED_KEYS: tuple[str, ...] = ("workflow", "status", "tool", "action")
+
 
 @dataclass(frozen=True)
 class ArtifactFileStatus:
@@ -108,6 +111,27 @@ class ArtifactManager:
             raise ValueError("summary filename required")
         path = self.paths.run_summary(self.run_id) / filename
         write_text(path, content)
+        return path
+
+    def write_run_summary_json(
+        self,
+        *,
+        workflow: str,
+        status: str,
+        tool: list[str],
+        action: list[str],
+    ) -> Path:
+        if not workflow.strip():
+            raise ValueError("workflow required")
+        if not status.strip():
+            raise ValueError("status required")
+        path = self.paths.run_summary(self.run_id) / RUN_SUMMARY_JSON_FILENAME
+        write_json(path, {
+            "workflow": workflow,
+            "status": status,
+            "tool": list(tool),
+            "action": list(action),
+        })
         return path
 
     def append_event(self, event: Event) -> Path:

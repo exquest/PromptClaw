@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
 
-from promptclaw.artifacts import ArtifactManager
+from promptclaw.artifacts import (
+    RUN_SUMMARY_JSON_FILENAME,
+    RUN_SUMMARY_JSON_REQUIRED_KEYS,
+    ArtifactManager,
+)
 from promptclaw.config import default_project_config
 from promptclaw.models import Event
 from promptclaw.paths import ProjectPaths
@@ -84,6 +89,36 @@ def test_write_helpers_accept_normal_filenames(tmp_path: Path) -> None:
     assert output_path.read_text(encoding="utf-8") == "output body"
     assert handoff_path.read_text(encoding="utf-8") == "handoff body"
     assert summary_path.read_text(encoding="utf-8") == "summary body"
+
+
+def test_write_run_summary_json_writes_required_keys(tmp_path: Path) -> None:
+    manager = _make_manager(tmp_path)
+
+    path = manager.write_run_summary_json(
+        workflow="example_workflow",
+        status="complete",
+        tool=["pal_health"],
+        action=["restart_router"],
+    )
+
+    assert path.name == RUN_SUMMARY_JSON_FILENAME
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert set(RUN_SUMMARY_JSON_REQUIRED_KEYS) <= payload.keys()
+    assert payload == {
+        "workflow": "example_workflow",
+        "status": "complete",
+        "tool": ["pal_health"],
+        "action": ["restart_router"],
+    }
+
+
+def test_write_run_summary_json_rejects_blank_workflow_or_status(tmp_path: Path) -> None:
+    manager = _make_manager(tmp_path)
+
+    with pytest.raises(ValueError):
+        manager.write_run_summary_json(workflow=" ", status="complete", tool=[], action=[])
+    with pytest.raises(ValueError):
+        manager.write_run_summary_json(workflow="x", status="", tool=[], action=[])
 
 
 def test_artifacts_module_reaches_depth_two() -> None:
