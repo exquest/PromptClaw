@@ -13,10 +13,12 @@ from promptclaw.config import default_project_config, save_config
 from promptclaw.pal_agent import (
     PALOpsAction,
     PALOpsTool,
+    pal_ssh_env_missing,
     run_pal_ops_actions,
     run_pal_ops_triage,
     verify_pal_artifact_redaction,
     verify_pal_workflow_artifacts,
+    write_pal_escalation_artifact,
 )
 from promptclaw.pal_client import PALQueryResult
 from promptclaw.pal_knowledge import write_pal_knowledge_index
@@ -1758,3 +1760,55 @@ def test_pal_artifact_redaction_verifier_flags_secret_leakage(tmp_path: Path) ->
     payload = leaky.as_dict()
     assert payload["passed"] is False
     assert {entry["pattern"] for entry in payload["findings"]} == leaked_patterns
+
+
+def test_pal_escalation_artifact_writes_only_when_ssh_missing_and_approvals_pending(
+    tmp_path: Path,
+) -> None:
+    run_root = tmp_path / "run"
+
+    no_pending = write_pal_escalation_artifact(
+        run_root,
+        pending_approval=[],
+        ssh_env_missing=True,
+    )
+    assert no_pending is None
+    assert not (run_root / "summary" / "escalation.md").exists()
+
+    ssh_configured = write_pal_escalation_artifact(
+        run_root,
+        pending_approval=["restart_router"],
+        ssh_env_missing=False,
+    )
+    assert ssh_configured is None
+    assert not (run_root / "summary" / "escalation.md").exists()
+
+    written = write_pal_escalation_artifact(
+        run_root,
+        pending_approval=["restart_router", "rotate_key"],
+        ssh_env_missing=True,
+    )
+    assert written == run_root / "summary" / "escalation.md"
+    body = written.read_text(encoding="utf-8")
+    assert "# PAL Escalation" in body
+    assert "`restart_router`" in body
+    assert "`rotate_key`" in body
+    assert "`PAL_SSH_HOST`" in body
+    assert "`PAL_SSH_PORT`" in body
+    assert "`PAL_SSH_KEY`" in body
+
+
+def test_pal_ssh_env_missing_detects_blank_and_unset_values() -> None:
+    assert pal_ssh_env_missing({}) is True
+    assert (
+        pal_ssh_env_missing(
+            {"PAL_SSH_HOST": "host", "PAL_SSH_PORT": "22", "PAL_SSH_KEY": "  "}
+        )
+        is True
+    )
+    assert (
+        pal_ssh_env_missing(
+            {"PAL_SSH_HOST": "host", "PAL_SSH_PORT": "22", "PAL_SSH_KEY": "/key"}
+        )
+        is False
+    )

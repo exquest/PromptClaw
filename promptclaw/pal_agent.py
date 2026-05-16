@@ -8,7 +8,7 @@ import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Iterable, Protocol
 
 from .artifacts import ArtifactManager
 from .config import load_config
@@ -18,7 +18,7 @@ from .pal_knowledge import PALKnowledgeQueryResult, query_pal_knowledge_index
 from .pal_smoke import load_smoke_reports, run_pal_smoke, summarize_smoke_reports, write_smoke_report
 from .paths import ProjectPaths
 from .state_store import StateStore
-from .utils import extract_json_object, slugify, truncate, utc_now
+from .utils import extract_json_object, slugify, truncate, utc_now, write_text
 from .vast_connector import default_vast_connector_boundary
 
 
@@ -338,6 +338,47 @@ def verify_pal_artifact_redaction(run_root: Path) -> PALArtifactRedactionVerific
         run_root=resolved_run_root,
         scanned_artifacts=tuple(scanned),
         findings=tuple(findings),
+    )
+
+
+PAL_SSH_REQUIRED_ENV_VARS: tuple[str, ...] = ("PAL_SSH_HOST", "PAL_SSH_PORT", "PAL_SSH_KEY")
+
+
+def pal_ssh_env_missing(env: dict[str, str] | None = None) -> bool:
+    source = os.environ if env is None else env
+    return not all((source.get(name) or "").strip() for name in PAL_SSH_REQUIRED_ENV_VARS)
+
+
+def write_pal_escalation_artifact(
+    run_root: Path,
+    *,
+    pending_approval: Iterable[str],
+    ssh_env_missing: bool,
+) -> Path | None:
+    """Write `summary/escalation.md` when SSH env is missing and approvals are pending.
+
+    Returns the artifact path when written, or ``None`` when either trigger is absent.
+    """
+    pending = [action_id for action_id in pending_approval if action_id]
+    if not pending or not ssh_env_missing:
+        return None
+    path = run_root / "summary" / "escalation.md"
+    write_text(path, _render_pal_escalation_markdown(pending))
+    return path
+
+
+def _render_pal_escalation_markdown(pending_approval: list[str]) -> str:
+    bullets = "\n".join(f"- `{action_id}`" for action_id in pending_approval)
+    missing = ", ".join(f"`{name}`" for name in PAL_SSH_REQUIRED_ENV_VARS)
+    return (
+        "# PAL Escalation\n\n"
+        "PAL run requires human attention: SSH diagnostics are not configured "
+        "and one or more proposed actions are still awaiting approval.\n\n"
+        "## Pending approval\n\n"
+        f"{bullets}\n\n"
+        "## Required environment\n\n"
+        f"Set {missing} so PAL can collect remote evidence, or explicitly "
+        "approve the pending action ids above.\n"
     )
 
 
