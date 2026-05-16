@@ -1818,6 +1818,59 @@ def test_pal_escalation_artifact_writes_only_when_ssh_missing_and_approvals_pend
     assert "`PAL_SSH_KEY`" in body
 
 
+def test_pal_agent_approve_parser_wires_project_root_run_id_and_action(
+    tmp_path: Path,
+) -> None:
+    parser = promptclaw_cli.build_parser()
+    parsed = parser.parse_args([
+        "pal",
+        "agent",
+        "approve",
+        str(tmp_path),
+        "--run-id",
+        "20260515t214233z-pal-ops-actions",
+        "--action",
+        "inspect_logs_deep",
+        "--action",
+        "restart_router",
+    ])
+
+    assert parsed.pal_command == "agent"
+    assert parsed.pal_agent_command == "approve"
+    assert parsed.project_root == tmp_path
+    assert parsed.run_id == "20260515t214233z-pal-ops-actions"
+    assert parsed.action == ["inspect_logs_deep", "restart_router"]
+
+    import contextlib
+
+    approve_help = io.StringIO()
+    with contextlib.redirect_stdout(approve_help):
+        try:
+            parser.parse_args(["pal", "agent", "approve", "--help"])
+        except SystemExit:
+            pass
+    rendered = approve_help.getvalue()
+    assert "approve" in rendered
+    assert "project_root" in rendered
+    assert "--run-id" in rendered
+    assert "--action" in rendered
+
+    text_output = io.StringIO()
+    args = argparse.Namespace(
+        project_root=tmp_path,
+        run_id="20260515t214233z-pal-ops-actions",
+        action=["inspect_logs_deep"],
+        json=False,
+    )
+    with redirect_stdout(text_output):
+        rc = promptclaw_cli.cmd_pal_agent_approve(args)
+    assert rc == 0
+    rendered_cmd = text_output.getvalue()
+    assert "PAL agent approve: PENDING" in rendered_cmd
+    assert "run_id=20260515t214233z-pal-ops-actions" in rendered_cmd
+    assert "approved_actions=inspect_logs_deep" in rendered_cmd
+
+
 def test_pal_ssh_env_missing_detects_blank_and_unset_values() -> None:
     assert pal_ssh_env_missing({}) is True
     assert (

@@ -226,6 +226,30 @@ def build_parser() -> argparse.ArgumentParser:
     )
     pal_agent_actions_parser.add_argument("--json", action="store_true", help="Print action result JSON")
 
+    pal_agent_approve_parser = pal_agent_sub.add_parser(
+        "approve",
+        help="Approve a previously proposed PAL agent action by run id",
+    )
+    pal_agent_approve_parser.add_argument("project_root", type=Path)
+    pal_agent_approve_parser.add_argument(
+        "--run-id",
+        required=True,
+        help="Run id of the prior PAL agent actions run that proposed the action",
+    )
+    pal_agent_approve_parser.add_argument(
+        "--action",
+        required=True,
+        action="append",
+        default=[],
+        metavar="ACTION_ID",
+        help="Approve the given proposed action id; repeat for multiple actions",
+    )
+    pal_agent_approve_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Print approval result JSON",
+    )
+
     # --- coherence subcommand group ---
     coherence_parser = subparsers.add_parser("coherence", help="Coherence engine commands")
     coherence_sub = coherence_parser.add_subparsers(dest="coherence_command", required=True)
@@ -899,6 +923,30 @@ def cmd_pal_agent_actions(args: argparse.Namespace) -> int:
     return 0 if result["status"] == "complete" else 1
 
 
+def cmd_pal_agent_approve(args: argparse.Namespace) -> int:
+    actions = list(args.action)
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "status": "pending",
+                    "run_id": args.run_id,
+                    "project_root": str(args.project_root),
+                    "approved_actions": actions,
+                },
+                indent=2,
+            )
+        )
+    else:
+        print(
+            "PAL agent approve: PENDING "
+            f"run_id={args.run_id} "
+            f"approved_actions={','.join(actions) or 'none'} "
+            f"project_root={args.project_root}"
+        )
+    return 0
+
+
 def _dispatch(args: argparse.Namespace) -> int:
     if args.command == "init":
         return cmd_init(args)
@@ -950,6 +998,8 @@ def _dispatch_pal(args: argparse.Namespace) -> int:
         return cmd_pal_agent_triage(args)
     if args.pal_command == "agent" and args.pal_agent_command == "actions":
         return cmd_pal_agent_actions(args)
+    if args.pal_command == "agent" and args.pal_agent_command == "approve":
+        return cmd_pal_agent_approve(args)
     return 2
 
 
