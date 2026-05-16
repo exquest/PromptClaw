@@ -15,6 +15,7 @@ from promptclaw.pal_agent import (
     PALOpsTool,
     run_pal_ops_actions,
     run_pal_ops_triage,
+    verify_pal_artifact_redaction,
     verify_pal_workflow_artifacts,
 )
 from promptclaw.pal_client import PALQueryResult
@@ -1724,3 +1725,36 @@ def test_action_propagates_skipped_response_from_fake_ssh(monkeypatch) -> None:
 
     assert result["status"] == "skipped"
     assert "skipped" in result["summary"].lower()
+
+
+def test_pal_artifact_redaction_verifier_flags_secret_leakage(tmp_path: Path) -> None:
+    run_root = tmp_path / "run"
+    (run_root / "summary").mkdir(parents=True)
+    (run_root / "outputs").mkdir()
+    (run_root / "summary" / "final-summary.md").write_text(
+        "PAL Restart Validation summary. "
+        "Set PAL_SSH_HOST, PAL_SSH_PORT, and PAL_SSH_KEY to include remote evidence.\n"
+    )
+    (run_root / "outputs" / "clean.json").write_text('{"status": "ok"}\n')
+
+    clean = verify_pal_artifact_redaction(run_root)
+    assert clean.passed is True
+    assert clean.findings == ()
+    assert "summary/final-summary.md" in clean.scanned_artifacts
+    assert "outputs/clean.json" in clean.scanned_artifacts
+
+    (run_root / "outputs" / "leaky.log").write_text(
+        "PAL_SSH_KEY=/home/pal/.ssh/id_ed25519\n"
+        "GitHub token: ghp_" + "a" * 30 + "\n"
+        "-----BEGIN OPENSSH PRIVATE KEY-----\n"
+    )
+    leaky = verify_pal_artifact_redaction(run_root)
+
+    assert leaky.passed is False
+    leaked_artifacts = {finding.artifact for finding in leaky.findings}
+    assert leaked_artifacts == {"outputs/leaky.log"}
+    leaked_patterns = {finding.pattern for finding in leaky.findings}
+    assert leaked_patterns == {"pal_ssh_key_value", "github_token", "private_key_block"}
+    payload = leaky.as_dict()
+    assert payload["passed"] is False
+    assert {entry["pattern"] for entry in payload["findings"]} == leaked_patterns

@@ -280,6 +280,67 @@ def verify_pal_workflow_artifacts(
     )
 
 
+@dataclass(frozen=True)
+class PALSecretFinding:
+    artifact: str
+    pattern: str
+
+
+@dataclass(frozen=True)
+class PALArtifactRedactionVerification:
+    run_root: Path
+    scanned_artifacts: tuple[str, ...]
+    findings: tuple[PALSecretFinding, ...]
+
+    @property
+    def passed(self) -> bool:
+        return not self.findings
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "run_root": str(self.run_root),
+            "passed": self.passed,
+            "scanned_artifacts": list(self.scanned_artifacts),
+            "findings": [
+                {"artifact": finding.artifact, "pattern": finding.pattern}
+                for finding in self.findings
+            ],
+        }
+
+
+PAL_SECRET_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("pal_ssh_key_value", re.compile(r"PAL_SSH_KEY\s*[=:]\s*\S")),
+    ("private_key_block", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")),
+    ("github_token", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}")),
+    ("openai_token", re.compile(r"\bsk-[A-Za-z0-9]{20,}")),
+    ("slack_token", re.compile(r"\bxox[abprs]-[A-Za-z0-9-]{10,}")),
+    ("aws_access_key_id", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
+)
+
+
+def verify_pal_artifact_redaction(run_root: Path) -> PALArtifactRedactionVerification:
+    resolved_run_root = run_root.resolve()
+    findings: list[PALSecretFinding] = []
+    scanned: list[str] = []
+    for path in sorted(resolved_run_root.rglob("*")):
+        if not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        relative = path.relative_to(resolved_run_root).as_posix()
+        scanned.append(relative)
+        for pattern_name, pattern in PAL_SECRET_PATTERNS:
+            if pattern.search(text):
+                findings.append(PALSecretFinding(artifact=relative, pattern=pattern_name))
+    return PALArtifactRedactionVerification(
+        run_root=resolved_run_root,
+        scanned_artifacts=tuple(scanned),
+        findings=tuple(findings),
+    )
+
+
 def _read_pal_workflow_id(run_root: Path) -> str:
     candidates: tuple[tuple[Path, tuple[str, ...]], ...] = (
         (run_root / "summary" / "run-summary.json", ("workflow",)),
