@@ -421,6 +421,99 @@ def test_pal_ops_actions_prompt_artifacts_include_bounded_knowledge_context(tmp_
     assert result["pending_approval"] == ["inspect_logs_deep", "restart_router"]
 
 
+def test_default_pal_action_registry_excludes_vast_lifecycle_actions(tmp_path: Path) -> None:
+    from promptclaw.pal_agent import build_default_action_registry, _parse_action_plan
+
+    actions = build_default_action_registry(tmp_path, FakePALClient([]))
+    blocked_actions = ("rent", "destroy", "start", "stop")
+
+    for action_id in blocked_actions:
+        assert action_id not in actions
+        assert f"vast_{action_id}" not in actions
+
+    plan = _parse_action_plan(
+        json.dumps({
+            "actions": [
+                "rent",
+                "destroy",
+                "start",
+                "stop",
+                "vast_rent",
+                "vast_destroy",
+                "vast_start",
+                "vast_stop",
+                "restart_router",
+            ],
+            "rationale": "Restart the router, but do not manage the Vast instance.",
+        }),
+        actions=actions,
+    )
+
+    assert plan["actions"] == ["restart_router"]
+    assert plan["ignored_actions"] == [
+        "rent",
+        "destroy",
+        "start",
+        "stop",
+        "vast_rent",
+        "vast_destroy",
+        "vast_start",
+        "vast_stop",
+    ]
+
+
+def test_pal_ops_actions_prompt_includes_vast_stub_boundary(tmp_path: Path) -> None:
+    config = default_project_config("PAL Vast Boundary")
+    save_config(tmp_path, config)
+    executed: list[str] = []
+    tool_registry = {
+        "pal_health": PALOpsTool(
+            name="pal_health",
+            description="Check PAL router health.",
+            run=lambda: _recorded_tool_result(executed, "pal_health"),
+        ),
+    }
+    action_registry = {
+        "inspect_logs_deep": PALOpsAction(
+            name="inspect_logs_deep",
+            description="Inspect PAL logs.",
+            approval_required=True,
+            mutating=False,
+            run=lambda: _recorded_tool_result(executed, "inspect_logs_deep"),
+        ),
+    }
+    client = FakePALClient([
+        json.dumps({
+            "actions": ["inspect_logs_deep", "rent", "destroy", "start", "stop"],
+            "rationale": "Inspect logs; cloud instance lifecycle is not available.",
+        }),
+        "PAL action summary.",
+    ])
+
+    result = run_pal_ops_actions(
+        tmp_path,
+        task="Inspect PAL and describe any Vast boundary.",
+        client=client,
+        tool_registry=tool_registry,
+        action_registry=action_registry,
+        default_tools=("pal_health",),
+        now=_fake_now(),
+    )
+
+    run_root = tmp_path / ".promptclaw" / "runs" / result["run_id"]
+    plan_prompt = (run_root / "prompts" / "action-plan.md").read_text(encoding="utf-8")
+
+    assert "## Provider Action Boundaries" in plan_prompt
+    assert "Vast connector" in plan_prompt
+    assert "callable_actions=[]" in plan_prompt
+    assert "blocked_actions=[rent, destroy, start, stop]" in plan_prompt
+    for action_id in ("rent", "destroy", "start", "stop"):
+        assert f"- {action_id}:" not in plan_prompt
+        assert f"- vast_{action_id}:" not in plan_prompt
+    assert result["ignored_actions"] == ["rent", "destroy", "start", "stop"]
+    assert result["pending_approval"] == ["inspect_logs_deep"]
+
+
 def test_pal_slow_inference_context_captures_health_baseline_gpu_and_logs(
     monkeypatch,
     tmp_path: Path,

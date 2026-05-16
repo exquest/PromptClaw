@@ -443,7 +443,7 @@ Progress: [███████████████████████
 - **T-008@20260515T214233Z**: complete — PAL workflow prompt artifacts now include a bounded `Knowledge Context` section from the local PAL KB query path when available and a non-blocking unavailable-context note when the index is missing; red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
 - **T-009@20260515T214233Z**: complete — PAL slow-inference context collection now writes a read-only run artifact with router health, saved smoke baseline token/s, optional GPU hints, and optional PAL router/Ollama logs. Red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
 - **T-010@20260515T214233Z**: complete — PAL slow-inference diagnosis CLI implemented: `promptclaw pal diagnose slow-inference PROJECT_ROOT` writes a read-only diagnosis run artifact with deterministic findings and `mutating_actions: []`; red phase, focused PAL tests, startup identity hardening anchors, docs, and the full validation gate passed.
-- **T-011@20260515T214233Z**: pending — Pending.
+- **T-011@20260515T214233Z**: complete — Added a typed Vast connector stub boundary with no callable default lifecycle actions, surfaced the blocked boundary in PAL action-planning prompts, and kept `rent`, `destroy`, `start`, and `stop` out of the default action registry. Focused Vast/PAL tests, startup identity hardening anchors, and the required validation gate passed.
 - **T-012@20260515T214233Z**: pending — Pending.
 - **T-013@20260515T214233Z**: pending — Pending.
 - **T-014@20260515T214233Z**: pending — Pending.

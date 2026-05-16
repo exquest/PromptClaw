@@ -105,6 +105,12 @@ approvals. A proposed action with no matching `--approve ACTION_ID` remains
 artifacts carry the same bounded `Knowledge Context` section as triage prompts,
 without expanding the action allow-list.
 
+Action planning also records provider boundaries that are intentionally not
+handoff authority. The Vast connector is a non-executing stub: `rent`,
+`destroy`, `start`, and `stop` are blocked lifecycle metadata with no default
+callable action ids, so PAL proposals for those operations stay in
+`ignored_actions` unless future work explicitly adds a tested action.
+
 The slow-inference context workflow uses the same artifact transport, but it is
 read-only context collection rather than a PAL-authored plan. It records:
 

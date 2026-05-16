@@ -18,6 +18,7 @@ from .pal_smoke import load_smoke_reports, run_pal_smoke, summarize_smoke_report
 from .paths import ProjectPaths
 from .state_store import StateStore
 from .utils import extract_json_object, slugify, truncate, utc_now
+from .vast_connector import default_vast_connector_boundary
 
 
 class PALAgentClient(Protocol):
@@ -1540,11 +1541,27 @@ def _render_action_plan_prompt(
         f"```json\n{_json_dumps(context_payload)}\n```\n\n"
         "Available fixed actions:\n"
         f"{action_lines}\n\n"
+        f"{_render_provider_action_boundaries()}\n\n"
         "Return only a JSON object with this shape:\n"
         '{"actions":["inspect_logs_deep"],"rationale":"short reason"}\n\n'
         "Choose only actions from the list. Do not invent shell commands. Prefer "
         "read-only evidence gathering before mutating actions. PromptClaw will not "
         "execute any proposed action unless the operator explicitly approves its action id."
+    )
+
+
+def _render_provider_action_boundaries() -> str:
+    boundary = default_vast_connector_boundary()
+    callable_actions = ", ".join(boundary.callable_action_names())
+    blocked_actions = ", ".join(boundary.blocked_action_names())
+    callable_text = f"[{callable_actions}]" if callable_actions else "[]"
+    return (
+        "## Provider Action Boundaries\n\n"
+        "- Vast connector: "
+        f"status={boundary.status}; "
+        f"callable_actions={callable_text}; "
+        f"blocked_actions=[{blocked_actions}]. "
+        "These blocked lifecycle actions are not available fixed action ids."
     )
 
 

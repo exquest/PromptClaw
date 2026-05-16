@@ -224,6 +224,11 @@ Current action ids:
 - `pause_shutdown_once`: create `/opt/pal/config/override.flag`
 - `resume_shutdown`: remove `/opt/pal/config/override.flag`
 
+The Vast connector is a stub boundary, not a cloud lifecycle client. It records
+`rent`, `destroy`, `start`, and `stop` as blocked lifecycle operations with no
+default callable action ids, so those operations cannot be invoked through
+`pal agent actions` unless future work explicitly adds a tested action.
+
 Unknown proposed actions and unknown approvals are ignored and recorded.
 
 ## CypherClaw runtime utilities

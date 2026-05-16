@@ -1,5 +1,12 @@
 # Escalations
 
+## T-011@20260515T214233Z (2026-05-15T21:42:33Z)
+
+- **Reason:** Vast connector boundary scope and startup-hardening assumptions
+- **Details:** Exploration found the affected surface is the PAL operator workflow in `promptclaw/pal_agent.py`, especially `PALOpsAction`, `build_default_action_registry(...)`, `_render_action_plan_prompt(...)`, and `_parse_action_plan(...)`. Vast appears only as PAL deployment context in `pal-2026/promptclaw.json`, `pal-2026/ops/templates/DEPLOYMENT_INFO.md`, and the phase-1 checkpoint runbook; no existing Vast API client or connector exists. The implementation is assumed to be a typed, non-executing Vast connector stub boundary that advertises `rent`, `destroy`, `start`, and `stop` as blocked lifecycle operations while exposing no callable default actions. No new dependencies, migrations, provider secrets, cloud API credentials, remote-write commands, HTTP routes, or approval-gated actions are required. The generated startup hardening bullets target the existing identity startup subsystem; current CLI, first-boot, daemon-ordering, and narrative ASGI tests remain mandatory regression anchors rather than broadening this PAL/Vast boundary task into startup rewiring.
+- **Reason:** Red phase, implementation verification, and hardening-anchor results
+- **Details:** Red phase was confirmed with `pytest tests/test_vast_connector.py tests/test_pal_agent.py::test_default_pal_action_registry_excludes_vast_lifecycle_actions tests/test_pal_agent.py::test_pal_ops_actions_prompt_includes_vast_stub_boundary -q` failing on the missing `promptclaw.vast_connector` module before production code changed. After implementation, the locked Vast/PAL boundary tests passed with `3 passed`, the focused PAL regression suite passed with `42 passed`, and the mandatory startup identity hardening anchors passed with `11 passed`. The required validation command `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` passed with `4740 passed, 10 skipped`, Ruff clean, and mypy clean. No new dependencies or migrations were introduced.
+
 ## T-010@20260515T214233Z (2026-05-15T21:42:33Z)
 
 - **Reason:** PAL slow-inference diagnosis CLI scope and startup-hardening assumptions

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added Vast connector stub boundary (T-011@20260515T214233Z):
+  `promptclaw.vast_connector` now records Vast lifecycle operations as blocked
+  metadata, PAL action-planning prompts surface the non-executing boundary, and
+  no `rent`, `destroy`, `start`, or `stop` action is callable by default.
+
 - Added PAL slow-inference diagnosis CLI (T-010@20260515T214233Z):
   `promptclaw pal diagnose slow-inference PROJECT_ROOT` now writes a read-only
   `.promptclaw/runs/<run-id>/outputs/slow-inference-diagnosis.json` artifact

@@ -138,6 +138,11 @@ ACTION_ID`. The current action allow-list covers `rerun_smoke`,
 and recorded. Restarts, shutdown overrides, and other mutating playbooks remain
 human-approved action ids, not open-ended shell authority.
 
+The Vast connector is currently a non-executing stub boundary. Its default
+metadata marks `rent`, `destroy`, `start`, and `stop` as blocked lifecycle
+operations and exposes `callable_actions=[]`; those ids are not registered PAL
+actions and are ignored if PAL proposes them.
+
 The slow-inference context workflow is a read-only PAL workflow primitive for
 latency investigations. It is callable from code as
 `run_pal_slow_inference_context(...)` and writes
