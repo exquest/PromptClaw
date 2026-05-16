@@ -613,6 +613,173 @@ def test_pal_deploy_apply_cli_writes_approved_fake_remote_inventory_and_backup(
     }
 
 
+def test_pal_deploy_rollback_parser_exposes_explicit_approval_flag(tmp_path: Path) -> None:
+    remote_inventory_path = tmp_path / "remote-inventory.json"
+    parser = promptclaw_cli.build_parser()
+
+    parsed_without_approval = parser.parse_args([
+        "pal",
+        "deploy",
+        "rollback",
+        str(tmp_path),
+        "--remote-inventory",
+        str(remote_inventory_path),
+        "--backup-id",
+        "test-rollback",
+    ])
+    parsed_with_approval = parser.parse_args([
+        "pal",
+        "deploy",
+        "rollback",
+        str(tmp_path),
+        "--remote-inventory",
+        str(remote_inventory_path),
+        "--backup-id",
+        "test-rollback",
+        "--approve-rollback",
+        "--json",
+    ])
+
+    assert parsed_without_approval.pal_command == "deploy"
+    assert parsed_without_approval.pal_deploy_command == "rollback"
+    assert parsed_without_approval.project_root == tmp_path
+    assert parsed_without_approval.remote_inventory == remote_inventory_path
+    assert parsed_without_approval.backup_id == "test-rollback"
+    assert parsed_without_approval.approve_rollback is False
+    assert parsed_without_approval.json is False
+    assert parsed_with_approval.approve_rollback is True
+    assert parsed_with_approval.json is True
+    assert not hasattr(parsed_with_approval, "approve_apply")
+
+
+def test_pal_deploy_rollback_cli_requires_approval_flag_for_fake_remote_writes(
+    tmp_path: Path,
+) -> None:
+    manifest = _write_diff_manifest_project(tmp_path)
+    backup_root = tmp_path / ".promptclaw" / "pal-deploy" / "backups"
+    backup_pal_deployment_changes(
+        manifest,
+        tmp_path,
+        remote_inventory=build_fake_pal_remote_inventory({
+            "/opt/pal/changed.txt": {"content": "remote old\n"},
+        }),
+        backup_root=backup_root,
+        backup_id="test-rollback-rejected",
+    )
+    remote_inventory_path = tmp_path / "remote-inventory.json"
+    write_pal_remote_inventory_snapshot(
+        remote_inventory_path,
+        build_fake_pal_remote_inventory({
+            "/opt/pal/changed.txt": {"content": "local new\n", "source": "fake-apply"},
+        }),
+    )
+    original_inventory = remote_inventory_path.read_text(encoding="utf-8")
+
+    output = io.StringIO()
+    args = argparse.Namespace(
+        project_root=tmp_path,
+        manifest=manifest.manifest_path,
+        remote_inventory=remote_inventory_path,
+        backup_id="test-rollback-rejected",
+        approve_rollback=False,
+        json=True,
+    )
+    with redirect_stdout(output):
+        rc = promptclaw_cli.cmd_pal_deploy_rollback(args)
+
+    assert rc == 1
+    payload = json.loads(output.getvalue())
+    assert payload["workflow_id"] == "pal_deploy_rollback"
+    assert payload["status"] == "rejected"
+    assert payload["approved"] is False
+    assert payload["remote_writes"] is False
+    assert payload["live_ssh"] is False
+    assert payload["service_restarts"] is False
+    assert "--approve-rollback" in payload["reason"]
+    assert payload["backup_id"] == "test-rollback-rejected"
+    assert payload["remote_inventory_path"] == str(remote_inventory_path)
+    assert remote_inventory_path.read_text(encoding="utf-8") == original_inventory
+
+
+def test_pal_deploy_rollback_cli_restores_approved_fake_remote_inventory(
+    tmp_path: Path,
+) -> None:
+    manifest = _write_diff_manifest_project(tmp_path)
+    backup_root = tmp_path / ".promptclaw" / "pal-deploy" / "backups"
+    backup_pal_deployment_changes(
+        manifest,
+        tmp_path,
+        remote_inventory=build_fake_pal_remote_inventory({
+            "/opt/pal/changed.txt": {
+                "content": "remote old\n",
+                "mode": "0600",
+                "owner": "pal",
+                "group": "pal",
+            },
+            "/opt/pal/manual.txt": {"content": "operator managed\n"},
+            "/opt/pal/unchanged.txt": {
+                "content": "same\n",
+                "mode": "0600",
+                "owner": "pal",
+                "group": "pal",
+            },
+        }),
+        backup_root=backup_root,
+        backup_id="test-rollback-cli",
+    )
+    remote_inventory_path = tmp_path / "remote-inventory.json"
+    write_pal_remote_inventory_snapshot(
+        remote_inventory_path,
+        build_fake_pal_remote_inventory({
+            "/opt/pal/added.txt": {"content": "add me\n", "source": "fake-apply"},
+            "/opt/pal/changed.txt": {"content": "local new\n", "source": "fake-apply"},
+            "/opt/pal/manual.txt": {"content": "operator managed\n"},
+            "/opt/pal/unchanged.txt": {"content": "same\n", "source": "fake-apply"},
+        }),
+    )
+
+    output = io.StringIO()
+    args = argparse.Namespace(
+        project_root=tmp_path,
+        manifest=manifest.manifest_path,
+        remote_inventory=remote_inventory_path,
+        backup_id="test-rollback-cli",
+        approve_rollback=True,
+        json=True,
+    )
+    with redirect_stdout(output):
+        rc = promptclaw_cli.cmd_pal_deploy_rollback(args)
+
+    assert rc == 0
+    payload = json.loads(output.getvalue())
+    assert payload["workflow_id"] == "pal_deploy_rollback"
+    assert payload["status"] == "complete"
+    assert payload["approved"] is True
+    assert payload["remote_writes"] is True
+    assert payload["live_ssh"] is False
+    assert payload["service_restarts"] is False
+    assert payload["backup_id"] == "test-rollback-cli"
+    assert payload["remote_inventory_path"] == str(remote_inventory_path)
+    assert payload["summary_counts"] == {"restored": 2}
+    assert [entry["target"] for entry in payload["restored_entries"]] == [
+        "/opt/pal/changed.txt",
+        "/opt/pal/unchanged.txt",
+    ]
+
+    snapshot = json.loads(remote_inventory_path.read_text(encoding="utf-8"))
+    assert snapshot["/opt/pal/changed.txt"]["content"] == "remote old\n"
+    assert snapshot["/opt/pal/changed.txt"]["mode"] == "0600"
+    assert snapshot["/opt/pal/changed.txt"]["owner"] == "pal"
+    assert snapshot["/opt/pal/changed.txt"]["group"] == "pal"
+    assert snapshot["/opt/pal/changed.txt"]["source"] == "pal-deploy-rollback"
+    assert snapshot["/opt/pal/unchanged.txt"]["content"] == "same\n"
+    assert snapshot["/opt/pal/unchanged.txt"]["mode"] == "0600"
+    assert snapshot["/opt/pal/unchanged.txt"]["owner"] == "pal"
+    assert snapshot["/opt/pal/unchanged.txt"]["group"] == "pal"
+    assert snapshot["/opt/pal/added.txt"]["content"] == "add me\n"
+    assert snapshot["/opt/pal/manual.txt"]["content"] == "operator managed\n"
+
+
 def test_pal_deploy_plan_parser_has_no_apply_or_approval_surface(tmp_path: Path) -> None:
     remote_inventory_path = tmp_path / "remote-inventory.json"
     parser = promptclaw_cli.build_parser()
