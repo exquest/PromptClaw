@@ -1,3 +1,9 @@
+# PRD Snapshot - CypherClaw v2 — Performance, Tuning, Space, and Public Presence PRD
+**Source:** `sdp/prd-cypherclaw-v2-2026-05-22.md`
+**SHA-256:** `e40abebc9c7486541306a54ca31aaeb813ac6cf05a91ea66e294f0e84896d23d`
+**Captured:** 2026-05-22T23:57:10.809732+00:00
+
+---
 # CypherClaw v2 — Performance, Tuning, Space, and Public Presence PRD
 
 **Project:** PromptClaw / CypherClaw v2
