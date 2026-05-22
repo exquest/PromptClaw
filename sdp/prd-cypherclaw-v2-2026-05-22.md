@@ -346,87 +346,114 @@ Everything else (writing code, running tests, restarting daemons, hot-reloading 
 
 ## Requirements
 
-Format: `CC-NNN: brief description`. Each requirement maps to one or more tasks; each task maps to one or more requirements.
+Format: markdown table per SDP analyzer conventions. Each requirement maps to one or more tasks; each task maps to one or more requirements. Tier T1 = small (~3 hrs); T2 = medium (~6 hrs).
 
-**Per-Voice Reverb Spaces (Feature 1):**
-- CC-001: Seven dedicated FX buses exist, one per voice, in `master_smooth.scd` infrastructure
-- CC-002: Each FX bus runs a reverb tuned to the per-voice space description in design statement §4
-- CC-003: `fx_send` routing per voice carries audio from voice into correct FX bus
-- CC-004: Composer can switch a voice's reverb space at scene boundaries (mood-driven matched/expressive/house-bound modes)
-- CC-005: Unit tests verify that each voice's audio reaches the correct FX bus under each mood mode
+### Feature 1 — Per-Voice Reverb Spaces
 
-**MIDI Ingestion (Feature 2):**
-- CC-010: `midi_intake_daemon.py` watches `/home/user/cypherclaw/midi-inbox/` and ingests new files
-- CC-011: Files moved to `processed/` subfolder after ingestion with `.json` sidecar manifest
-- CC-012: Fragment extractor identifies melodic motifs (3-7 notes), rhythm cells, chord progressions, groove patterns
-- CC-013: Vocabulary stored in `midi_vocabulary.sqlite` with sufficient schema for composer query
-- CC-014: Composer consults vocabulary DB and probabilistically incorporates fragments into arcs
-- CC-015: `--faithful-transmission` mode (sidecar `.json` flag) bypasses fragment extraction and renders the file as a scene with CypherClaw's tunings/voices/spaces
-- CC-016: Unit tests cover parsing of sample MIDI files of varying complexity (single track, multi-track, with CC data, with pitch bend)
-- CC-017: Integration test confirms a dropped MIDI file appears as vocabulary within 60 seconds
+| ID | Requirement | Priority | Tier | Acceptance Criteria |
+|---|---|---|---|---|
+| CC-001 | Provision seven dedicated FX buses, one per voice, in master_smooth.scd. | MUST | T1 | Synthdef diff shows 7 named FX bus channels routed before the master compressor. |
+| CC-002 | Tune a per-voice reverb on each FX bus to match its space description in `cypherclaw-v2-design-statement-2026-05-22.md` §4. | MUST | T2 | Each reverb's parameters are documented in `spaces/` directory with a one-line rationale citing CypherClaw's space description. |
+| CC-003 | Route per-voice audio into the matching FX bus via the `fx_bus_id` parameter on each voice synthdef. | MUST | T1 | Unit test confirms each voice's signal reaches only its assigned FX bus. |
+| CC-004 | Implement mood-driven space selection per scene: matched (default), expressive (deliberate mismatch), house-bound (all voices share the active house's space). | MUST | T2 | Composer integration test produces all three modes from scripted scenes and OSC trace confirms the routing per mode. |
+| CC-005 | Unit tests verify each voice's audio reaches the correct FX bus under each mood mode. | MUST | T1 | Test suite enumerates all (voice × mode) combinations and asserts the expected fx_bus_id. |
 
-**Live Stream + Archive (Feature 3):**
-- CC-020: `audio_streamer.py` produces Opus segments at ~6 sec, ~96 kbps from the JACK output bus
-- CC-021: Worker accepts segment POSTs at `/api/cypherclaw/segment` and stores in R2
-- CC-022: Worker serves a valid HLS playlist at `/api/cypherclaw/live.m3u8`
-- CC-023: `cypherclaw.holdenu.com` DNS + Worker route resolves over HTTPS
-- CC-024: Static page at the root URL renders, plays the live stream, shows GlyphWeave backdrop, shows canvas visualizer driven by SSE feed
-- CC-025: `session_archiver.py` produces a session every ≥8 minutes, named per CypherClaw's pattern, uploaded to R2 archive path
-- CC-026: Archive feed on the page lists sessions in reverse chronological order, each playable
-- CC-027: Composer code contains no listener-count consumer (negative-assertion test: search composer source for any consumer of viewer/listener counts; expect zero matches)
-- CC-028: End-to-end test: tone-generator audio → JACK → streamer → Worker → R2 → `<audio>` element plays it within 30s
+### Feature 2 — MIDI Ingestion
 
-**Meter Morphing (Feature 4):**
-- CC-030: `GrooveProfile` extended with `metric_modulations: list[ModulationEvent]`
-- CC-031: `music_tracker.py` correctly applies metric modulations row-by-row
-- CC-032: Composer plans multi-scene meter trajectories per arc; transitions are detectable in scene metadata
-- CC-033: Unit tests cover metric modulation correctness (ratio 3:2, 4:3, 5:4 produce correct row-position-to-time mappings)
+| ID | Requirement | Priority | Tier | Acceptance Criteria |
+|---|---|---|---|---|
+| CC-010 | Watch the directory `/home/user/cypherclaw/midi-inbox/` for new MIDI files via `midi_intake_daemon.py`. | MUST | T1 | Daemon log shows discovery within 30 seconds of a file appearing in the inbox. |
+| CC-011 | After ingestion, move each processed file to a `processed/` subfolder with a `.json` sidecar manifest of what was extracted. | MUST | T1 | Integration test drops a MIDI file and verifies the file moves and the sidecar exists with the expected fields. |
+| CC-012 | Fragment extractor identifies melodic motifs (3 to 7 notes), rhythm cells, chord progressions, and groove patterns from each MIDI file. | MUST | T2 | Unit tests on hand-crafted MIDIs assert the expected fragments are extracted. |
+| CC-013 | Persist extracted vocabulary in a SQLite database `midi_vocabulary.sqlite` with sufficient schema for composer query (id, source_file, kind, interval_pattern_json, duration_pattern_json, source_key, source_tempo, harmonic_context_json). | MUST | T1 | Schema migration script exists; sample query returns expected rows. |
+| CC-014 | Composer consults vocabulary DB and probabilistically incorporates fragments into generated arcs. | MUST | T2 | Composer log shows fragment IDs cited in scenes when a vocabulary DB is populated; cited rate aligns with the curiosity parameter. |
+| CC-015 | Faithful-transmission mode bypasses fragment extraction and renders an imported MIDI file as a scene preserving its pitch sequence and rhythm while applying CypherClaw's tunings, voices, and spaces. | MUST | T2 | Integration test: a `.faithful` sidecar flag on a known MIDI file results in a scene whose note-sequence matches the input within tuning quantization. |
+| CC-016 | Unit tests cover parsing of MIDI files of varying complexity (single track, multi-track, CC data, pitch bend). | MUST | T1 | Test suite parses at least 5 sample MIDIs and asserts correct extraction of tempo, key, tracks, CCs. |
+| CC-017 | A dropped MIDI file appears as vocabulary within 60 seconds. | MUST | T1 | End-to-end integration test verifies the timing budget. |
 
-**Tuning Morphing (Feature 5):**
-- CC-040: `TuningSystem` abstract + `JustIntonation5Limit` + `GamelanSlendro` concrete classes implemented
-- CC-041: `MorphOperator.pitch_table_at(t)` returns linearly-interpolated pitch table for t∈[0,1]
-- CC-042: `pitch_hz(scale_degree, octave, tuning, tonal_center_hz)` function correctly computes frequency for all supported tunings
-- CC-043: Composer uses Hz directly in OSC events (no midi note translation when tuning ≠ 12-TET)
-- CC-044: Backward-compatible 12-TET tuning system available for legacy scenes
-- CC-045: Scene metadata carries tuning system, morph target, morph curve
-- CC-046: Composer applies CypherClaw's tuning-per-phase rule: 5-limit JI for Listen/Divination, Slendro for Conversation/Procession, morph at stillness↔motion transitions
-- CC-047: `CYPHERCLAW_V2_TUNING_MORPH` env flag controls activation (default OFF until listening approves)
-- CC-048: Unit tests verify pitch frequencies match expected ratios within 0.1 cent for all tuning systems
+### Feature 3 — Live Stream + Archive
 
-**Morphing Instruments (Feature 6):**
-- CC-050: `morph_voice` synthdef exists with parallel source voices and crossfaded gains
-- CC-051: Composer can request a "single-line morph phrase" with source/target voice pair and morph curve
-- CC-052: Section-boundary crossfade scheduler computes per-section release tails that overlap with new section attacks
-- CC-053: Within-family parameter walks generate continuous low-rate modulation on key parameters per voice
-- CC-054: `CYPHERCLAW_V2_INSTRUMENT_MORPH` env flag controls activation (default OFF)
-- CC-055: Unit tests cover crossfade scheduling and morph curve shapes
+| ID | Requirement | Priority | Tier | Acceptance Criteria |
+|---|---|---|---|---|
+| CC-020 | `audio_streamer.py` produces Opus segments at approximately 6 seconds and approximately 96 kbps from the JACK output bus. | MUST | T2 | Segment files on disk show the expected duration and bitrate; the streamer process consumes under 10% CPU. |
+| CC-021 | Cloudflare Worker accepts segment POSTs at `/api/cypherclaw/segment` and stores them in R2. | MUST | T2 | Test POST writes a segment to R2 and the object is retrievable via R2 listing. |
+| CC-022 | Cloudflare Worker serves a valid HLS playlist at `/api/cypherclaw/live.m3u8`. | MUST | T1 | `hls.js` validator (or `ffplay`) successfully plays the live stream. |
+| CC-023 | The `cypherclaw.holdenu.com` DNS record plus Worker route resolves over HTTPS with a valid certificate. | MUST | T1 | `curl -I https://cypherclaw.holdenu.com/` returns 200 with `cf-ray` header. |
+| CC-024 | The static page at the root URL renders, plays the live stream, displays a GlyphWeave backdrop, and runs a canvas visualizer driven by the SSE feed. | MUST | T2 | Manual visual verification plus a browser-automation test confirming audio plays and canvas frames update. |
+| CC-025 | `session_archiver.py` produces a session approximately every 8 minutes or more, names it per CypherClaw's pattern (`{House-Imagery} / {Tuning-Character} — {DD Month}`), and uploads it to the R2 archive path. | MUST | T2 | After 30 minutes of synthetic uptime, at least 3 sessions appear in R2 with the expected naming and metadata. |
+| CC-026 | The archive feed on the page lists sessions in reverse chronological order; each session is playable. | MUST | T1 | Manual UI verification plus a snapshot test of the rendered feed for a fixture session list. |
+| CC-027 | The composer code contains no consumer of viewer or listener counts. | MUST | T1 | Negative-assertion test grep search confirms zero matches for known count consumer patterns in the composer source tree. |
+| CC-028 | End-to-end test confirms a tone-generator signal flows from JACK through the streamer, Worker, R2, and back to a browser `<audio>` element within 30 seconds. | MUST | T2 | End-to-end test passes in CI or scripted run; latency measurement is logged. |
 
-**Expression Layer (Feature 7):**
-- CC-060: All voice synthdefs accept the new expression control parameters
-- CC-061: Internal LFOs (vibrato pitch LFO, tremolo amp LFO, spectral granulation) implemented per voice
-- CC-062: 11 named gestures (Weeping, Shimmering, Ghostly, Sighing, Agitated, Breath-shaped, Pulsing, Fracturing, Hollowing, Tension-Build, Echo-Location) implemented as functions that augment OSC events
-- CC-063: Voice → gesture allowlist enforced per design statement §7.3
-- CC-064: Scene-phase intensity multiplier table per §7.4 applied at gesture application
-- CC-065: Pedal logic (Sustain, Resonant w/ Decay Modulation, Half-pedal) implemented per voice family
-- CC-066: Contour analysis classifies each note as peak/ascending/descending/static/valley
-- CC-067: Composer applies contour-aware dynamics multipliers and attack shapes
-- CC-068: Renamed terminology used consistently: Spectral Granulation, Harmonic Resonance Profile, Spectral Smear
-- CC-069: Unit tests cover each gesture's expression-parameter outputs
+### Feature 4 — Meter Morphing
 
-**Cross-Voice Coupling (Feature 8):**
-- CC-070: `affective_state_bus` SuperCollider control bus exists
-- CC-071: Each voice writes its rolling-window expression intensity to the bus
-- CC-072: Each voice reads the bus and applies coupling multiplier to modulator depths
-- CC-073: Bus has slow-decay behavior (decays toward 0 in absence of contributors)
-- CC-074: `CYPHERCLAW_V2_COUPLING` env flag controls activation (default OFF)
-- CC-075: Integration test: one voice's high vibrato causes a measurable shift in another voice's vibrato depth
+| ID | Requirement | Priority | Tier | Acceptance Criteria |
+|---|---|---|---|---|
+| CC-030 | Extend `GrooveProfile` with a `metric_modulations: list[ModulationEvent]` field. | MUST | T1 | Dataclass updated; existing usages compile and tests pass. |
+| CC-031 | `music_tracker.py` applies metric modulations row-by-row at the correct positions. | MUST | T2 | Unit test verifies that a 3:2 modulation at row N produces the expected timing on subsequent rows. |
+| CC-032 | The composer plans multi-scene meter trajectories per arc; scene metadata carries the trajectory. | MUST | T2 | Composer log shows planned trajectories; integration test reads the metadata for a sample arc. |
+| CC-033 | Unit tests cover metric-modulation correctness for ratios 3:2, 4:3, and 5:4. | MUST | T1 | Test suite includes the three ratios and asserts the expected row-position-to-time mappings. |
 
-**Cumulative Expression Fatigue (Feature 9):**
-- CC-080: Per-voice fatigue counter with exponential decay (half-life ~30s) implemented
-- CC-081: When counter > 0.7, fatigue multiplier reduces subsequent expression-parameter magnitudes
-- CC-082: Long silences allow counter to recover
-- CC-083: `CYPHERCLAW_V2_FATIGUE` env flag controls activation (default OFF)
-- CC-084: Unit tests verify decay behavior and threshold behavior
+### Feature 5 — Tuning Morphing
+
+| ID | Requirement | Priority | Tier | Acceptance Criteria |
+|---|---|---|---|---|
+| CC-040 | Implement `TuningSystem` abstract base plus concrete `TwelveTET`, `JustIntonation5Limit`, and `GamelanSlendro` classes. | MUST | T1 | Module imports succeed; each class returns a pitch table for a tonal center. |
+| CC-041 | Implement `MorphOperator.pitch_table_at(t)` returning a linearly interpolated pitch table for `t` in `[0.0, 1.0]`. | MUST | T1 | Unit test asserts that `pitch_table_at(0)` equals source table and `pitch_table_at(1)` equals target table. |
+| CC-042 | Implement `pitch_hz(scale_degree, octave, tuning, tonal_center_hz)` that returns the correct frequency for every supported tuning. | MUST | T1 | Unit tests verify frequencies match known reference values within 0.1 cent for all three tunings. |
+| CC-043 | The composer emits Hz directly in OSC events when the active tuning is not 12-TET. | MUST | T1 | OSC trace shows freq field as Hz; `render_contract.scd` uses `freq` directly. |
+| CC-044 | Provide a backward-compatible 12-TET tuning system for legacy scenes. | MUST | T1 | Scenes whose metadata sets `tuning_system_name == "12-TET"` continue to play unchanged. |
+| CC-045 | Scene metadata carries the tuning system, morph target, and morph curve. | MUST | T1 | Sample scene JSON contains all three fields; schema validation passes. |
+| CC-046 | Composer applies CypherClaw's per-phase tuning rule: 5-limit JI for Listen and Divination; Slendro for Conversation and Procession; morph at stillness-to-motion transitions. | MUST | T2 | Composer log shows tuning selection per phase across a 30-minute synthetic arc; transitions are detectable. |
+| CC-047 | The `CYPHERCLAW_V2_TUNING_MORPH` env flag controls activation, defaulting OFF. | MUST | T1 | Module reads env var; default behavior matches OFF state. |
+| CC-048 | Unit tests verify pitch frequencies match expected ratios within 0.1 cent for all supported tuning systems. | MUST | T1 | Tests include known reference points for each tuning. |
+
+### Feature 6 — Morphing Instruments
+
+| ID | Requirement | Priority | Tier | Acceptance Criteria |
+|---|---|---|---|---|
+| CC-050 | Add a `morph_voice` synthdef containing parallel source voices with crossfaded gains controlled by `morph_x`. | MUST | T1 | Synthdef compiles; rendering with `morph_x=0` produces source A only; `morph_x=1` produces source B only. |
+| CC-051 | The composer can request a single-line morph phrase with a source/target voice pair and a morph curve. | MUST | T2 | Integration test schedules a morph phrase and OSC trace confirms `morph_x` reaches the expected curve values at the expected times. |
+| CC-052 | A section-boundary crossfade scheduler computes per-section release tails that overlap with new section attacks. | MUST | T1 | Unit test on a two-section arc shows the overlap window matches the configured crossfade duration. |
+| CC-053 | Within-family parameter walks generate continuous low-rate modulation on key parameters per voice. | MUST | T1 | OSC trace shows continuous parameter values within the expected depth band. |
+| CC-054 | The `CYPHERCLAW_V2_INSTRUMENT_MORPH` env flag controls activation, defaulting OFF. | MUST | T1 | Module reads env var; default behavior matches OFF state. |
+| CC-055 | Unit tests cover crossfade scheduling and morph curve shapes. | MUST | T1 | Test suite includes scheduling, curve, and OSC integration tests. |
+
+### Feature 7 — Expression Layer
+
+| ID | Requirement | Priority | Tier | Acceptance Criteria |
+|---|---|---|---|---|
+| CC-060 | All voice synthdefs accept the expression control parameters: `vib_rate`, `vib_depth`, `trem_rate`, `trem_depth`, `bend_start_hz`, `bend_end_hz`, `bend_curve_shape`, `attack_mode`, `late_release_extension`, `harmonic_resonance_profile_id`, `spectral_granulation_amount`, `spectral_smear_amount`. | MUST | T2 | Synthdef diff shows every voice exposes the listed parameters; live OSC sets each parameter without error. |
+| CC-061 | Each voice provides internal LFOs (vibrato pitch LFO, tremolo amplitude LFO, spectral granulation) where allowed by the voice's gesture allowlist. | MUST | T2 | Per-voice rendering with each modulator enabled produces audible modulation matching the rate and depth set. |
+| CC-062 | The expression module implements 11 named gestures (Weeping, Shimmering, Ghostly, Sighing, Agitated, Breath-shaped, Pulsing, Fracturing, Hollowing, Tension-Build, Echo-Location). | MUST | T2 | Unit tests assert that each gesture function returns an OSC payload with the expected expression parameters. |
+| CC-063 | The voice-to-gesture allowlist per `cypherclaw-v2-design-statement-2026-05-22.md` §7.3 is enforced; forbidden combinations are rejected. | MUST | T1 | Unit test attempts every forbidden combination and asserts each is refused. |
+| CC-064 | The scene-phase intensity multiplier table per §7.4 is applied at gesture application time. | MUST | T1 | Unit test verifies multiplier values per phase match the design statement. |
+| CC-065 | Pedal logic (Sustain, Resonant with Decay Modulation, Half-pedal) is implemented per voice family. | MUST | T2 | Integration test engages each pedal and confirms the expected voice behavior. |
+| CC-066 | Contour analysis classifies each note as peak, ascending, descending, static, or valley. | MUST | T1 | Unit tests on synthetic note sequences assert the expected classification. |
+| CC-067 | The composer applies contour-aware dynamics multipliers and attack shapes when emitting notes. | MUST | T1 | OSC trace shows `dynamics_multiplier` and `attack_shape` set per note in accordance with the contour. |
+| CC-068 | The renamed terminology (Spectral Granulation, Harmonic Resonance Profile, Spectral Smear) is used consistently across code, schemas, and documentation. | SHOULD | T1 | Lint pass finds no surviving references to the previous names in v2 modules. |
+| CC-069 | Unit tests cover each gesture's expression-parameter output. | MUST | T1 | Tests enumerate all 11 gestures and assert expected outputs. |
+
+### Feature 8 — Cross-Voice Coupling
+
+| ID | Requirement | Priority | Tier | Acceptance Criteria |
+|---|---|---|---|---|
+| CC-070 | Provision an `affective_state_bus` SuperCollider control bus shared across voices. | MUST | T1 | Synthdef diff shows the new control bus and reader-side wiring per voice. |
+| CC-071 | Each voice writes its rolling-window expression intensity to the bus. | MUST | T1 | OSC trace shows per-voice writes with the expected window length and value range. |
+| CC-072 | Each voice reads the bus and applies a coupling multiplier to its modulator depths. | MUST | T2 | Integration test confirms one voice's high vibrato measurably shifts another voice's vibrato depth on the bus. |
+| CC-073 | The bus slow-decays toward 0 in the absence of contributors with a ~5 second time constant. | MUST | T1 | Unit test seeds the bus and verifies decay timing. |
+| CC-074 | The `CYPHERCLAW_V2_COUPLING` env flag controls activation, defaulting OFF. | MUST | T1 | Module reads env var; default behavior matches OFF state. |
+| CC-075 | Integration test demonstrates one voice's high vibrato causes a measurable shift in another voice's vibrato depth. | MUST | T1 | Test passes by asserting the secondary voice's vibrato depth lifts by at least the expected coupling delta. |
+
+### Feature 9 — Cumulative Expression Fatigue
+
+| ID | Requirement | Priority | Tier | Acceptance Criteria |
+|---|---|---|---|---|
+| CC-080 | Per-voice fatigue counter with exponential decay (half-life ~30 seconds) is implemented. | MUST | T1 | Unit test verifies decay timing against synthetic note streams. |
+| CC-081 | When the counter exceeds 0.7, a fatigue multiplier reduces subsequent expression-parameter magnitudes. | MUST | T1 | Unit test asserts the multiplier is applied above the threshold and not applied below it. |
+| CC-082 | Long silences allow the counter to recover toward 0. | MUST | T1 | Unit test confirms recovery behavior. |
+| CC-083 | The `CYPHERCLAW_V2_FATIGUE` env flag controls activation, defaulting OFF. | MUST | T1 | Module reads env var; default behavior matches OFF state. |
+| CC-084 | Unit tests verify decay behavior, threshold behavior, and recovery behavior. | MUST | T1 | Tests cover all three behaviors with explicit assertions. |
 
 ---
 
