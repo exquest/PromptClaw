@@ -776,6 +776,36 @@ def test_main_invokes_cleanup_when_flag_provided(
     expected_processed = tmp_path / mod.PROCESSED_SUBDIR
     assert cleanup_calls == [expected_processed]
 
+def test_intake_routes_valid_and_invalid_midi_to_correct_dirs(
+    tmp_path: Path,
+) -> None:
+    """T-012d integration: drop both a valid and an invalid MIDI into a
+    watched dir; valid lands in processed/, invalid lands in rejected/."""
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+
+    good = inbox / "good.mid"
+    _write_valid_midi(good)
+    bad = inbox / "bad.mid"
+    bad.write_bytes(b"NOPE" + b"\x00" * 12)
+
+    events = mod.process_intake_cycle(inbox, wait_for_stable=lambda _p: True)
+
+    by_status = {e["status"]: e for e in events}
+    assert set(by_status) == {"processed", "rejected"}
+
+    processed_dest = inbox / mod.PROCESSED_SUBDIR / "good.mid"
+    rejected_dest = inbox / mod.REJECTED_SUBDIR / "bad.mid"
+    assert processed_dest.is_file()
+    assert rejected_dest.is_file()
+    assert not good.exists()
+    assert not bad.exists()
+
+    # Valid file gets a sidecar; rejected file does not.
+    assert (inbox / mod.PROCESSED_SUBDIR / "good.mid.json").is_file()
+    assert not (inbox / mod.REJECTED_SUBDIR / "bad.mid.json").exists()
+
+
 def test_daemon_full_integration_poll(tmp_path: Path) -> None:
     """Full integration using poll backend: run main, drop file, verify manifest."""
     inbox = tmp_path / "inbox"
