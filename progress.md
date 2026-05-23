@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~9h 41m remaining (54 tasks, low confidence, calibrating)
-Expected completion: 3:32 PM today.
-Progress: [██████████████████████████████████░░░░] 90%  489 / 543 tasks complete
-  completed: 489, pending: 44, needs_split: 8, blocked: 0, needs_attn: 2, skipped: 45
+ETC: ~11h 1m remaining (52 tasks, low confidence, calibrating)
+Expected completion: 5:22 PM today.
+Progress: [██████████████████████████████████░░░░] 90%  491 / 543 tasks complete
+  completed: 491, pending: 42, needs_split: 8, blocked: 0, needs_attn: 2, skipped: 45
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -540,9 +540,9 @@ Progress: [███████████████████████
 - **T-033**: complete — Completed with verdict PASS.
 - **T-034**: complete — Completed with verdict PASS.
 - **T-035**: complete — Completed with verdict PASS.
-- **T-036**: pending — Pending.
-- **T-037**: pending — Pending.
-- **T-038**: pending — Pending.
+- **T-036**: complete — Completed with verdict PASS.
+- **T-037**: complete — Completed with verdict PASS.
+- **T-038**: complete — Completed with verdict PASS.
 - **T-039**: pending — Pending.
 - **T-040**: pending — Pending.
 - **T-041**: pending — Pending.
