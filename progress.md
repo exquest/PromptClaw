@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~12h 37m remaining (66 tasks, low confidence, calibrating)
-Expected completion: 11:27 AM tomorrow.
-Progress: [█████████████████████████████████░░░░░] 87%  459 / 525 tasks complete
-  completed: 459, pending: 50, needs_split: 14, blocked: 0, needs_attn: 2, skipped: 39
+ETC: ~9h 55m remaining (58 tasks, low confidence, calibrating)
+Expected completion: 12:48 PM today.
+Progress: [██████████████████████████████████░░░░] 89%  476 / 534 tasks complete
+  completed: 476, pending: 45, needs_split: 11, blocked: 0, needs_attn: 2, skipped: 42
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -508,58 +508,38 @@ Progress: [███████████████████████
 - **T-012d**: complete — Completed with verdict PASS.
 - **T-014**: complete — Completed with verdict PASS.
 - **T-015**: complete — Completed with verdict PASS.
-- **T-016**: complete — Composer now reads populated `midi_vocabulary.sqlite` databases, plans deterministic curiosity-governed scene citations, applies cited fragments through score-tree/tracker handoff metadata, and logs `vocabulary_fragment_id` at scene start. Validation passed with `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` (`4951 passed, 11 skipped`, Ruff clean, mypy clean).
+- **T-016**: complete — Completed with verdict PASS.
 - **T-017**: split — Split into subtasks.
-- **T-017a**: pending — Pending.
-- **T-017b**: complete — Faithful-transmission MIDI now maps parsed source
-  events into `faithful_scene` manifest payloads that preserve imported pitch
-  sequence, source tick durations, normalized velocities, and cumulative rows
-  without invoking vocabulary fragment selection.
-- **T-017c**: complete — Completed with local validation PASS.
-- **T-017d**: complete — Added focused faithful-render regression tests for
-  pitch/rhythm preservation, explicit tuning application, and all canonical
-  voice/synth/matched-space assignments. Validation passed with `4967 passed,
-  11 skipped`, Ruff clean, and mypy clean.
-- **T-018**: pending — Pending.
-- **T-019**: pending — Pending.
-- **T-020**: pending — Pending.
-- **T-021**: pending — Pending.
+- **T-017a**: complete — Completed with verdict PASS.
+- **T-017b**: complete — Completed with verdict PASS.
+- **T-017c**: complete — Completed with verdict PASS.
+- **T-017d**: complete — Completed with verdict PASS.
+- **T-018**: complete — Completed with verdict PASS.
+- **T-019**: complete — Completed with verdict PASS.
+- **T-020**: complete — Completed with verdict PASS.
+- **T-021**: complete — Completed with verdict PASS.
 - **T-022**: split — Split into subtasks.
-- **T-022a**: complete — Defined score-tree `MeterTrajectory` / `MeterSceneValue`, added `SectionNode.scene_metadata`, preserved both through JSON round-trip, and carried `meter_trajectory_*` scene metadata into compiled tracker scenes without changing row scheduling. Validation passed with `4983 passed, 11 skipped`, Ruff clean, and mypy clean.
-- **T-022b**: complete — Composer now plans deterministic arc-phase meter
-  trajectories during `compose_score_tree(...)`, attaches `MeterTrajectory`,
-  stamps each section's `meter_trajectory_*` scene metadata, and records the
-  meter path in `arrangement_plan` without changing tracker row timing or
-  active groove-meter selection. Validation passed with `4986 passed, 11
-  skipped`, Ruff clean, and mypy clean.
-- **T-022c**: complete — Meter trajectory scene metadata now carries a JSON
-  `meter_trajectory_entry` payload per scene and generic tracker scene
-  emission can derive per-scene trajectory keys from the compact planned
-  trajectory payload. Validation passed with `4989 passed, 11 skipped`, Ruff
-  clean, and mypy clean.
-- **T-022d**: complete — Added arc-cycle meter trajectory reset coverage and
-  composed scene metadata JSON round-trip coverage. The planner now restarts
-  per-phase drift counts when a plan crosses from `Crystallization` back to
-  `Divination`. Validation passed with `4991 passed, 11 skipped`, Ruff clean,
-  and mypy clean.
-- **T-023**: pending — Pending.
-- **T-024**: complete — Added `my-claw/tools/audio_streamer.py` for JACK output
-  Opus streaming: ffmpeg captures the `SuperCollider:out_1` /
-  `SuperCollider:out_2` bus as a named JACK client, writes approximately
-  6-second Ogg/Opus `.opus` segments at approximately 96 kbps, exposes
-  ffprobe-based `--verify-dir` checks, exposes `--check-cpu` for the under-10%
-  runtime target, and bootstraps identity before JACK/ffmpeg startup.
-  Validation passed with `4997 passed, 11 skipped`, Ruff clean, and mypy clean.
-- **T-025**: complete — Cloudflare Worker segment ingest now accepts
-  authenticated `POST /api/cypherclaw/segment` requests, stores the binary
-  segment in R2 under `cypherclaw/live/{YYYY-MM-DD}/seg-{sequence}.opus`, and
-  preserves segment metadata for later HLS playlist work. Validation passed
-  with Worker `npm test`, Worker `npx tsc --noEmit`, startup identity anchors
-  (`11 passed`), and full PromptClaw validation (`4997 passed, 11 skipped`,
-  Ruff clean, mypy clean).
-- **T-026**: pending — Pending.
+- **T-022a**: complete — Completed with verdict PASS.
+- **T-022b**: complete — Completed with verdict PASS.
+- **T-022c**: complete — Completed with verdict PASS.
+- **T-022d**: complete — Completed with verdict PASS.
+- **T-023**: complete — Completed with verdict PASS.
+- **T-024**: complete — Completed with verdict PASS.
+- **T-025**: complete — Completed with verdict PASS WITH NOTES.
+- **T-026**: complete — Cloudflare Worker now serves a valid HLS playlist at
+  `GET /api/cypherclaw/live.m3u8` and range-serves stored segments at
+  `GET /api/cypherclaw/segment/<key>`. Playlist is a rolling window of recent
+  Opus segments under `cypherclaw/live/{YYYY-MM-DD}/seg-{N}.opus`, straddles
+  the UTC date boundary, and emits valid HLS v3 directives. Validation passed
+  with Worker `npm test` (`8 passed`), Worker `npx tsc --noEmit`, startup
+  identity anchors (`11 passed`), and full PromptClaw validation
+  (`4997 passed, 11 skipped`, Ruff clean, mypy clean).
 - **T-027**: pending — Pending.
-- **T-028**: needs_split — Timed out; run sdp-cli tasks split T-028 to break it down.
+- **T-028**: split — Split into subtasks.
+- **T-028a**: pending — Pending.
+- **T-028b**: pending — Pending.
+- **T-028c**: pending — Pending.
+- **T-028d**: pending — Pending.
 - **T-029**: pending — Pending.
 - **T-030**: pending — Pending.
 - **T-031**: pending — Pending.
@@ -576,7 +556,11 @@ Progress: [███████████████████████
 - **T-042**: pending — Pending.
 - **T-043**: pending — Pending.
 - **T-044**: pending — Pending.
-- **T-045**: needs_split — Timed out; run sdp-cli tasks split T-045 to break it down.
+- **T-045**: split — Split into subtasks.
+- **T-045a**: pending — Pending.
+- **T-045b**: pending — Pending.
+- **T-045c**: pending — Pending.
+- **T-045d**: pending — Pending.
 - **T-046**: pending — Pending.
 - **T-047**: needs_split — Timed out; run sdp-cli tasks split T-047 to break it down.
 - **T-048**: needs_split — Timed out; run sdp-cli tasks split T-048 to break it down.
@@ -606,244 +590,3 @@ Progress: [███████████████████████
 - **T-072**: pending — Pending.
 - **T-073**: pending — Pending.
 - **T-074**: pending — Pending.
-
-
-## T-025 (2026-05-23)
-
-- **Exploration findings:** The active ADP workflow is the prompt's Explore ->
-  Specify -> Test -> Implement -> Verify -> Document sequence. The relevant
-  requirement is CC-021 in `sdp/cypherclaw-v2-analysis/requirements-register.md`
-  and T-025 in the implementation plan/task graph: the Cloudflare Worker must
-  accept `POST /api/cypherclaw/segment` and persist the segment in R2. The
-  existing Worker is not inside PromptClaw; the PRD points to the sibling
-  `/Users/anthony/Programming/catalog-explorer/worker` project, whose current
-  `src/index.ts` owns the holdenu API routes and already has a `MEDIA` R2
-  binding plus bearer-token-protected write endpoints. No existing CypherClaw
-  Worker route, Wrangler route for `cypherclaw.holdenu.com`, or Worker tests
-  exist yet. T-025 will add only the authenticated segment ingest route and
-  focused Worker tests; playlist serving, DNS, public segment reads, and the
-  streamer upload client remain later tasks.
-- **Red/focused verification:** Red phase was confirmed with
-  `cd /Users/anthony/Programming/catalog-explorer/worker && npm test` failing
-  on both locked tests because the Worker returned `404` for
-  `/api/cypherclaw/segment`. After implementation, the same Worker test command
-  passed with `2 passed`, and `npx tsc --noEmit` was clean.
-- **Full validation:** Startup identity hardening anchors passed with
-  `11 passed`. Full PromptClaw validation passed with
-  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
-  mypy src/`: `4997 passed, 11 skipped`, Ruff clean, and mypy clean. No new
-  dependencies or migrations were introduced.
-
-## T-022d (2026-05-23)
-
-- **Exploration findings:** The active ADP workflow is the task prompt's
-  Explore -> Specify -> Test -> Implement -> Verify -> Document sequence. The
-  affected meter-trajectory surface is `my-claw/tools/senseweave/score_tree.py`
-  for `MeterTrajectory` / `SectionNode.scene_metadata`,
-  `my-claw/tools/senseweave/recursive_composer.py` for
-  `plan_meter_trajectory(...)`, `my-claw/tools/senseweave/tracker_compiler.py`
-  for score-tree to scene-score metadata propagation, and
-  `my-claw/tools/senseweave/music_tracker.py` for compact metadata derivation
-  during generic tracker scene emission. T-022a/T-022b/T-022c already cover the
-  base carrier, planner, and emission paths; T-022d will harden the uncovered
-  arc-cycle reset case and add a composed score-tree JSON round-trip to tracker
-  metadata test. The generated startup-hardening bullets target the existing
-  identity startup subsystem, which already has regression anchors, so this
-  meter task will re-run those tests rather than modify startup flow.
-- **Red/focused verification:** Red phase was confirmed with
-  `pytest tests/test_score_tree_composer.py::test_plan_meter_trajectory_restarts_phase_drift_per_arc_cycle tests/test_score_tree_composer.py::test_composed_meter_trajectory_scene_metadata_round_trips_through_json_and_tracker -q`
-  failing on the second-cycle `Divination` scene inheriting the prior cycle's
-  second drift cell. After implementation, those locked tests passed with `2
-  passed`, the trajectory/metadata anchors passed with `8 passed`, and startup
-  identity hardening anchors passed with `11 passed`.
-- **Full validation:** `pip install -e '.[dev]' && pytest tests/ -x && ruff
-  check src/ tests/ && mypy src/` passed with `4991 passed, 11 skipped`, Ruff
-  clean, and mypy clean. No new dependencies or migrations were introduced.
-
-
-## T-022c (2026-05-23)
-
-- **Exploration findings:** The active ADP workflow is the task prompt's
-  Explore -> Specify -> Test -> Implement -> Verify -> Document sequence. The
-  affected meter-metadata surface is `my-claw/tools/senseweave/score_tree.py`
-  (`MeterTrajectory.metadata_for_scene`), `recursive_composer.py`
-  (`plan_meter_trajectory` and `arrangement_plan["meter_trajectory"]`),
-  `tracker_compiler.py` (score-tree section metadata to scene scores), and
-  `music_tracker.py` (`build_korsakov_tracker_song` scene metadata emission).
-  T-022a/T-022b already produce flattened `meter_trajectory_*` keys when the
-  score-tree compiler supplies scene-specific metadata; T-022c will add the
-  explicit per-scene `meter_trajectory_entry` payload and teach generic tracker
-  scene emission to derive those keys from the compact planned trajectory
-  metadata. The generated startup-hardening bullets target the existing
-  identity startup subsystem, which is already covered by regression anchors,
-  so this task treats them as required verification rather than unrelated
-  startup rewiring.
-- **Red/green verification:** Red phase was confirmed with the locked T-022c
-  tests failing on missing `meter_trajectory_entry`, missing
-  `arrangement_plan["meter_trajectory"]["scene_entries"]`, and missing compact
-  metadata derivation in `build_korsakov_tracker_song(...)`. Green verification
-  passed the focused T-022c tests, adjacent score-tree/composer/tracker/compiler
-  coverage (`95 passed`), startup identity hardening anchors (`11 passed`), and
-  the required validation command `pip install -e '.[dev]' && pytest tests/ -x
-  && ruff check src/ tests/ && mypy src/` (`4989 passed, 11 skipped`, Ruff
-  clean, mypy clean). No new dependencies or migrations were introduced.
-
-## T-021 (2026-05-23)
-
-- **Exploration findings:** The active tracker timing surface is
-  `my-claw/tools/senseweave/music_tracker.py`, with runtime conversion in
-  `my-claw/tools/senseweave/music_tracker_runtime.py` and coverage in
-  `tests/test_music_tracker.py`, `tests/test_music_tracker_runtime.py`, and
-  `tests/test_groove_engine.py`. Existing groove support already carries
-  metric-modulation labels (`GrooveProfile.metric_modulation` and
-  `ModulationEvent`), and tracker scenes stamp those labels into scene and step
-  metadata, but row timing remains constant because `_row_duration_seconds(...)`
-  ignores row-positioned modulation. T-021 will add the narrow row-duration
-  application path and keep startup identity hardening as a regression anchor.
-- **Red/focused verification:** Red phase was confirmed by the locked
-  `TestMetricModulationTiming` and `TestScheduleScene` modulation tests failing
-  on the missing `MetricModulation` import before production code changed. The
-  implementation adds row-duration, row-start, and row-span helpers plus runtime
-  consumption for event durations and row sleeps. Focused tracker/groove
-  verification passed with `175 passed`. Startup identity anchors passed with
-  `11 passed`, and full validation passed with `4979 passed, 11 skipped`, Ruff
-  clean, and mypy clean.
-
-## T-017a (2026-05-23)
-
-- **Exploration findings:** The faithful-transmission change belongs in the
-  existing CypherClaw MIDI intake path. `src/cypherclaw/midi_intake_daemon.py`
-  validates and moves files, writes sidecar manifests, and currently always
-  calls `extract_midi_fragments(...)` for valid files. The dependency-free MIDI
-  event parser pattern already exists in `src/cypherclaw/midi_fragments.py`,
-  so T-017a can add a small faithful loader without adding `mido` or changing
-  the vocabulary database schema. Existing tests cover intake movement,
-  manifests, fragment extraction, vocabulary storage, and composer vocabulary
-  citations; startup identity hardening is already wired before
-  `FirstBootAnnouncer()` and remains a regression anchor.
-- **Red/green verification:** Red phase was confirmed by
-  `pytest tests/test_midi_faithful_loader.py -q` failing on the missing
-  `cypherclaw.midi_loader` module. Green verification passed the locked
-  faithful-loader tests (`5 passed`), adjacent MIDI/composer vocabulary tests
-  (`62 passed`), and startup identity hardening anchors (`11 passed`). Full
-  validation passed with `pip install -e '.[dev]' && pytest tests/ -x && ruff
-  check src/ tests/ && mypy src/`: `4956 passed, 11 skipped`, Ruff clean, and
-  mypy clean. No new dependencies or migrations were introduced.
-
-## T-017b (2026-05-23)
-
-- **Exploration findings:** The active ADP workflow is the repository's
-  Explore -> Specify -> Test -> Implement -> Verify -> Document T2 template.
-  The relevant PRD requirement is CC-015 in
-  `sdp/prd-cypherclaw-v2-2026-05-22.md`: faithful-transmission mode bypasses
-  fragment extraction and renders imported MIDI as a scene preserving pitch
-  sequence and rhythm. T-017a already added the dependency-free faithful loader
-  and intake flag; T-017b should add a whole-file scene mapper and manifest
-  field without touching the vocabulary citation path in
-  `composer_vocabulary_bridge.py`. Existing tracker scenes use pattern/lane/step
-  JSON contracts, so the faithful scene should mirror that shape while carrying
-  exact MIDI pitches and source tick durations. Startup identity hardening is
-  already wired before `FirstBootAnnouncer()` and remains a regression anchor.
-- **Red/focused verification:** Red phase was confirmed with
-  `pytest tests/test_midi_scene.py -q` failing on missing
-  `cypherclaw.midi_scene`. The implementation adds a typed `midi_scene` mapper
-  and writes `faithful_scene` into faithful-mode manifests without invoking
-  fragment extraction or vocabulary selection. Focused checks passed:
-  `pytest tests/test_midi_scene.py -q` (`4 passed`), adjacent MIDI/composer
-  coverage (`67 passed`), startup identity anchors (`11 passed`), focused Ruff,
-  and focused mypy for touched CypherClaw modules. Full validation passed with
-  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
-  mypy src/`: `4960 passed, 11 skipped`, Ruff clean, and mypy clean.
-
-## T-017c (2026-05-23)
-
-- **Exploration findings:** The active ADP workflow is the task prompt's
-  Explore -> Specify -> Test -> Implement -> Verify -> Document template. The
-  relevant requirement is CC-015 in `sdp/prd-cypherclaw-v2-2026-05-22.md`:
-  faithful-transmission mode preserves imported pitch sequence and rhythm while
-  applying CypherClaw tunings, voices, and spaces. T-017a added
-  `load_faithful_midi_events(...)`; T-017b added the JSON-safe
-  `faithful_scene` manifest payload in `src/cypherclaw/midi_scene.py` and
-  `src/cypherclaw/midi_intake_daemon.py`. The design-statement authority for
-  this task is section 2's phase-to-tuning rule and section 4's seven
-  voice-space descriptions. This task should add render metadata to the
-  faithful scene without rewriting imported `pitch`, `duration_ticks`, row
-  order, or fragment-extraction behavior. Startup identity hardening is already
-  wired before `FirstBootAnnouncer()` and remains a regression anchor.
-- **Red/focused verification:** Red phase was confirmed with
-  `pytest tests/test_midi_scene.py -q` failing at collection on the missing
-  `FaithfulRenderSettings` import before production code changed. The
-  implementation adds additive `tuning_system_name`, `render_pitch_hz`,
-  `render_voice`, `render_synth`, and `render_space` metadata to faithful
-  scenes while preserving imported pitch/rhythm fields. Focused checks passed:
-  `pytest tests/test_midi_scene.py -q` (`8 passed`), adjacent MIDI/composer
-  coverage (`75 passed`), startup identity anchors (`11 passed`), focused Ruff,
-  and focused mypy for touched CypherClaw modules.
-- **Full validation:** `pip install -e '.[dev]' && pytest tests/ -x &&
-  ruff check src/ tests/ && mypy src/` passed with `4964 passed, 11 skipped`,
-  Ruff clean, and mypy clean.
-
-## T-017d (2026-05-23)
-
-- **Exploration findings:** The active ADP workflow is the task prompt's
-  Explore -> Specify -> Test -> Implement -> Verify -> Document template. The
-  faithful-transmission render path is already layered across
-  `src/cypherclaw/midi_loader.py` (ordered `FaithfulMidiEvent` records),
-  `src/cypherclaw/midi_scene.py` (scene mapping, tuning selection,
-  `render_pitch_hz`, voice/synth assignment, matched space metadata), and
-  `src/cypherclaw/midi_intake_daemon.py` (manifest wiring under
-  `faithful_scene`). Existing T-017c tests cover the broad behavior; T-017d
-  will add focused regression tests for pitch/rhythm preservation, explicit
-  tuning application, and all-voice matched space assignment without changing
-  prior locked assertions. Startup identity hardening is already wired before
-  `FirstBootAnnouncer()` and remains a regression-anchor command rather than
-  new startup work for this task.
-- **Test-development findings:** Added
-  `tests/test_midi_faithful_render_contract.py` with focused checks for
-  pitch/rhythm preservation under render metadata, explicit tuning application
-  without source-field rewrites, and all canonical voice/synth/matched-space
-  assignments including `sw_` alias normalization. The tests passed against the
-  current branch before production-code edits because T-017c already shipped
-  the render contract; the pre-T-017c baseline lacks the render symbols these
-  tests import. No T-017d production code changes were required.
-- **Verification:** Focused faithful MIDI/render coverage passed with
-  `78 passed`; startup identity hardening anchors passed with `11 passed`;
-  full validation `pip install -e '.[dev]' && pytest tests/ -x && ruff check
-  src/ tests/ && mypy src/` passed with `4967 passed, 11 skipped`, Ruff clean,
-
-## T-024 (2026-05-23)
-
-- **Exploration findings:** The active ADP workflow is the task prompt's
-  Explore -> Specify -> Test -> Implement -> Verify -> Document sequence,
-  matching `sdp/templates/candidates/lead_t2/v006.md`. No existing
-  `audio_streamer.py` was present. The closest runtime patterns are the
-  CypherClaw audio tools under `my-claw/tools/` and their hardware-free tests:
-  `sample_capture_daemon.py` owns long-running JACK capture buffers,
-  `self_listener.py` and `room_listener.py` build subprocess-based JACK /
-  PipeWire recorder commands, `start_audio.sh` establishes the
-  `SuperCollider:out_1` / `SuperCollider:out_2` JACK output bus, and
-  `tests/test_cypherclaw_audio_runtime.py`,
-  `tests/test_self_listener_tracker_runtime.py`, and
-  `tests/test_room_listener_runtime.py` pin command construction without
-  requiring live audio hardware. T-024 will add a small typed
-  `my-claw/tools/audio_streamer.py` that starts one ffmpeg JACK client,
-  connects the SuperCollider stereo output bus to it, writes approximately
-  6-second Ogg/Opus `.opus` segments at approximately 96 kbps, exposes
-  ffprobe-based segment validation, and exposes a `ps`-based CPU check. The
-  generated startup hardening bullets target identity bootstrapping; this new
-  streamer will call `bootstrap_identity()` before spawning ffmpeg/JACK work,
-  and the existing standalone/federated identity persistence anchors remain
-  mandatory regression checks.
-- **Red/focused verification:** Red phase was confirmed with
-  `pytest tests/test_audio_streamer.py -q` failing at collection on missing
-  `audio_streamer` before implementation. The locked tests now pass with `4
-  passed`, adjacent audio runtime tests pass with `42 passed`, and startup
-  identity hardening anchors pass with `11 passed`. The streamer supports live
-  acceptance checks with `python my-claw/tools/audio_streamer.py --verify-dir
-  /home/user/cypherclaw-data/streams --segment-seconds 6 --bitrate-kbps 96`
-  and `python my-claw/tools/audio_streamer.py --check-cpu "$(cat
-  /tmp/cypherclaw-audio-streamer.pid)" --max-cpu 10`. No new dependencies or
-  migrations were introduced.
-- **Full validation:** `pip install -e '.[dev]' && pytest tests/ -x && ruff
-  check src/ tests/ && mypy src/` passed with `4997 passed, 11 skipped`, Ruff
-  clean, and mypy clean.

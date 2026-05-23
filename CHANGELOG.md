@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Added Cloudflare Worker CypherClaw HLS playlist + segment GET (T-026):
+  the holdenu API Worker now serves `GET /api/cypherclaw/live.m3u8` with a
+  valid HLS v3 rolling-window playlist (EXTM3U, VERSION, TARGETDURATION,
+  MEDIA-SEQUENCE, EXTINF + segment URI per entry) built from the most recent
+  segments stored under `cypherclaw/live/{YYYY-MM-DD}/seg-{N}.opus`, and
+  `GET /api/cypherclaw/segment/<key>` range-serves the stored Opus body with
+  `Accept-Ranges: bytes`. The playlist straddles the UTC date boundary by
+  also listing the previous day's keys when the current day has fewer than
+  the rolling-window count. Added six Node tests covering empty playlist,
+  ordered segment URIs, rolling-window truncation, GET-by-key, prefix
+  rejection, and missing-object 404. Validation passed with Worker
+  `npm test` (`8 passed`), Worker `npx tsc --noEmit`, startup identity
+  anchors (`11 passed`), and full PromptClaw validation (`4997 passed,
+  11 skipped`, Ruff clean, mypy clean).
+
 - Added Cloudflare Worker CypherClaw segment ingest (T-025): the existing
   holdenu API Worker in `catalog-explorer/worker` now accepts authenticated
   `POST /api/cypherclaw/segment` requests, validates
