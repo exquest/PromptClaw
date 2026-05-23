@@ -5,7 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from cypherclaw.midi_fragments import _parse_midi_file
+try:
+    from cypherclaw.midi_fragments import _parse_midi_file
+except ImportError:
+    from midi_fragments import _parse_midi_file  # type: ignore[no-redef,import-not-found]
 
 
 @dataclass(frozen=True)
