@@ -13,6 +13,8 @@ try:
         SPACE_PROFILE_SOURCE,
         VOICE_REVERB_PROFILES,
         VoiceReverbProfile,
+        normalize_active_house,
+        resolve_voice_space_profile,
     )
 except ImportError:
     from midi_loader import FaithfulMidiEvent  # type: ignore[no-redef,import-not-found]
@@ -20,6 +22,8 @@ except ImportError:
         SPACE_PROFILE_SOURCE,
         VOICE_REVERB_PROFILES,
         VoiceReverbProfile,
+        normalize_active_house,
+        resolve_voice_space_profile,
     )
 
 
@@ -163,6 +167,7 @@ class FaithfulRenderSettings:
     voice_sequence: tuple[str, ...] = ("pluck",)
     space_mode: str = "matched"
     mood_mode: MoodMode | str | None = MoodMode.MATCHED
+    active_house: str | None = None
     tuning_system_name: str | None = None
     tuning_morph_target_name: str | None = None
     tuning_morph_curve: str = MORPH_CURVE_LINEAR
@@ -303,8 +308,12 @@ def build_faithful_midi_scene(
     tonal_center_midi = _safe_tonal_center_midi(settings.tonal_center_midi)
     tonal_center_hz = _safe_tonal_center_hz(settings.tonal_center_hz)
     voice_sequence = _normalized_voice_sequence(settings.voice_sequence, voice)
-    space_mode = _space_mode(settings.space_mode)
-    mood_mode = parse_mood_mode(settings.mood_mode)
+    mood_input = settings.mood_mode
+    if mood_input is None:
+        mood_input = settings.space_mode
+    mood_mode = parse_mood_mode(mood_input)
+    space_mode = mood_mode.value
+    active_house = normalize_active_house(settings.active_house)
     row = 0
     total_duration_ticks = 0
     steps: list[FaithfulSceneStep] = []
@@ -322,7 +331,11 @@ def build_faithful_midi_scene(
         requested_voice = voice_sequence[index % len(voice_sequence)]
         render_voice = _normalize_render_voice(requested_voice)
         render_synth = _VOICE_SYNTHS[render_voice]
-        render_space = _space_for_voice(render_voice, space_mode=space_mode).to_dict()
+        render_space = _space_for_voice(
+            render_voice,
+            mood_mode=mood_mode,
+            active_house=active_house,
+        ).to_dict()
         render_pitch_hz = render_pitch_hz_for_midi(
             pitch,
             tuning_system_name=tuning_system_name,
@@ -352,10 +365,12 @@ def build_faithful_midi_scene(
                     "requested_render_voice": str(requested_voice),
                     "render_voice": render_voice,
                     "render_synth": render_synth,
+                    "render_space_voice": str(render_space["voice"]),
                     "render_space_id": str(render_space["space_id"]),
                     "render_fx_bus_id": str(render_space["fx_bus_id"]),
                     "space_mode": space_mode,
                     "mood_mode": mood_mode.value,
+                    "active_house": active_house,
                 },
             )
         )
@@ -387,6 +402,7 @@ def build_faithful_midi_scene(
         "voice_sequence": ",".join(voice_sequence),
         "space_mode": space_mode,
         "mood_mode": mood_mode.value,
+        "active_house": active_house,
         "space_profile_source": SPACE_PROFILE_SOURCE,
     }
     return FaithfulMidiScene(
@@ -560,17 +576,18 @@ def _normalize_render_voice(value: str) -> str:
     return key if key in _VOICE_SYNTHS else "pluck"
 
 
-def _space_mode(value: str) -> str:
-    key = str(value).strip().lower().replace("-", "_").replace(" ", "_")
-    if key == "matched":
-        return "matched"
-    return "matched"
-
-
-def _space_for_voice(voice: str, *, space_mode: str) -> FaithfulVoiceSpace:
-    if space_mode != "matched":
-        return VOICE_SPACES["pluck"]
-    return VOICE_SPACES.get(voice, VOICE_SPACES["pluck"])
+def _space_for_voice(
+    voice: str,
+    *,
+    mood_mode: MoodMode | str,
+    active_house: str,
+) -> FaithfulVoiceSpace:
+    profile = resolve_voice_space_profile(
+        voice,
+        mood_mode=mood_mode,
+        active_house=active_house,
+    )
+    return VOICE_SPACES.get(profile.voice, VOICE_SPACES["pluck"])
 
 
 def _format_float(value: float) -> str:

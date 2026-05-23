@@ -197,12 +197,53 @@ VOICE_REVERB_PROFILES: dict[str, VoiceReverbProfile] = {
     ),
 }
 
+EXPRESSIVE_SPACE_VOICE_BY_VOICE: dict[str, str] = {
+    "pluck": "kotekan",
+    "breath": "pad",
+    "choir": "bowed",
+    "kotekan": "tabla_tin",
+    "pad": "pluck",
+    "bowed": "breath",
+    "tabla_tin": "choir",
+}
+
+HOUSE_BOUND_SPACE_VOICE_BY_HOUSE: dict[str, str] = {
+    "house_monastery": "choir",
+    "house_chamber": "breath",
+    "house_garden": "tabla_tin",
+    "house_procession": "kotekan",
+    "house_workshop": "pluck",
+}
+
+DEFAULT_HOUSE_BOUND_HOUSE = "house_chamber"
+
 
 def _normalize_voice_name(voice: str) -> str:
     normalized = str(voice).strip().lower()
     if normalized.startswith("sw_"):
         normalized = normalized[3:]
     return normalized
+
+
+def _normalize_mood_mode(value: object) -> str:
+    raw = getattr(value, "value", value)
+    key = str(raw or "").strip().lower().replace("_", "-").replace(" ", "-")
+    if key in {"matched", "expressive", "house-bound"}:
+        return key
+    return "matched"
+
+
+def normalize_active_house(active_house: object) -> str:
+    """Return a canonical house patch key for space selection."""
+
+    raw = getattr(active_house, "value", active_house)
+    key = str(raw or "").strip().lower().replace("-", "_").replace(" ", "_")
+    if key in HOUSE_BOUND_SPACE_VOICE_BY_HOUSE:
+        return key
+    prefixed = f"house_{key}"
+    if prefixed in HOUSE_BOUND_SPACE_VOICE_BY_HOUSE:
+        return prefixed
+    return DEFAULT_HOUSE_BOUND_HOUSE
 
 
 def iter_voice_reverb_profiles() -> Iterator[VoiceReverbProfile]:
@@ -221,6 +262,8 @@ def build_voice_s_new_args(
     release: float = 1.0,
     add_action: int = 0,
     target_id: int = 0,
+    mood_mode: object = "matched",
+    active_house: object = None,
 ) -> list[float | int | str]:
     """Build a `/s_new` OSC arg list routing *voice* into its FX return bus.
 
@@ -231,9 +274,14 @@ def build_voice_s_new_args(
     back to the pluck profile (see :func:`get_voice_reverb_profile`).
     """
 
-    profile = get_voice_reverb_profile(voice)
+    voice_profile = get_voice_reverb_profile(voice)
+    space_profile = resolve_voice_space_profile(
+        voice_profile.voice,
+        mood_mode=mood_mode,
+        active_house=active_house,
+    )
     return [
-        f"sw_{profile.voice}",
+        f"sw_{voice_profile.voice}",
         int(node_id),
         int(add_action),
         int(target_id),
@@ -241,7 +289,7 @@ def build_voice_s_new_args(
         "amp", float(amp),
         "attack", float(attack),
         "release", float(release),
-        "fx_bus_id", int(profile.fx_bus_id),
+        "fx_bus_id", int(space_profile.fx_bus_id),
     ]
 
 
@@ -252,12 +300,34 @@ def get_voice_reverb_profile(voice: str) -> VoiceReverbProfile:
     return VOICE_REVERB_PROFILES.get(normalized, VOICE_REVERB_PROFILES["pluck"])
 
 
+def resolve_voice_space_profile(
+    voice: str,
+    *,
+    mood_mode: object = "matched",
+    active_house: object = None,
+) -> VoiceReverbProfile:
+    """Return the reverb profile selected by scene mood-space rules."""
+
+    voice_profile = get_voice_reverb_profile(voice)
+    mode = _normalize_mood_mode(mood_mode)
+    if mode == "expressive":
+        space_voice = EXPRESSIVE_SPACE_VOICE_BY_VOICE[voice_profile.voice]
+    elif mode == "house-bound":
+        house = normalize_active_house(active_house)
+        space_voice = HOUSE_BOUND_SPACE_VOICE_BY_HOUSE[house]
+    else:
+        space_voice = voice_profile.voice
+    return VOICE_REVERB_PROFILES[space_voice]
+
+
 def summarize_voice_reverb_profiles() -> dict[str, Any]:
     """Return a JSON-safe summary of all per-voice reverb profiles."""
 
     return {
         "source": SPACE_PROFILE_SOURCE,
         "voice_order": list(VOICE_REVERB_PROFILES),
+        "expressive_space_voice_by_voice": dict(EXPRESSIVE_SPACE_VOICE_BY_VOICE),
+        "house_bound_space_voice_by_house": dict(HOUSE_BOUND_SPACE_VOICE_BY_HOUSE),
         "profiles": [
             {
                 "voice": profile.voice,
