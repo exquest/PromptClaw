@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Added the SenseWeave coupling multiplier helper (T-003b):
+  `senseweave.synthesis.senseweave_voice.coupling_multiplier_from_bus_value(...)`
+  now exposes the PRD arithmetic `1.0 + coupling_strength * affective_state`
+  as a pure function. It clamps both the raw bus value and coupling strength
+  into `[0.0, 1.0]`, uses the documented default strength `0.5`, and covers
+  boundary values plus clamping in unit tests. This adds no dependency,
+  migration, provider secret, database behavior, OSC traffic, or startup
+  rewiring.
+
 - Added the SenseWeave affective bus reader helper (T-003a):
   `senseweave.synthesis.senseweave_voice.read_affective_state_bus(...)` now
   reads the canonical `affective_state_bus` control-bus index only when

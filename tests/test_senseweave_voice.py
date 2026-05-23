@@ -18,6 +18,7 @@ from senseweave.synthesis.senseweave_voice import (
     STAB,
     TIMBRE_MAP,
     SenseweaveVoice,
+    coupling_multiplier_from_bus_value,
     read_affective_state_bus,
 )
 
@@ -68,6 +69,25 @@ class TestAffectiveStateBusReader:
             _ControlBusReader(-0.25),
             env=enabled_env,
         ) == 0.0
+
+
+class TestCouplingMultiplier:
+    def test_default_strength_boundary_values(self) -> None:
+        assert coupling_multiplier_from_bus_value(0.0) == 1.0
+        assert coupling_multiplier_from_bus_value(0.5) == 1.25
+        assert coupling_multiplier_from_bus_value(1.0) == 1.5
+
+    def test_clamps_bus_value_and_coupling_strength(self) -> None:
+        assert coupling_multiplier_from_bus_value(-0.5) == 1.0
+        assert coupling_multiplier_from_bus_value(2.0) == 1.5
+        assert coupling_multiplier_from_bus_value(
+            1.0,
+            coupling_strength=-0.25,
+        ) == 1.0
+        assert coupling_multiplier_from_bus_value(
+            1.0,
+            coupling_strength=2.0,
+        ) == 2.0
 
 
 class TestADSR:
