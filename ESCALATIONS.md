@@ -1,5 +1,34 @@
 # Escalations
 
+## T-003d (2026-05-23)
+
+- **Reason:** Affective-coupling integration scope and startup-hardening assumptions
+- **Details:** Exploration found T-003d builds on the existing T-003a reader
+  helper, T-003b multiplier helper, and T-003c render-time depth-scaling path
+  in `my-claw/tools/senseweave/synthesis/senseweave_voice.py`, plus the shared
+  bus contract in `my-claw/tools/senseweave/affective_state_bus.py`. This task
+  assumes the in-scope "all voices" surface is every `TIMBRE_MAP` timbre in the
+  shared `SenseweaveVoice` Python render path. Full SuperCollider synthdef
+  internals and audible A/B coupling remain later PRD checkpoints. The generated
+  startup hardening bullets target the existing identity startup subsystem;
+  current CLI, first-boot, daemon-ordering, and narrative ASGI tests already
+  cover `bootstrap_identity()` before `FirstBootAnnouncer` plus standalone and
+  federated persistence, so they remain regression anchors rather than
+  broadening this voice integration test task into startup rewiring. No new
+  dependencies, migrations, provider secrets, database columns, runtime state
+  directories, HTTP routes, or SuperCollider compilation are required.
+- **Reason:** Red phase and focused verification results
+- **Details:** Red phase was confirmed with
+  `pytest tests/test_senseweave_voice.py::TestAffectiveCouplingIntegration -q`
+  failing on missing `SenseweaveVoice.note_on_with_affective_coupling(...)`
+  before production code changed. After implementation, the locked integration
+  tests passed with `2 passed`, prior T-003 reader/multiplier/scaling tests plus
+  the new class passed with `9 passed`, `pytest tests/test_affective_state_bus.py
+  -q` passed with `36 passed`, startup identity hardening anchors passed with
+  `11 passed`, `git diff --check` was clean, and the required validation command
+  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
+  mypy src/` passed with `4863 passed, 11 skipped`, Ruff clean, and mypy clean.
+
 ## T-003c (2026-05-23)
 
 - **Reason:** Render-time depth-scaling scope and startup-hardening assumptions

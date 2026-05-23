@@ -12,6 +12,7 @@ from senseweave.affective_state_bus import (
     CYPHERCLAW_V2_COUPLING_ENV,
 )
 from senseweave.synthesis.senseweave_voice import (
+    DEFAULT_COUPLING_STRENGTH,
     PAD,
     PRESETS,
     RHYTHMIC,
@@ -138,6 +139,69 @@ class TestRenderTimeModulatorDepthScaling:
             assert sent_args[0] == synth
             assert rendered_params["vib_depth"] == 0.375
             assert rendered_params["trem_depth"] == 0.75
+
+
+class TestAffectiveCouplingIntegration:
+    def test_flag_on_known_bus_value_scales_depths_across_all_timbres(self) -> None:
+        known_bus_value = 0.5
+        nominal_depths = {
+            "vib_depth": 0.25,
+            "trem_depth": 0.5,
+            "spectral_granulation_amount": 0.125,
+        }
+        expected_multiplier = 1.0 + (DEFAULT_COUPLING_STRENGTH * known_bus_value)
+        enabled_env = {CYPHERCLAW_V2_COUPLING_ENV: "1"}
+
+        for timbre, synth in TIMBRE_MAP.items():
+            reader = _ControlBusReader(known_bus_value)
+            osc = MagicMock()
+            voice = SenseweaveVoice(osc=osc, timbre=timbre)
+
+            voice.note_on_with_affective_coupling(
+                220.0,
+                modulator_depths=nominal_depths,
+                control_bus_reader=reader,
+                env=enabled_env,
+            )
+
+            sent_args = osc.send_message.call_args[0][1]
+            rendered_params = dict(zip(sent_args[4::2], sent_args[5::2], strict=True))
+            assert sent_args[0] == synth
+            assert reader.read_indices == [AFFECTIVE_STATE_BUS_INDEX]
+            assert rendered_params["vib_depth"] == 0.25 * expected_multiplier
+            assert rendered_params["trem_depth"] == 0.5 * expected_multiplier
+            assert (
+                rendered_params["spectral_granulation_amount"]
+                == 0.125 * expected_multiplier
+            )
+
+    def test_flag_off_preserves_baseline_depths_across_all_timbres(self) -> None:
+        nominal_depths = {
+            "vib_depth": 0.25,
+            "trem_depth": 0.5,
+            "spectral_granulation_amount": 0.125,
+        }
+        disabled_env = {CYPHERCLAW_V2_COUPLING_ENV: "0"}
+
+        for timbre, synth in TIMBRE_MAP.items():
+            reader = _ControlBusReader(0.9)
+            osc = MagicMock()
+            voice = SenseweaveVoice(osc=osc, timbre=timbre)
+
+            voice.note_on_with_affective_coupling(
+                220.0,
+                modulator_depths=nominal_depths,
+                control_bus_reader=reader,
+                env=disabled_env,
+            )
+
+            sent_args = osc.send_message.call_args[0][1]
+            rendered_params = dict(zip(sent_args[4::2], sent_args[5::2], strict=True))
+            assert sent_args[0] == synth
+            assert reader.read_indices == []
+            assert rendered_params["vib_depth"] == 0.25
+            assert rendered_params["trem_depth"] == 0.5
+            assert rendered_params["spectral_granulation_amount"] == 0.125
 
 
 class TestADSR:

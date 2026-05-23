@@ -253,6 +253,31 @@ class SenseweaveVoice:
 
         return nid
 
+    def note_on_with_affective_coupling(
+        self,
+        freq: float,
+        amp: float = 0.06,
+        adsr: ADSR | None = None,
+        *,
+        control_bus_reader: ControlBusReader,
+        modulator_depths: Mapping[str, float] | None = None,
+        env: Mapping[str, str] | None = None,
+        coupling_strength: float = DEFAULT_COUPLING_STRENGTH,
+    ) -> int:
+        """Start a note after deriving depth coupling from the affective bus."""
+        bus_value = read_affective_state_bus(control_bus_reader, env=env)
+        coupling_multiplier = coupling_multiplier_from_bus_value(
+            bus_value,
+            coupling_strength=coupling_strength,
+        )
+        return self.note_on(
+            freq,
+            amp,
+            adsr,
+            modulator_depths=modulator_depths,
+            coupling_multiplier=coupling_multiplier,
+        )
+
     def note_off(self, node_id: int | None = None) -> None:
         """Release a specific note, or all notes if no ID given."""
         if node_id is None:

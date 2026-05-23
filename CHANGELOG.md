@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Added SenseWeave affective-coupling integration coverage (T-003d):
+  `SenseweaveVoice.note_on_with_affective_coupling(...)` now composes the
+  existing flag-gated affective bus reader, coupling multiplier helper, and
+  render-time depth scaling path. Integration tests verify every `TIMBRE_MAP`
+  timbre emits depths scaled from a known bus value when
+  `CYPHERCLAW_V2_COUPLING=1`, and preserves baseline depths without touching
+  the reader when the flag is off. This adds no dependency, migration,
+  provider secret, database behavior, runtime state directory, SuperCollider
+  compilation, or startup rewiring.
+
 - Wired SenseWeave render-time coupling depth scaling (T-003c):
   `senseweave.synthesis.senseweave_voice.scale_modulator_depths(...)` now
   scales nominal modulator-depth args by the supplied coupling multiplier, and
