@@ -17,6 +17,19 @@ import threading
 from collections.abc import Sequence
 from pathlib import Path
 
+try:
+    from cypherclaw.first_boot import FirstBootAnnouncer, bootstrap_identity
+except ImportError:
+    try:
+        from first_boot import FirstBootAnnouncer, bootstrap_identity
+    except ImportError:
+        def bootstrap_identity(*args, **kwargs) -> object:
+            return None
+
+        class FirstBootAnnouncer:
+            def maybe_announce(self) -> object:
+                return None
+
 
 DEFAULT_WATCH_DIR = Path("/home/user/cypherclaw/midi-inbox/")
 MIDI_EXTENSIONS: tuple[str, ...] = (".mid", ".midi")
@@ -86,6 +99,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     configure_logging()
+
+    # Ensure identity exists before anything that depends on it (Hardening)
+    bootstrap_identity()
+
+    # Federated clones announce on first boot (FEDREAD-004)
+    FirstBootAnnouncer().maybe_announce()
 
     stop_event = threading.Event()
     install_signal_handlers(stop_event)

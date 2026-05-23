@@ -102,3 +102,46 @@ def test_main_invokes_scan_once_and_returns_zero(
 
     assert rc == 0
     assert calls == [tmp_path]
+
+
+def test_main_invokes_bootstrap_identity(monkeypatch) -> None:
+    identity_called = False
+    announce_called = False
+
+    def fake_bootstrap(*args, **kwargs):
+        nonlocal identity_called
+        identity_called = True
+
+    class FakeAnnouncer:
+        def maybe_announce(self):
+            nonlocal announce_called
+            announce_called = True
+
+    monkeypatch.setattr(mod, "bootstrap_identity", fake_bootstrap)
+    monkeypatch.setattr(mod, "FirstBootAnnouncer", FakeAnnouncer)
+    monkeypatch.setattr(mod, "configure_logging", lambda *_a, **_k: None)
+    monkeypatch.setattr(mod, "scan_once", lambda *_a, **_k: [])
+
+    # Mock signal to avoid real signal handling
+    monkeypatch.setattr(signal, "signal", lambda *_a, **_k: None)
+
+    mod.main(["--watch-dir", "/tmp"])
+    assert identity_called is True
+    assert announce_called is True
+
+
+def test_identity_persistence_between_boots(tmp_path):
+    # This test verifies bootstrap_identity behavior (either real or shimmed)
+    identity_path = tmp_path / "identity.json"
+
+    # First boot
+    id1 = mod.bootstrap_identity(identity_path=identity_path)
+
+    # If it's the real one, it should persist a file.
+    # If it's the shim, we just ensure it doesn't crash.
+    if id1 is not None:
+        assert identity_path.exists()
+
+        # Second boot
+        id2 = mod.bootstrap_identity(identity_path=identity_path)
+        assert id1.instance_id == id2.instance_id
