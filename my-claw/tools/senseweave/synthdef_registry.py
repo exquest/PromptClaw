@@ -144,6 +144,25 @@ _ENTRIES: tuple[SynthDefEntry, ...] = (
             bandwidth="wide",
         ),
     ),
+    SynthDefEntry(
+        voice_name="morph",
+        synthdef_name="morph_voice",
+        synthesis_method="subtractive",
+        timbral_tags=("hybrid", "blend", "morphing"),
+        safe_roles=("melody", "color"),
+        register=RegisterRange(65.4, 1046.5),        # C2–C6
+        macro_controls=_macros(
+            MacroControl("morph_x", 0.0, 0.0, 1.0),
+            MacroControl("morph_curve", 1.0, 0.0, 1.0),
+            MacroControl("pulse_width", 0.5, 0.05, 0.95),
+        ),
+        spectral=SpectralProfile(
+            fundamental_weight=0.50,
+            harmonic_rolloff_db=-3.0,
+            noise_floor=0.05,
+            bandwidth="medium",
+        ),
+    ),
 
     # -- Additive -------------------------------------------------------------
     SynthDefEntry(

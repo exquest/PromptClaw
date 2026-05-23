@@ -51,7 +51,7 @@ class TestRegistryCompleteness:
         assert {"bowed", "tabla_tin", "tabla_ge"} <= names
 
     def test_total_entry_count(self) -> None:
-        assert len(SYNTHDEF_REGISTRY) == 12
+        assert len(SYNTHDEF_REGISTRY) == 13
 
 
 # === Entry fields ===
@@ -88,7 +88,13 @@ class TestEntryFields:
             assert sp.bandwidth in ("narrow", "medium", "wide")
 
     def test_synthdef_name_follows_sw_prefix(self) -> None:
+        # `morph` is the §11 single-line timbre-morph voice; its SynthDef
+        # ships as `\morph_voice` per the v2 spec rather than the `sw_`
+        # prefix used by the original senseweave palette.
+        non_sw_voices = {"morph"}
         for entry in SYNTHDEF_REGISTRY.values():
+            if entry.voice_name in non_sw_voices:
+                continue
             assert entry.synthdef_name.startswith("sw_"), (
                 f"{entry.voice_name}: {entry.synthdef_name}"
             )
@@ -221,6 +227,29 @@ class TestLookups:
             entries = entries_by_method(method)
             for e in entries:
                 assert e.synthesis_method == method
+
+
+# === Morph voice (T-047c) ===
+
+
+class TestMorphVoice:
+    def test_morph_voice_is_registered(self) -> None:
+        entry = get_entry("morph")
+        assert entry.synthdef_name == "morph_voice"
+
+    def test_morph_voice_exposes_morph_x_control(self) -> None:
+        entry = get_entry("morph")
+        controls = {c.name: c for c in entry.macro_controls}
+        assert "morph_x" in controls, "morph_x must be a controllable parameter"
+        morph_x = controls["morph_x"]
+        assert morph_x.default == 0.0
+        assert morph_x.min_val == 0.0
+        assert morph_x.max_val == 1.0
+
+    def test_morph_voice_is_live_not_quarantined(self) -> None:
+        entry = get_entry("morph")
+        assert not entry.quarantined
+        assert resolve_voice("morph") is entry
 
 
 # === Palette consistency with sound_palette_lab ===

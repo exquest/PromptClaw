@@ -132,7 +132,8 @@ def test_build_synthdef_registry_report_resolves_full_registry() -> None:
     # Every canonical method appears in counts (today none are zero, but the key must be present)
     assert set(report.method_counts.keys()) == set(report.methods)
     assert tuple(report.method_counts.keys()) == report.methods
-    assert report.method_counts["subtractive"] == 2
+    # Subtractive: pluck, breath, morph (T-047c §11 timbre-morph voice)
+    assert report.method_counts["subtractive"] == 3
     assert report.method_counts["additive"] == 1
     assert report.method_counts["fm"] == 3
     assert report.method_counts["wavetable"] == 2
@@ -140,7 +141,7 @@ def test_build_synthdef_registry_report_resolves_full_registry() -> None:
     assert report.method_counts["granular"] == 1
 
     assert tuple(report.live_method_counts.keys()) == report.methods
-    assert report.live_method_counts["subtractive"] == 2
+    assert report.live_method_counts["subtractive"] == 3
     assert report.live_method_counts["additive"] == 1
     # FM: kotekan live, gong + bell quarantined → 1 live
     assert report.live_method_counts["fm"] == 1
