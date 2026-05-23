@@ -14,10 +14,7 @@ import time
 from pathlib import Path
 from types import SimpleNamespace
 
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
-
-import midi_intake_daemon as mod
+from cypherclaw import midi_intake_daemon as mod
 
 
 def test_scan_once_returns_empty_when_directory_missing(tmp_path: Path) -> None:
