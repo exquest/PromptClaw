@@ -16,16 +16,26 @@ from .curves import (
     morph_curve_position,
     normalize_morph_interpolation_curve,
 )
+from .parameter_walk import (
+    ParameterWalkFrame,
+    ParameterWalkSpec,
+    generate_parameter_walk,
+    parameter_walk_depth_band,
+)
 
 __all__ = [
     "MorphInterpolationCurve",
     "MorphParameterFrame",
+    "ParameterWalkFrame",
+    "ParameterWalkSpec",
     "SectionCrossfade",
     "SectionTiming",
     "build_morph_parameter_frames",
+    "generate_parameter_walk",
     "interpolate_scalar",
     "interpolate_voice_parameters",
     "morph_curve_position",
     "normalize_morph_interpolation_curve",
+    "parameter_walk_depth_band",
     "schedule_section_crossfades",
 ]
