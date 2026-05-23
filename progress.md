@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~10h 43m remaining (52 tasks, low confidence, calibrating)
-Expected completion: 5:38 PM today.
-Progress: [██████████████████████████████████░░░░] 90%  494 / 546 tasks complete
-  completed: 494, pending: 43, needs_split: 7, blocked: 0, needs_attn: 2, skipped: 46
+ETC: ~13h 54m remaining (52 tasks, low confidence, calibrating)
+Expected completion: 10:04 PM today.
+Progress: [██████████████████████████████████░░░░] 91%  497 / 549 tasks complete
+  completed: 497, pending: 43, needs_split: 7, blocked: 0, needs_attn: 2, skipped: 47
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -545,10 +545,14 @@ Progress: [███████████████████████
 - **T-038**: complete — Completed with verdict PASS.
 - **T-039**: complete — Completed with verdict PASS.
 - **T-040**: complete — Completed with verdict PASS.
-- **T-041**: pending — Pending.
-- **T-042**: pending — Pending.
-- **T-043**: complete — Tuned seven algorithmic per-voice reverb profiles, documented each in `synthesis/spaces/`, and wired faithful render metadata to the shared profiles.
-- **T-044**: pending — Pending.
+- **T-041**: complete — Completed with verdict PASS.
+- **T-042**: complete — Completed with verdict PASS.
+- **T-043**: complete — Completed with verdict PASS.
+- **T-044**: split — Split into subtasks.
+- **T-044a**: pending — Pending.
+- **T-044b**: pending — Pending.
+- **T-044c**: pending — Pending.
+- **T-044d**: pending — Pending.
 - **T-045**: split — Split into subtasks.
 - **T-045a**: pending — Pending.
 - **T-045b**: pending — Pending.

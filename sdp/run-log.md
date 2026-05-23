@@ -520,3 +520,7 @@
 | run-t-038-1779542479 | T-038 | claude | gemini | PASS | 443.5s | — |
 | run-t-039-1779542947 | T-039 | codex | claude | PASS | 1136.7s | — |
 | run-t-040-1779544109 | T-040 | claude | gemini | PASS | 399.5s | — |
+| run-t-041-1779544546 | T-041 | claude | gemini | PASS | 970.4s | — |
+| run-t-042-1779545543 | T-042 | claude | gemini | PASS | 381.6s | — |
+| run-t-043-1779545948 | T-043 | codex | claude | PASS | 936.5s | — |
+| run-t-044-1779546911 | T-044 | claude | gemini | FAIL | 2064.2s | — |

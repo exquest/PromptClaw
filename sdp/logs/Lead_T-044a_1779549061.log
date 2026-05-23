@@ -1,0 +1,7 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1239 chars)
+---
+
+T-044a's described work (replacing hardcoded `Out.ar` bus targets with `fx_bus_id`) was already shipped under T-044 in commit `aa215bd`. Every voice synthdef in `my-claw/tools/senseweave/synthesis/voices/sw_*.scd` already declares an `fx_bus_id` control defaulting to the matching `VoiceReverbProfile` bus and emits `Out.ar(fx_bus_id, ...)`; no literal bus numbers remain.
+
+Recorded the no-op rationale in `ESCALATIONS.md` and committed as `4150cdf`. Contract tests (`test_voice_synthdefs_declare_fx_bus_id_routing_contract`, `test_voice_synthdef_fx_bus_ids_are_pairwise_unique`, `test_each_voice_routes_only_to_its_assigned_fx_bus`), ruff, and mypy all pass.

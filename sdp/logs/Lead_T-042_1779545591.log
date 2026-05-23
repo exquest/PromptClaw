@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1287 chars)
+---
+
+T-042 shipped in `e376bd5`.
+
+**Change**: `master_smooth.scd` now declares seven named control inputs (`fx_bus_gong`, `fx_bus_pluck`, `fx_bus_bowed`, `fx_bus_bell`, `fx_bus_kotekan`, `fx_bus_choir`, `fx_bus_breath`) defaulting to stereo bus pairs 18..30 (following the sampler convention at 16/17). Each is read with `In.ar(<bus>, 2)`, summed into `fxSum`, and merged with `samplerStage` to form `compIn` — so all seven FX returns are routed *before* the `Compander.ar` master glue.
+
+**Test**: `tests/test_master_smooth_scd.py::test_master_smooth_scd_provisions_seven_voice_fx_buses` pins the seven control declarations, asserts unique bus indices, requires each `In.ar(fx_bus_<voice>, ...)` read, and verifies every FX bus name appears in the text *before* the `Compander.ar` invocation.
+
+**Validation**: `pytest tests/test_master_smooth_scd.py` (4 passed), `pytest tests/test_master_bus.py` (6 passed), scoped run `-k "master or fx_bus or voice_manager"` (86 passed), `ruff check tests/test_master_smooth_scd.py` clean, `mypy tests/test_master_smooth_scd.py` clean. Pre-existing SDP workspace files untouched per task rules.

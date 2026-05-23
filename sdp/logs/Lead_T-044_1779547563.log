@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1307 chars)
+---
+
+T-044 committed as `01c4cd8`. Summary:
+
+- Added `build_voice_s_new_args()` to `src/cypherclaw/space_reverb.py:213` — builds the `/s_new` OSC arg list for a voice with its profile's `fx_bus_id` routed in.
+- Added two regression tests to `tests/test_space_reverb_profiles.py:197`:
+  - `test_each_voice_routes_only_to_its_assigned_fx_bus` — confirms each of the seven voices reaches only its assigned FX return bus (16–22), no sharing.
+  - `test_voice_routing_args_default_to_profile_pluck_for_unknown_voice` — unknown voice falls back to pluck/bus 16.
+- Validation: `pytest tests/ -x` → 5080 passed, 11 skipped; ruff clean; mypy clean.
