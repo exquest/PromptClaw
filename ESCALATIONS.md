@@ -2277,3 +2277,32 @@ reasoning effor...
 
 - **Reason:** T-016 red/green verification record
 - **Details:** Red phase was captured with missing `cypherclaw.composer_vocabulary_bridge` and the existing `compose_score_tree(...)` signature rejecting `vocabulary_db_path`. Green verification passed the locked vocabulary bridge tests, score-tree citation test, tracker compiler citation test, and startup identity hardening anchors. Final validation passed with `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`: `4951 passed, 11 skipped`, Ruff clean, and mypy clean. No new dependencies or migrations were added.
+
+## T-054a (2026-05-23)
+
+- **Reason:** Live MIDI Durable Object scope, assumptions, and hardening anchors
+- **Details:** Exploration found the affected Worker surface is the sibling
+  `/Users/anthony/Programming/catalog-explorer/worker` project:
+  `worker/src/index.ts`, `worker/wrangler.toml`, `worker/README.md`, and
+  `worker/tests/*.test.js`. T-054a assumes the task owns connection plumbing
+  only: `/api/cypherclaw/live-midi` WebSocket upgrade forwarding,
+  `LiveMidiRoom` WebSocket accept/close/error tracking, and the
+  `LIVE_MIDI_ROOM` Durable Object binding. MIDI event ingestion,
+  `/api/cypherclaw/midi-event`, and fan-out remain later T-054 subtasks. The
+  Wrangler Durable Object migration uses `new_sqlite_classes =
+  ["LiveMidiRoom"]`; no D1 database migration, database column, R2 layout
+  change, provider secret, runtime state directory, npm package, startup-flow
+  change, or SuperCollider source change is required. Mandatory hardening for
+  the recurring `fx_bus_id`/`sw_sampler` routing failures remains an explicit
+  verification anchor rather than broadening this Worker-only task into
+  synthesis changes.
+- **Reason:** T-054a red phase and focused green verification
+- **Details:** Red phase was confirmed with `npm test --
+  tests/cypherclaw-live-midi.test.js` failing on the missing live-midi route and
+  missing exported `LiveMidiRoom` before production code changed. After
+  implementation, the same command passed with `34 passed`, and `npm run check`
+  passed for the Worker TypeScript project. The full Worker suite passed with
+  `34 passed`, the mandatory `fx_bus_id` / `sw_sampler` hardening command
+  passed with `3 passed`, and the required validation command
+  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
+  mypy src/` passed with `5211 passed, 11 skipped`, Ruff clean, and mypy clean.

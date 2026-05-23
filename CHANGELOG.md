@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Added T-054a live MIDI WebSocket room plumbing to the holdenu Cloudflare
+  Worker: `/api/cypherclaw/live-midi` now rejects non-WebSocket GETs with
+  `426`, forwards valid upgrades to `LIVE_MIDI_ROOM` via
+  `idFromName("global")`, and the new exported `LiveMidiRoom` Durable Object
+  accepts sockets, tracks them in an in-memory client set, and removes clients
+  on `close` or `error`. Wrangler now declares the `LIVE_MIDI_ROOM` binding and
+  `new_sqlite_classes = ["LiveMidiRoom"]` migration. No fan-out logic, No new
+  dependencies, No D1 database migration, provider secrets, runtime state
+  directories, startup-flow changes, or SuperCollider source changes were
+  added; existing `fx_bus_id` and `sw_sampler` routing hardening remains a
+  verification anchor. Final validation passed with `5211 passed, 11 skipped`,
+  Ruff clean, and mypy clean.
+
 - Added T-048d morph phrase test hardening: composer API tests now cover schema
   validation for generation-only fields, every curve type in both layers
   (`phrase_curve` `linear`/`exponential`/`sigmoid` and `morph_curve_type`
