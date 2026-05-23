@@ -18,9 +18,32 @@ server side; tests pin the two in lockstep.
 from __future__ import annotations
 
 import math
+import os
 from collections import deque
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
+
+
+# Per PRD §7.5.2 / CC-074: the entire cross-voice coupling feature is
+# gated by ``CYPHERCLAW_V2_COUPLING``, default OFF. When OFF the writer
+# emits no OSC traffic — the bus stays at its initial value and no voice
+# experiences coupling. Operators flip the flag to "1" (or any of the
+# accepted truthy spellings) to activate the feature.
+CYPHERCLAW_V2_COUPLING_ENV = "CYPHERCLAW_V2_COUPLING"
+_COUPLING_TRUE_VALUES = frozenset({"1", "true", "yes", "on", "enabled"})
+
+
+def coupling_enabled(env: Mapping[str, str] | None = None) -> bool:
+    """Return True iff ``CYPHERCLAW_V2_COUPLING`` is set to a truthy value.
+
+    Default OFF: an unset, empty, or non-truthy value resolves to False.
+    """
+    source = os.environ if env is None else env
+    raw = source.get(CYPHERCLAW_V2_COUPLING_ENV)
+    if raw is None:
+        return False
+    return raw.strip().lower() in _COUPLING_TRUE_VALUES
 
 
 AFFECTIVE_STATE_BUS_INDEX = 100
@@ -133,6 +156,7 @@ class AffectiveStateBusWriter:
         self,
         window_seconds: float = AFFECTIVE_STATE_BUS_WINDOW_SECONDS,
         decay_tau_seconds: float = AFFECTIVE_STATE_BUS_DECAY_SECONDS,
+        enabled: bool | None = None,
     ) -> None:
         if window_seconds <= 0:
             raise ValueError("window_seconds must be positive")
@@ -140,12 +164,23 @@ class AffectiveStateBusWriter:
             raise ValueError("decay_tau_seconds must be positive")
         self.window_seconds = float(window_seconds)
         self.decay_tau_seconds = float(decay_tau_seconds)
+        # ``enabled=None`` resolves from CYPHERCLAW_V2_COUPLING (CC-074),
+        # which defaults OFF so the writer is a no-op until operators
+        # explicitly activate the coupling feature.
+        self.enabled = bool(coupling_enabled()) if enabled is None else bool(enabled)
         self._voices: dict[str, _VoiceWindow] = {}
         self._last_bus_value: float = 0.0
         self._last_bus_time: float | None = None
 
     def update(self, voice_id: str, intensity: float, *, now: float) -> float:
-        """Record ``intensity`` (clamped to [0,1]) for ``voice_id`` at ``now``."""
+        """Record ``intensity`` (clamped to [0,1]) for ``voice_id`` at ``now``.
+
+        No-op when the writer is disabled (coupling flag OFF): the sample
+        is dropped so OFF-mode windows never accumulate state that could
+        leak through if the writer were later flipped on mid-run.
+        """
+        if not self.enabled:
+            return _clamp_affect(intensity)
         window = self._voices.setdefault(voice_id, _VoiceWindow())
         clamped = _clamp_affect(intensity)
         window.add(clamped, now)
@@ -164,7 +199,11 @@ class AffectiveStateBusWriter:
 
         Provided so callers can start a decay test (or boot the runtime)
         from a known bus value without having to fake contributor history.
+        No-op when the writer is disabled: returns the clamped value but
+        sends nothing on the wire.
         """
+        if not self.enabled:
+            return _clamp_affect(value)
         seeded = seed_affective_state_bus(client, value)
         self._last_bus_value = seeded
         self._last_bus_time = float(now)
@@ -183,7 +222,12 @@ class AffectiveStateBusWriter:
         :attr:`decay_tau_seconds`) computed from the last bus value and
         the elapsed time. This is the slow-decay-toward-0 behavior
         required by PRD §7.5.2.
+
+        No-op when the writer is disabled (CC-074): returns 0.0 without
+        sending any OSC traffic.
         """
+        if not self.enabled:
+            return 0.0
         active: list[tuple[str, float]] = []
         for voice_id, window in self._voices.items():
             window.prune(now, self.window_seconds)

@@ -18,9 +18,11 @@ from senseweave.affective_state_bus import (
     AFFECTIVE_STATE_BUS_MAX,
     AFFECTIVE_STATE_BUS_MIN,
     AFFECTIVE_STATE_BUS_WINDOW_SECONDS,
+    CYPHERCLAW_V2_COUPLING_ENV,
     AffectiveStateBusWriter,
     affective_state_bus_c_set_args,
     affective_state_bus_decay,
+    coupling_enabled,
     seed_affective_state_bus,
     voice_expression_intensity,
 )
@@ -143,7 +145,7 @@ def test_voice_expression_intensity_weighted_sum_clamped_to_unit_range() -> None
 
 
 def test_writer_flush_emits_one_c_set_per_active_voice_within_unit_range() -> None:
-    writer = AffectiveStateBusWriter()
+    writer = AffectiveStateBusWriter(enabled=True)
     osc = _RecordingOSC()
 
     writer.update("violin", 0.4, now=0.0)
@@ -167,7 +169,7 @@ def test_writer_flush_emits_one_c_set_per_active_voice_within_unit_range() -> No
 
 
 def test_writer_prunes_samples_older_than_rolling_window() -> None:
-    writer = AffectiveStateBusWriter()
+    writer = AffectiveStateBusWriter(enabled=True)
     osc = _RecordingOSC()
 
     # Old samples that should fall off a 2-second window at now=10.0.
@@ -183,7 +185,7 @@ def test_writer_prunes_samples_older_than_rolling_window() -> None:
 
 
 def test_writer_drops_voices_whose_window_empties_after_pruning() -> None:
-    writer = AffectiveStateBusWriter()
+    writer = AffectiveStateBusWriter(enabled=True)
     osc = _RecordingOSC()
 
     writer.update("violin", 0.7, now=0.0)
@@ -198,7 +200,7 @@ def test_writer_drops_voices_whose_window_empties_after_pruning() -> None:
 
 
 def test_writer_clamps_per_sample_inputs_so_bus_writes_stay_in_unit_range() -> None:
-    writer = AffectiveStateBusWriter()
+    writer = AffectiveStateBusWriter(enabled=True)
     osc = _RecordingOSC()
 
     writer.update("violin", 1.5, now=0.0)
@@ -211,7 +213,7 @@ def test_writer_clamps_per_sample_inputs_so_bus_writes_stay_in_unit_range() -> N
 
 
 def test_writer_with_no_contributors_emits_no_writes() -> None:
-    writer = AffectiveStateBusWriter()
+    writer = AffectiveStateBusWriter(enabled=True)
     osc = _RecordingOSC()
 
     max_pooled = writer.flush(osc, now=10.0)
@@ -276,7 +278,7 @@ def test_decay_rejects_non_positive_tau() -> None:
 
 
 def test_writer_seed_records_value_and_emits_c_set() -> None:
-    writer = AffectiveStateBusWriter()
+    writer = AffectiveStateBusWriter(enabled=True)
     osc = _RecordingOSC()
 
     seeded = writer.seed(osc, 0.9, now=0.0)
@@ -286,7 +288,7 @@ def test_writer_seed_records_value_and_emits_c_set() -> None:
 
 
 def test_writer_seeded_bus_decays_toward_zero_with_five_second_time_constant() -> None:
-    writer = AffectiveStateBusWriter()
+    writer = AffectiveStateBusWriter(enabled=True)
     osc = _RecordingOSC()
 
     writer.seed(osc, 1.0, now=0.0)
@@ -321,7 +323,7 @@ def test_writer_decay_is_path_independent_across_multiple_flushes() -> None:
 
 
 def test_writer_decay_resets_when_a_contributor_re_engages() -> None:
-    writer = AffectiveStateBusWriter()
+    writer = AffectiveStateBusWriter(enabled=True)
     osc = _RecordingOSC()
 
     writer.seed(osc, 1.0, now=0.0)
@@ -358,3 +360,94 @@ def test_affective_state_bus_scd_declares_decay_time_constant() -> None:
         "stub must declare the slow-decay SynthDef so the bus drifts to 0 "
         "when no voice is writing"
     )
+
+
+# --- T-005 / CC-074: CYPHERCLAW_V2_COUPLING env flag, default OFF ----------
+
+
+def test_coupling_env_var_name_matches_prd_contract() -> None:
+    # CC-074 / PRD §15: the flag is named exactly CYPHERCLAW_V2_COUPLING.
+    assert CYPHERCLAW_V2_COUPLING_ENV == "CYPHERCLAW_V2_COUPLING"
+
+
+def test_coupling_defaults_off_when_env_unset() -> None:
+    assert coupling_enabled(env={}) is False
+
+
+def test_coupling_defaults_off_when_env_is_empty_string() -> None:
+    assert coupling_enabled(env={CYPHERCLAW_V2_COUPLING_ENV: ""}) is False
+
+
+def test_coupling_enabled_for_truthy_values() -> None:
+    for value in ("1", "true", "TRUE", "Yes", "on", " enabled "):
+        assert coupling_enabled(env={CYPHERCLAW_V2_COUPLING_ENV: value}) is True, value
+
+
+def test_coupling_disabled_for_falsy_or_garbage_values() -> None:
+    for value in ("0", "false", "no", "off", "disabled", "maybe", "2"):
+        assert coupling_enabled(env={CYPHERCLAW_V2_COUPLING_ENV: value}) is False, value
+
+
+def test_writer_defaults_to_env_flag_state(monkeypatch) -> None:
+    monkeypatch.delenv(CYPHERCLAW_V2_COUPLING_ENV, raising=False)
+    assert AffectiveStateBusWriter().enabled is False
+
+    monkeypatch.setenv(CYPHERCLAW_V2_COUPLING_ENV, "1")
+    assert AffectiveStateBusWriter().enabled is True
+
+    monkeypatch.setenv(CYPHERCLAW_V2_COUPLING_ENV, "0")
+    assert AffectiveStateBusWriter().enabled is False
+
+
+def test_writer_explicit_enabled_overrides_env(monkeypatch) -> None:
+    monkeypatch.setenv(CYPHERCLAW_V2_COUPLING_ENV, "1")
+    assert AffectiveStateBusWriter(enabled=False).enabled is False
+
+    monkeypatch.delenv(CYPHERCLAW_V2_COUPLING_ENV, raising=False)
+    assert AffectiveStateBusWriter(enabled=True).enabled is True
+
+
+def test_disabled_writer_emits_no_osc_traffic_on_update_seed_or_flush() -> None:
+    writer = AffectiveStateBusWriter(enabled=False)
+    osc = _RecordingOSC()
+
+    writer.update("violin", 0.8, now=0.0)
+    writer.seed(osc, 0.9, now=0.0)
+    bus = writer.flush(osc, now=1.0)
+
+    assert osc.messages == []
+    assert bus == 0.0
+
+
+def test_disabled_writer_drops_samples_so_re_enable_does_not_leak_history() -> None:
+    # Buffering samples while OFF and then flushing as ON would cause a
+    # surprise burst when an operator flips the flag. The contract is that
+    # OFF means the feature is dormant — no hidden state accumulates.
+    writer = AffectiveStateBusWriter(enabled=False)
+    osc = _RecordingOSC()
+
+    for t in range(5):
+        writer.update("violin", 0.9, now=float(t))
+
+    writer.enabled = True
+    bus = writer.flush(osc, now=5.0)
+
+    assert osc.messages == []
+    assert bus == 0.0
+
+
+def test_default_module_behavior_with_no_env_matches_off_state(monkeypatch) -> None:
+    # CC-074 acceptance: "default behavior matches OFF state" — i.e. with
+    # no env var set, constructing a writer and driving it through a
+    # normal tick must produce zero OSC writes.
+    monkeypatch.delenv(CYPHERCLAW_V2_COUPLING_ENV, raising=False)
+    writer = AffectiveStateBusWriter()
+    osc = _RecordingOSC()
+
+    writer.seed(osc, 0.7, now=0.0)
+    writer.update("violin", 0.6, now=0.5)
+    writer.update("cello", 0.4, now=0.5)
+    bus = writer.flush(osc, now=1.0)
+
+    assert osc.messages == []
+    assert bus == 0.0
