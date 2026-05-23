@@ -22,15 +22,12 @@ from senseweave.affective_state_bus import (
     voice_expression_intensity,
 )
 from senseweave.synthesis.senseweave_voice import (
-    SenseweaveVoice,
     coupling_multiplier_from_bus_value,
 )
 from test_two_voice_coupling_fixture import (
     VOICE_A_ID,
-    VOICE_A_VIBRATO_DEPTH,
-    VOICE_B_VIBRATO_DEPTH,
     TwoVoiceCouplingFixture,
-    two_voice_coupling_fixture,
+    two_voice_coupling_fixture,  # noqa: F401  # pytest fixture
 )
 
 
@@ -62,7 +59,7 @@ class _SuperColliderDouble:
 class TestTwoVoiceCouplingDrive:
     def test_coupling_propagation_from_voice_a_to_voice_b(
         self,
-        two_voice_coupling_fixture: TwoVoiceCouplingFixture,
+        two_voice_coupling_fixture: TwoVoiceCouplingFixture,  # noqa: F811
     ) -> None:
         """Verify Voice A's intensity propagates and scales Voice B's depth."""
         fixture = two_voice_coupling_fixture
@@ -127,7 +124,7 @@ class TestTwoVoiceCouplingDrive:
 
     def test_drive_coupling_over_multiple_ticks_propagates_to_voice_b(
         self,
-        two_voice_coupling_fixture: TwoVoiceCouplingFixture,
+        two_voice_coupling_fixture: TwoVoiceCouplingFixture,  # noqa: F811
     ) -> None:
         """Advance the render loop enough ticks for coupling to propagate.
 
@@ -177,7 +174,7 @@ class TestTwoVoiceCouplingDrive:
 
     def test_coupling_decay_over_time(
         self,
-        two_voice_coupling_fixture: TwoVoiceCouplingFixture,
+        two_voice_coupling_fixture: TwoVoiceCouplingFixture,  # noqa: F811
     ) -> None:
         """Verify that coupling strength decays when Voice A stops contributing."""
         fixture = two_voice_coupling_fixture
