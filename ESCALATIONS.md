@@ -1,5 +1,40 @@
 # Escalations
 
+## T-028c (2026-05-23)
+
+- **Reason:** Cross-repository Worker location and minimal SSE-feed scope
+- **Details:** PromptClaw remains the ADP source of truth, but the
+  `cypherclaw.holdenu.com` live page is implemented in the sibling
+  `/Users/anthony/Programming/catalog-explorer/worker` Cloudflare Worker. T-028c
+  therefore keeps the spec, progress, changelog, and startup-hardening anchors
+  in PromptClaw while changing Worker HTML/CSS/JS and a public Worker GET route
+  in `catalog-explorer`.
+- **Scope decision:** The PRD describes `/api/cypherclaw/live-features` as a
+  durable-object-backed fanout fed by periodic cypherclaw feature updates. That
+  full producer/fanout service is not present in this checkout and remains a
+  later backend slice. T-028c adds a minimal SSE-compatible GET response with an
+  initial feature payload so the page's EventSource connects to a real
+  `text/event-stream` endpoint instead of a 404, while implementing the active
+  browser-side canvas visualizer draw loop and SSE client. No new npm packages,
+  provider secrets, database migrations, database columns, runtime state
+  directories, or startup-flow rewiring are required.
+- **Startup hardening:** The generated startup identity bullets target existing
+  startup paths; current CLI, first-boot, daemon ordering, and narrative ASGI
+  tests cover `bootstrap_identity()` persistence and bootstrap-before-
+  `FirstBootAnnouncer` ordering, so T-028c will re-run those anchors rather
+  than broadening this Worker visualizer task into identity subsystem changes.
+- **Reason:** Red phase and verification results
+- **Details:** Red phase was confirmed with
+  `npm test -- tests/cypherclaw-landing.test.js` in
+  `/Users/anthony/Programming/catalog-explorer/worker` failing the three new
+  T-028c assertions because the T-028b page lacked `initCypherClawVisualizer()`,
+  EventSource wiring, and a real `/api/cypherclaw/live-features` SSE response.
+  After implementation, focused Worker landing tests passed with `18 passed`,
+  full Worker `npm test` passed with `18 passed`, Worker `npm run check` passed,
+  mandatory startup identity hardening anchors passed with `11 passed`, and
+  full PromptClaw validation passed with `4997 passed, 11 skipped`, Ruff clean,
+  and mypy clean.
+
 ## T-028b (2026-05-23)
 
 - **Reason:** Cross-repository Worker location, hls.js runtime dependency, and

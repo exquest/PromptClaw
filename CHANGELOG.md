@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Added the T-028c active CypherClaw canvas visualizer in the holdenu Worker:
+  `#cypherclaw-visualizer` now carries diagnostic feed/draw state attributes,
+  initializes a 2D canvas context, keeps its backing store aligned with the
+  rendered size and `devicePixelRatio`, and runs a `requestAnimationFrame` draw
+  loop that maps incoming `rms`, `pitch_hz`, and `centroid_hz` feature values
+  into simple foreground graphics. The page now opens an `EventSource` against
+  `/api/cypherclaw/live-features`, parses default and named `features` SSE JSON
+  events, and keeps the last payload on `window.cypherclawLiveFeatures` without
+  adding listener telemetry or analytics. Added a minimal public
+  `GET /api/cypherclaw/live-features` SSE bootstrap response so the client
+  connects to `text/event-stream` instead of a 404 while durable fanout remains
+  a later backend slice. Validation passed with Worker `npm test` (`18 passed`),
+  Worker `npm run check`, startup identity anchors (`11 passed`), and full
+  PromptClaw validation (`4997 passed, 11 skipped`, Ruff clean, mypy clean).
+
 - Added the T-028b rendered CypherClaw live-page layer in the holdenu Worker:
   `#glyphweave-backdrop` now contains three slow-moving decorative
   CSS/image-backed GlyphWeave layers with stable `data-glyphweave-layer` hooks

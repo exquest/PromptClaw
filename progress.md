@@ -531,7 +531,7 @@ Progress: [███████████████████████
 - **T-028**: split — Split into subtasks.
 - **T-028a**: pending — Pending.
 - **T-028b**: pending — Pending.
-- **T-028c**: pending — Pending.
+- **T-028c**: complete — Completed with verdict PASS.
 - **T-028d**: pending — Pending.
 - **T-029**: pending — Pending.
 - **T-030**: pending — Pending.
@@ -645,3 +645,46 @@ Progress: [███████████████████████
   `npm run check` passed; mandatory startup identity anchors passed with
   `11 passed`; full PromptClaw validation passed with `4997 passed, 11 skipped`,
   Ruff clean, and mypy clean.
+
+## ADP Notes: T-028c
+
+- **Phase 0 Explore (2026-05-23):** Read AGENTS.md, the CypherClaw v2
+  requirements register, implementation plan, PRD snapshot Feature 3, CC-024
+  acceptance criteria, T-028a/T-028b specs, CHANGELOG, ESCALATIONS, the sibling
+  `/Users/anthony/Programming/catalog-explorer/worker/src/index.ts` root route,
+  Worker landing tests, playlist tests, segment tests, README, and wrangler
+  route config. Exploration found the active UI surface remains the
+  host-gated holdenu Worker route for `cypherclaw.holdenu.com`; T-028a shipped
+  the stream scaffold and T-028b shipped the GlyphWeave-style backdrop plus
+  HLS playback wiring. The canvas still has only a static background and the
+  `data-live-features-url="/api/cypherclaw/live-features"` hook. No current
+  Worker route serves that live-features path. T-028c therefore owns the
+  browser-side canvas draw loop, an SSE client connected to that hook, and a
+  minimal SSE-compatible feed response so the client does not connect to a 404.
+  Durable-object fanout, producer POST ingestion, archive feed rendering, MIDI
+  WebSocket composition, and HLS segment-container repair remain outside this
+  slice. Existing startup identity hardening anchors already cover
+  `bootstrap_identity()` persistence and bootstrap-before-`FirstBootAnnouncer`
+  ordering and will be re-run as mandatory regression checks.
+- **Phase 1 Specify (2026-05-23):** Wrote `specs/t-028c-spec.md` with the
+  problem statement, technical approach, edge cases, and VERIFY commands for the
+  canvas draw loop, SSE client, minimal `live-features` SSE response, Worker
+  checks, startup hardening anchors, bookkeeping, and full PromptClaw validation.
+- **Phase 2 Test Development (2026-05-23):** Added locked Worker assertions for
+  `initCypherClawVisualizer()`, `requestAnimationFrame(drawVisualizerFrame)`,
+  device-pixel-ratio canvas sizing, `EventSource` wiring against
+  `data-live-features-url`, JSON feature parsing, feed diagnostics, and
+  `GET /api/cypherclaw/live-features` SSE headers/payload. Red phase was
+  confirmed with `npm test -- tests/cypherclaw-landing.test.js` failing the
+  three new T-028c assertions against the T-028b page.
+- **Phase 3 Implement (2026-05-23):** Updated the holdenu Worker root HTML with
+  canvas feed/draw diagnostic attributes, a browser-side visualizer state
+  object, 2D canvas sizing, ambient/live feature drawing, SSE message handling,
+  EventSource lifecycle management, and a minimal public
+  `/api/cypherclaw/live-features` `text/event-stream` bootstrap response.
+- **Phase 4 Verify (2026-05-23):** Focused Worker landing tests passed with
+  `18 passed`; full Worker `npm test` passed with `18 passed`; Worker
+  `npm run check` passed; mandatory startup identity anchors passed with
+  `11 passed`; `git diff --check` passed in both PromptClaw and
+  catalog-explorer; full PromptClaw validation passed with `4997 passed,
+  11 skipped`, Ruff clean, and mypy clean.
