@@ -10,6 +10,7 @@ app = FastAPI(title="PAL 2026 Router", version="1.0.0-phase1")
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "llama3.3:70b-instruct-q4_K_M")
+DEFAULT_NUM_CTX = int(os.getenv("DEFAULT_NUM_CTX", "8192"))
 
 
 class QueryRequest(BaseModel):
@@ -56,7 +57,10 @@ async def query(req: QueryRequest):
         "model": model,
         "prompt": req.prompt,
         "stream": req.stream,
-        "options": {"temperature": req.temperature},
+        "options": {
+            "temperature": req.temperature,
+            "num_ctx": DEFAULT_NUM_CTX,
+        },
     }
     if req.system:
         payload["system"] = req.system
