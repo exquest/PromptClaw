@@ -1,5 +1,37 @@
 # Escalations
 
+## T-044c (2026-05-23)
+
+- **Reason:** Task is a no-op against the current tree — the unit tests
+  it asks for already landed earlier in this session under commit
+  `07335db` ("test(synthesis): pin voice fx_bus_id routing against
+  cross-voice leakage [T-044c]").
+- **Details:** T-044c asks to "Add unit tests asserting voices emit on
+  their assigned fx bus and that mismatched bus IDs are rejected."
+  `tests/test_senseweave_voice.py::TestFxBusRouting` already contains
+  the two regression tests added by that commit:
+  `test_note_on_rejects_other_voices_fx_bus_ids` (each profiled timbre's
+  emitted `fx_bus_id` matches the voice's own profile bus and is not in
+  the set of foreign voice buses) and
+  `test_set_timbre_reroutes_to_the_new_voices_fx_bus_id` (swapping
+  timbre re-routes the next `/s_new` to the new voice's bus with no
+  stale bus id leakage). The commit body also records that mutating
+  `SenseweaveVoice.note_on` to bump the emitted bus by +1 causes both
+  new tests to fail, i.e. they are mutation-tested.
+- **Background:** The Verify agent for T-044c (gemini) hit a 600s wall-
+  clock timeout before writing `sdp/verification/t-044c-verify.md`,
+  which appears to have triggered the orchestrator to re-spawn Lead on
+  the same task. No code regression was implied — the timeout was in
+  the verifier itself, mid-investigation.
+- **Assumption:** No additional code, test, or doc changes are required
+  for T-044c. The contract is locked by the two tests above plus the
+  pre-existing positive `test_note_on_emits_fx_bus_id_from_voice_profile`
+  and negative `test_note_on_omits_fx_bus_id_when_no_voice_profile` in
+  the same class.
+- **Verification:** Re-ran `tests/test_senseweave_voice.py::TestFxBusRouting`
+  — 4 passed in 0.13s. No new lead-introduced changes to commit beyond
+  this escalations entry.
+
 ## T-044a (2026-05-23)
 
 - **Reason:** Task is a no-op against the current tree — the work it
