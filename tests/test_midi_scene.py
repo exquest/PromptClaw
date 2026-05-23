@@ -10,7 +10,13 @@ import pytest
 from cypherclaw import composer_vocabulary_bridge
 from cypherclaw import midi_intake_daemon as intake
 from cypherclaw.midi_loader import FaithfulMidiEvent
-from cypherclaw.midi_scene import FaithfulRenderSettings, build_faithful_midi_scene
+from cypherclaw.midi_scene import (
+    FaithfulRenderSettings,
+    REQUIRED_TUNING_METADATA_FIELDS,
+    SUPPORTED_MORPH_CURVES,
+    build_faithful_midi_scene,
+    validate_faithful_scene_metadata,
+)
 
 
 def _varlen(value: int) -> bytes:
@@ -403,3 +409,67 @@ def test_process_midi_file_faithful_manifest_includes_cypherclaw_render_settings
     assert step["render_space"]["space_id"] == "small_wooden_room"
     assert step["render_space"]["fx_bus_id"] == 16
     _assert_no_vocabulary_metadata(scene)
+
+
+def test_scene_metadata_carries_tuning_morph_fields_and_validates() -> None:
+    events = (FaithfulMidiEvent(pitch=60, duration=96, velocity=96),)
+    scene = build_faithful_midi_scene(
+        events,
+        render_settings=FaithfulRenderSettings(
+            arc_phase="Divination",
+            tuning_system_name="just_intonation_5_limit",
+            tuning_morph_target_name="gamelan_slendro",
+            tuning_morph_curve="ease-in",
+        ),
+    )
+    payload = scene.to_dict()
+    metadata = payload["metadata"]
+
+    for field_name in REQUIRED_TUNING_METADATA_FIELDS:
+        assert field_name in metadata, field_name
+    assert metadata["tuning_system_name"] == "just_intonation_5_limit"
+    assert metadata["tuning_morph_target_name"] == "gamelan_slendro"
+    assert metadata["tuning_morph_curve"] == "ease_in"
+
+    # Sample scene JSON serialization preserves all three fields.
+    reloaded = json.loads(json.dumps(payload))
+    for field_name in REQUIRED_TUNING_METADATA_FIELDS:
+        assert field_name in reloaded["metadata"]
+
+    validate_faithful_scene_metadata(reloaded["metadata"])
+
+
+def test_scene_metadata_defaults_to_empty_morph_target_and_linear_curve() -> None:
+    scene = build_faithful_midi_scene(
+        (FaithfulMidiEvent(pitch=60, duration=96, velocity=96),),
+    )
+    metadata = scene.to_dict()["metadata"]
+
+    assert metadata["tuning_morph_target_name"] == ""
+    assert metadata["tuning_morph_curve"] == "linear"
+    validate_faithful_scene_metadata(metadata)
+
+
+def test_validate_faithful_scene_metadata_rejects_missing_and_bad_curve() -> None:
+    base = {
+        "tuning_system_name": "twelve_tet",
+        "tuning_morph_target_name": "",
+        "tuning_morph_curve": "linear",
+    }
+    validate_faithful_scene_metadata(base)
+    for missing in REQUIRED_TUNING_METADATA_FIELDS:
+        broken = {k: v for k, v in base.items() if k != missing}
+        with pytest.raises(ValueError):
+            validate_faithful_scene_metadata(broken)
+    bad_curve = {**base, "tuning_morph_curve": "bouncy"}
+    with pytest.raises(ValueError):
+        validate_faithful_scene_metadata(bad_curve)
+
+
+def test_supported_morph_curves_match_prd() -> None:
+    assert set(SUPPORTED_MORPH_CURVES) == {
+        "linear",
+        "ease_in",
+        "ease_out",
+        "sigmoid",
+    }

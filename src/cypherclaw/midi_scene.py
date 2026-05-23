@@ -26,6 +26,25 @@ TUNING_12_TET = "twelve_tet"
 TUNING_JUST_5_LIMIT = "just_intonation_5_limit"
 TUNING_SLENDRO = "gamelan_slendro"
 
+# Allowed morph curve shapes for tuning-system morphs in scene metadata
+# (CC-045 in `prd-cypherclaw-v2-2026-05-22.md`).
+MORPH_CURVE_LINEAR = "linear"
+MORPH_CURVE_EASE_IN = "ease_in"
+MORPH_CURVE_EASE_OUT = "ease_out"
+MORPH_CURVE_SIGMOID = "sigmoid"
+SUPPORTED_MORPH_CURVES: tuple[str, ...] = (
+    MORPH_CURVE_LINEAR,
+    MORPH_CURVE_EASE_IN,
+    MORPH_CURVE_EASE_OUT,
+    MORPH_CURVE_SIGMOID,
+)
+
+REQUIRED_TUNING_METADATA_FIELDS: tuple[str, ...] = (
+    "tuning_system_name",
+    "tuning_morph_target_name",
+    "tuning_morph_curve",
+)
+
 _STILL_PHASES = frozenset({"listen", "divination"})
 _MOTION_PHASES = frozenset({"conversation", "procession"})
 
@@ -198,6 +217,8 @@ class FaithfulRenderSettings:
     voice_sequence: tuple[str, ...] = ("pluck",)
     space_mode: str = "matched"
     tuning_system_name: str | None = None
+    tuning_morph_target_name: str | None = None
+    tuning_morph_curve: str = MORPH_CURVE_LINEAR
 
 
 @dataclass(frozen=True)
@@ -330,6 +351,8 @@ def build_faithful_midi_scene(
     safe_rows_per_beat = max(1, int(rows_per_beat))
     settings = render_settings or FaithfulRenderSettings(voice_sequence=(voice,))
     tuning_system_name = _tuning_system_name(settings)
+    tuning_morph_target_name = _tuning_morph_target_name(settings)
+    tuning_morph_curve = _tuning_morph_curve(settings.tuning_morph_curve)
     tonal_center_midi = _safe_tonal_center_midi(settings.tonal_center_midi)
     tonal_center_hz = _safe_tonal_center_hz(settings.tonal_center_hz)
     voice_sequence = _normalized_voice_sequence(settings.voice_sequence, voice)
@@ -407,6 +430,8 @@ def build_faithful_midi_scene(
         "source_duration_ticks": str(total_duration_ticks),
         "arc_phase": str(settings.arc_phase),
         "tuning_system_name": tuning_system_name,
+        "tuning_morph_target_name": tuning_morph_target_name,
+        "tuning_morph_curve": tuning_morph_curve,
         "tuning_tonal_center_midi": str(tonal_center_midi),
         "tuning_tonal_center_hz": _format_float(tonal_center_hz),
         "voice_assignment_policy": "sequence",
@@ -485,6 +510,38 @@ def _tuning_system_name(settings: FaithfulRenderSettings) -> str:
     if settings.tuning_system_name is not None:
         return _normalize_tuning_system_name(settings.tuning_system_name)
     return tuning_system_name_for_phase(settings.arc_phase)
+
+
+def _tuning_morph_target_name(settings: FaithfulRenderSettings) -> str:
+    if settings.tuning_morph_target_name is None:
+        return ""
+    return _normalize_tuning_system_name(settings.tuning_morph_target_name)
+
+
+def _tuning_morph_curve(value: str) -> str:
+    key = str(value).strip().lower().replace("-", "_").replace(" ", "_")
+    if key in SUPPORTED_MORPH_CURVES:
+        return key
+    return MORPH_CURVE_LINEAR
+
+
+def validate_faithful_scene_metadata(metadata: Mapping[str, str]) -> None:
+    """Validate scene metadata declares the tuning, morph target, and curve.
+
+    Raises ``ValueError`` if any required field is missing, or if the
+    ``tuning_morph_curve`` value is not one of ``SUPPORTED_MORPH_CURVES``.
+    Empty ``tuning_morph_target_name`` is permitted (no morph configured).
+    """
+
+    for field_name in REQUIRED_TUNING_METADATA_FIELDS:
+        if field_name not in metadata:
+            raise ValueError(f"scene metadata missing required field: {field_name!r}")
+    curve = metadata["tuning_morph_curve"]
+    if curve not in SUPPORTED_MORPH_CURVES:
+        raise ValueError(
+            f"tuning_morph_curve must be one of {SUPPORTED_MORPH_CURVES!r}, "
+            f"got {curve!r}"
+        )
 
 
 def _normalize_tuning_system_name(value: str) -> str:
