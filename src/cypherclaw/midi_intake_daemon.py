@@ -26,6 +26,10 @@ try:
     from cypherclaw.midi_fragments import empty_midi_fragments, extract_midi_fragments
     from cypherclaw.midi_loader import load_faithful_midi_events
     from cypherclaw.midi_scene import build_faithful_midi_scene
+    from cypherclaw.midi_vocabulary_store import (
+        connect as connect_vocabulary_db,
+        ingest_extracted_fragments,
+    )
 except ImportError:
     from midi_fragments import (  # type: ignore[no-redef,import-not-found]
         empty_midi_fragments,
@@ -33,6 +37,10 @@ except ImportError:
     )
     from midi_loader import load_faithful_midi_events  # type: ignore[no-redef,import-not-found]
     from midi_scene import build_faithful_midi_scene  # type: ignore[no-redef,import-not-found]
+    from midi_vocabulary_store import (  # type: ignore[no-redef,import-not-found]
+        connect as connect_vocabulary_db,
+        ingest_extracted_fragments,
+    )
 
 try:
     from cypherclaw.first_boot import FirstBootAnnouncer, bootstrap_identity
@@ -264,6 +272,7 @@ def process_midi_file(
     processed_dir: Path | str | None = None,
     rejected_dir: Path | str | None = None,
     faithful_transmission: bool = False,
+    vocabulary_db_path: Path | str | None = None,
 ) -> dict[str, object]:
     """Validate ``path``, move it to ``processed/`` or ``rejected/``, emit event.
 
@@ -319,6 +328,32 @@ def process_midi_file(
         manifest_path.write_text(
             json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8"
         )
+        if vocabulary_db_path is not None and not faithful_transmission:
+            fragments_payload = metadata.get("fragments")
+            if isinstance(fragments_payload, dict):
+                try:
+                    conn = connect_vocabulary_db(vocabulary_db_path)
+                    try:
+                        rowids = ingest_extracted_fragments(
+                            conn,
+                            source_file=src.name,
+                            fragments=fragments_payload,
+                        )
+                    finally:
+                        conn.close()
+                    LOGGER.info(
+                        "midi_vocabulary_ingested path=%s db=%s rows=%d",
+                        destination,
+                        vocabulary_db_path,
+                        len(rowids),
+                    )
+                except Exception as exc:  # pragma: no cover - defensive
+                    LOGGER.warning(
+                        "midi_vocabulary_ingest_failed path=%s db=%s error=%s",
+                        destination,
+                        vocabulary_db_path,
+                        exc,
+                    )
 
     event: dict[str, object] = {
         "path": str(src),
@@ -529,6 +564,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "and bypass fragment extraction."
         ),
     )
+    parser.add_argument(
+        "--vocabulary-db",
+        type=Path,
+        default=None,
+        help=(
+            "Path to the SQLite vocabulary store; when set, extracted fragments "
+            "are ingested after each processed MIDI file."
+        ),
+    )
     return parser.parse_args(list(argv) if argv is not None else None)
 
 
@@ -556,7 +600,11 @@ def main(
     LOGGER.info("midi_intake_daemon_started watch_dir=%s", args.watch_dir)
 
     def dispatch_intake_file(path: Path) -> None:
-        process_midi_file(path, faithful_transmission=args.faithful_transmission)
+        process_midi_file(
+            path,
+            faithful_transmission=args.faithful_transmission,
+            vocabulary_db_path=args.vocabulary_db,
+        )
 
     watch_loop(
         args.watch_dir,
