@@ -5,6 +5,8 @@ import json
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
 
@@ -112,6 +114,67 @@ class TestMetricModulationTiming:
             0.5,
             0.6875,
             0.875,
+        ]
+
+    def test_applies_four_to_three_modulation_from_target_row(self):
+        score = _sample_score()
+        score.tempo_bpm = 120.0
+        scene = build_scene_from_score(
+            score,
+            name="Theme",
+            allowed_roles=("melody",),
+            rows_per_beat=4,
+            scene_metadata={"groove_lane_phase_offsets": "0,0,0,0,0"},
+        )
+        scene.metric_modulations = [
+            MetricModulation(at_row=4, ratio_num=4, ratio_den=3),
+        ]
+
+        row_durations = metric_modulated_row_durations_seconds(scene)
+        row_starts = metric_modulated_row_starts_seconds(scene)
+
+        modulated = 0.125 * 4 / 3
+        assert row_durations[:4] == [0.125, 0.125, 0.125, 0.125]
+        assert row_durations[4:7] == pytest.approx([modulated, modulated, modulated])
+        assert row_starts[:7] == pytest.approx(
+            [
+                0.0,
+                0.125,
+                0.25,
+                0.375,
+                0.5,
+                0.5 + modulated,
+                0.5 + 2 * modulated,
+            ]
+        )
+
+    def test_applies_five_to_four_modulation_from_target_row(self):
+        score = _sample_score()
+        score.tempo_bpm = 120.0
+        scene = build_scene_from_score(
+            score,
+            name="Theme",
+            allowed_roles=("melody",),
+            rows_per_beat=4,
+            scene_metadata={"groove_lane_phase_offsets": "0,0,0,0,0"},
+        )
+        scene.metric_modulations = [
+            MetricModulation(at_row=4, ratio_num=5, ratio_den=4),
+        ]
+
+        row_durations = metric_modulated_row_durations_seconds(scene)
+        row_starts = metric_modulated_row_starts_seconds(scene)
+
+        assert row_durations[:4] == [0.125, 0.125, 0.125, 0.125]
+        assert row_durations[4:7] == [0.15625, 0.15625, 0.15625]
+        assert row_starts[:7] == [
+            0.0,
+            0.125,
+            0.25,
+            0.375,
+            0.5,
+            0.65625,
+            0.8125,
         ]
 
 
