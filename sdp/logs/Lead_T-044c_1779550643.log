@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1215 chars)
+---
+
+T-044c done. Committed in `07335db`.
+
+**Summary:** Added two regression tests to `tests/test_senseweave_voice.py::TestFxBusRouting`:
+- `test_note_on_rejects_other_voices_fx_bus_ids` — asserts each voice emits on its own profile bus and that no other voice's bus appears in the args (cross-voice leakage rejected).
+- `test_set_timbre_reroutes_to_the_new_voices_fx_bus_id` — asserts swapping timbre re-routes to the new profile's bus with no stale bus id smuggled through.
+
+Mutation-tested: bumping the emitted bus by +1 in `note_on` causes both new tests to fail. Full suite: 5086 passed, ruff/mypy clean. Unrelated pre-existing workspace changes (progress.md, sdp/ logs) were left untouched per template rules.

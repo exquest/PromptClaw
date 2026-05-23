@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2667 chars)
+---
+
+**Verdict: PASS**
+
+All 7 acceptance criteria green:
+- 5144 tests pass, ruff clean, mypy clean
+- Morph phrase generation returns correct endpoint-inclusive frames with sigmoid/linear/exponential `morph_x` values
+- Invalid `phrase_curve` and `phrase_frame_count < 2` both reject with HTTP 422
+- T-048a validation-only path preserved; T-048b interpolation helpers unchanged
+- `fx_bus_id` / `sw_sampler.scd` hardening anchors remain green
+- Two curve layers correctly separated: `morph_curve_type` → SC gain-law int in `control_args`; `phrase_curve` → composer-side `morph_x` progression
+
+The recurring `bootstrap_identity` hardening pattern doesn't apply here — `composer_api` is a library factory with no daemon startup flow, explicitly excluded from T-048c scope. Report committed to `sdp/verification/t-048c-verify.md`.

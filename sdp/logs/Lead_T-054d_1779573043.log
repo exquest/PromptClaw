@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (5802 chars)
+---
+
+Escalation appended. I'm intentionally not committing or running additional verifies — the memory `project-sdp-si003-false-positive` is explicit that further schema-snapshot retries cannot satisfy SI-003 when the task introduces no schema, and the task header already shows pair-rotate retries exhausted.
+
+**Summary of action taken:**
+
+- Confirmed the pattern matches `[[project-sdp-si003-false-positive]]`:
+  - Spec mentions `migration` only in negative-assertion clauses (lines 28, 94, 96 of `specs/t-054d-spec.md`)
+  - `git diff -- promptclaw/coherence/migrations/` is empty; only `001_event_store.sql` and `002_decision_store.sql` exist
+  - Three independent verifier PASSes (commits `137377d`, `b300c58`, `6d44334`) all overridden by SI-003 demanding evidence of a schema change the task forbids
+  - Pair-rotate banner confirms retries exhausted
+- Appended an SI-003 escalation bullet under the existing T-054d section in `ESCALATIONS.md`, mirroring the T-017@20260515T214233Z precedent (request: record verdict as PASS on independent ACs, tighten SI-003 to skip negative-assertion / pre-existing-config / `git diff` no-op mentions of `migration`)
+- Did **not** retry the schema-snapshot route, did **not** modify the verify report, did **not** commit — the escalation is the authorized exit from this loop and human review is needed to clear the spurious FAIL and/or fix the rule.

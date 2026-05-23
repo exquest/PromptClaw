@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1274 chars)
+---
+
+All validation green. Done.
+
+**Summary**
+- T-047a's prior commit (496e9bb) placed `morph_voice.scd` in the synthesis root, but its `writeDefFile("../synthdefs/")` only resolves correctly from `voices/` — at deploy time the compiled `.scsyndef` would land outside the synthesis tree, and the SynthDef wasn't truly "registered alongside" the other voice defs.
+- Moved `my-claw/tools/senseweave/synthesis/morph_voice.scd` → `synthesis/voices/morph_voice.scd` and updated the `SCD_PATH` in `tests/test_morph_voice_scd.py`.
+- Committed as `b259582` — `fix(synth): place morph_voice.scd alongside other voice SynthDefs [T-047a]`.
+- Validation: focused tests 6/6 pass, full suite 5115 passed / 11 skipped, ruff clean, mypy clean.
+- Untouched: the pre-existing unrelated workspace modifications (logs, progress.md, run-log.md, telemetry, template candidates) per the "no normalize unrelated changes" rule.

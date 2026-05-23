@@ -1,0 +1,10 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1236 chars)
+---
+
+Done. Voice instantiation in `SenseweaveVoice.note_on` now looks up the spawning synth in `VOICE_REVERB_PROFILES` and appends `fx_bus_id` to the `/s_new` args, so the dry voice routes to the per-voice FX return bus declared by the T-044/T-044a synthdef contract. Voices without a profile (`sw_bell_warm`, `sw_gong`) keep their existing args.
+
+- `my-claw/tools/senseweave/synthesis/senseweave_voice.py:222` — appends `fx_bus_id` when profile exists
+- `tests/test_senseweave_voice.py:382` — two regression tests
+- Validation: pytest (5084 passed), ruff, mypy all clean
+- Commit: `c6a83a0 feat(synthesis): route voice /s_new through assigned fx_bus_id [T-044b]`

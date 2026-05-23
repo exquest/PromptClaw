@@ -42,6 +42,31 @@
   startup-flow rewiring, or SuperCollider source change was introduced. Final
   PromptClaw validation passed with `5211 passed, 11 skipped`, Ruff clean, and
   mypy clean.
+- **SI-003 false positive — pair-rotate exhausted (2026-05-23):** Verifier rule
+  SI-003 keeps appending a `Verdict: FAIL` after three independent verifier
+  `Verdict: PASS` results because `specs/t-054d-spec.md` contains the token
+  `migration`. All occurrences are negative assertions or references to the
+  *existing* Wrangler DO migration config — spec line 28 cites the pre-existing
+  `LIVE_MIDI_ROOM` "binding and migration config" used by the test, and lines 94
+  and 96 are explicit "no D1 database migration, no Durable Object migration
+  change" scope clauses (also asserted by an AC `rg` VERIFY). `git diff --
+  promptclaw/coherence/migrations/` is empty; the migrations directory still
+  contains only `001_event_store.sql` and `002_decision_store.sql`. The Worker
+  project's existing D1 migrations (0001, 0002, 0004) were unchanged by T-054d
+  and a schema snapshot was already attached in the second-pass verify report.
+  Pair-rotate banner `[pair-rotate codex/claude->claude/codex] verification
+  retries exhausted` is now logged on this task. This matches the documented
+  `[[project-sdp-si003-false-positive]]` pattern first surfaced by
+  T-017@20260515T214233Z (see entry dated 2026-05-15 below); no further
+  schema-snapshot retry can clear SI-003 because the task introduces no schema.
+  Recommend: (a) record T-054d verdict as PASS based on the three independent
+  acceptance-criteria PASSes (all 10 ACs green, Workers Vitest fan-out at 5ms,
+  `5211 passed, 11 skipped`, Ruff clean, mypy clean), and (b) tighten the SI-003
+  rule to skip specs whose only `migration` mentions are inside negative-
+  assertion clauses, pre-existing-config references, or `rg`/`git diff` VERIFY
+  commands asserting no new migration. Human review requested before the next
+  pipeline tick promotes the spurious FAIL. Lead retries are NOT being attempted
+  per the documented SI-003 escalation policy.
 
 ## T-054c (2026-05-23)
 

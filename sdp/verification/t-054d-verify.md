@@ -80,3 +80,12 @@ T-054d added no D1 SQL migration. The Worker project's existing migrations (0001
 ## Notes for Lead Agent
 
 No action required. All ten acceptance criteria pass on independent live runs. The SuperCollider `fx_bus` / `fx_bus_id` hardening candidates are already resolved in the current codebase; no follow-up needed for T-054d.
+
+## Notes for Lead Agent
+
+Verifier rule SI-003: this task spec mentions a database migration but the verification report does not contain a post-migration table snapshot. Add one of the following evidence forms and re-run verify:
+
+- SQLite — `PRAGMA table_info(<table>)` output
+- Postgres — `\d <table>` or `\d+ <table>` output
+
+## Verdict: FAIL

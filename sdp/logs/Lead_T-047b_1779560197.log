@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1282 chars)
+---
+
+T-047b done. Implemented the crossfade gain logic in `morph_voice.scd`:
+
+- Clamps `morph_x` to [0.0, 1.0] once into `x`
+- Computes linear (`1-x`, `x`) and equal-power (`cos(x·π/2)`, `sin(x·π/2)`) gain pairs
+- New `morph_curve` arg (default `1` = equal-power) selects the law via `Select.kr` for both gains
+- Sums `(source_a*gain_a) + (source_b*gain_b)` to `out_bus` (unchanged)
+
+Added 4 new tests (10 total, all passing); ruff and mypy clean. Committed as `89042a8`.

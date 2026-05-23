@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~8h 42m remaining (45 tasks, low confidence, calibrating)
-Expected completion: 9:30 PM today.
-Progress: [███████████████████████████████████░░░] 92%  516 / 561 tasks complete
-  completed: 516, pending: 40, needs_split: 3, blocked: 0, needs_attn: 2, skipped: 51
+ETC: ~8h 0m remaining (43 tasks, low confidence, calibrating)
+Expected completion: 10:18 PM today.
+Progress: [███████████████████████████████████░░░] 92%  521 / 564 tasks complete
+  completed: 521, pending: 39, needs_split: 2, blocked: 0, needs_attn: 2, skipped: 52
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -572,53 +572,12 @@ Progress: [███████████████████████
 - **T-049**: complete — Completed with verdict PASS.
 - **T-050**: complete — Completed with verdict PASS.
 - **T-051**: complete — Completed with verdict PASS.
-- **T-052**: pending — Pending.
+- **T-052**: complete — Completed with verdict PASS.
 - **T-053**: split — Split into subtasks.
 - **T-054**: split — Split into subtasks.
-- **T-054a**: complete — Completed with verdict PASS. Phase 0 Explore mapped the live MIDI WebSocket slice
-  to `/Users/anthony/Programming/catalog-explorer/worker/src/index.ts`,
-  `worker/tests/*.test.js`, and `worker/wrangler.toml`. Existing patterns keep
-  CypherClaw Worker routes in one TypeScript file, use dependency-free Node
-  tests compiled through `.tmp/test-build`, gate admin writes with bearer auth,
-  and keep public read/stream routes open. T-054a added `LiveMidiRoom`,
-  `/api/cypherclaw/live-midi`, a `LIVE_MIDI_ROOM` binding, and a Wrangler
-  Durable Object migration without fan-out, D1 schema work, new npm packages, or
-  SuperCollider changes. Red phase failed on missing route/exported room, then
-  the locked Worker test passed after implementation; final validation passed
-  with `5211 passed, 11 skipped`, Ruff clean, and mypy clean.
-- **T-054b**: complete — Completed with verdict PASS. Phase 0 Explore mapped the live MIDI event
-  ingest/fan-out slice to `/Users/anthony/Programming/catalog-explorer/worker/src/index.ts`
-  and `/Users/anthony/Programming/catalog-explorer/worker/tests/cypherclaw-live-midi.test.js`.
-  Existing T-054a patterns keep the route public, use a global `LiveMidiRoom`
-  Durable Object, track accepted sockets in an in-memory `Set<WebSocket>`, and
-  verify through dependency-free Node tests compiled into `.tmp/test-build`.
-  T-054b added strict JSON MIDI event validation and fan-out to all other live
-  sockets, silently drops invalid/non-string messages, and removes dead
-  recipients when `send()` fails. No D1 database migration, no Durable Object
-  migration change, no new dependencies, no R2 layout change, and no
-  startup-flow rewiring were introduced. Red phase failed on missing fan-out and
-  dead-socket removal, then Worker `npm test` passed with `37 passed`, Worker
-  `npm run check` passed, startup identity anchors passed with `8 passed`, and
-  final validation passed with `5211 passed, 11 skipped`, Ruff clean, and mypy
-  clean.
-- **T-054c**: complete — Completed with verdict PASS. Phase 0 Explore found PromptClaw remains the ADP
-  source of truth while live MIDI Worker code lives in
-  `/Users/anthony/Programming/catalog-explorer/worker`. Existing T-054a/T-054b
-  commits already added `LiveMidiRoom`, the `/api/cypherclaw/live-midi` route,
-  the `LIVE_MIDI_ROOM` `Env` type, the top-level Wrangler binding/migration,
-  and event fan-out tests. The remaining T-054c deployment gap is
-  `wrangler.toml` environment coverage: `[env.dev]` exists but does not declare
-  `[[env.dev.durable_objects.bindings]]` or `[[env.dev.migrations]]`, so a
-  `--env dev` deploy would not expose `env.LIVE_MIDI_ROOM`. T-054c added a
-  dependency-free Worker config/source contract test, confirmed red on the
-  missing `env.dev` binding, then added the environment-scoped Durable Object
-  binding and `new_sqlite_classes = ["LiveMidiRoom"]` migration. Worker
-  `npm test` passed with `39 passed`, Worker `npm run check` passed,
-  SuperCollider `fx_bus_id` / `sw_sampler.scd` hardening anchors passed with
-  `3 passed`, and final validation passed with `5211 passed, 11 skipped`, Ruff
-  clean, and mypy clean. No new dependencies, D1 database migration, R2 layout
-  change, provider secret, runtime state, fan-out behavior, startup-flow change,
-  or SuperCollider source change was introduced.
+- **T-054a**: complete — Completed with verdict PASS.
+- **T-054b**: complete — Completed with verdict PASS.
+- **T-054c**: complete — Completed with verdict PASS.
 - **T-054d**: complete — Completed with verdict PASS. Phase 0 Explore mapped the sub-second live MIDI
   fan-out latency check to the sibling
   `/Users/anthony/Programming/catalog-explorer/worker` project while keeping
@@ -662,7 +621,11 @@ Progress: [███████████████████████
 - **T-058a**: pending — Pending.
 - **T-058b**: pending — Pending.
 - **T-058c**: pending — Pending.
-- **T-059**: needs_split — Timed out; run sdp-cli tasks split T-059 to break it down.
+- **T-059**: split — Split into subtasks.
+- **T-059a**: pending — Pending.
+- **T-059b**: pending — Pending.
+- **T-059c**: pending — Pending.
+- **T-059d**: pending — Pending.
 - **T-058d**: pending — Pending.
 - **T-053d**: pending — Pending.
 - **T-060**: needs_split — Timed out; run sdp-cli tasks split T-060 to break it down.

@@ -1,0 +1,16 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2111 chars)
+---
+
+**Verdict: PASS**
+
+All eight acceptance criteria met:
+
+- Schema correctly rejects `phrase_frame_count` without `phrase_curve` (422); validation-only requests still return 202.
+- All three composer-side phrase curves (`linear`, `exponential`, `sigmoid`) generate endpoint-inclusive frames with correct `morph_x` values.
+- Both SynthDef gain-law curves (`linear` → `morph_curve=0`, `equal-power` → `morph_curve=1`) propagate into every frame's `control_args`.
+- `SUPPORTED_PHRASE_CURVES` exported correctly in schema vocabulary.
+- Full suite: **5150 passed, 11 skipped**. Ruff clean. mypy clean.
+- Recurring hardening checks (`fx_bus_id`, `sw_sampler.scd`): **15 passed**.
+
+Report committed at `sdp/verification/t-048d-verify.md`.
