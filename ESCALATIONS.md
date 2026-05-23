@@ -1,5 +1,33 @@
 # Escalations
 
+## T-045b (2026-05-23)
+
+- **Reason:** Resolver-slice assumptions for mood-driven space selection.
+- **Details:** T-045b implements the pure space-selection resolver and wires it
+  into faithful scene payloads plus OSC `/s_new` arg construction. It does not
+  own active-house discovery from live sensors, SuperCollider synthdef
+  rewrites, or broader playback orchestration; those remain for later
+  T-045/T-046 slices.
+- **Assumption:** The PRD requires `house-bound` to use "the active house's
+  space" but does not define a house-to-space table. This task maps
+  `house_monastery -> choir/stone_cathedral`,
+  `house_chamber -> breath/glass_bell_jar`,
+  `house_garden -> tabla_tin/dusk_garden`,
+  `house_procession -> kotekan/humid_forest_canopy`, and
+  `house_workshop -> pluck/small_wooden_room`, with unknown houses falling
+  back to `house_chamber`.
+- **Assumption:** Expressive mode uses a deterministic no-self-match mismatch
+  table (`pluck -> kotekan`, `breath -> pad`, `choir -> bowed`,
+  `kotekan -> tabla_tin`, `pad -> pluck`, `bowed -> breath`,
+  `tabla_tin -> choir`) so tests can assert deliberate routing rather than
+  random mood behavior.
+- **Candidate hardening:** The generated startup-identity feedback targets the
+  existing identity startup subsystem. This resolver does not touch startup
+  flow, but final verification will re-run the identity persistence anchors.
+- **Dependencies and migrations:** No new dependencies, provider secrets,
+  database columns, migrations, runtime state directories, HTTP routes, or
+  SuperCollider source changes are required.
+
 ## T-045a (2026-05-23)
 
 - **Reason:** Schema-only split assumptions for mood-driven space selection.
