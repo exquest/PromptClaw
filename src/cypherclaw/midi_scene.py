@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from enum import Enum
 import math
 
 try:
@@ -48,11 +49,24 @@ SUPPORTED_MORPH_CURVES: tuple[str, ...] = (
     MORPH_CURVE_SIGMOID,
 )
 
+
+class MoodMode(str, Enum):
+    """Canonical scene mood modes for CypherClaw space selection."""
+
+    MATCHED = "matched"
+    EXPRESSIVE = "expressive"
+    HOUSE_BOUND = "house-bound"
+
+
+SUPPORTED_MOOD_MODES: tuple[str, ...] = tuple(mode.value for mode in MoodMode)
+
 REQUIRED_TUNING_METADATA_FIELDS: tuple[str, ...] = (
     "tuning_system_name",
     "tuning_morph_target_name",
     "tuning_morph_curve",
 )
+
+REQUIRED_MOOD_METADATA_FIELDS: tuple[str, ...] = ("mood_mode",)
 
 _STILL_PHASES = frozenset({"listen", "divination"})
 _MOTION_PHASES = frozenset({"conversation", "procession"})
@@ -148,6 +162,7 @@ class FaithfulRenderSettings:
     tonal_center_hz: float = DEFAULT_TONAL_CENTER_HZ
     voice_sequence: tuple[str, ...] = ("pluck",)
     space_mode: str = "matched"
+    mood_mode: MoodMode | str | None = MoodMode.MATCHED
     tuning_system_name: str | None = None
     tuning_morph_target_name: str | None = None
     tuning_morph_curve: str = MORPH_CURVE_LINEAR
@@ -289,6 +304,7 @@ def build_faithful_midi_scene(
     tonal_center_hz = _safe_tonal_center_hz(settings.tonal_center_hz)
     voice_sequence = _normalized_voice_sequence(settings.voice_sequence, voice)
     space_mode = _space_mode(settings.space_mode)
+    mood_mode = parse_mood_mode(settings.mood_mode)
     row = 0
     total_duration_ticks = 0
     steps: list[FaithfulSceneStep] = []
@@ -339,6 +355,7 @@ def build_faithful_midi_scene(
                     "render_space_id": str(render_space["space_id"]),
                     "render_fx_bus_id": str(render_space["fx_bus_id"]),
                     "space_mode": space_mode,
+                    "mood_mode": mood_mode.value,
                 },
             )
         )
@@ -369,6 +386,7 @@ def build_faithful_midi_scene(
         "voice_assignment_policy": "sequence",
         "voice_sequence": ",".join(voice_sequence),
         "space_mode": space_mode,
+        "mood_mode": mood_mode.value,
         "space_profile_source": SPACE_PROFILE_SOURCE,
     }
     return FaithfulMidiScene(
@@ -457,15 +475,29 @@ def _tuning_morph_curve(value: str) -> str:
     return MORPH_CURVE_LINEAR
 
 
+def parse_mood_mode(value: MoodMode | str | None) -> MoodMode:
+    """Return the canonical scene mood mode for runtime input."""
+
+    if isinstance(value, MoodMode):
+        return value
+    key = str(value or "").strip().lower().replace("_", "-").replace(" ", "-")
+    aliases = {
+        MoodMode.MATCHED.value: MoodMode.MATCHED,
+        MoodMode.EXPRESSIVE.value: MoodMode.EXPRESSIVE,
+        MoodMode.HOUSE_BOUND.value: MoodMode.HOUSE_BOUND,
+    }
+    return aliases.get(key, MoodMode.MATCHED)
+
+
 def validate_faithful_scene_metadata(metadata: Mapping[str, str]) -> None:
-    """Validate scene metadata declares the tuning, morph target, and curve.
+    """Validate scene metadata declares tuning, morph, and mood-mode fields.
 
     Raises ``ValueError`` if any required field is missing, or if the
-    ``tuning_morph_curve`` value is not one of ``SUPPORTED_MORPH_CURVES``.
-    Empty ``tuning_morph_target_name`` is permitted (no morph configured).
+    ``tuning_morph_curve`` / ``mood_mode`` values are not supported. Empty
+    ``tuning_morph_target_name`` is permitted (no morph configured).
     """
 
-    for field_name in REQUIRED_TUNING_METADATA_FIELDS:
+    for field_name in (*REQUIRED_TUNING_METADATA_FIELDS, *REQUIRED_MOOD_METADATA_FIELDS):
         if field_name not in metadata:
             raise ValueError(f"scene metadata missing required field: {field_name!r}")
     curve = metadata["tuning_morph_curve"]
@@ -473,6 +505,12 @@ def validate_faithful_scene_metadata(metadata: Mapping[str, str]) -> None:
         raise ValueError(
             f"tuning_morph_curve must be one of {SUPPORTED_MORPH_CURVES!r}, "
             f"got {curve!r}"
+        )
+    mood_mode = metadata["mood_mode"]
+    if mood_mode not in SUPPORTED_MOOD_MODES:
+        raise ValueError(
+            f"mood_mode must be one of {SUPPORTED_MOOD_MODES!r}, "
+            f"got {mood_mode!r}"
         )
 
 

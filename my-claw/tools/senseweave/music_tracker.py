@@ -16,6 +16,7 @@ from dataclasses import dataclass, field, replace
 from typing import Mapping, Sequence
 
 from cypherclaw.composer_vocabulary_bridge import VOCABULARY_METADATA_KEYS
+from cypherclaw.midi_scene import MoodMode, SUPPORTED_MOOD_MODES, parse_mood_mode
 
 from .arrangement_engine import (
     RegisterBand,
@@ -355,6 +356,12 @@ class TrackerScene:
     constraints: SceneConstraint
     metadata: dict[str, str] = field(default_factory=dict)
     metric_modulations: list[MetricModulation] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.metadata = dict(self.metadata)
+        self.metadata["mood_mode"] = parse_mood_mode(
+            self.metadata.get("mood_mode")
+        ).value
 
 
 @dataclass
@@ -1798,11 +1805,13 @@ _PRESERVE_EMPTY_SCENE_METADATA_KEYS = frozenset({"tuning_morph_target_name"})
 
 
 def _scene_metadata_items(metadata: Mapping[str, object]) -> dict[str, str]:
-    return {
+    items = {
         str(key): str(value)
         for key, value in metadata.items()
         if str(value).strip() or str(key) in _PRESERVE_EMPTY_SCENE_METADATA_KEYS
     }
+    items["mood_mode"] = parse_mood_mode(items.get("mood_mode")).value
+    return items
 
 
 def _sequence_items(value: object) -> list[object]:
@@ -2514,6 +2523,7 @@ def build_scene_from_score(
     metadata = {
         "source_mood": score.mood,
         "phrase_count": str(len(lanes)),
+        "mood_mode": MoodMode.MATCHED.value,
     }
     patch_name = score.metadata.get("patch_name")
     if patch_name:
@@ -2723,6 +2733,11 @@ def validate_scene(scene: TrackerScene) -> list[str]:
     """Return human-readable constraint violations for a scene."""
 
     violations: list[str] = []
+    mood_mode = scene.metadata.get("mood_mode", "")
+    if mood_mode not in SUPPORTED_MOOD_MODES:
+        violations.append(
+            f"mood_mode {mood_mode!r} is not supported in scene {scene.name}"
+        )
     allowed_roles = set(scene.constraints.allowed_roles)
     for lane in scene.pattern.lanes:
         if allowed_roles and lane.role not in allowed_roles:

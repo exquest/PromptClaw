@@ -1,5 +1,36 @@
 # Escalations
 
+## T-045a (2026-05-23)
+
+- **Reason:** Schema-only split assumptions for mood-driven space selection.
+- **Details:** T-045a covers the first slice of CC-004: adding a typed
+  `mood_mode` scene-schema value with allowed modes `matched`, `expressive`,
+  and `house-bound`, plus parser/validator and JSON round-trip coverage for
+  faithful MIDI scenes and tracker scenes. The actual space-selection resolver,
+  active-house lookup, and playback/render routing are left to
+  T-045b/T-045c/T-045d.
+- **Assumption:** Existing `space_mode=matched` faithful-render behavior remains
+  backward compatible while the new `mood_mode` metadata defaults to `matched`.
+  Invalid parser input can safely normalize to `matched`, but serialized scene
+  metadata should validate strictly and reject unsupported `mood_mode` values.
+- **Candidate hardening:** The recurring `fx_bus_id` failures are already
+  addressed in the current source: all seven voice synthdefs declare
+  `fx_bus_id`, `master_smooth.scd` collects the matching canonical buses, and
+  `sw_sampler.scd` now uses `fx_bus_id` rather than `fx_bus`. T-045a does not
+  modify SuperCollider routing, but the final verification will re-run the
+  focused synthesis routing anchors.
+- **Dependencies and migrations:** No new dependencies, provider secrets,
+  database columns, migrations, runtime state directories, HTTP routes, or
+  SuperCollider source changes are required.
+- **Verification:** Red phase was confirmed with the new
+  `tests/test_midi_scene.py` mood-mode tests failing on missing imports and the
+  new `tests/test_music_tracker.py` tracker tests failing on missing/default
+  `mood_mode` behavior. After implementation, targeted MIDI/tracker/synthesis
+  anchors passed with `73 passed`, and final validation
+  (`pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
+  mypy src/`) passed with `5096 passed, 11 skipped`, Ruff clean, and mypy
+  clean.
+
 ## T-044d (2026-05-23)
 
 - **Reason:** Synthesis smoke-render routing regression found during exploration.

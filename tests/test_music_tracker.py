@@ -241,6 +241,25 @@ class TestBuildSceneFromScore:
         automation = {lane.name: lane.default for lane in scene.pattern.automation}
         assert automation == {"density": 0.45, "master_amp": 0.7}
 
+    def test_scene_metadata_defaults_to_matched_mood_mode(self):
+        scene = build_scene_from_score(
+            _sample_score(),
+            name="Theme",
+            allowed_roles=("melody",),
+        )
+
+        assert scene.metadata["mood_mode"] == "matched"
+
+    def test_scene_metadata_normalizes_explicit_mood_mode(self):
+        scene = build_scene_from_score(
+            _sample_score(),
+            name="Theme",
+            allowed_roles=("melody",),
+            scene_metadata={"mood_mode": "house_bound"},
+        )
+
+        assert scene.metadata["mood_mode"] == "house-bound"
+
     def test_adds_arrangement_automation_curves_from_section_metadata(self):
         scene = build_scene_from_score(
             _sample_score(),
@@ -399,6 +418,17 @@ class TestValidateScene:
 
         violations = validate_scene(scene)
         assert any("role" in violation for violation in violations)
+
+    def test_reports_invalid_mood_mode_metadata(self):
+        scene = build_scene_from_score(
+            _sample_score(),
+            name="Theme",
+            allowed_roles=("melody",),
+        )
+        scene.metadata["mood_mode"] = "restless"
+
+        violations = validate_scene(scene)
+        assert any("mood_mode" in violation for violation in violations)
 
 
 class TestBuildKorsakovTrackerSong:

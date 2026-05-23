@@ -12,9 +12,13 @@ from cypherclaw import midi_intake_daemon as intake
 from cypherclaw.midi_loader import FaithfulMidiEvent
 from cypherclaw.midi_scene import (
     FaithfulRenderSettings,
+    MoodMode,
+    REQUIRED_MOOD_METADATA_FIELDS,
     REQUIRED_TUNING_METADATA_FIELDS,
+    SUPPORTED_MOOD_MODES,
     SUPPORTED_MORPH_CURVES,
     build_faithful_midi_scene,
+    parse_mood_mode,
     validate_faithful_scene_metadata,
 )
 
@@ -450,11 +454,68 @@ def test_scene_metadata_defaults_to_empty_morph_target_and_linear_curve() -> Non
     validate_faithful_scene_metadata(metadata)
 
 
+def test_scene_metadata_defaults_to_matched_mood_mode_and_validates() -> None:
+    scene = build_faithful_midi_scene(
+        (FaithfulMidiEvent(pitch=60, duration=96, velocity=96),),
+    )
+
+    payload = scene.to_dict()
+    reloaded = json.loads(json.dumps(payload))
+    metadata = reloaded["metadata"]
+    step_metadata = reloaded["pattern"]["lanes"][0]["steps"][0]["metadata"]
+
+    assert metadata["mood_mode"] == "matched"
+    assert step_metadata["mood_mode"] == "matched"
+    validate_faithful_scene_metadata(metadata)
+
+
+def test_mood_mode_parser_accepts_enum_values_aliases_and_fallback() -> None:
+    assert set(SUPPORTED_MOOD_MODES) == {
+        "matched",
+        "expressive",
+        "house-bound",
+    }
+    assert parse_mood_mode(MoodMode.MATCHED) is MoodMode.MATCHED
+    assert parse_mood_mode("expressive") is MoodMode.EXPRESSIVE
+    assert parse_mood_mode("house-bound") is MoodMode.HOUSE_BOUND
+    assert parse_mood_mode("house_bound") is MoodMode.HOUSE_BOUND
+    assert parse_mood_mode("house bound") is MoodMode.HOUSE_BOUND
+    assert parse_mood_mode("unknown") is MoodMode.MATCHED
+    assert parse_mood_mode("") is MoodMode.MATCHED
+    assert parse_mood_mode(None) is MoodMode.MATCHED
+
+
+@pytest.mark.parametrize(
+    ("requested", "expected"),
+    (
+        (MoodMode.EXPRESSIVE, "expressive"),
+        ("house_bound", "house-bound"),
+    ),
+)
+def test_scene_metadata_round_trips_explicit_mood_modes(
+    requested: MoodMode | str,
+    expected: str,
+) -> None:
+    scene = build_faithful_midi_scene(
+        (FaithfulMidiEvent(pitch=60, duration=96, velocity=96),),
+        render_settings=FaithfulRenderSettings(mood_mode=requested),
+    )
+
+    reloaded = json.loads(json.dumps(scene.to_dict()))
+    metadata = reloaded["metadata"]
+    step_metadata = reloaded["pattern"]["lanes"][0]["steps"][0]["metadata"]
+
+    assert metadata["mood_mode"] == expected
+    assert step_metadata["mood_mode"] == expected
+    validate_faithful_scene_metadata(metadata)
+
+
 def test_validate_faithful_scene_metadata_rejects_missing_and_bad_curve() -> None:
     base = {
         "tuning_system_name": "twelve_tet",
         "tuning_morph_target_name": "",
         "tuning_morph_curve": "linear",
+        "mood_mode": "matched",
     }
     validate_faithful_scene_metadata(base)
     for missing in REQUIRED_TUNING_METADATA_FIELDS:
@@ -464,6 +525,23 @@ def test_validate_faithful_scene_metadata_rejects_missing_and_bad_curve() -> Non
     bad_curve = {**base, "tuning_morph_curve": "bouncy"}
     with pytest.raises(ValueError):
         validate_faithful_scene_metadata(bad_curve)
+
+
+def test_validate_faithful_scene_metadata_rejects_missing_and_bad_mood_mode() -> None:
+    base = {
+        "tuning_system_name": "twelve_tet",
+        "tuning_morph_target_name": "",
+        "tuning_morph_curve": "linear",
+        "mood_mode": "matched",
+    }
+    validate_faithful_scene_metadata(base)
+    for missing in REQUIRED_MOOD_METADATA_FIELDS:
+        broken = {k: v for k, v in base.items() if k != missing}
+        with pytest.raises(ValueError):
+            validate_faithful_scene_metadata(broken)
+    bad_mood_mode = {**base, "mood_mode": "restless"}
+    with pytest.raises(ValueError):
+        validate_faithful_scene_metadata(bad_mood_mode)
 
 
 def test_supported_morph_curves_match_prd() -> None:

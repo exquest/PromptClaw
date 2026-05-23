@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Added the T-045a mood-mode scene schema: `cypherclaw.midi_scene.MoodMode`
+  now defines `matched`, `expressive`, and `house-bound`, with `matched` as the
+  default parser fallback and serialized scene default. Faithful MIDI scene
+  payloads now carry `mood_mode` at top level and per step, tracker
+  `TrackerScene` metadata defaults and normalizes the same field, and both
+  `validate_faithful_scene_metadata(...)` and `validate_scene(...)` reject
+  unsupported serialized values. This is schema-only groundwork for the later
+  T-045b/T-045c resolver and playback routing tasks; existing `space_mode`
+  routing behavior remains `matched`. No dependencies, migrations, provider
+  secrets, runtime state directories, HTTP routes, startup-flow changes, or
+  SuperCollider source changes were added.
+
 - Fixed T-044d synthesis smoke-render routing: `master_smooth.scd` now collects
   the same seven CypherClaw v2 FX return buses emitted by
   `VOICE_REVERB_PROFILES` and `build_voice_s_new_args(...)`

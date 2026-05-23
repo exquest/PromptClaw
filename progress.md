@@ -554,7 +554,7 @@ Progress: [███████████████████████
 - **T-044c**: complete — Completed with verdict PASS. Exploration found the requested assigned-FX-bus and mismatched-bus unit tests already landed in `tests/test_senseweave_voice.py::TestFxBusRouting`; this pass added the missing spec/status documentation.
 - **T-044d**: complete — Completed with verdict PASS. Fixed the synthesis smoke-render routing mismatch by aligning `master_smooth.scd` with the canonical CypherClaw v2 FX buses emitted by `VOICE_REVERB_PROFILES` (`pluck=16`, `breath=17`, `choir=18`, `kotekan=19`, `pad=20`, `bowed=21`, `tabla_tin=22`) and added smoke regression tests that prove emitted voice buses are collected by the master return map.
 - **T-045**: split — Split into subtasks.
-- **T-045a**: pending — Pending.
+- **T-045a**: complete — Added the schema-only mood-mode enum with `matched` default, `expressive`, and `house-bound`; faithful MIDI scene payloads now carry `mood_mode` at top level and per step, tracker `TrackerScene` metadata defaults/normalizes the same field, and validators reject unsupported serialized values. Red phase was confirmed in `tests/test_midi_scene.py` and `tests/test_music_tracker.py`; focused routing hardening anchors for `fx_bus_id` / `sw_sampler.scd` passed, and full validation passed with `5096 passed, 11 skipped`, Ruff clean, and mypy clean.
 - **T-045b**: pending — Pending.
 - **T-045c**: pending — Pending.
 - **T-045d**: pending — Pending.
