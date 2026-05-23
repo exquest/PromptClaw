@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- Added T-054c live MIDI Durable Object config hardening to the holdenu
+  Cloudflare Worker: Wrangler now declares the `LIVE_MIDI_ROOM` ->
+  `LiveMidiRoom` Durable Object binding and `new_sqlite_classes =
+  ["LiveMidiRoom"]` migration under `env.dev` as well as the existing top-level
+  production config, so `/api/cypherclaw/live-midi` has its room binding when
+  deployed with `--env dev`. Added a dependency-free Worker config/source
+  contract test that pins top-level and `env.dev` Durable Object config, the
+  `LIVE_MIDI_ROOM` `Env` type, the Worker route-table dispatch, the
+  `Upgrade: websocket` guard returning `426`, and the global room forwarding
+  path. No new dependencies, No D1 database migration, provider secrets, R2
+  layout changes, runtime state directories, startup-flow rewiring, fan-out
+  behavior changes, or SuperCollider source changes were added. Red phase was
+  confirmed before implementation; Worker `npm test` (`39 passed`), Worker
+  `npm run check`, SuperCollider routing hardening anchors (`3 passed`), and
+  final PromptClaw validation (`5211 passed, 11 skipped`, Ruff clean, mypy
+  clean) all passed.
+
 - Added T-054b live MIDI event ingest and fan-out to the holdenu Cloudflare
   Worker `LiveMidiRoom`: accepted sockets now parse incoming text messages as
   JSON MIDI events with exactly `status`, `data1`, `data2`, and `ts`, validate

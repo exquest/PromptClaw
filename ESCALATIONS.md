@@ -1,5 +1,42 @@
 # Escalations
 
+## T-054c (2026-05-23)
+
+- **Reason:** Cross-repository Worker implementation and Wrangler environment
+  binding assumption.
+- **Details:** T-054c keeps PromptClaw as the ADP/source-of-truth repo while
+  implementing the Worker config hardening in the sibling
+  `/Users/anthony/Programming/catalog-explorer/worker` project established by
+  T-054a.
+- **Assumption:** The existing `[env.dev]` Wrangler environment is a deployable
+  Worker environment, not only a variable namespace. Cloudflare's Durable Object
+  environment guidance says Durable Object bindings are not inherited by
+  Wrangler environments, so T-054c treats missing `env.dev` Durable Object
+  binding and migration entries as the remaining reachability gap for
+  `/api/cypherclaw/live-midi`.
+- **Scope decision:** T-054a/T-054b already added the production route,
+  `LIVE_MIDI_ROOM` `Env` type, top-level Durable Object binding and migration,
+  `LiveMidiRoom`, WebSocket guard, and fan-out behavior. T-054c therefore pins
+  those contracts with tests and only adds the missing `env.dev` Durable Object
+  config.
+- **Candidate hardening:** The generated SuperCollider feedback is unrelated to
+  the Cloudflare Worker config, but existing tests for `fx_bus_id` declarations
+  and `sw_sampler.scd` routing remain mandatory verification anchors.
+- **Dependencies and migrations:** No new dependencies, provider secrets,
+  database columns, D1 migrations, R2 layout changes, runtime state directories,
+  startup-flow rewiring, agent commands, or SuperCollider source changes are
+  expected. The only migration change is the Wrangler Durable Object
+  environment migration for `LiveMidiRoom`.
+- **Verification:** Red phase was confirmed with
+  `npm test -- tests/cypherclaw-live-midi-config.test.js` failing on the
+  missing `env.dev` `LIVE_MIDI_ROOM` Durable Object binding before production
+  config changed. After implementation, the focused Worker config/source
+  contract test passed, Worker `npm test` passed with `39 passed`, Worker
+  `npm run check` passed, SuperCollider `fx_bus_id` and `sw_sampler.scd`
+  hardening anchors passed with `3 passed`, and final PromptClaw validation
+  (`pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
+  mypy src/`) passed with `5211 passed, 11 skipped`, Ruff clean, and mypy clean.
+
 ## T-054b (2026-05-23)
 
 - **Reason:** Cross-repository Worker implementation and generated hardening
