@@ -578,7 +578,7 @@ Progress: [███████████████████████
 - **T-054a**: complete — Completed with verdict PASS.
 - **T-054b**: complete — Completed with verdict PASS.
 - **T-054c**: complete — Completed with verdict PASS.
-- **T-054d**: pending — Pending.
+- **T-054d**: complete — Completed with verdict PASS. Phase 0 Explore findings: vitest-pool-workers, sub-second fan-out, catalog-explorer.
 - **T-053a**: pending — Pending.
 - **T-055**: split — Split into subtasks.
 - **T-055a**: pending — Pending.
