@@ -34,6 +34,10 @@ from test_two_voice_coupling_fixture import (
 # T-006c: Defined minimum delta for a 'measurable shift'
 MIN_COUPLING_DELTA = 0.01
 
+# T-006c: Coupling sign — positive bus values must drive voice B's depth
+# upward, so the post-coupling shift is expected to be > 0.
+COUPLING_SIGN = 1.0
+
 
 class _SuperColliderDouble:
     """In-memory stand-in for scsynth that mirrors `/c_set` writes.
@@ -111,14 +115,14 @@ class TestTwoVoiceCouplingDrive:
         actual_scaled_depth = args[depth_index + 1]
         
         # T-006c: Explicit assertions for delta and direction
-        shift = actual_scaled_depth - fixture.voice_b_vibrato_depth
-        
-        # Assert post-coupling depth differs by more than minimum delta
+        shift = actual_scaled_depth - fixture.pre_coupling_vibrato_depth
+
+        # Measurable-shift magnitude exceeds the defined minimum delta.
         assert abs(shift) > MIN_COUPLING_DELTA
-        
-        # Assert shift direction is positive (coupling sign matches)
-        assert shift > 0
-        
+
+        # Shift direction matches the coupling sign (positive).
+        assert shift * COUPLING_SIGN > 0
+
         # Final check against exact expected value
         assert actual_scaled_depth == pytest.approx(expected_scaled_depth)
 
@@ -170,7 +174,13 @@ class TestTwoVoiceCouplingDrive:
         assert post_coupling_depth == pytest.approx(
             fixture.voice_b_vibrato_depth * expected_multiplier
         )
-        assert post_coupling_depth - fixture.pre_coupling_vibrato_depth > MIN_COUPLING_DELTA
+
+        # T-006c: post-coupling depth differs from pre-coupling baseline by
+        # more than the minimum measurable delta, and the shift direction
+        # matches the coupling sign.
+        shift = post_coupling_depth - fixture.pre_coupling_vibrato_depth
+        assert abs(shift) > MIN_COUPLING_DELTA
+        assert shift * COUPLING_SIGN > 0
 
     def test_coupling_decay_over_time(
         self,
