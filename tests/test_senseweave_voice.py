@@ -417,3 +417,81 @@ class TestFxBusRouting:
                 f"voice {timbre}/{synth} should not carry fx_bus_id "
                 "without a VoiceReverbProfile"
             )
+
+    def test_note_on_rejects_other_voices_fx_bus_ids(self) -> None:
+        """No voice may emit on a bus that belongs to a different voice.
+
+        For each profiled timbre, the `/s_new` args must carry the voice's
+        own `fx_bus_id` and must NOT match any other voice's profile bus.
+        Guards against profile-lookup drift accidentally routing one
+        voice's signal through another voice's reverb return.
+        """
+        from cypherclaw.space_reverb import VOICE_REVERB_PROFILES
+
+        all_bus_ids = {p.fx_bus_id for p in VOICE_REVERB_PROFILES.values()}
+
+        for timbre, synth in TIMBRE_MAP.items():
+            normalized = synth[3:] if synth.startswith("sw_") else synth
+            own_profile = VOICE_REVERB_PROFILES.get(normalized)
+            if own_profile is None:
+                continue
+            osc = MagicMock()
+            voice = SenseweaveVoice(osc=osc, timbre=timbre)
+            voice.note_on(220.0)
+            sent_args = osc.send_message.call_args[0][1]
+
+            assert sent_args.count("fx_bus_id") == 1, (
+                f"voice {timbre}/{synth} must declare exactly one fx_bus_id"
+            )
+            emitted_bus = sent_args[sent_args.index("fx_bus_id") + 1]
+            foreign_buses = all_bus_ids - {own_profile.fx_bus_id}
+            assert emitted_bus not in foreign_buses, (
+                f"voice {timbre}/{synth} leaked onto another voice's bus "
+                f"{emitted_bus} (expected {own_profile.fx_bus_id})"
+            )
+            assert emitted_bus == own_profile.fx_bus_id
+
+    def test_set_timbre_reroutes_to_the_new_voices_fx_bus_id(self) -> None:
+        """Swapping timbre must re-route to the new voice's profile bus.
+
+        A stale bus id from a prior timbre must not be smuggled into the
+        next `/s_new` emission — the routing is read from the live
+        profile at spawn time.
+        """
+        from cypherclaw.space_reverb import VOICE_REVERB_PROFILES
+
+        profiled_timbres = [
+            (timbre, synth)
+            for timbre, synth in TIMBRE_MAP.items()
+            if (synth[3:] if synth.startswith("sw_") else synth)
+            in VOICE_REVERB_PROFILES
+        ]
+        assert len(profiled_timbres) >= 2, (
+            "need at least two profiled timbres to exercise re-routing"
+        )
+
+        first_timbre, first_synth = profiled_timbres[0]
+        second_timbre, second_synth = profiled_timbres[1]
+        first_bus = VOICE_REVERB_PROFILES[
+            first_synth[3:] if first_synth.startswith("sw_") else first_synth
+        ].fx_bus_id
+        second_bus = VOICE_REVERB_PROFILES[
+            second_synth[3:] if second_synth.startswith("sw_") else second_synth
+        ].fx_bus_id
+        assert first_bus != second_bus
+
+        osc = MagicMock()
+        voice = SenseweaveVoice(osc=osc, timbre=first_timbre)
+        voice.note_on(220.0)
+        first_args = osc.send_message.call_args[0][1]
+        assert first_args[first_args.index("fx_bus_id") + 1] == first_bus
+
+        voice.set_timbre(second_timbre)
+        voice.note_on(330.0)
+        second_args = osc.send_message.call_args[0][1]
+        assert second_args[0] == second_synth
+        assert second_args[second_args.index("fx_bus_id") + 1] == second_bus
+        assert first_bus not in second_args[4:], (
+            f"stale fx_bus_id {first_bus} from {first_timbre} leaked into "
+            f"{second_timbre} /s_new args"
+        )
