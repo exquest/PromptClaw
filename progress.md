@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~10h 30m remaining (47 tasks, low confidence, calibrating)
-Expected completion: 11:06 PM today.
-Progress: [███████████████████████████████████░░░] 92%  514 / 561 tasks complete
-  completed: 514, pending: 42, needs_split: 3, blocked: 0, needs_attn: 2, skipped: 51
+ETC: ~8h 42m remaining (45 tasks, low confidence, calibrating)
+Expected completion: 9:30 PM today.
+Progress: [███████████████████████████████████░░░] 92%  516 / 561 tasks complete
+  completed: 516, pending: 40, needs_split: 3, blocked: 0, needs_attn: 2, skipped: 51
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -570,8 +570,8 @@ Progress: [███████████████████████
 - **T-047c**: complete — Completed with verdict PASS.
 - **T-047d**: complete — Completed with verdict PASS.
 - **T-049**: complete — Completed with verdict PASS.
-- **T-050**: pending — Pending.
-- **T-051**: pending — Pending.
+- **T-050**: complete — Completed with verdict PASS.
+- **T-051**: complete — Completed with verdict PASS.
 - **T-052**: pending — Pending.
 - **T-053**: split — Split into subtasks.
 - **T-054**: split — Split into subtasks.
