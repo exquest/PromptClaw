@@ -595,3 +595,19 @@ Progress: [███████████████████████
 - **T-072**: pending — Pending.
 - **T-073**: pending — Pending.
 - **T-074**: pending — Pending.
+
+## Manual ADP Notes — T-039 (2026-05-23)
+
+- Explore: Read the CypherClaw v2 PRD and design statement tuning sections,
+  ADP/task templates, existing tuning modules, `midi_scene.py` tuning metadata,
+  score-tree composer/trajectory models, tracker metadata handoff, and related
+  tests. Existing pattern: composer plans deterministic per-section metadata
+  in `recursive_composer.py`, stores typed trajectory objects in
+  `score_tree.py`, mirrors compact payloads in `arrangement_plan`, and lets
+  `tracker_compiler.py` carry section metadata into tracker scenes.
+- Scope finding: T-039 maps to CC-046/T-056 and should add composer-side
+  tuning selection/log metadata only; pitch math and morph operator already
+  exist from T-033 through T-038. Startup identity hardening is already wired
+  through MIDI intake and narrative API startup paths and covered by existing
+  persistence/order tests, so this task will re-run those anchors instead of
+  changing unrelated startup code.

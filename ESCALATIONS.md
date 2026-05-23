@@ -1,5 +1,27 @@
 # Escalations
 
+## T-039 (2026-05-23)
+
+- **Reason:** Existing composer arc names differ from the PRD's four tuning
+  phase names.
+- **Details:** The CypherClaw v2 design statement defines the tuning rule as
+  5-limit just intonation for `Listen`/`Divination`, Slendro for
+  `Conversation`/`Procession`, with morphs at stillness/motion transitions.
+  The current score-tree composer arc is
+  `Divination -> Emergence -> Conversation -> Convergence -> Crystallization`,
+  so this task maps `Crystallization` to stillness and
+  `Emergence`/`Convergence` to motion while still supporting the explicit
+  `Listen` and `Procession` phase names. Unknown phases remain legacy
+  `twelve_tet`.
+- **Dependencies and migrations:** No new dependencies, database columns,
+  migrations, provider secrets, or runtime state directories are required.
+- **Startup hardening:** The generated `bootstrap_identity()` hardening bullets
+  are already addressed in the existing startup paths: MIDI intake calls
+  `bootstrap_identity()` before `FirstBootAnnouncer`, and narrative API startup
+  bootstraps identity on both module import and CLI entry. Existing
+  standalone/federated persistence and startup-order tests will be re-run as
+  anchors; this composer metadata task does not change startup code.
+
 ## T-032 (2026-05-23)
 
 - **Reason:** Scripted end-to-end boundary for JACK, Worker, R2, and browser
