@@ -237,6 +237,10 @@ def process_midi_file(
 ) -> dict[str, object]:
     """Validate ``path``, move it to ``processed/`` or ``rejected/``, emit event.
 
+    For valid MIDI files moved to the ``processed/`` directory, a JSON sidecar
+    manifest is written next to the destination path (using a ``.json``
+    suffix).
+
     Returns the JSON event record describing the outcome. The record contains
     the original path, file size, sha256, ISO8601 UTC timestamp, status
     (``processed`` or ``rejected``), and the destination path. The same
@@ -251,11 +255,19 @@ def process_midi_file(
 
     size = src.stat().st_size
     sha256 = _sha256_of(src)
+    header_info = read_mthd_header(src)
     valid = validate_midi_header(src)
     target_dir = processed if valid else rejected
     target_dir.mkdir(parents=True, exist_ok=True)
     destination = _unique_destination(target_dir, src.name)
     shutil.move(str(src), str(destination))
+
+    if valid:
+        manifest = build_manifest(destination, extracted_metadata=header_info)
+        manifest_path = destination.with_suffix(destination.suffix + ".json")
+        manifest_path.write_text(
+            json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8"
+        )
 
     event: dict[str, object] = {
         "path": str(src),

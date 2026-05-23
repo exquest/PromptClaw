@@ -600,3 +600,30 @@ def test_build_manifest_normalizes_non_utc_timestamp(tmp_path: Path) -> None:
     manifest = mod.build_manifest(target, processed_at=stamp)
 
     assert manifest["processed_at"] == "2026-01-02T03:04:05+00:00"
+
+def test_intake_cycle_produces_manifest_sidecar(tmp_path: Path) -> None:
+    """Integration test: drop file, process it, check for sidecar."""
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    target = inbox / "test.mid"
+    # Header: format=0, tracks=1, division=96 (0x60)
+    _write_valid_midi(target)
+
+    # Simulate one cycle by calling process_midi_file directly.
+    processed_dir = tmp_path / "processed"
+    mod.process_midi_file(target, processed_dir=processed_dir)
+
+    moved = processed_dir / "test.mid"
+    manifest_path = processed_dir / "test.mid.json"
+
+    assert moved.is_file()
+    assert manifest_path.is_file()
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["original_filename"] == "test.mid"
+    assert "processed_at" in manifest
+    assert "sha256" in manifest
+    assert manifest["file_size"] > 0
+    assert manifest["mthd_header"]["format"] == 0
+    assert manifest["track_count"] == 1
+    assert manifest["mthd_header"]["division"] == 96
