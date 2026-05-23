@@ -1,5 +1,29 @@
 # Escalations
 
+## T-044a (2026-05-23)
+
+- **Reason:** Task is a no-op against the current tree — the work it
+  describes was already shipped under T-044 (commit `aa215bd`).
+- **Details:** T-044a asks to "Replace hardcoded `Out.ar` bus targets in
+  each voice synthdef with the `fx_bus_id` parameter so audio writes to
+  the declared bus." Inspection of
+  `my-claw/tools/senseweave/synthesis/voices/sw_*.scd` shows every voice
+  already declares an `fx_bus_id` SynthDef control whose default matches
+  its `VoiceReverbProfile` and emits `Out.ar(fx_bus_id, ...)` for the
+  per-voice FX return alongside the dry `Out.ar(out_bus, ...)` tap to
+  the master mix. No literal/hardcoded bus numbers remain in any voice
+  `Out.ar` call (only the master synthdef writes to `0` via
+  `ReplaceOut.ar(0, sig)`, which is correct).
+- **Assumption:** No code change is required for T-044a. The contract is
+  already pinned in source and locked by three regression tests in
+  `tests/test_space_reverb_profiles.py`:
+  `test_voice_synthdefs_declare_fx_bus_id_routing_contract`,
+  `test_voice_synthdef_fx_bus_ids_are_pairwise_unique`, and
+  `test_each_voice_routes_only_to_its_assigned_fx_bus` — all three pass.
+- **Verification:** Re-ran the three contract tests and the full
+  `tests/test_space_reverb_profiles.py` module; all green. No new code,
+  test, or doc changes were introduced for this task.
+
 ## T-044 (2026-05-23)
 
 - **Reason:** SuperCollider `.scsyndef` binaries cannot be regenerated in
