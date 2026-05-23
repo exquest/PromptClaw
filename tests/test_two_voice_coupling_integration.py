@@ -18,6 +18,7 @@ import pytest
 
 from senseweave.affective_state_bus import (
     AFFECTIVE_STATE_BUS_INDEX,
+    AFFECTIVE_STATE_BUS_WINDOW_SECONDS,
     voice_expression_intensity,
 )
 from senseweave.synthesis.senseweave_voice import (
@@ -35,6 +36,27 @@ from test_two_voice_coupling_fixture import (
 
 # T-006c: Defined minimum delta for a 'measurable shift'
 MIN_COUPLING_DELTA = 0.01
+
+
+class _SuperColliderDouble:
+    """In-memory stand-in for scsynth that mirrors `/c_set` writes.
+
+    The writer flushes to ``send_message`` and a downstream voice reads
+    via ``read_control_bus``. Holding both in a single object means the
+    drive loop exercises the same value path that production uses, instead
+    of pre-baking the reader's return value.
+    """
+
+    def __init__(self) -> None:
+        self.send_message = MagicMock(side_effect=self._on_send)
+        self._bus_values: dict[int, float] = {}
+
+    def _on_send(self, address: str, args: list) -> None:
+        if address == "/c_set" and len(args) >= 2:
+            self._bus_values[int(args[0])] = float(args[1])
+
+    def read_control_bus(self, bus_index: int) -> float:
+        return self._bus_values.get(int(bus_index), 0.0)
 
 
 class TestTwoVoiceCouplingDrive:
@@ -102,6 +124,56 @@ class TestTwoVoiceCouplingDrive:
         
         # Final check against exact expected value
         assert actual_scaled_depth == pytest.approx(expected_scaled_depth)
+
+    def test_drive_coupling_over_multiple_ticks_propagates_to_voice_b(
+        self,
+        two_voice_coupling_fixture: TwoVoiceCouplingFixture,
+    ) -> None:
+        """Advance the render loop enough ticks for coupling to propagate.
+
+        Voice A samples its high-vibrato intensity into the bus writer
+        across the full 2s rolling window, the writer flushes once per
+        tick into the shared SuperCollider double, and only then does
+        Voice B trigger a note that reads the bus. The depth captured
+        from Voice B's `/s_new` is the post-coupling measurement.
+        """
+        fixture = two_voice_coupling_fixture
+        supercollider = _SuperColliderDouble()
+
+        intensity_a = voice_expression_intensity(
+            vibrato_depth=fixture.voice_a_vibrato_depth,
+        )
+
+        tick_dt = 0.1
+        tick_count = int(AFFECTIVE_STATE_BUS_WINDOW_SECONDS / tick_dt) + 2
+        bus_trace: list[float] = []
+        for tick in range(tick_count):
+            now = tick * tick_dt
+            fixture.bus_writer.update(VOICE_A_ID, intensity_a, now=now)
+            bus_trace.append(fixture.bus_writer.flush(supercollider, now=now))
+
+        assert bus_trace[-1] == pytest.approx(intensity_a)
+        assert supercollider.read_control_bus(AFFECTIVE_STATE_BUS_INDEX) == pytest.approx(
+            intensity_a
+        )
+
+        env = {"CYPHERCLAW_V2_COUPLING": "1"}
+        fixture.voice_b.note_on_with_affective_coupling(
+            freq=440.0,
+            control_bus_reader=supercollider,
+            modulator_depths={"vib_depth": fixture.voice_b_vibrato_depth},
+            env=env,
+        )
+
+        fixture.osc_b.send_message.assert_called_once()
+        s_new_args = fixture.osc_b.send_message.call_args[0][1]
+        post_coupling_depth = s_new_args[s_new_args.index("vib_depth") + 1]
+
+        expected_multiplier = coupling_multiplier_from_bus_value(intensity_a)
+        assert post_coupling_depth == pytest.approx(
+            fixture.voice_b_vibrato_depth * expected_multiplier
+        )
+        assert post_coupling_depth - fixture.pre_coupling_vibrato_depth > MIN_COUPLING_DELTA
 
     def test_coupling_decay_over_time(
         self,
