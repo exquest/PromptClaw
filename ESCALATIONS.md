@@ -1,5 +1,38 @@
 # Escalations
 
+## T-054b (2026-05-23)
+
+- **Reason:** Cross-repository Worker implementation and generated hardening
+  scope.
+- **Details:** T-054b keeps PromptClaw as the ADP/source-of-truth repo while
+  implementing the live MIDI WebSocket runtime in the sibling
+  `/Users/anthony/Programming/catalog-explorer/worker` project established by
+  T-054a.
+- **Assumption:** Incoming WebSocket MIDI events must be JSON text objects with
+  exactly `status`, `data1`, `data2`, and `ts`. MIDI byte fields are integers
+  from 0 through 255, and `ts` is any finite number.
+- **Assumption:** Invalid messages are ignored silently. This preserves a small
+  broadcast-only room and avoids introducing protocol error replies in T-054b.
+- **Candidate hardening:** The generated startup identity feedback targets the
+  existing PromptClaw startup subsystem, not the Cloudflare Worker room. Current
+  tests already cover `bootstrap_identity()` invocation before
+  `FirstBootAnnouncer`, standalone and federated identity persistence between
+  boots, and ASGI import-time identity reuse; T-054b keeps those tests as
+  mandatory verification anchors.
+- **Dependencies and migrations:** No new dependencies, provider secrets,
+  database columns, D1 migrations, Durable Object migrations, R2 layout changes,
+  runtime state directories, startup-flow rewiring, agent commands, or
+  SuperCollider source changes are expected.
+- **Verification:** Red phase was confirmed with
+  `npm test -- tests/cypherclaw-live-midi.test.js` failing on missing fan-out
+  and dead-socket removal before production code changed. After implementation,
+  the focused Worker suite passed, full Worker `npm test` passed with
+  `37 passed`, Worker `npm run check` passed, startup identity hardening anchors
+  passed with `8 passed`, and the required PromptClaw validation
+  (`pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
+  mypy src/`) passed with `5211 passed, 11 skipped`, Ruff clean, and mypy clean.
+  No new dependencies or migrations were introduced.
+
 ## T-048d (2026-05-23)
 
 - **Reason:** Test-hardening scope and schema-boundary assumptions.

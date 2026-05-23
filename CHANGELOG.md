@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Added T-054b live MIDI event ingest and fan-out to the holdenu Cloudflare
+  Worker `LiveMidiRoom`: accepted sockets now parse incoming text messages as
+  JSON MIDI events with exactly `status`, `data1`, `data2`, and `ts`, validate
+  MIDI byte fields and finite timestamps, broadcast valid event JSON to every
+  other connected socket, drop invalid/non-string messages silently, and remove
+  dead recipient sockets when `send()` fails. No new dependencies, No D1
+  database migration, No Durable Object migration change, provider secrets, R2
+  layout changes, runtime state directories, startup-flow rewiring, or
+  SuperCollider source changes were added. Red phase was confirmed before
+  implementation; Worker `npm test` (`37 passed`), Worker `npm run check`,
+  startup identity anchors (`8 passed`), and final PromptClaw validation
+  (`5211 passed, 11 skipped`, Ruff clean, mypy clean) all passed.
+
 - Added T-054a live MIDI WebSocket room plumbing to the holdenu Cloudflare
   Worker: `/api/cypherclaw/live-midi` now rejects non-WebSocket GETs with
   `426`, forwards valid upgrades to `LIVE_MIDI_ROOM` via
