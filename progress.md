@@ -550,7 +550,13 @@ Progress: [███████████████████████
   ffprobe-based `--verify-dir` checks, exposes `--check-cpu` for the under-10%
   runtime target, and bootstraps identity before JACK/ffmpeg startup.
   Validation passed with `4997 passed, 11 skipped`, Ruff clean, and mypy clean.
-- **T-025**: pending — Pending.
+- **T-025**: complete — Cloudflare Worker segment ingest now accepts
+  authenticated `POST /api/cypherclaw/segment` requests, stores the binary
+  segment in R2 under `cypherclaw/live/{YYYY-MM-DD}/seg-{sequence}.opus`, and
+  preserves segment metadata for later HLS playlist work. Validation passed
+  with Worker `npm test`, Worker `npx tsc --noEmit`, startup identity anchors
+  (`11 passed`), and full PromptClaw validation (`4997 passed, 11 skipped`,
+  Ruff clean, mypy clean).
 - **T-026**: pending — Pending.
 - **T-027**: pending — Pending.
 - **T-028**: needs_split — Timed out; run sdp-cli tasks split T-028 to break it down.
@@ -601,6 +607,32 @@ Progress: [███████████████████████
 - **T-073**: pending — Pending.
 - **T-074**: pending — Pending.
 
+
+## T-025 (2026-05-23)
+
+- **Exploration findings:** The active ADP workflow is the prompt's Explore ->
+  Specify -> Test -> Implement -> Verify -> Document sequence. The relevant
+  requirement is CC-021 in `sdp/cypherclaw-v2-analysis/requirements-register.md`
+  and T-025 in the implementation plan/task graph: the Cloudflare Worker must
+  accept `POST /api/cypherclaw/segment` and persist the segment in R2. The
+  existing Worker is not inside PromptClaw; the PRD points to the sibling
+  `/Users/anthony/Programming/catalog-explorer/worker` project, whose current
+  `src/index.ts` owns the holdenu API routes and already has a `MEDIA` R2
+  binding plus bearer-token-protected write endpoints. No existing CypherClaw
+  Worker route, Wrangler route for `cypherclaw.holdenu.com`, or Worker tests
+  exist yet. T-025 will add only the authenticated segment ingest route and
+  focused Worker tests; playlist serving, DNS, public segment reads, and the
+  streamer upload client remain later tasks.
+- **Red/focused verification:** Red phase was confirmed with
+  `cd /Users/anthony/Programming/catalog-explorer/worker && npm test` failing
+  on both locked tests because the Worker returned `404` for
+  `/api/cypherclaw/segment`. After implementation, the same Worker test command
+  passed with `2 passed`, and `npx tsc --noEmit` was clean.
+- **Full validation:** Startup identity hardening anchors passed with
+  `11 passed`. Full PromptClaw validation passed with
+  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
+  mypy src/`: `4997 passed, 11 skipped`, Ruff clean, and mypy clean. No new
+  dependencies or migrations were introduced.
 
 ## T-022d (2026-05-23)
 

@@ -1,5 +1,21 @@
 # Escalations
 
+## T-025 (2026-05-23)
+
+- **Reason:** Cross-repository Worker location and route-auth assumption
+- **Details:** The CypherClaw v2 PRD identifies PromptClaw as the primary repo
+  for ADP artifacts but places the existing Cloudflare Worker in the sibling
+  `/Users/anthony/Programming/catalog-explorer/worker` project. This task
+  therefore keeps the specification, progress, changelog, and regression
+  anchors in PromptClaw while implementing the Worker route in the existing
+  holdenu API Worker. The segment ingest route follows the Worker's existing
+  write-endpoint pattern and requires `Authorization: Bearer <ADMIN_TOKEN>` even
+  though the PRD does not spell out auth for segment POSTs; unauthenticated
+  public R2 writes would be unsafe. No new dependencies, database migrations,
+  provider secrets, or startup-flow changes are required. The generated startup
+  identity hardening bullets target an already-covered subsystem and are handled
+  as regression verification rather than unrelated T-025 implementation scope.
+
 ## T-022d (2026-05-23)
 
 - **Reason:** Meter trajectory test-hardening scope and startup-hardening assumptions

@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Added Cloudflare Worker CypherClaw segment ingest (T-025): the existing
+  holdenu API Worker in `catalog-explorer/worker` now accepts authenticated
+  `POST /api/cypherclaw/segment` requests, validates
+  `X-CypherClaw-Sequence` and optional capture-time metadata, stores the binary
+  segment in R2 under `cypherclaw/live/{YYYY-MM-DD}/seg-{sequence}.opus`, and
+  persists content type plus scene, tuning, duration, sequence, and capture
+  metadata for later HLS playlist work. Added dependency-free Node tests using
+  the built-in test runner and a fake R2 bucket to prove the POST writes an
+  object visible through R2 listing and unauthenticated writes are rejected. No
+  new dependencies, migrations, or startup-flow changes were introduced.
+  Validation passed with the Worker `npm test`, Worker `npx tsc --noEmit`,
+  startup identity anchors (`11 passed`), and full PromptClaw validation
+  (`4997 passed, 11 skipped`, Ruff clean, mypy clean).
+
 - Added a JACK output Opus streamer (T-024):
   `my-claw/tools/audio_streamer.py` now starts a single ffmpeg JACK client for
   the live `SuperCollider:out_1` / `SuperCollider:out_2` output bus, connects
