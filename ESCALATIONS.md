@@ -1,5 +1,37 @@
 # Escalations
 
+## T-032 (2026-05-23)
+
+- **Reason:** Scripted end-to-end boundary for JACK, Worker, R2, and browser
+  audio in CI
+- **Details:** PromptClaw remains the ADP source of truth, but the Worker/R2 and
+  browser live-page implementation is in the sibling
+  `/Users/anthony/Programming/catalog-explorer/worker` repository. T-032 adds a
+  streamer-side POST helper in `my-claw/tools/audio_streamer.py` and a
+  dependency-free Worker E2E test in `catalog-explorer` that scripts a
+  JACK-tone segment through the real Worker handler, fake R2 storage, playlist
+  generation, segment retrieval, and browser `<audio>` initialization.
+- **Scope decision:** The automated test does not require live JACK hardware,
+  Cloudflare credentials, a live R2 bucket, or a real browser media decoder.
+  It uses synthetic Ogg/Opus-like bytes carrying a tone-generator marker and
+  exercises the production request/storage/page code path. The existing T-026
+  Ogg/Opus HLS-container caveat remains: this verifies segment propagation and
+  browser audio wiring, not final hls.js/Safari media decode compatibility.
+- **Dependencies and migrations:** No new Python or npm dependencies, database
+  columns, migrations, provider secrets, runtime state directories, or
+  startup-flow rewiring are required.
+- **Startup hardening:** The generated `bootstrap_identity()` hardening bullets
+  are addressed by re-running the established CLI, first-boot,
+  daemon-ordering, and narrative ASGI identity anchors. This task does not
+  change those startup paths.
+- **Verification:** Red phase was confirmed before implementation: the Python
+  streamer test failed on the missing upload helper and the Worker E2E failed
+  on missing ingest latency metadata. After implementation, focused streamer
+  upload coverage passed, Worker `npm test` passed with the E2E latency log
+  `cypherclaw_t032_latency_ms=1777`, Worker `npm run check` passed, startup
+  identity anchors passed with `11 passed`, and full PromptClaw validation
+  passed with `5004 passed, 11 skipped`, Ruff clean, and mypy clean.
+
 ## T-030 (2026-05-23)
 
 - **Reason:** Cross-repository Worker location and read-time R2 listing scope

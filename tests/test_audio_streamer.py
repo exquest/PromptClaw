@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -15,10 +16,12 @@ from audio_streamer import (  # noqa: E402
     DEFAULT_BITRATE_KBPS,
     DEFAULT_CLIENT_NAME,
     DEFAULT_SEGMENT_SECONDS,
+    SegmentUploadConfig,
     SegmentProbe,
     StreamerConfig,
     build_ffmpeg_command,
     check_process_cpu,
+    post_segment_to_worker,
     start_streamer,
     validate_segment_probe,
 )
@@ -204,3 +207,77 @@ def test_cpu_check_reports_under_and_over_limit_from_ps() -> None:
     assert over.ok is False
     assert over.cpu_percent == 12.1
     assert "cpu" in " ".join(over.errors)
+
+
+class _FakeHttpResponse:
+    def __init__(self, payload: dict[str, object]) -> None:
+        self.payload = payload
+
+    def __enter__(self) -> _FakeHttpResponse:
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return json.dumps(self.payload).encode()
+
+
+def test_post_segment_to_worker_sends_streamer_headers_and_reports_latency(
+    tmp_path: Path,
+) -> None:
+    segment_path = tmp_path / "tone.opus"
+    segment_bytes = b"OggS JACK tone-generator 440Hz"
+    segment_path.write_bytes(segment_bytes)
+    upload = SegmentUploadConfig(
+        endpoint_url="https://cypherclaw.holdenu.com/api/cypherclaw/segment",
+        admin_token="segment-token",
+        sequence=73,
+        captured_at="2026-05-23T12:00:00Z",
+        duration_seconds=6.0,
+        scene="tone-generator",
+        tuning="twelve_tet",
+        source="jack-tone-generator",
+    )
+    captured: dict[str, Any] = {}
+
+    def fake_urlopen(request: Any, *, timeout: float) -> _FakeHttpResponse:
+        captured["url"] = request.full_url
+        captured["headers"] = {
+            key.lower(): value for key, value in request.header_items()
+        }
+        captured["body"] = request.data
+        captured["timeout"] = timeout
+        return _FakeHttpResponse(
+            {
+                "ok": True,
+                "key": "cypherclaw/live/2026-05-23/seg-73.opus",
+                "sequence": 73,
+                "size": len(segment_bytes),
+                "latency_ms": 1234,
+            }
+        )
+
+    result = post_segment_to_worker(
+        segment_path,
+        upload,
+        urlopen_fn=fake_urlopen,
+        timeout_seconds=4.0,
+    )
+
+    assert captured["url"] == "https://cypherclaw.holdenu.com/api/cypherclaw/segment"
+    assert captured["body"] == segment_bytes
+    assert captured["timeout"] == 4.0
+    assert captured["headers"]["authorization"] == "Bearer segment-token"
+    assert captured["headers"]["content-type"] == "audio/ogg; codecs=opus"
+    assert captured["headers"]["x-cypherclaw-sequence"] == "73"
+    assert captured["headers"]["x-cypherclaw-captured-at"] == "2026-05-23T12:00:00Z"
+    assert captured["headers"]["x-cypherclaw-duration"] == "6.000"
+    assert captured["headers"]["x-cypherclaw-scene"] == "tone-generator"
+    assert captured["headers"]["x-cypherclaw-tuning"] == "twelve_tet"
+    assert captured["headers"]["x-cypherclaw-source"] == "jack-tone-generator"
+    assert result.ok is True
+    assert result.key == "cypherclaw/live/2026-05-23/seg-73.opus"
+    assert result.sequence == 73
+    assert result.size == len(segment_bytes)
+    assert result.latency_ms == 1234

@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Added the T-032 scripted live-audio end-to-end verification path:
+  `my-claw/tools/audio_streamer.py` now exposes a typed segment POST helper for
+  the Worker's `/api/cypherclaw/segment` contract, and the sibling holdenu
+  Worker now reports `latency_ms` on segment ingest while preserving existing
+  metadata for clients that do not send a source marker. Added a dependency-free
+  Worker E2E test that scripts a JACK tone-generator segment through Worker
+  ingest, fake R2 storage, playlist serving, segment byte retrieval, and browser
+  `<audio>` initialization, logging `cypherclaw_t032_latency_ms=1777` and
+  asserting the path stays under 30 seconds. No new dependencies, provider
+  secrets, database migrations, runtime state directories, or startup-flow
+  rewiring were added. Validation passed with Worker `npm test` (`31 passed`),
+  Worker `npm run check`, startup identity anchors (`11 passed`), and full
+  PromptClaw validation (`5004 passed, 11 skipped`, Ruff clean, mypy clean).
+
 - Added the T-030 CypherClaw archive feed to the `cypherclaw.holdenu.com`
   landing page in the sibling holdenu Worker. The page now lists archived
   sessions in reverse chronological order under

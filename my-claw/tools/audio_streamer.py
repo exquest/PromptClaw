@@ -9,8 +9,10 @@ import sys
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal, Protocol
+from urllib.request import Request, urlopen
 
 try:
     from cypherclaw.first_boot import bootstrap_identity as _bootstrap_identity
@@ -40,6 +42,8 @@ DEFAULT_CONNECT_TIMEOUT_SECONDS = 8.0
 DEFAULT_DURATION_TOLERANCE_SECONDS = 0.75
 DEFAULT_BITRATE_TOLERANCE_RATIO = 0.25
 DEFAULT_MAX_CPU_PERCENT = 10.0
+DEFAULT_WORKER_SEGMENT_URL = "https://cypherclaw.holdenu.com/api/cypherclaw/segment"
+DEFAULT_SEGMENT_CONTENT_TYPE = "audio/ogg; codecs=opus"
 
 
 class StreamProcess(Protocol):
@@ -60,6 +64,20 @@ PopenFactory = Callable[..., StreamProcess]
 BootstrapIdentityFn = Callable[..., object]
 
 
+class HttpResponse(Protocol):
+    def __enter__(self) -> HttpResponse:
+        ...
+
+    def __exit__(self, *args: object) -> None:
+        ...
+
+    def read(self) -> bytes:
+        ...
+
+
+UrlOpenFn = Callable[..., HttpResponse]
+
+
 @dataclass(frozen=True)
 class StreamerConfig:
     output_dir: Path = DEFAULT_OUTPUT_DIR
@@ -73,6 +91,37 @@ class StreamerConfig:
     identity_mode: IdentityMode = "standalone"
     identity_release: str = ""
     identity_parent_id: str | None = None
+
+
+@dataclass(frozen=True)
+class SegmentUploadConfig:
+    endpoint_url: str = DEFAULT_WORKER_SEGMENT_URL
+    admin_token: str = ""
+    sequence: int = 0
+    captured_at: str = ""
+    duration_seconds: float = float(DEFAULT_SEGMENT_SECONDS)
+    scene: str = ""
+    tuning: str = ""
+    source: str = "jack-streamer"
+    content_type: str = DEFAULT_SEGMENT_CONTENT_TYPE
+
+
+@dataclass(frozen=True)
+class SegmentUploadResult:
+    ok: bool
+    key: str
+    sequence: int
+    size: int
+    latency_ms: int | None
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "ok": self.ok,
+            "key": self.key,
+            "sequence": self.sequence,
+            "size": self.size,
+            "latency_ms": self.latency_ms,
+        }
 
 
 @dataclass(frozen=True)
@@ -135,6 +184,78 @@ def _wrapped(config: StreamerConfig, command: Sequence[str]) -> list[str]:
 
 def _segment_pattern(config: StreamerConfig) -> str:
     return str(config.output_dir / f"{config.client_name}-%Y%m%dT%H%M%S.opus")
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(tz=UTC).isoformat().replace("+00:00", "Z")
+
+
+def build_segment_upload_request(path: Path, config: SegmentUploadConfig) -> Request:
+    """Build the Worker POST request for one completed Opus segment."""
+
+    if config.sequence < 0:
+        raise ValueError("sequence must be non-negative")
+    if not config.admin_token:
+        raise ValueError("admin_token is required")
+    captured_at = config.captured_at or _utc_now_iso()
+    headers = {
+        "Authorization": f"Bearer {config.admin_token}",
+        "Content-Type": config.content_type,
+        "X-CypherClaw-Sequence": str(config.sequence),
+        "X-CypherClaw-Captured-At": captured_at,
+        "X-CypherClaw-Duration": f"{config.duration_seconds:.3f}",
+    }
+    if config.scene:
+        headers["X-CypherClaw-Scene"] = config.scene
+    if config.tuning:
+        headers["X-CypherClaw-Tuning"] = config.tuning
+    if config.source:
+        headers["X-CypherClaw-Source"] = config.source
+    return Request(
+        config.endpoint_url,
+        data=path.read_bytes(),
+        headers=headers,
+        method="POST",
+    )
+
+
+def _optional_int(value: object) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _required_int(payload: dict[str, object], name: str) -> int:
+    value = _optional_int(payload.get(name))
+    if value is None:
+        raise RuntimeError(f"Worker response missing integer field {name!r}")
+    return value
+
+
+def post_segment_to_worker(
+    path: Path,
+    config: SegmentUploadConfig,
+    *,
+    urlopen_fn: UrlOpenFn = urlopen,
+    timeout_seconds: float = 15.0,
+) -> SegmentUploadResult:
+    """Post one segment to the Worker and return its ingest result."""
+
+    request = build_segment_upload_request(path, config)
+    with urlopen_fn(request, timeout=timeout_seconds) as response:  # noqa: S310
+        payload = json.loads(response.read().decode())
+    if not isinstance(payload, dict):
+        raise RuntimeError("Worker response must be a JSON object")
+    return SegmentUploadResult(
+        ok=bool(payload.get("ok")),
+        key=str(payload.get("key", "")),
+        sequence=_required_int(payload, "sequence"),
+        size=_required_int(payload, "size"),
+        latency_ms=_optional_int(payload.get("latency_ms")),
+    )
 
 
 def build_ffmpeg_command(config: StreamerConfig) -> list[str]:

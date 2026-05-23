@@ -584,6 +584,57 @@ Progress: [███████████████████████
 - **T-073**: pending — Pending.
 - **T-074**: pending — Pending.
 
+## T-032 Phase 0 Explore (2026-05-23)
+
+- Read the CypherClaw v2 PRD snapshot, requirements register, and implementation
+  plan entries for CC-020 through CC-028. T-032 closes the Sprint 3 public
+  stream path after the streamer, Worker ingest, playlist, live page, archive,
+  and composer-count isolation tasks.
+- Read the existing stream components and tests:
+  `my-claw/tools/audio_streamer.py`, `tests/test_audio_streamer.py`,
+  `my-claw/tools/session_archiver.py`, `tests/test_session_archiver.py`, the
+  sibling `catalog-explorer/worker/src/index.ts`, and all current
+  `catalog-explorer/worker/tests/cypherclaw-*.test.js` files.
+- Existing architecture: the JACK streamer writes 6-second Ogg/Opus segments
+  from `SuperCollider:out_1`/`out_2`; the Worker accepts authenticated segment
+  POSTs into R2 under `cypherclaw/live/{date}/seg-{sequence}.opus`; the playlist
+  route lists recent R2 objects; the public root page initializes the live
+  browser `<audio>` element against `/api/cypherclaw/live.m3u8`.
+- Gap found: there is no streamer-side POST helper and no end-to-end regression
+  that drives a tone-generator segment through Worker ingest, R2 storage,
+  playlist/segment retrieval, and browser `<audio>` initialization while logging
+  latency against the 30-second budget.
+- Scope decision: use a CI-safe scripted tone segment and fake R2 bucket for the
+  automated Worker E2E while keeping the existing Ogg/Opus HLS decode caveat
+  explicit. No new dependencies, migrations, provider secrets, or startup
+  identity rewiring are required; the existing identity hardening anchors remain
+  mandatory regression checks.
+
+## T-032 ADP Notes (2026-05-23)
+
+- **Specify:** Wrote `specs/t-032-spec.md` with the problem statement,
+  technical approach, edge cases, acceptance criteria, and VERIFY commands for
+  the streamer upload helper, scripted Worker E2E, Worker checks, identity
+  anchors, bookkeeping, and full PromptClaw validation.
+- **Test Development:** Added locked tests before implementation. Red phase was
+  confirmed with
+  `pytest tests/test_audio_streamer.py::test_post_segment_to_worker_sends_streamer_headers_and_reports_latency -q`
+  failing on missing streamer upload symbols, and
+  `cd /Users/anthony/Programming/catalog-explorer/worker && npm test -- tests/cypherclaw-e2e.test.js`
+  failing because Worker ingest did not yet return latency metadata.
+- **Implement:** Added `SegmentUploadConfig`, `SegmentUploadResult`,
+  `build_segment_upload_request()`, and `post_segment_to_worker()` to
+  `my-claw/tools/audio_streamer.py`. Updated the holdenu Worker to allow
+  `X-CypherClaw-Source`, compute ingest latency from
+  `X-CypherClaw-Captured-At`, return `latency_ms`, and persist source/latency
+  metadata only when the source marker is present.
+- **Verify:** Focused streamer upload coverage passed. Related streamer and
+  archiver tests passed with `9 passed`. Worker `npm test` passed with
+  `31 passed` and logged `cypherclaw_t032_latency_ms=1777`; Worker
+  `npm run check` passed. Startup identity anchors passed with `11 passed`.
+  Full validation passed with `5004 passed, 11 skipped`, Ruff clean, and mypy
+  clean.
+
 ## T-028a ADP Notes (2026-05-23)
 
 - **Explore:** Read AGENTS.md, the R750 ADP doc, CypherClaw v2 PRD Feature 3,
