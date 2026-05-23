@@ -7,38 +7,34 @@
 - `tests/test_morph_voice_scd.py`
 
 ## Correctness
-- **Morph Logic:** The implementation of `morph_x` (0.0–1.0) with both linear and equal-power crossfade laws is mathematically correct.
-- **Law Selection:** `morph_curve` correctly selects between laws via `Select.kr`.
-- **Default Behavior:** `morph_curve` defaults to 1 (equal-power), which matches musical expectations for perceived loudness.
-- **Summing:** Parallel sources are correctly scaled and summed before the output stage.
+- **Morph Logic:** The implementation of `morph_x` (0.0–1.0) with both linear and equal-power crossfade laws is mathematically correct. Endpoint verification confirms `morph_x=0.0` yields Source A (Saw) and `morph_x=1.0` yields Source B (Pulse).
+- **Law Selection:** `morph_curve` correctly selects between laws via `Select.kr` (0=linear, 1=equal-power).
+- **Default Behavior:** `morph_curve` defaults to 1 (equal-power), and `morph_x` defaults to 0.0, matching the spec.
+- **Summing:** Parallel sources are correctly scaled by their respective gains and summed before the output stage.
 
 ## Completeness
-- **Missing Parameters:** The `morph_voice` SynthDef is missing the standard `fx_bus_id` and `fx_send` parameters required for integration with the CypherClaw v2 FX matrix.
-- **Missing Spatial Control:** The SynthDef lacks a `position` (pan) parameter, which is standard for all other voices in `synthesis/voices/`.
-- **Missing Send Logic:** There is no parallel `Out.ar(fx_bus_id, ...)` send implemented.
+- **Hardening Parameters:** The `morph_voice` SynthDef now includes the mandatory `fx_bus_id` (default 22) and `fx_send` (default 0.2) parameters.
+- **Spatial Control:** A `position` parameter (default 0.0) has been added and correctly used with `Pan2.ar` and `.clip(-1.0, 1.0)`.
+- **Send Logic:** A parallel `Out.ar(fx_bus_id, send)` is implemented, where `send = sig * fx_send.clip(0.0, 1.0)`.
 
 ## Consistency
+- **Voice Contract:** The implementation now fully complies with the CypherClaw v2 voice routing contract (T-044c) and the hardening requirements for `fx_bus_id`.
 - **File Placement:** Correctly placed in `my-claw/tools/senseweave/synthesis/voices/`.
-- **Parameter Naming:** Follows project conventions for `freq`, `amp`, `attack`, `release`, and `out_bus`.
-- **Constraint:** Does not follow the mandatory routing contract established in T-044/T-044c regarding `fx_bus_id`.
+- **Test Coverage:** `tests/test_morph_voice_scd.py` has been updated to verify the new parameters and the FX send logic.
 
 ## Security
 - No vulnerabilities or unsafe practices identified.
 
 ## Quality
-- SCD source is clean and well-commented.
-- Logic is robust against `morph_x` values outside the [0, 1] range due to `.clip(0.0, 1.0)`.
+- SCD source is clean, well-commented, and robust against out-of-range control values via extensive use of `.clip()`.
+- Static tests in Python provide high confidence in the SCD structure without requiring a local SuperCollider installation.
 
 ## Issues Found
-- [x] **Missing `fx_bus_id` parameter — severity: blocking**. The SynthDef must declare `fx_bus_id` and `fx_send` to comply with the project's voice contract.
-- [ ] **Missing `position` parameter — severity: minor**. Most voices include a `position` control for stereo placement.
-- [ ] **Missing FX send logic — severity: blocking**. The voice must write a parallel send to `fx_bus_id` scaled by `fx_send`.
+- None.
 
-## Verdict: FAIL
+## Verdict: PASS
 
 ## Notes for Lead Agent
-- Add `fx_bus_id` (default 22) and `fx_send` (default 0.2) to the `arg` block.
-- Add `position` (default 0.0) to the `arg` block.
-- Implement the parallel FX send: `Out.ar(fx_bus_id, sig * fx_send.clip(0.0, 1.0));`
-- Update `Pan2.ar(sig, 0.0)` to use the `position` parameter: `Pan2.ar(sig, position.clip(-1.0, 1.0))`.
-- Update `tests/test_morph_voice_scd.py` to verify the presence of these controls and the FX send logic.
+- The implementation of the crossfade and routing logic is excellent.
+- The use of `Select.kr` for law selection is a clean and efficient pattern.
+- The hardening check for `fx_bus_id` is now satisfied.
