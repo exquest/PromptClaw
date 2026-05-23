@@ -6,6 +6,7 @@ import hashlib
 import json
 import logging
 import os
+import shutil
 import signal
 import sys
 import threading
@@ -627,3 +628,72 @@ def test_intake_cycle_produces_manifest_sidecar(tmp_path: Path) -> None:
     assert manifest["mthd_header"]["format"] == 0
     assert manifest["track_count"] == 1
     assert manifest["mthd_header"]["division"] == 96
+
+def test_process_midi_file_skips_manifest_for_rejected_files(tmp_path: Path) -> None:
+    """Ensure rejected files do NOT get a JSON manifest sidecar."""
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    target = inbox / "bad.mid"
+    target.write_bytes(b"NOT_A_MIDI_HEADER")
+
+    processed_dir = tmp_path / "processed"
+    rejected_dir = tmp_path / "rejected"
+
+    mod.process_midi_file(
+        target, processed_dir=processed_dir, rejected_dir=rejected_dir
+    )
+
+    moved = rejected_dir / "bad.mid"
+    manifest_path = rejected_dir / "bad.mid.json"
+
+    assert moved.is_file()
+    assert not manifest_path.exists()
+    assert not (processed_dir / "bad.mid").exists()
+
+
+def test_watch_loop_poll_mode_avoids_reprocessing_after_move(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Verify that poll mode doesn't re-process if a file is moved."""
+    monkeypatch.setattr(mod, "_HAS_WATCHDOG", False)
+
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    target = inbox / "test.mid"
+
+    dispatched_paths: list[Path] = []
+    stop_event = threading.Event()
+
+    def mock_dispatch(path: Path) -> None:
+        dispatched_paths.append(path)
+        # Move the file out of inbox to simulate process_midi_file behavior
+        processed = inbox / "processed"
+        processed.mkdir(exist_ok=True)
+        shutil.move(str(path), str(processed / path.name))
+        # After one dispatch, stop the loop
+        stop_event.set()
+
+    def producer() -> None:
+        time.sleep(0.1)
+        _write_valid_midi(target)
+        # If it hasn't stopped in 0.5s, something is wrong
+        time.sleep(0.5)
+        if not stop_event.is_set():
+            stop_event.set()
+
+    t = threading.Thread(target=producer)
+    t.start()
+    try:
+        mod.watch_loop(
+            inbox,
+            stop_event,
+            dispatch=mock_dispatch,
+            poll_interval=0.01,
+            wait_for_stable=lambda p: True,
+        )
+    finally:
+        t.join()
+
+    # Should have been dispatched exactly once
+    assert len(dispatched_paths) == 1
+    assert dispatched_paths[0].name == "test.mid"
