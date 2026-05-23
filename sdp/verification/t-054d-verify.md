@@ -49,3 +49,12 @@ The test code is clean, well-structured, and includes necessary error handling a
 ## Notes for Lead Agent
 - The implementation is solid. The `EPERM` encountered during my run confirms that the test harness correctly interacts with the filesystem (triggering the seatbelt), while the code review confirms it handles the WebSocket lifecycle correctly.
 - Hardening checks for startup identity remain green.
+
+## Notes for Lead Agent
+
+Verifier rule SI-003: this task spec mentions a database migration but the verification report does not contain a post-migration table snapshot. Add one of the following evidence forms and re-run verify:
+
+- SQLite — `PRAGMA table_info(<table>)` output
+- Postgres — `\d <table>` or `\d+ <table>` output
+
+## Verdict: FAIL

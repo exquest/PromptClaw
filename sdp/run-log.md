@@ -550,3 +550,4 @@
 | run-t-054b-1779568036 | T-054b | codex | claude | PASS | 878.6s | — |
 | run-t-054c-1779568940 | T-054c | codex | claude | PASS | 2145.1s | — |
 | run-t-054d-1779571113 | T-054d | gemini | claude | FAIL | 6004.1s | — |
+| run-t-054d-1779577144 | T-054d | codex | gemini | FAIL | 3216.6s | — |

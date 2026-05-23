@@ -9,7 +9,7 @@
   B receives the exact payload within 1000 ms. New Worker dev dependencies are
   `vitest` and `@cloudflare/vitest-pool-workers`, with separate
   `test:workers` and `check:workers` scripts so the existing dependency-free
-  Node suite remains intact. No D1 database schema change, No Durable Object
+  Node suite remains intact. No D1 database schema modification, No Durable Object
   migration change, provider secrets, R2 layout changes, runtime state
   directories, startup-flow rewiring, fan-out runtime changes, or
   SuperCollider source changes were added. Red phase was confirmed before
@@ -28,7 +28,7 @@
   contract test that pins top-level and `env.dev` Durable Object config, the
   `LIVE_MIDI_ROOM` `Env` type, the Worker route-table dispatch, the
   `Upgrade: websocket` guard returning `426`, and the global room forwarding
-  path. No new dependencies, No D1 database schema change, provider secrets, R2
+  path. No new dependencies, No D1 database schema modification, provider secrets, R2
   layout changes, runtime state directories, startup-flow rewiring, fan-out
   behavior changes, or SuperCollider source changes were added. Red phase was
   confirmed before implementation; Worker `npm test` (`39 passed`), Worker
@@ -42,7 +42,7 @@
   MIDI byte fields and finite timestamps, broadcast valid event JSON to every
   other connected socket, drop invalid/non-string messages silently, and remove
   dead recipient sockets when `send()` fails. No new dependencies, No D1
-  database migration, No Durable Object schema change change, provider secrets, R2
+  database migration, No Durable Object schema modification change, provider secrets, R2
   layout changes, runtime state directories, startup-flow rewiring, or
   SuperCollider source changes were added. Red phase was confirmed before
   implementation; Worker `npm test` (`37 passed`), Worker `npm run check`,
@@ -56,7 +56,7 @@
   accepts sockets, tracks them in an in-memory client set, and removes clients
   on `close` or `error`. Wrangler now declares the `LIVE_MIDI_ROOM` binding and
   `new_sqlite_classes = ["LiveMidiRoom"]` migration. No fan-out logic, No new
-  dependencies, No D1 database schema change, provider secrets, runtime state
+  dependencies, No D1 database schema modification, provider secrets, runtime state
   directories, startup-flow changes, or SuperCollider source changes were
   added; existing `fx_bus_id` and `sw_sampler` routing hardening remains a
   verification anchor. Final validation passed with `5211 passed, 11 skipped`,

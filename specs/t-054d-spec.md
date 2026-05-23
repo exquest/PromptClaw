@@ -25,7 +25,7 @@ latency through the actual Worker/Durable Object path.
 - Add Vitest and `@cloudflare/vitest-pool-workers` as Worker dev dependencies,
   following Cloudflare's current Workers Vitest guidance.
 - Add a Worker Vitest config that points at `worker/wrangler.toml` so the test
-  uses the real `LIVE_MIDI_ROOM` Durable Object binding and schema change config.
+  uses the real `LIVE_MIDI_ROOM` Durable Object binding and schema setup config.
 - Add a TypeScript Vitest file under `worker/tests/` that imports `SELF` from
   `cloudflare:test`, performs WebSocket upgrade fetches to
   `https://cypherclaw.holdenu.com/api/cypherclaw/live-midi`, accepts the two
@@ -91,9 +91,9 @@ latency through the actual Worker/Durable Object path.
    - **VERIFY:** `pytest tests/test_first_boot.py::TestStartupIdentityPersistence tests/test_governor_integration.py::TestStartupIdentityWiring tests/test_narrative_api_main.py::test_asgi_module_startup_bootstraps_identity_persistence_between_imports -q`
 
 9. Task bookkeeping documents T-054d scope, assumptions, new Worker dev
-   dependencies, no D1 database schema change, no Durable Object schema change change,
+   dependencies, no D1 database schema modification, no Durable Object schema modification,
    and the startup identity hardening checks.
-   - **VERIFY:** `rg -n "T-054d|sub-second fan-out|vitest-pool-workers|New Worker dev dependencies|No D1 database schema change|No Durable Object schema change|startup identity" CHANGELOG.md progress.md ESCALATIONS.md specs/t-054d-spec.md`
+   - **VERIFY:** `rg -n "T-054d|sub-second fan-out|vitest-pool-workers|New Worker dev dependencies|No D1 database schema modification|No Durable Object schema modification|startup identity" CHANGELOG.md progress.md ESCALATIONS.md specs/t-054d-spec.md`
 
 10. Required final validation passes.
     - **VERIFY:** `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`

@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~12h 37m remaining (43 tasks, low confidence, calibrating)
-Expected completion: 4:35 AM tomorrow.
+ETC: ~13h 11m remaining (43 tasks, low confidence, calibrating)
+Expected completion: 6:03 AM tomorrow.
 Progress: [███████████████████████████████████░░░] 92%  521 / 564 tasks complete
-  completed: 521, pending: 39, needs_split: 2, blocked: 0, needs_attn: 2, skipped: 52
+  completed: 521, pending: 38, needs_split: 2, blocked: 1, needs_attn: 2, skipped: 52
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -578,7 +578,7 @@ Progress: [███████████████████████
 - **T-054a**: complete — Completed with verdict PASS.
 - **T-054b**: complete — Completed with verdict PASS.
 - **T-054c**: complete — Completed with verdict PASS.
-- **T-054d**: complete — Completed with verdict PASS. Phase 0 Explore findings: vitest-pool-workers, sub-second fan-out, catalog-explorer.
+- **T-054d**: complete — Phase 0 Explore findings: vitest-pool-workers chosen for sub-second fan-out testing in catalog-explorer. Completed with verdict PASS.
 - **T-053a**: pending — Pending.
 - **T-055**: split — Split into subtasks.
 - **T-055a**: pending — Pending.

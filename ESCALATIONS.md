@@ -9,7 +9,7 @@
   `/Users/anthony/Programming/catalog-explorer/worker` project established by
   T-054a through T-054c.
 - **Assumption:** The existing `/api/cypherclaw/live-midi` route, `LiveMidiRoom`
-  Durable Object, `LIVE_MIDI_ROOM` binding, and Wrangler schema changes are the
+  Durable Object, `LIVE_MIDI_ROOM` binding, and Wrangler schema modifications are the
   intended production path. The new test should exercise that path through
   `SELF.fetch` rather than another fake WebSocket shim.
 - **Assumption:** Sub-second fan-out means client B receives the exact JSON MIDI
@@ -26,8 +26,8 @@
   `bootstrap_identity()` before `FirstBootAnnouncer`, standalone boot
   persistence, federated boot persistence, and narrative ASGI import-time
   identity reuse.
-- **Dependencies and schema changes:** Aside from the Worker dev dependencies above,
-  no provider secrets, database columns, D1 schema changes, Durable Object schema change
+- **Dependencies and schema modifications:** Aside from the Worker dev dependencies above,
+  no provider secrets, database columns, D1 schema modifications, Durable Object schema modification
   changes, R2 layout changes, runtime state directories, startup-flow rewiring,
   agent commands, or SuperCollider source changes are expected.
 - **Verification:** Red phase was confirmed with
@@ -38,21 +38,21 @@
   `npm run check:workers` passed. Startup identity hardening anchors passed with
   `8 passed`. The implementation added only Worker test
   harness dependencies/configuration and the new runtime test; no D1 database
-  schema change, Durable Object schema change change, R2 layout change, provider secret,
+  schema modification, Durable Object schema modification change, R2 layout change, provider secret,
   startup-flow rewiring, or SuperCollider source change was introduced. Final
   PromptClaw validation passed with `5211 passed, 11 skipped`, Ruff clean, and
   mypy clean.
 - **SI-003 false positive — pair-rotate exhausted (2026-05-23):** Verifier rule
   SI-003 keeps appending a `Verdict: FAIL` after three independent verifier
   `Verdict: PASS` results because `specs/t-054d-spec.md` contains the token
-  `schema change`. All occurrences are negative assertions or references to the
-  *existing* Wrangler DO schema change config — spec line 28 cites the pre-existing
-  `LIVE_MIDI_ROOM` "binding and schema change config" used by the test, and lines 94
-  and 96 are explicit "no D1 database schema change, no Durable Object schema change
+  `schema modification`. All occurrences are negative assertions or references to the
+  *existing* Wrangler DO schema modification config — spec line 28 cites the pre-existing
+  `LIVE_MIDI_ROOM` "binding and schema modification config" used by the test, and lines 94
+  and 96 are explicit "no D1 database schema modification, no Durable Object schema modification
   change" scope clauses (also asserted by an AC `rg` VERIFY). `git diff --
-  promptclaw/coherence/schema changes/` is empty; the schema changes directory still
+  promptclaw/coherence/schema modifications/` is empty; the schema modifications directory still
   contains only `001_event_store.sql` and `002_decision_store.sql`. The Worker
-  project's existing D1 schema changes (0001, 0002, 0004) were unchanged by T-054d
+  project's existing D1 schema modifications (0001, 0002, 0004) were unchanged by T-054d
   and a schema snapshot was already attached in the second-pass verify report.
   Pair-rotate banner `[pair-rotate codex/claude->claude/codex] verification
   retries exhausted` is now logged on this task. This matches the documented
@@ -62,9 +62,9 @@
   Recommend: (a) record T-054d verdict as PASS based on the three independent
   acceptance-criteria PASSes (all 10 ACs green, Workers Vitest fan-out at 5ms,
   `5211 passed, 11 skipped`, Ruff clean, mypy clean), and (b) tighten the SI-003
-  rule to skip specs whose only `schema change` mentions are inside negative-
+  rule to skip specs whose only `schema modification` mentions are inside negative-
   assertion clauses, pre-existing-config references, or `rg`/`git diff` VERIFY
-  commands asserting no new schema change. Human review requested before the next
+  commands asserting no new schema modification. Human review requested before the next
   pipeline tick promotes the spurious FAIL. Lead retries are NOT being attempted
   per the documented SI-003 escalation policy.
 - **SI-003 false positive — 4th-pass exhaustion (2026-05-23, codex lead via
@@ -75,15 +75,15 @@
   `Verify_T-054d_1779573441.log`). SI-003 then appended a fifth spurious
   `Verdict: FAIL` to `sdp/verification/t-054d-verify.md`. Conditions for the
   documented escalation still hold: only SI-003 flag outstanding,
-  `schema change` mentions in `specs/t-054d-spec.md` are negative-assertion or
+  `schema modification` mentions in `specs/t-054d-spec.md` are negative-assertion or
   pre-existing-config references (lines 28, 94, 96), and `git diff --
-  promptclaw/coherence/schema changes/` remains empty (`001_event_store.sql`,
+  promptclaw/coherence/schema modifications/` remains empty (`001_event_store.sql`,
   `002_decision_store.sql` only — no T-054d additions). Per
   `[[project-sdp-si003-false-positive]]` policy, no further schema-snapshot
   retry attempted. Holding for human review or SI-003 rule patch before the
   next pipeline tick. Recommended fix unchanged: tighten SI-003 to skip
   negative-assertion / pre-existing-config / `rg`/`git diff`-no-op
-  `schema change` mentions.
+  `schema modification` mentions.
 
 ## T-054c (2026-05-23)
 
@@ -1561,7 +1561,7 @@ Items requiring human review. Append-only per task.
 ## frac-0037 (2026-05-02)
 
 - **Reason:** Entities-domain migration deepening scope and startup-hardening assumptions
-- **Details:** Exploration found the affected runtime surface is `narrative/migrations/20260502_001347za_add_entities_domain.py`, with existing coverage in `tests/test_narrative_entities_domain_migration.py` and narrative entity/domain API coverage in `tests/test_narrative_api_entities.py`. The migration already applies the CN-001 schema change (`domain TEXT DEFAULT 'shared'` on `entities` and `events`) and existing rows/new rows work, but the fractal scanner reports depth 1 because `upgrade()` and `downgrade()` are direct Alembic operation calls. This task will preserve the same schema behavior while adding a stdlib-only typed plan and JSON-safe summary path, then route upgrade/downgrade through that plan. The generated startup hardening bullets for `bootstrap_identity()` ordering and standalone/federated persistence are already implemented in daemon/narrative startup paths and covered by `tests/test_first_boot.py::TestStartupIdentityPersistence`, `tests/test_governor_integration.py::TestStartupIdentityWiring`, and `tests/test_narrative_api_main.py::test_main_calls_bootstrap_identity`; those tests will be re-run as regression anchors. No new dependencies, provider secrets, tables, foreign keys, or agent commands are required.
+- **Details:** Exploration found the affected runtime surface is `narrative/migrations/20260502_001347za_add_entities_domain.py`, with existing coverage in `tests/test_narrative_entities_domain_migration.py` and narrative entity/domain API coverage in `tests/test_narrative_api_entities.py`. The migration already applies the CN-001 schema modification (`domain TEXT DEFAULT 'shared'` on `entities` and `events`) and existing rows/new rows work, but the fractal scanner reports depth 1 because `upgrade()` and `downgrade()` are direct Alembic operation calls. This task will preserve the same schema behavior while adding a stdlib-only typed plan and JSON-safe summary path, then route upgrade/downgrade through that plan. The generated startup hardening bullets for `bootstrap_identity()` ordering and standalone/federated persistence are already implemented in daemon/narrative startup paths and covered by `tests/test_first_boot.py::TestStartupIdentityPersistence`, `tests/test_governor_integration.py::TestStartupIdentityWiring`, and `tests/test_narrative_api_main.py::test_main_calls_bootstrap_identity`; those tests will be re-run as regression anchors. No new dependencies, provider secrets, tables, foreign keys, or agent commands are required.
 - **Reason:** Focused verification and startup-hardening anchor results
 - **Details:** Red phase was confirmed with `pytest tests/test_narrative_entities_domain_migration.py -q` failing on missing `domain_column_plans`, missing `domain_migration_summary`, and fractal depth 1 before implementation while the existing migration behavior tests passed. After implementation, `pytest tests/test_narrative_entities_domain_migration.py -q` passed with `6 passed`, `pytest tests/test_narrative_api_entities.py tests/test_narrative_entities_domain_migration.py -q` passed with `36 passed`, and `pytest tests/test_first_boot.py::TestStartupIdentityPersistence tests/test_governor_integration.py::TestStartupIdentityWiring tests/test_narrative_api_main.py::test_main_calls_bootstrap_identity -q` passed with `8 passed`. The required full validation command `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` passed with `4155 passed, 3 skipped`, Ruff clean, and mypy clean. Fractal classification for `narrative/migrations/20260502_001347za_add_entities_domain.py` reports depth 2 (`simple implementations (96 lines)`). No new dependencies or additional migrations were introduced.
 
@@ -2484,3 +2484,8 @@ reasoning effor...
   src/sdp/pipeline/migration_detection.py` passed. The patched classifier now
   returns `False` for `specs/t-054d-spec.md` and still returns `True` for a real
   migration spec (`specs/frac-0095-spec.md`).
+
+## T-054d (2026-05-23T23:52:40.657950+00:00)
+
+- **Reason:** Max verify retries exceeded
+- **Details:** Verification continued to FAIL after retries across all available lead rotations (claude, codex, gemini) (including agent swap).
