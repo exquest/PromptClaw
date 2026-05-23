@@ -8,8 +8,18 @@ import math
 
 try:
     from cypherclaw.midi_loader import FaithfulMidiEvent
+    from cypherclaw.space_reverb import (
+        SPACE_PROFILE_SOURCE,
+        VOICE_REVERB_PROFILES,
+        VoiceReverbProfile,
+    )
 except ImportError:
     from midi_loader import FaithfulMidiEvent  # type: ignore[no-redef,import-not-found]
+    from space_reverb import (  # type: ignore[no-redef,import-not-found]
+        SPACE_PROFILE_SOURCE,
+        VOICE_REVERB_PROFILES,
+        VoiceReverbProfile,
+    )
 
 
 DEFAULT_SCENE_NAME = "Faithful MIDI Import"
@@ -20,7 +30,6 @@ DEFAULT_TICKS_PER_BEAT = 480
 DEFAULT_TONAL_CENTER_MIDI = 60
 DEFAULT_TONAL_CENTER_HZ = 261.625565
 FAITHFUL_SCENE_TRANSFORM = "midi_whole_file_scene"
-SPACE_PROFILE_SOURCE = "cypherclaw-v2-design-statement-2026-05-22.md#4"
 
 TUNING_12_TET = "twelve_tet"
 TUNING_JUST_5_LIMIT = "just_intonation_5_limit"
@@ -112,98 +121,21 @@ class FaithfulVoiceSpace:
         }
 
 
+def _voice_space_from_reverb_profile(
+    profile: VoiceReverbProfile,
+) -> FaithfulVoiceSpace:
+    return FaithfulVoiceSpace(
+        voice=profile.voice,
+        space_id=profile.space_id,
+        fx_bus_id=profile.fx_bus_id,
+        reverb_profile=profile.parameters,
+        description=profile.description,
+    )
+
+
 VOICE_SPACES: Mapping[str, FaithfulVoiceSpace] = {
-    "pluck": FaithfulVoiceSpace(
-        voice="pluck",
-        space_id="small_wooden_room",
-        fx_bus_id=16,
-        reverb_profile=(
-            ("mix", 0.18),
-            ("room", 0.24),
-            ("damp", 0.42),
-            ("predelay_ms", 8.0),
-            ("decay_s", 0.7),
-        ),
-        description="small wooden room with hard floorboards",
-    ),
-    "breath": FaithfulVoiceSpace(
-        voice="breath",
-        space_id="glass_bell_jar",
-        fx_bus_id=17,
-        reverb_profile=(
-            ("mix", 0.22),
-            ("room", 0.18),
-            ("damp", 0.28),
-            ("predelay_ms", 4.0),
-            ("decay_s", 1.1),
-        ),
-        description="close glass bell jar with early reflections",
-    ),
-    "choir": FaithfulVoiceSpace(
-        voice="choir",
-        space_id="stone_cathedral",
-        fx_bus_id=18,
-        reverb_profile=(
-            ("mix", 0.46),
-            ("room", 0.92),
-            ("damp", 0.18),
-            ("predelay_ms", 38.0),
-            ("decay_s", 5.8),
-        ),
-        description="cool stone cathedral with high vaulted ceilings",
-    ),
-    "kotekan": FaithfulVoiceSpace(
-        voice="kotekan",
-        space_id="humid_forest_canopy",
-        fx_bus_id=19,
-        reverb_profile=(
-            ("mix", 0.32),
-            ("room", 0.68),
-            ("damp", 0.34),
-            ("predelay_ms", 18.0),
-            ("decay_s", 2.2),
-        ),
-        description="humid forest canopy with fluttering echoes",
-    ),
-    "pad": FaithfulVoiceSpace(
-        voice="pad",
-        space_id="marble_empty_hall",
-        fx_bus_id=20,
-        reverb_profile=(
-            ("mix", 0.42),
-            ("room", 0.86),
-            ("damp", 0.22),
-            ("predelay_ms", 30.0),
-            ("decay_s", 4.6),
-        ),
-        description="large empty marble hall with a cold tail",
-    ),
-    "bowed": FaithfulVoiceSpace(
-        voice="bowed",
-        space_id="damp_cave_wall",
-        fx_bus_id=21,
-        reverb_profile=(
-            ("mix", 0.36),
-            ("room", 0.74),
-            ("damp", 0.62),
-            ("predelay_ms", 24.0),
-            ("decay_s", 3.4),
-        ),
-        description="dark damp cave wall with low-frequency weight",
-    ),
-    "tabla_tin": FaithfulVoiceSpace(
-        voice="tabla_tin",
-        space_id="dusk_garden",
-        fx_bus_id=22,
-        reverb_profile=(
-            ("mix", 0.24),
-            ("room", 0.46),
-            ("damp", 0.36),
-            ("predelay_ms", 12.0),
-            ("decay_s", 1.4),
-        ),
-        description="warm outdoor garden at dusk",
-    ),
+    voice: _voice_space_from_reverb_profile(profile)
+    for voice, profile in VOICE_REVERB_PROFILES.items()
 }
 
 

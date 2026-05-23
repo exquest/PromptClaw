@@ -1,0 +1,209 @@
+"""Tests for CypherClaw v2 per-voice reverb space profiles (T-043)."""
+
+from __future__ import annotations
+
+import dataclasses
+import json
+import re
+from pathlib import Path
+from typing import Any
+
+from cypherclaw.midi_loader import FaithfulMidiEvent
+from cypherclaw.midi_scene import FaithfulRenderSettings, build_faithful_midi_scene
+from cypherclaw.space_reverb import (
+    SPACE_PROFILE_SOURCE,
+    VOICE_REVERB_PROFILES,
+    VoiceReverbProfile,
+    get_voice_reverb_profile,
+    iter_voice_reverb_profiles,
+    summarize_voice_reverb_profiles,
+)
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SPACES_DIR = (
+    REPO_ROOT / "my-claw" / "tools" / "senseweave" / "synthesis" / "spaces"
+)
+
+EXPECTED_VOICE_ORDER = (
+    "pluck",
+    "breath",
+    "choir",
+    "kotekan",
+    "pad",
+    "bowed",
+    "tabla_tin",
+)
+
+EXPECTED_SPACE_IDS = {
+    "pluck": "small_wooden_room",
+    "breath": "glass_bell_jar",
+    "choir": "stone_cathedral",
+    "kotekan": "humid_forest_canopy",
+    "pad": "marble_empty_hall",
+    "bowed": "damp_cave_wall",
+    "tabla_tin": "dusk_garden",
+}
+
+EXPECTED_BUS_IDS = {
+    "pluck": 16,
+    "breath": 17,
+    "choir": 18,
+    "kotekan": 19,
+    "pad": 20,
+    "bowed": 21,
+    "tabla_tin": 22,
+}
+
+EXPECTED_QUOTE_SNIPPETS = {
+    "pluck": "small wooden room with hard floorboards",
+    "breath": "glass bell jar at sea level",
+    "choir": "stone cathedral with high vaulted ceilings",
+    "kotekan": "dense forest canopy on a humid day",
+    "pad": "large, empty hall with marble floors",
+    "bowed": "damp cave wall",
+    "tabla_tin": "outdoor garden at dusk",
+}
+
+PARAMETER_KEYS = (
+    "verb_mix",
+    "room_size",
+    "damping",
+    "predelay_ms",
+    "decay_s",
+    "early_reflection_level",
+    "flutter_feedback",
+)
+
+
+def _assert_json_safe(value: Any) -> None:
+    assert not isinstance(value, tuple), f"tuple leaked into JSON summary: {value!r}"
+    if isinstance(value, dict):
+        for key, child in value.items():
+            assert isinstance(key, str)
+            _assert_json_safe(child)
+    elif isinstance(value, list):
+        for child in value:
+            _assert_json_safe(child)
+
+
+def test_profiles_cover_all_cypherclaw_space_voices_with_unique_buses() -> None:
+    assert tuple(VOICE_REVERB_PROFILES) == EXPECTED_VOICE_ORDER
+    assert tuple(profile.voice for profile in iter_voice_reverb_profiles()) == (
+        EXPECTED_VOICE_ORDER
+    )
+
+    seen_space_ids: set[str] = set()
+    seen_bus_ids: set[int] = set()
+    for voice, profile in VOICE_REVERB_PROFILES.items():
+        assert isinstance(profile, VoiceReverbProfile)
+        assert dataclasses.is_dataclass(profile)
+        assert getattr(profile, "__dataclass_params__").frozen
+        assert profile.voice == voice
+        assert profile.space_id == EXPECTED_SPACE_IDS[voice]
+        assert profile.fx_bus_id == EXPECTED_BUS_IDS[voice]
+        assert profile.source == SPACE_PROFILE_SOURCE
+        assert profile.synthdef_name == f"cc_space_{profile.space_id}"
+        assert EXPECTED_QUOTE_SNIPPETS[voice] in profile.rationale
+        assert profile.space_doc_path == (
+            f"my-claw/tools/senseweave/synthesis/spaces/{profile.space_id}.scd"
+        )
+        seen_space_ids.add(profile.space_id)
+        seen_bus_ids.add(profile.fx_bus_id)
+
+    assert len(seen_space_ids) == len(EXPECTED_VOICE_ORDER)
+    assert seen_bus_ids == set(range(16, 23))
+    assert get_voice_reverb_profile("sw_breath").voice == "breath"
+    assert get_voice_reverb_profile("unknown_voice").voice == "pluck"
+
+
+def test_profile_parameters_are_bounded_and_json_safe() -> None:
+    summary = summarize_voice_reverb_profiles()
+    _assert_json_safe(summary)
+    decoded = json.loads(json.dumps(summary))
+    assert decoded["source"] == SPACE_PROFILE_SOURCE
+    assert decoded["voice_order"] == list(EXPECTED_VOICE_ORDER)
+
+    for profile in iter_voice_reverb_profiles():
+        params = dict(profile.parameters)
+        assert tuple(params) == PARAMETER_KEYS
+        assert 0.0 <= params["verb_mix"] <= 1.0
+        assert 0.0 <= params["room_size"] <= 1.0
+        assert 0.0 <= params["damping"] <= 1.0
+        assert 0.0 <= params["predelay_ms"] <= 80.0
+        assert 0.2 <= params["decay_s"] <= 8.0
+        assert 0.0 <= params["early_reflection_level"] <= 1.0
+        assert 0.0 <= params["flutter_feedback"] <= 1.0
+
+    profiles = VOICE_REVERB_PROFILES
+    assert dict(profiles["choir"].parameters)["decay_s"] > 5.0
+    assert dict(profiles["choir"].parameters)["room_size"] > 0.9
+    assert dict(profiles["pluck"].parameters)["decay_s"] < 1.0
+    assert dict(profiles["breath"].parameters)["early_reflection_level"] > 0.8
+    assert dict(profiles["kotekan"].parameters)["flutter_feedback"] > 0.6
+    assert dict(profiles["bowed"].parameters)["damping"] > 0.6
+    assert dict(profiles["tabla_tin"].parameters)["room_size"] < 0.55
+
+
+def test_each_profile_has_space_source_file_with_rationale_and_parameters() -> None:
+    for profile in iter_voice_reverb_profiles():
+        path = REPO_ROOT / profile.space_doc_path
+        assert path.is_file(), f"missing space source file: {path}"
+        text = path.read_text(encoding="utf-8")
+
+        assert f"SynthDef(\\{profile.synthdef_name}" in text
+        assert f"// Voice: {profile.voice}" in text
+        assert f"// Space: {profile.space_id}" in text
+        assert f"// FX bus: {profile.fx_bus_id}" in text
+        assert f"// Rationale: {profile.rationale}" in text
+        assert EXPECTED_QUOTE_SNIPPETS[profile.voice] in text
+        assert "FreeVerb.ar" in text
+        assert "Out.ar(out_bus" in text
+
+        for key, value in profile.parameters:
+            pattern = rf"\b{re.escape(key)}\s*=\s*{re.escape(str(value))}\b"
+            assert re.search(pattern, text), (
+                f"{profile.space_id}.scd must document default {key}={value}"
+            )
+
+
+def test_faithful_render_space_metadata_uses_shared_reverb_profiles() -> None:
+    events = tuple(
+        FaithfulMidiEvent(pitch=60 + index, duration=120, velocity=90)
+        for index in range(len(EXPECTED_VOICE_ORDER))
+    )
+    scene = build_faithful_midi_scene(
+        events,
+        render_settings=FaithfulRenderSettings(
+            arc_phase="Listen",
+            voice_sequence=EXPECTED_VOICE_ORDER,
+        ),
+    )
+
+    steps = scene.to_dict()["pattern"]["lanes"][0]["steps"]
+    for step, voice in zip(steps, EXPECTED_VOICE_ORDER, strict=True):
+        profile = VOICE_REVERB_PROFILES[voice]
+        render_space = step["render_space"]
+
+        assert render_space["voice"] == voice
+        assert render_space["space_id"] == profile.space_id
+        assert render_space["fx_bus_id"] == profile.fx_bus_id
+        assert render_space["reverb_profile"] == dict(profile.parameters)
+        assert render_space["description"] == profile.description
+        assert render_space["source"] == SPACE_PROFILE_SOURCE
+        assert step["metadata"]["render_space_id"] == profile.space_id
+        assert step["metadata"]["render_fx_bus_id"] == str(profile.fx_bus_id)
+
+
+def test_spaces_directory_contains_only_expected_algorithmic_sources() -> None:
+    expected_files = sorted(
+        f"{profile.space_id}.scd" for profile in iter_voice_reverb_profiles()
+    )
+    assert sorted(path.name for path in SPACES_DIR.iterdir()) == expected_files
+
+    forbidden_suffixes = {".wav", ".aif", ".aiff", ".flac", ".scsyndef"}
+    binary_assets = [
+        path
+        for path in SPACES_DIR.rglob("*")
+        if path.is_file() and path.suffix.lower() in forbidden_suffixes
+    ]
+    assert binary_assets == []

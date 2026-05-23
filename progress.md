@@ -547,7 +547,7 @@ Progress: [███████████████████████
 - **T-040**: complete — Completed with verdict PASS.
 - **T-041**: pending — Pending.
 - **T-042**: pending — Pending.
-- **T-043**: pending — Pending.
+- **T-043**: complete — Tuned seven algorithmic per-voice reverb profiles, documented each in `synthesis/spaces/`, and wired faithful render metadata to the shared profiles.
 - **T-044**: pending — Pending.
 - **T-045**: split — Split into subtasks.
 - **T-045a**: pending — Pending.

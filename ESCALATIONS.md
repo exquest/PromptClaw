@@ -1,5 +1,39 @@
 # Escalations
 
+## T-043 (2026-05-23)
+
+- **Reason:** Scope boundary between tuned space profiles and later live
+  routing.
+- **Details:** Exploration found the CypherClaw v2 PRD assigns T-043 to CC-002:
+  tune the seven per-voice reverb spaces from
+  `cypherclaw-v2-design-statement-2026-05-22.md` §4. The existing faithful MIDI
+  render contract already carries the seven design voices and bus ids
+  `pluck=16`, `breath=17`, `choir=18`, `kotekan=19`, `pad=20`, `bowed=21`,
+  `tabla_tin=22`; `sampler_effects.scd` provides generic algorithmic reverb
+  controls, while `master_smooth.scd` has a separate older Korsakov bus stub
+  using `gong`/`bell`. This task therefore creates typed, shared default
+  profiles and one `synthesis/spaces/*.scd` source/documentation file per §4
+  space, then wires faithful render metadata to those profiles. It does not
+  claim mood-driven selection, convolution IR assets, or full live OSC routing;
+  those remain T-044+ follow-ups.
+- **Dependencies and migrations:** No new dependencies, database columns,
+  migrations, provider secrets, cost-bearing services, binary IR assets, or
+  runtime state directories are required.
+- **Startup hardening:** The generated `bootstrap_identity()` hardening bullets
+  target the existing identity startup subsystem. Current CLI, first-boot,
+  daemon-ordering, and narrative ASGI tests already cover persistence and
+  ordering before `FirstBootAnnouncer` across standalone/federated modes, so
+  this audio-profile task will re-run those anchors rather than modifying
+  startup flow.
+- **Verification:** Red phase was confirmed before implementation with
+  `pytest tests/test_space_reverb_profiles.py -q` failing on the missing
+  `cypherclaw.space_reverb` module. After implementation, the locked
+  T-043 tests passed with `5 passed`, faithful MIDI render coverage passed
+  with `15 passed`, sampler/master-bus regression coverage passed with
+  `60 passed`, and startup identity hardening anchors passed with
+  `11 passed`. The required full validation command passed with
+  `5078 passed, 11 skipped`, Ruff clean, and mypy clean.
+
 ## T-039 (2026-05-23)
 
 - **Reason:** Existing composer arc names differ from the PRD's four tuning

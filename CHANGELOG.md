@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Added T-043 per-voice CypherClaw space reverb tuning: `cypherclaw.space_reverb`
+  now exposes typed, JSON-safe algorithmic profiles for `pluck`, `breath`,
+  `choir`, `kotekan`, `pad`, `bowed`, and `tabla_tin`, preserving the existing
+  faithful-render FX bus ids `16..22`. Faithful MIDI render metadata now derives
+  `render_space.reverb_profile` from that shared profile table, and
+  `my-claw/tools/senseweave/synthesis/spaces/` contains one documented `.scd`
+  source per space with the tuned parameters and a one-line CypherClaw §4
+  rationale. This does not add mood-driven routing, convolution IR assets,
+  dependencies, migrations, provider secrets, or startup-flow changes.
+
 - Added the T-039 composer tuning trajectory: score-tree composition now plans
   per-scene tuning metadata from CypherClaw's phase rule, selecting
   `just_intonation_5_limit` for stillness phases
