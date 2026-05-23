@@ -1,5 +1,20 @@
 # Escalations
 
+## T-022b (2026-05-23)
+
+- **Reason:** Composer meter-trajectory planner scope and startup-hardening assumptions
+- **Details:** Exploration found T-022a already added the typed
+  `MeterTrajectory` / `MeterSceneValue` carrier and tracker compiler
+  propagation. This task assumes T-022b owns deterministic composer-side
+  planning from existing per-section `ArcDirective` phase metadata in
+  `recursive_composer.py`, plus stamping each `SectionNode.scene_metadata`.
+  It does not make `TrackerScene` scheduling consume the planned meter, alter
+  active groove-meter selection, add database columns, add migrations, or add
+  dependencies. The generated startup identity hardening bullets target the
+  existing identity startup subsystem; current CLI, daemon, first-boot,
+  governor, and narrative ASGI tests remain regression anchors rather than new
+  startup work for this meter-planner slice.
+
 ## T-022a (2026-05-23)
 
 - **Reason:** Meter-trajectory model scope and startup-hardening assumptions
