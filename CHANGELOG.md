@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Added a JACK output Opus streamer (T-024):
+  `my-claw/tools/audio_streamer.py` now starts a single ffmpeg JACK client for
+  the live `SuperCollider:out_1` / `SuperCollider:out_2` output bus, connects
+  those ports into `cypherclaw-opus-stream`, and writes Ogg/Opus `.opus`
+  segments with 6-second segment windows and a constrained 96 kbps `libopus`
+  target. The tool includes a dry-run command, optional `pw-jack` wrapper,
+  pid-file support at `/tmp/cypherclaw-audio-streamer.pid`, ffprobe-based
+  `--verify-dir` duration/bitrate checks, and `--check-cpu` for the under-10%
+  runtime acceptance target. It bootstraps identity before starting JACK/ffmpeg
+  work and adds no dependencies or migrations. Validation passed with `4997
+  passed, 11 skipped`, Ruff clean, and mypy clean.
+
 - Added arc-cycle meter trajectory hardening (T-022d):
   `senseweave.recursive_composer.plan_meter_trajectory(...)` now restarts
   phase drift counts when a planned piece crosses the procedural arc boundary

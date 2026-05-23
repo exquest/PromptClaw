@@ -543,7 +543,13 @@ Progress: [███████████████████████
   `Divination`. Validation passed with `4991 passed, 11 skipped`, Ruff clean,
   and mypy clean.
 - **T-023**: pending — Pending.
-- **T-024**: pending — Pending.
+- **T-024**: complete — Added `my-claw/tools/audio_streamer.py` for JACK output
+  Opus streaming: ffmpeg captures the `SuperCollider:out_1` /
+  `SuperCollider:out_2` bus as a named JACK client, writes approximately
+  6-second Ogg/Opus `.opus` segments at approximately 96 kbps, exposes
+  ffprobe-based `--verify-dir` checks, exposes `--check-cpu` for the under-10%
+  runtime target, and bootstraps identity before JACK/ffmpeg startup.
+  Validation passed with `4997 passed, 11 skipped`, Ruff clean, and mypy clean.
 - **T-025**: pending — Pending.
 - **T-026**: pending — Pending.
 - **T-027**: pending — Pending.
@@ -772,3 +778,40 @@ Progress: [███████████████████████
   `78 passed`; startup identity hardening anchors passed with `11 passed`;
   full validation `pip install -e '.[dev]' && pytest tests/ -x && ruff check
   src/ tests/ && mypy src/` passed with `4967 passed, 11 skipped`, Ruff clean,
+
+## T-024 (2026-05-23)
+
+- **Exploration findings:** The active ADP workflow is the task prompt's
+  Explore -> Specify -> Test -> Implement -> Verify -> Document sequence,
+  matching `sdp/templates/candidates/lead_t2/v006.md`. No existing
+  `audio_streamer.py` was present. The closest runtime patterns are the
+  CypherClaw audio tools under `my-claw/tools/` and their hardware-free tests:
+  `sample_capture_daemon.py` owns long-running JACK capture buffers,
+  `self_listener.py` and `room_listener.py` build subprocess-based JACK /
+  PipeWire recorder commands, `start_audio.sh` establishes the
+  `SuperCollider:out_1` / `SuperCollider:out_2` JACK output bus, and
+  `tests/test_cypherclaw_audio_runtime.py`,
+  `tests/test_self_listener_tracker_runtime.py`, and
+  `tests/test_room_listener_runtime.py` pin command construction without
+  requiring live audio hardware. T-024 will add a small typed
+  `my-claw/tools/audio_streamer.py` that starts one ffmpeg JACK client,
+  connects the SuperCollider stereo output bus to it, writes approximately
+  6-second Ogg/Opus `.opus` segments at approximately 96 kbps, exposes
+  ffprobe-based segment validation, and exposes a `ps`-based CPU check. The
+  generated startup hardening bullets target identity bootstrapping; this new
+  streamer will call `bootstrap_identity()` before spawning ffmpeg/JACK work,
+  and the existing standalone/federated identity persistence anchors remain
+  mandatory regression checks.
+- **Red/focused verification:** Red phase was confirmed with
+  `pytest tests/test_audio_streamer.py -q` failing at collection on missing
+  `audio_streamer` before implementation. The locked tests now pass with `4
+  passed`, adjacent audio runtime tests pass with `42 passed`, and startup
+  identity hardening anchors pass with `11 passed`. The streamer supports live
+  acceptance checks with `python my-claw/tools/audio_streamer.py --verify-dir
+  /home/user/cypherclaw-data/streams --segment-seconds 6 --bitrate-kbps 96`
+  and `python my-claw/tools/audio_streamer.py --check-cpu "$(cat
+  /tmp/cypherclaw-audio-streamer.pid)" --max-cpu 10`. No new dependencies or
+  migrations were introduced.
+- **Full validation:** `pip install -e '.[dev]' && pytest tests/ -x && ruff
+  check src/ tests/ && mypy src/` passed with `4997 passed, 11 skipped`, Ruff
+  clean, and mypy clean.
