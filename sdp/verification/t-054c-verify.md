@@ -72,6 +72,45 @@ Quality gates satisfied:
 - Test coverage is behavioral, not just structural: the config test parses TOML and asserts both environments independently; the source test regex-pins the exact 426 guard and DO forwarding pattern.
 - Candidate hardening items (bootstrap_identity, federated startup paths, identity-persistence integration test) are correctly escalated as unrelated to the Cloudflare Worker scope and already covered under prior T-032@c for the PromptClaw Python daemon.
 
+## SI-003 Migration Evidence Addendum
+
+The SI-003 follow-up was re-run on 2026-05-23. T-054c's migration is a
+Wrangler Durable Object SQLite-class migration (`new_sqlite_classes =
+["LiveMidiRoom"]`), not a D1/Postgres schema migration. To provide the required
+SQLite snapshot evidence, the Worker was started locally with persisted
+Miniflare state and the route was exercised through a real WebSocket upgrade:
+
+- `cd /Users/anthony/Programming/catalog-explorer/worker && npm run dev`
+- `node - <<'NODE' ... new WebSocket('ws://localhost:8787/api/cypherclaw/live-midi') ... NODE`
+- Wrangler reported `env.LIVE_MIDI_ROOM Durable Object local LiveMidiRoom`
+  and logged `GET /api/cypherclaw/live-midi 101 Switching Protocols`.
+
+This created the local Durable Object SQLite database at
+`.wrangler/state/v3/do/holdenu-api-LiveMidiRoom/736556ceda382272211afd66daafe4005abbb4696f80c9466b0abc99c3f889c6.sqlite`.
+
+SQLite table snapshot:
+
+```text
+$ sqlite3 .wrangler/state/v3/do/holdenu-api-LiveMidiRoom/736556ceda382272211afd66daafe4005abbb4696f80c9466b0abc99c3f889c6.sqlite "PRAGMA table_info(__miniflare_do_name);"
+0|id|INTEGER|0||1
+1|name|TEXT|0||0
+```
+
+The only table created by the local Durable Object instantiation is
+Miniflare's object-name metadata table because `LiveMidiRoom` does not create
+application SQLite tables or use `DurableObjectState.storage`.
+
+## Re-run Verification
+
+- `cd /Users/anthony/Programming/catalog-explorer/worker && npm test`: 39
+  passed, 0 failed.
+- `cd /Users/anthony/Programming/catalog-explorer/worker && npm run check`:
+  clean.
+- `pytest tests/test_space_reverb_profiles.py::test_voice_synthdefs_declare_fx_bus_id_routing_contract tests/test_sw_sampler.py::TestRoutingAndFxSend::test_fx_send_writes_to_fx_bus tests/test_sw_sampler.py::TestRoutingAndFxSend::test_fx_bus_default_is_sampler_bus -q`:
+  3 passed.
+- `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`:
+  5211 passed, 11 skipped; Ruff clean; mypy clean.
+
 ## Issues Found
 
 None.
@@ -80,4 +119,7 @@ None.
 
 ## Notes for Lead Agent
 
-No action required. All acceptance criteria met, tests green, TypeScript clean, PromptClaw Python suite clean. The recurring `bootstrap_identity` hardening items were correctly escalated as out of scope for a Cloudflare Worker config task.
+No action required. All acceptance criteria met, tests green, TypeScript clean,
+PromptClaw Python suite clean, and SI-003 SQLite migration evidence is now
+included. The recurring `bootstrap_identity` hardening items were correctly
+escalated as out of scope for a Cloudflare Worker config task.
