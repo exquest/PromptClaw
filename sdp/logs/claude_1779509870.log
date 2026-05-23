@@ -1,0 +1,10 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (293 chars)
+---
+
+```json
+[{"id":"T-012a","description":"Implement `midi_intake_daemon.py` skeleton: argparse for `--watch-dir` (default `/home/user/cypherclaw/midi-inbox/`), structured logger, graceful SIGINT/SIGTERM shutdown, and a `scan_once()` function that lists `*.mid`/`*.midi` files. No watching loop yet.","tier":"T1"},
+{"id":"T-012b","description":"Add filesystem watching: use `watchdog.Observer` with a `FileSystemEventHandler` for `on_created`/`on_moved` events filtered to MIDI extensions; debounce by waiting for file size to stabilize before dispatching. Fall back to poll-based scan if `watchdog` import fails.","tier":"T1"},
+{"id":"T-012c","description":"Implement intake processing: on each new MIDI file, validate header (`MThd`), move to `processed/` on success or `rejected/` on failure, emit a JSON event record (path, size, sha256, timestamp, status) to the daemon log.","tier":"T1"},
+{"id":"T-012d","description":"Write pytest coverage for `midi_intake_daemon.py`: unit tests for `scan_once()`, header validation, and file routing using `tmp_path`; an integration test that drops a valid and an invalid MIDI file into a watched temp dir and asserts they land in `processed/` and `rejected/` respectively.","tier":"T1"}]
+```

@@ -1,0 +1,9 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1332 chars)
+---
+
+T-012c complete. Committed as `3eb91c4`.
+
+- **`my-claw/tools/midi_intake_daemon.py`**: Added `validate_midi_header` (reads first 4 bytes, checks `MThd`), `process_midi_file(path, processed_dir=, rejected_dir=)` that captures size + sha256 + UTC timestamp, moves the file to `processed/` or `rejected/` (default subdirs of parent, with `name.N.ext` collision suffixes), and emits `midi_intake_event {json}` via `LOGGER`. `_default_dispatch` now calls `process_midi_file`, so `watch_loop` performs full intake out of the box. Added constants `MIDI_HEADER_MAGIC`, `PROCESSED_SUBDIR`, `REJECTED_SUBDIR`.
+- **`tests/test_midi_intake_daemon.py`**: 10 new tests — header validation (accepts, rejects non-MThd, missing, truncated); processing (valid→processed with full event fields, invalid→rejected, custom dirs honored, collision avoidance, JSON log line); `_default_dispatch` delegates to `process_midi_file`.
+- Validation: focused tests 32 passed; full `pytest tests/` 4919 passed, 11 skipped; `ruff check` clean; `mypy src/` clean (the 2 daemon mypy errors are the pre-existing baseline).

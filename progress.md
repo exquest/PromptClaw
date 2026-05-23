@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~10h 59m remaining (70 tasks, low confidence, calibrating)
-Expected completion: 8:03 AM tomorrow.
-Progress: [█████████████████████████████████░░░░░] 86%  447 / 517 tasks complete
-  completed: 447, pending: 51, needs_split: 17, blocked: 0, needs_attn: 2, skipped: 36
+ETC: ~9h 57m remaining (67 tasks, low confidence, calibrating)
+Expected completion: 7:53 AM tomorrow.
+Progress: [█████████████████████████████████░░░░░] 87%  455 / 522 tasks complete
+  completed: 455, pending: 50, needs_split: 15, blocked: 0, needs_attn: 2, skipped: 38
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -493,12 +493,19 @@ Progress: [███████████████████████
 - **T-006b**: complete — Completed with verdict PASS.
 - **T-006c**: complete — Completed with verdict PASS.
 - **T-008**: complete — Completed with verdict PASS.
-- **T-006d**: pending — Pending.
-- **T-009**: pending — Pending.
-- **T-010**: pending — Pending.
-- **T-011**: pending — Pending.
-- **T-012**: needs_split — Timed out; run sdp-cli tasks split T-012 to break it down.
-- **T-013**: needs_split — Timed out; run sdp-cli tasks split T-013 to break it down.
+- **T-006d**: complete — Completed with verdict PASS.
+- **T-009**: complete — Completed with verdict PASS.
+- **T-010**: complete — Completed with verdict PASS.
+- **T-011**: complete — Completed with verdict PASS.
+- **T-012**: split — Split into subtasks.
+- **T-012a**: complete — Completed with verdict PASS.
+- **T-012b**: complete — Completed with verdict PASS.
+- **T-013**: split — Split into subtasks.
+- **T-013a**: complete — Completed with verdict PASS.
+- **T-012c**: complete — Completed with verdict PASS.
+- **T-013b**: pending — Pending.
+- **T-013c**: pending — Pending.
+- **T-012d**: pending — Pending.
 - **T-014**: pending — Pending.
 - **T-015**: pending — Pending.
 - **T-016**: pending — Pending.

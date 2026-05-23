@@ -473,3 +473,11 @@
 | run-t-006a-1779507361 | T-006a | claude | gemini | PASS | 711.6s | — |
 | run-t-006b-1779508097 | T-006b | claude | gemini | PASS | 600.9s | — |
 | run-t-006c-1779508723 | T-006c | claude | gemini | PASS | 321.2s | — |
+| run-t-006d-1779509068 | T-006d | claude | gemini | PASS | 331.0s | — |
+| run-t-009-1779509422 | T-009 | claude | gemini | PASS | 425.1s | — |
+| run-t-010-1779509884 | T-010 | claude | gemini | PASS | 286.3s | — |
+| run-t-011-1779510195 | T-011 | claude | gemini | PASS | 279.6s | — |
+| run-t-012a-1779510498 | T-012a | claude | gemini | PASS | 460.6s | — |
+| run-t-012b-1779510983 | T-012b | claude | gemini | PASS | 433.0s | — |
+| run-t-012c-1779511440 | T-012c | claude | gemini | PASS | 368.9s | — |
+| run-t-013a-1779511844 | T-013a | claude | gemini | PASS | 341.6s | — |

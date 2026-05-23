@@ -1,0 +1,10 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1224 chars)
+---
+
+T-009 status:
+
+- **Acceptance criterion met**: `tests/test_expression_fatigue.py::test_long_silence_recovery_to_zero` (lines 219-230) confirms the counter decays toward 0 over 10 half-lives (300s → ~0.001). The decay envelope at `fatigue.py:73-87` and the non-mutating `value()` path at `fatigue.py:112-117,129-131` implement the recovery.
+- **No new code needed** — recovery, env-gate, and tests were committed earlier in `5ea86d4`.
+- **Drive-by**: removed a stale `import math` introduced by that same commit so `ruff check` passes (committed as `b4ff8bd`).
+- **Validation**: 26/26 fatigue tests pass, ruff clean, mypy clean.

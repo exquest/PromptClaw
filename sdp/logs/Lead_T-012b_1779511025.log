@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1380 chars)
+---
+
+T-012b complete. Summary:
+
+- **`my-claw/tools/midi_intake_daemon.py`**: Added watchdog-based filesystem watching.
+  - Optional `watchdog.Observer` + `FileSystemEventHandler` import with `_HAS_WATCHDOG` flag and a stub class for the fallback path.
+  - `wait_for_stable_size(path, poll_interval, stable_for, timeout)` debounces by polling file size until it's unchanged for `stable_for` seconds.
+  - `MidiEventHandler.on_created` / `on_moved` filter by MIDI extension, run the stable-size wait, then dispatch.
+  - `watch_loop(watch_dir, stop_event, dispatch, …)` uses the Observer when available, otherwise polls and tracks `seen` paths so existing files don't re-dispatch.
+- **`tests/test_midi_intake_daemon.py`**: 14 new regression tests covering `_is_midi_path`, `wait_for_stable_size` (stable, growing, missing), event handler (mid/non-mid, on_moved dest_path, directory skip, unstable skip), and `watch_loop` polling fallback (detects new files, ignores pre-existing).
+- Validation: `pytest tests/` → 4909 passed, 11 skipped; `ruff check src/ tests/` → clean; `mypy` → only the 2 pre-existing baseline errors.
+- Committed as `b5e7453`.
