@@ -611,3 +611,13 @@ Progress: [███████████████████████
   through MIDI intake and narrative API startup paths and covered by existing
   persistence/order tests, so this task will re-run those anchors instead of
   changing unrelated startup code.
+- Specify/Test: Wrote `specs/t-039-spec.md`, then added locked score-tree
+  composer tests for phase-rule tuning selection, deterministic 30-minute arc
+  log lines, tracker metadata propagation, and JSON round-trip behavior. Red
+  phase failed as expected on missing `plan_tuning_trajectory`.
+- Implement/Verify: Added typed `TuningSceneValue`/`TuningTrajectory` models,
+  composer-side `plan_tuning_trajectory`, per-section tuning metadata,
+  `arrangement_plan["tuning_trajectory"]["composer_log"]`, and tracker metadata
+  propagation. Focused score-tree/tuning coverage passed with `82 passed`;
+  startup identity anchors passed with `9 passed`; full validation passed with
+  `5052 passed, 11 skipped`, Ruff clean, and mypy clean.

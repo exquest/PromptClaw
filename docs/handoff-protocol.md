@@ -357,6 +357,16 @@ faithful step keeps the source MIDI `pitch` and `duration_ticks` while adding
 settings. Still phases (`Listen`, `Divination`) select 5-limit just intonation,
 motion phases (`Conversation`, `Procession`) select Gamelan Slendro, unknown
 phases fall back to 12-TET, and unknown voices fall back to `pluck`.
+Score-tree composition now publishes the same tuning contract for composed
+arcs through `TuningTrajectory`. Composer scenes carry `tuning_system_name`,
+`tuning_morph_target_name`, `tuning_morph_curve`, `tuning_transition_kind`,
+and `tuning_trajectory_*` metadata; the compact
+`arrangement_plan["tuning_trajectory"]["composer_log"]` list gives one
+deterministic key/value log line per scene so operators and tests can detect
+phase selections and stillness/motion morph transitions across a synthetic
+30-minute arc. The current five-phase composer arc maps `Crystallization` to
+stillness and `Emergence`/`Convergence` to motion while preserving the explicit
+`Listen`/`Divination` and `Conversation`/`Procession` rule.
 Rhythmic development is now part of that contract too. Compiled scenes and steps can carry `rhythm_development` and `rhythm_cell`, allowing sections to distinguish steady statements, forward pushes, arrival drives, syncopated fragments, half-time bridge displacements, recall grooves, and residual breath patterns instead of inheriting one incidental duration grid.
 When a later scene recalls earlier motif material, the recalled steps now inherit the current scene's rhythm/progression profile as well as its transition target. That prevents `Recap` from borrowing `Theme` notes while falsely reporting `Theme`'s old rhythm cell.
 Arrangement automation now rides through the tracker handoff too. Scenes publish an `arrangement_curve`, automation lanes carry row points rather than only defaults, tracker steps carry `arrangement_position` and velocity-scale provenance, and `/tmp/tracker_runtime_state.json` exposes current interpolated automation under `automation`. The scheduler uses low density to suppress optional support-lane events without dropping bass/melody continuity, and the live composer uses the same row state to refresh the master bus at musical intervals, so downstream diagnostics and the summed audio path agree about whether the section is rising, suspending, releasing, or fading.

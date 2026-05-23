@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Added the T-039 composer tuning trajectory: score-tree composition now plans
+  per-scene tuning metadata from CypherClaw's phase rule, selecting
+  `just_intonation_5_limit` for stillness phases
+  (`Listen`/`Divination`, plus the existing `Crystallization` arc bridge) and
+  `gamelan_slendro` for motion phases (`Conversation`/`Procession`, plus the
+  existing `Emergence`/`Convergence` arc bridge). Stillness/motion crossings
+  are marked with `tuning_morph_source_name`, `tuning_morph_target_name`,
+  `tuning_morph_curve=linear`, and deterministic composer log lines in
+  `arrangement_plan["tuning_trajectory"]["composer_log"]`. The typed
+  `TuningTrajectory` round-trips through score-tree JSON and propagates through
+  tracker scene metadata. No new dependencies, migrations, provider secrets,
+  runtime state directories, or startup-flow changes were added. Red phase was
+  confirmed before implementation, startup identity anchors passed with
+  `9 passed`, and full validation passed with `5052 passed, 11 skipped`, Ruff
+  clean, and mypy clean.
+
 - Added the T-032 scripted live-audio end-to-end verification path:
   `my-claw/tools/audio_streamer.py` now exposes a typed segment POST helper for
   the Worker's `/api/cypherclaw/segment` contract, and the sibling holdenu
