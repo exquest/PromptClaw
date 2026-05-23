@@ -4,7 +4,8 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-from typing import Mapping
+from dataclasses import dataclass
+from typing import Mapping, Sequence
 
 from cypherclaw.composer_vocabulary_bridge import (
     DEFAULT_CURIOSITY,
@@ -20,6 +21,8 @@ from .piece_commission import PieceCommission
 from .procedural_arc import ArcDirective, directive_for_elapsed
 from .production_course import course_for_section
 from .score_tree import (
+    MeterSceneValue,
+    MeterTrajectory,
     MotifNode,
     PerformanceIntent,
     PhraseNode,
@@ -52,6 +55,47 @@ _CADENCE_BY_ROLE = {
     "plagal": "plagal",
     "authentic": "authentic",
 }
+
+
+@dataclass(frozen=True)
+class _MeterDriftCell:
+    meter: str
+    subdivision: str = "straight"
+    groove_timing: str = "grid"
+    phrase_breath: str = "regular"
+    metric_modulation: str = ""
+    polymeter: tuple[int, int] | None = None
+
+
+_METER_DRIFT_TABLE: dict[str, tuple[_MeterDriftCell, ...]] = {
+    "Divination": (
+        _MeterDriftCell("free", "rubato", "rubato", "open"),
+        _MeterDriftCell("4/4", "straight", "grid", "regular"),
+    ),
+    "Emergence": (
+        _MeterDriftCell("4/4", "straight", "grid", "regular"),
+        _MeterDriftCell("6/8", "triplet", "lilt", "regular"),
+    ),
+    "Conversation": (
+        _MeterDriftCell("15/16", "polyrhythmic", "metric_modulation", "asymmetric", "5:4", (3, 4)),
+        _MeterDriftCell("11/8", "polyrhythmic", "metric_modulation", "asymmetric", "4:3", (5, 4)),
+        _MeterDriftCell("7/8", "shuffle", "push", "fractured", "3:2", None),
+    ),
+    "Convergence": (
+        _MeterDriftCell("7/8", "polyrhythmic", "metric_modulation", "asymmetric", "7:8", (3, 4)),
+        _MeterDriftCell("5/4", "dotted", "metric_modulation", "long", "4:3", None),
+        _MeterDriftCell("4/4", "straight", "grid", "regular"),
+    ),
+    "Crystallization": (
+        _MeterDriftCell("3/4", "straight", "pull", "open"),
+        _MeterDriftCell("4/4", "straight", "grid", "settled"),
+    ),
+}
+
+_DEFAULT_METER_DRIFT: tuple[_MeterDriftCell, ...] = (
+    _MeterDriftCell("4/4", "straight", "grid", "regular"),
+    _MeterDriftCell("5/4", "dotted", "metric_modulation", "long", "4:3"),
+)
 
 
 def _arc_metadata(directive: ArcDirective) -> dict[str, str]:
@@ -103,6 +147,108 @@ def _scoped_seed_id(composition_seed: str | None, *parts: object) -> str:
     if composition_seed is None:
         return _seed_id(*parts)
     return _seed_id(composition_seed, *parts)
+
+
+def _meter_phase_for_section(
+    section: PlannedSection,
+    directives: Mapping[str, ArcDirective],
+) -> str:
+    directive = directives.get(section.scene_name)
+    if directive is None:
+        directive = directives.get(section.function)
+    if directive is None:
+        return "Emergence"
+    return directive.phase.name
+
+
+def _meter_cell_for_phase(phase_name: str, occurrence_index: int) -> _MeterDriftCell:
+    cells = _METER_DRIFT_TABLE.get(phase_name, _DEFAULT_METER_DRIFT)
+    return cells[occurrence_index % len(cells)]
+
+
+def _meter_scene_value(
+    section: PlannedSection,
+    *,
+    cell: _MeterDriftCell,
+) -> MeterSceneValue:
+    return MeterSceneValue(
+        scene_name=section.scene_name,
+        meter=cell.meter,
+        subdivision=cell.subdivision,
+        groove_timing=cell.groove_timing,
+        phrase_breath=cell.phrase_breath,
+        metric_modulation=cell.metric_modulation,
+        polymeter=cell.polymeter,
+    )
+
+
+def _meter_trajectory_payload(trajectory: MeterTrajectory) -> dict[str, object]:
+    return {
+        "trajectory_id": trajectory.trajectory_id,
+        "arc_plan": trajectory.arc_plan,
+        "arc_phase": trajectory.arc_phase,
+        "scene_count": len(trajectory.scene_values),
+        "scene_names": [value.scene_name for value in trajectory.scene_values],
+        "meter_path": [value.meter for value in trajectory.scene_values],
+        "subdivision_path": [value.subdivision for value in trajectory.scene_values],
+        "groove_timing_path": [value.groove_timing for value in trajectory.scene_values],
+        "metric_modulations": [
+            value.metric_modulation
+            for value in trajectory.scene_values
+            if value.metric_modulation
+        ],
+        "rationale": trajectory.rationale,
+    }
+
+
+def plan_meter_trajectory(
+    sections: Sequence[PlannedSection],
+    directives: Mapping[str, ArcDirective],
+    *,
+    cadence_state: str = "",
+    groove_identity: str = "",
+    trajectory_seed: str | int | None = None,
+) -> MeterTrajectory | None:
+    """Plan an ordered meter trajectory for composed sections.
+
+    The planner is deterministic: section order plus arc phase selects values
+    from the phase drift table. Later runtime slices may consume these meters
+    actively; this helper only authors the score-tree plan and metadata.
+    """
+
+    if not sections:
+        return None
+
+    phase_names: list[str] = []
+    phase_occurrences: dict[str, int] = {}
+    scene_values: list[MeterSceneValue] = []
+    for section in sections:
+        phase_name = _meter_phase_for_section(section, directives)
+        phase_names.append(phase_name)
+        occurrence_index = phase_occurrences.get(phase_name, 0)
+        phase_occurrences[phase_name] = occurrence_index + 1
+        cell = _meter_cell_for_phase(phase_name, occurrence_index)
+        scene_values.append(_meter_scene_value(section, cell=cell))
+
+    phase_path = tuple(dict.fromkeys(phase_names))
+    trajectory_id = "meter-" + _scoped_seed_id(
+        str(trajectory_seed) if trajectory_seed is not None else None,
+        "meter-trajectory",
+        cadence_state,
+        groove_identity,
+        ",".join(section.scene_name for section in sections),
+        ",".join(phase_names),
+    )
+    return MeterTrajectory(
+        trajectory_id=trajectory_id,
+        arc_plan="arc_phase_drift",
+        arc_phase="->".join(phase_path),
+        scene_values=tuple(scene_values),
+        rationale=(
+            "deterministic meter drift from section arc phases"
+            f" ({cadence_state or 'unknown_cadence'} / {groove_identity or 'unknown_groove'})"
+        ),
+    )
 
 
 def _section_phrase_count(section: PlannedSection, *, commission: PieceCommission) -> int:
@@ -174,6 +320,14 @@ def compose_score_tree(
         form.sections,
         commission=commission,
         cadence_state=cadence_state,
+    )
+    meter_trajectory = plan_meter_trajectory(
+        form.sections,
+        section_directives,
+        cadence_state=cadence_state,
+        groove_identity=commission.groove_identity,
+        trajectory_seed=normalized_seed
+        or _seed_id(family, cadence_state, progression_profile, song_num, hook.title),
     )
     for index, section in enumerate(form.sections):
         motif_refs = [primary_motif.motif_id]
@@ -249,6 +403,11 @@ def compose_score_tree(
                         section.function,
                     )
                 ),
+                scene_metadata=(
+                    meter_trajectory.metadata_for_scene(section.scene_name)
+                    if meter_trajectory is not None
+                    else {}
+                ),
             )
         )
 
@@ -274,6 +433,8 @@ def compose_score_tree(
         "sonic_world_count": commission.sonic_world_count,
         "production_arc": production_arc,
     }
+    if meter_trajectory is not None:
+        arrangement_plan["meter_trajectory"] = _meter_trajectory_payload(meter_trajectory)
     if vocabulary_db_path is not None:
         fragments = load_vocabulary_fragments(vocabulary_db_path)
         citations = plan_vocabulary_citations(
@@ -327,6 +488,7 @@ def compose_score_tree(
         ending_family=commission.ending_family,
         narrative_map=narrative_map,
         metadata=metadata,
+        meter_trajectory=meter_trajectory,
         planned_duration_s=planned_duration_s,
         primary_hook_text=hook.text_hook,
     )
