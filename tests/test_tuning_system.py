@@ -104,3 +104,90 @@ def test_tuning_for_name_resolves_canonical_names() -> None:
 def test_tuning_for_name_rejects_unknown() -> None:
     with pytest.raises(ValueError):
         tuning_for_name("pythagorean")
+
+
+def _cents_diff(actual_hz: float, expected_hz: float) -> float:
+    """Absolute distance from `actual_hz` to `expected_hz` in cents."""
+
+    return abs(1200.0 * math.log2(actual_hz / expected_hz))
+
+
+# Reference cents above the tonal center for each scale degree of 12-TET. Equal
+# temperament places every semitone at an exact 100-cent step by definition.
+_TWELVE_TET_REFERENCE_CENTS: tuple[float, ...] = tuple(
+    100.0 * degree for degree in range(12)
+)
+
+# Reference cents above the tonal center for each scale degree of the 5-limit
+# just intonation chromatic scale, derived from the ratios in
+# `cypherclaw.tuning.system._JI_5_LIMIT_RATIOS`. Values rounded to 0.001 cent
+# from authoritative just-intonation tables (e.g., Helmholtz/Ellis).
+_JI_5_LIMIT_REFERENCE_CENTS: tuple[float, ...] = (
+    0.000,      # 1/1   unison
+    111.731,    # 16/15 minor second
+    203.910,    # 9/8   major second
+    315.641,    # 6/5   minor third
+    386.314,    # 5/4   major third
+    498.045,    # 4/3   perfect fourth
+    590.224,    # 45/32 tritone
+    701.955,    # 3/2   perfect fifth
+    813.686,    # 8/5   minor sixth
+    884.359,    # 5/3   major sixth
+    1017.596,   # 9/5   minor seventh
+    1088.269,   # 15/8  major seventh
+)
+
+# Reference cents above the tonal center for the 5 slendro steps within an
+# octave, per the PRD's approximation of ~240, 240, 270, 240, 270 cents.
+_SLENDRO_REFERENCE_CENTS: tuple[float, ...] = (0.0, 240.0, 480.0, 750.0, 990.0)
+
+
+@pytest.mark.parametrize("center_hz", [220.0, 261.625565, 440.0])
+def test_twelve_tet_matches_reference_cents_within_0_1_cent(center_hz: float) -> None:
+    table = TwelveTET().pitch_table(center_hz)
+    for degree, cents in enumerate(_TWELVE_TET_REFERENCE_CENTS):
+        expected_hz = center_hz * (2.0 ** (cents / 1200.0))
+        assert _cents_diff(table[degree], expected_hz) <= 0.1
+
+
+@pytest.mark.parametrize("center_hz", [220.0, 261.625565, 440.0])
+def test_just_intonation_matches_reference_cents_within_0_1_cent(
+    center_hz: float,
+) -> None:
+    table = JustIntonation5Limit().pitch_table(center_hz)
+    for degree, cents in enumerate(_JI_5_LIMIT_REFERENCE_CENTS):
+        expected_hz = center_hz * (2.0 ** (cents / 1200.0))
+        assert _cents_diff(table[degree], expected_hz) <= 0.1
+
+
+@pytest.mark.parametrize("center_hz", [220.0, 261.625565, 440.0])
+def test_gamelan_slendro_matches_reference_cents_within_0_1_cent(
+    center_hz: float,
+) -> None:
+    table = GamelanSlendro().pitch_table(center_hz)
+    for degree, cents in enumerate(_SLENDRO_REFERENCE_CENTS):
+        expected_hz = center_hz * (2.0 ** (cents / 1200.0))
+        assert _cents_diff(table[degree], expected_hz) <= 0.1
+
+
+def test_just_intonation_reference_ratios_within_0_1_cent() -> None:
+    # Anchor named just-intonation intervals at their textbook frequency ratios.
+    table = JustIntonation5Limit().pitch_table(440.0)
+    expected_ratios: dict[int, float] = {
+        0: 1.0,
+        2: 9.0 / 8.0,
+        4: 5.0 / 4.0,
+        5: 4.0 / 3.0,
+        7: 3.0 / 2.0,
+        9: 5.0 / 3.0,
+        11: 15.0 / 8.0,
+    }
+    for degree, ratio in expected_ratios.items():
+        assert _cents_diff(table[degree], 440.0 * ratio) <= 0.1
+
+
+def test_twelve_tet_octave_boundary_is_exact_double_within_0_1_cent() -> None:
+    # An octave above degree 0 must double the frequency to within 0.1 cent.
+    table = TwelveTET().pitch_table(440.0)
+    octave_hz = table[0] * 2.0
+    assert _cents_diff(octave_hz, 880.0) <= 0.1
