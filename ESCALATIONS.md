@@ -1,5 +1,42 @@
 # Escalations
 
+## T-028b (2026-05-23)
+
+- **Reason:** Cross-repository Worker location, hls.js runtime dependency, and
+  stream-container caveat
+- **Details:** PromptClaw remains the ADP source of truth, but the
+  `cypherclaw.holdenu.com` static page is implemented in the sibling
+  `/Users/anthony/Programming/catalog-explorer/worker` Cloudflare Worker. T-028b
+  therefore keeps the spec, progress, changelog, and startup-hardening anchors
+  in PromptClaw while changing the Worker HTML/CSS/JS in `catalog-explorer`.
+  The task adds a browser runtime dependency on hls.js through the public CDN
+  URL `https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js`; no npm package,
+  lockfile change, provider secret, database migration, or backend dependency is
+  introduced. The existing T-026 caveat remains: the current live playlist still
+  points at Ogg/Opus `.opus` segments, which hls.js and ffplay do not decode as
+  standard HLS media segments. T-028b wires the native-HLS/hls.js playback
+  controller, while actual cross-browser media decode still depends on a later
+  segment-container fix.
+- **Scope decision:** The GlyphWeave backdrop is implemented as static
+  CSS/image layers embedded in the page rather than a new asset ingestion route,
+  because the gallery export and SSE-driven visualizer are later T-028 subtasks.
+  The generated startup identity hardening bullets target existing startup
+  paths; current CLI, first-boot, daemon ordering, and narrative ASGI tests cover
+  `bootstrap_identity()` persistence and bootstrap-before-`FirstBootAnnouncer`
+  ordering, so they remain mandatory regression anchors instead of expanding
+  this static page task into startup rewiring.
+- **Reason:** Red phase and verification results
+- **Details:** Red phase was confirmed with
+  `npm test -- tests/cypherclaw-landing.test.js` in
+  `/Users/anthony/Programming/catalog-explorer/worker` failing the two new
+  T-028b assertions because the T-028a scaffold lacked rendered GlyphWeave
+  image layers, playback data hooks, and native-HLS/hls.js initialization. After
+  implementation, the focused Worker landing command passed, full Worker
+  `npm test` passed with `15 passed`, Worker `npm run check` passed, and the
+  mandatory startup identity hardening anchors passed with `11 passed`. The
+  required PromptClaw validation command passed with `4997 passed, 11 skipped`,
+  Ruff clean, and mypy clean.
+
 ## T-028a (2026-05-23)
 
 - **Reason:** Cross-repository Worker location and scaffold-only scope

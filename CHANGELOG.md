@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Added the T-028b rendered CypherClaw live-page layer in the holdenu Worker:
+  `#glyphweave-backdrop` now contains three slow-moving decorative
+  CSS/image-backed GlyphWeave layers with stable `data-glyphweave-layer` hooks
+  and reduced-motion handling, while the live `<audio>` element now carries a
+  `data-stream-url` hook and an inline `initCypherClawAudio()` controller for
+  native HLS plus hls.js fallback through
+  `https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js`. The page still avoids
+  autoplay, listener telemetry, and analytics. Added locked Worker assertions
+  for the backdrop layer and playback controller. Validation passed with Worker
+  `npm test` (`15 passed`), Worker `npm run check`, startup identity anchors
+  (`11 passed`), and full PromptClaw validation (`4997 passed, 11 skipped`,
+  Ruff clean, mypy clean). The T-026 Ogg/Opus segment-container caveat remains
+  documented: the page is wired for playback, but cross-browser HLS decode still
+  depends on a later segment packaging fix.
+
 - Replaced the `cypherclaw.holdenu.com` root placeholder with the T-028a static
   public stream scaffold in the holdenu Worker: `GET /` now serves a static
   HTML page with the live HLS audio element wired to

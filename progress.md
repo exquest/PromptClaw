@@ -611,3 +611,37 @@ Progress: [███████████████████████
   `npm run check` passed; startup identity anchors passed with `11 passed`;
   full PromptClaw validation passed with `4997 passed, 11 skipped`, Ruff clean,
   and mypy clean.
+
+## ADP Notes: T-028b
+
+- **Phase 0 Explore (2026-05-23):** Read the CypherClaw v2 PRD stream-page
+  section, requirements register, implementation plan, design statement,
+  T-028a spec/verification, existing Worker root HTML, Worker landing/playlist/
+  segment tests, PromptClaw startup identity tests, CHANGELOG, and ESCALATIONS.
+  The affected implementation remains the sibling
+  `/Users/anthony/Programming/catalog-explorer/worker/src/index.ts` route for
+  `cypherclaw.holdenu.com`; PromptClaw remains the ADP source of truth for
+  specs, progress, changelog, and escalation notes. T-028a shipped only the
+  static scaffold, while T-028b owns the real GlyphWeave-style CSS/image
+  backdrop layer and browser playback wiring for `/api/cypherclaw/live.m3u8`.
+  Existing startup identity hardening tests already cover bootstrap persistence
+  and bootstrap-before-announcer ordering and will be re-run as regression
+  anchors.
+- **Phase 1 Specify (2026-05-23):** Wrote `specs/t-028b-spec.md` with the
+  problem statement, technical approach, edge cases, and VERIFY commands. The
+  spec records the hls.js runtime dependency and keeps the T-026 Ogg/Opus HLS
+  decode caveat out in the open.
+- **Phase 2 Test Development (2026-05-23):** Added locked Worker assertions for
+  rendered GlyphWeave backdrop image layers and native-HLS/hls.js playback
+  initialization. Red phase was confirmed with
+  `npm test -- tests/cypherclaw-landing.test.js` failing the two new assertions
+  against the T-028a scaffold.
+- **Phase 3 Implement (2026-05-23):** Updated the holdenu Worker root HTML with
+  three animated `data-glyphweave-layer` image-backed backdrop layers,
+  reduced-motion handling, `data-stream-url` / `data-playback-mode` audio hooks,
+  and `initCypherClawAudio()` for native HLS, hls.js, and direct fallback.
+- **Phase 4 Verify (2026-05-23):** Focused Worker landing tests passed after
+  implementation; full Worker `npm test` passed with `15 passed`; Worker
+  `npm run check` passed; mandatory startup identity anchors passed with
+  `11 passed`; full PromptClaw validation passed with `4997 passed, 11 skipped`,
+  Ruff clean, and mypy clean.
