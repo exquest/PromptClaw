@@ -1,5 +1,35 @@
 # Escalations
 
+## T-021 (2026-05-23)
+
+- **Reason:** Metric-modulation timing scope and startup-hardening assumptions
+- **Details:** Exploration found the affected tracker timing path is
+  `my-claw/tools/senseweave/music_tracker.py` plus runtime consumption in
+  `my-claw/tools/senseweave/music_tracker_runtime.py`. Existing groove code
+  already carries metric-modulation labels in scene/step metadata, but row
+  elapsed timing stayed constant. This task assumes ratio semantics are
+  duration scaling, so `3:2` multiplies row duration by `3 / 2` from the
+  target row onward while preserving row indices and lane placement. The
+  generated startup hardening bullets target the existing identity subsystem;
+  `midi_intake_daemon.main()` already invokes `bootstrap_identity()` before
+  `FirstBootAnnouncer()`, and existing CLI, first-boot, governor, and
+  narrative ASGI tests cover standalone/federated identity persistence. Those
+  tests remain mandatory regression anchors rather than broadening T-021 into
+  startup rewiring. No new dependencies, migrations, provider secrets,
+  database columns, runtime state directories, HTTP routes, auth behavior, or
+  agent command strings are required.
+- **Reason:** Red phase and focused verification
+- **Details:** Red phase was confirmed with
+  `pytest tests/test_music_tracker.py::TestMetricModulationTiming::test_applies_three_to_two_modulation_from_target_row tests/test_music_tracker_runtime.py::TestScheduleScene::test_metric_modulation_changes_event_duration_and_row_sleeps_from_target_row -q`
+  failing on the missing `MetricModulation` import before production code
+  changed. After implementation, the locked focused tests passed with
+  `2 passed`, and `pytest tests/test_music_tracker.py
+  tests/test_music_tracker_runtime.py tests/test_groove_engine.py -q` passed
+  with `175 passed`. Startup identity hardening anchors passed with
+  `11 passed`. Full validation passed with `pip install -e '.[dev]' && pytest
+  tests/ -x && ruff check src/ tests/ && mypy src/`: `4979 passed, 11
+  skipped`, Ruff clean, and mypy clean.
+
 ## T-017d (2026-05-23)
 
 - **Reason:** Faithful render regression-test scope and startup-hardening assumptions

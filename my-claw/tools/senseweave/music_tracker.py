@@ -317,6 +317,15 @@ class AutomationLane:
     points: list[tuple[int, float]] = field(default_factory=list)
 
 
+@dataclass(frozen=True)
+class MetricModulation:
+    """Duration-ratio change that applies from one tracker row onward."""
+
+    at_row: int
+    ratio_num: int
+    ratio_den: int
+
+
 @dataclass
 class TrackerPattern:
     """A set of lanes sharing the same row grid."""
@@ -345,6 +354,7 @@ class TrackerScene:
     pattern: TrackerPattern
     constraints: SceneConstraint
     metadata: dict[str, str] = field(default_factory=dict)
+    metric_modulations: list[MetricModulation] = field(default_factory=list)
 
 
 @dataclass
@@ -767,6 +777,83 @@ def rows_for_beats(duration_beats: float, rows_per_beat: int = 4) -> int:
 
     rows = int(round(duration_beats * rows_per_beat))
     return max(1, rows)
+
+
+def _base_row_duration_seconds(scene: TrackerScene) -> float:
+    return 60.0 / scene.tempo_bpm / scene.rows_per_beat
+
+
+def _valid_metric_modulations(scene: TrackerScene) -> list[MetricModulation]:
+    valid: list[MetricModulation] = []
+    for modulation in getattr(scene, "metric_modulations", ()):
+        try:
+            at_row = int(modulation.at_row)
+            ratio_num = int(modulation.ratio_num)
+            ratio_den = int(modulation.ratio_den)
+        except (AttributeError, TypeError, ValueError):
+            continue
+        if ratio_num <= 0 or ratio_den <= 0:
+            continue
+        if at_row >= scene.pattern.rows:
+            continue
+        valid.append(
+            MetricModulation(
+                at_row=max(0, at_row),
+                ratio_num=ratio_num,
+                ratio_den=ratio_den,
+            )
+        )
+    valid.sort(key=lambda modulation: modulation.at_row)
+    return valid
+
+
+def metric_modulated_row_durations_seconds(scene: TrackerScene) -> list[float]:
+    """Return each row duration after applying scene metric modulations."""
+
+    if scene.pattern.rows <= 0:
+        return []
+
+    modulations_by_row: dict[int, list[MetricModulation]] = {}
+    for modulation in _valid_metric_modulations(scene):
+        modulations_by_row.setdefault(modulation.at_row, []).append(modulation)
+
+    row_duration = _base_row_duration_seconds(scene)
+    multiplier = 1.0
+    durations: list[float] = []
+    for row in range(scene.pattern.rows):
+        for modulation in modulations_by_row.get(row, ()):
+            multiplier *= modulation.ratio_num / modulation.ratio_den
+        durations.append(row_duration * multiplier)
+    return durations
+
+
+def metric_modulated_row_starts_seconds(scene: TrackerScene) -> list[float]:
+    """Return elapsed start time for each tracker row in *scene*."""
+
+    starts: list[float] = []
+    elapsed = 0.0
+    for row_duration in metric_modulated_row_durations_seconds(scene):
+        starts.append(elapsed)
+        elapsed += row_duration
+    return starts
+
+
+def metric_modulated_duration_seconds(
+    scene: TrackerScene,
+    *,
+    start_row: int,
+    length_rows: int,
+) -> float:
+    """Return elapsed seconds for a span that may cross modulation rows."""
+
+    if length_rows <= 0:
+        return 0.0
+    row_durations = metric_modulated_row_durations_seconds(scene)
+    start = max(0, int(start_row))
+    end = min(len(row_durations), start + int(length_rows))
+    if start >= end:
+        return 0.0
+    return sum(row_durations[start:end])
 
 
 # Default per-role lane phase offsets in tracker rows (bass, melody, counter, color, texture).

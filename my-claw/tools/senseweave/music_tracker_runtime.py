@@ -17,7 +17,13 @@ from typing import Any, Callable
 from cypherclaw.render.events import Event
 
 from .generative_scores import _scale_degree_to_freq, role_octave_shift_for_patch
-from .music_tracker import TrackerLane, TrackerScene, TrackerSong
+from .music_tracker import (
+    TrackerLane,
+    TrackerScene,
+    TrackerSong,
+    metric_modulated_duration_seconds,
+    metric_modulated_row_durations_seconds,
+)
 
 TRACKER_RUNTIME_STATE = "/tmp/tracker_runtime_state.json"
 
@@ -120,6 +126,9 @@ def _apply_sensor_modulation(
 
 
 def _row_duration_seconds(scene: TrackerScene) -> float:
+    row_durations = metric_modulated_row_durations_seconds(scene)
+    if row_durations:
+        return row_durations[0]
     return 60.0 / scene.tempo_bpm / scene.rows_per_beat
 
 
@@ -146,7 +155,6 @@ def build_scene_events(
 ) -> list[ScheduledTrackerEvent]:
     """Convert tracker steps into sorted runtime events."""
 
-    row_duration = _row_duration_seconds(scene)
     patch_name = scene.metadata.get("patch_name", "")
     events: list[ScheduledTrackerEvent] = []
     lane_order = {lane.name: index for index, lane in enumerate(scene.pattern.lanes)}
@@ -166,7 +174,14 @@ def build_scene_events(
                         _scale_degree_to_freq(scene.key, step.scale_degree, octave_shift),
                         3,
                     ),
-                    duration_seconds=round(step.length_rows * row_duration, 4),
+                    duration_seconds=round(
+                        metric_modulated_duration_seconds(
+                            scene,
+                            start_row=step.row,
+                            length_rows=step.length_rows,
+                        ),
+                        4,
+                    ),
                     amplitude=_amplitude_for_lane(lane.role, step.velocity, step.accent),
                     accent=step.accent,
                     metadata=dict(step.metadata),
@@ -347,7 +362,7 @@ def schedule_scene(
     for event in events:
         events_by_row.setdefault(event.row, []).append(event)
 
-    row_duration = _row_duration_seconds(scene)
+    row_durations = metric_modulated_row_durations_seconds(scene)
     emitted = 0
     delta_entries: list[dict] = []
 
@@ -386,7 +401,7 @@ def schedule_scene(
             })
 
         if row < scene.pattern.rows - 1:
-            sleep_fn(row_duration)
+            sleep_fn(row_durations[row])
 
     if delta_track_path is not None and delta_entries:
         write_delta_track(delta_track_path, delta_entries)

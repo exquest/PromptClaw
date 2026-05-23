@@ -12,10 +12,13 @@ from senseweave.generative_scores import Note, Phrase, Score
 from senseweave.music_tracker import (
     _SCENE_SPATIAL_DEFAULTS,
     build_role_hints_from_cast,
+    MetricModulation,
     SceneConstraint,
     build_korsakov_tracker_song,
     build_scene_from_score,
     enrich_score_for_tracker,
+    metric_modulated_row_durations_seconds,
+    metric_modulated_row_starts_seconds,
     rows_for_beats,
     tracker_form_for_family,
     validate_scene,
@@ -79,6 +82,37 @@ class TestRowsForBeats:
 
     def test_never_returns_zero_rows(self):
         assert rows_for_beats(0.01, rows_per_beat=4) == 1
+
+
+class TestMetricModulationTiming:
+    def test_applies_three_to_two_modulation_from_target_row(self):
+        score = _sample_score()
+        score.tempo_bpm = 120.0
+        scene = build_scene_from_score(
+            score,
+            name="Theme",
+            allowed_roles=("melody",),
+            rows_per_beat=4,
+            scene_metadata={"groove_lane_phase_offsets": "0,0,0,0,0"},
+        )
+        scene.metric_modulations = [
+            MetricModulation(at_row=4, ratio_num=3, ratio_den=2),
+        ]
+
+        row_durations = metric_modulated_row_durations_seconds(scene)
+        row_starts = metric_modulated_row_starts_seconds(scene)
+
+        assert row_durations[:4] == [0.125, 0.125, 0.125, 0.125]
+        assert row_durations[4:7] == [0.1875, 0.1875, 0.1875]
+        assert row_starts[:7] == [
+            0.0,
+            0.125,
+            0.25,
+            0.375,
+            0.5,
+            0.6875,
+            0.875,
+        ]
 
 
 class TestBuildSceneFromScore:

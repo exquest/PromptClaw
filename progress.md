@@ -578,6 +578,27 @@ Progress: [███████████████████████
 - **T-073**: pending — Pending.
 - **T-074**: pending — Pending.
 
+## T-021 (2026-05-23)
+
+- **Exploration findings:** The active tracker timing surface is
+  `my-claw/tools/senseweave/music_tracker.py`, with runtime conversion in
+  `my-claw/tools/senseweave/music_tracker_runtime.py` and coverage in
+  `tests/test_music_tracker.py`, `tests/test_music_tracker_runtime.py`, and
+  `tests/test_groove_engine.py`. Existing groove support already carries
+  metric-modulation labels (`GrooveProfile.metric_modulation` and
+  `ModulationEvent`), and tracker scenes stamp those labels into scene and step
+  metadata, but row timing remains constant because `_row_duration_seconds(...)`
+  ignores row-positioned modulation. T-021 will add the narrow row-duration
+  application path and keep startup identity hardening as a regression anchor.
+- **Red/focused verification:** Red phase was confirmed by the locked
+  `TestMetricModulationTiming` and `TestScheduleScene` modulation tests failing
+  on the missing `MetricModulation` import before production code changed. The
+  implementation adds row-duration, row-start, and row-span helpers plus runtime
+  consumption for event durations and row sleeps. Focused tracker/groove
+  verification passed with `175 passed`. Startup identity anchors passed with
+  `11 passed`, and full validation passed with `4979 passed, 11 skipped`, Ruff
+  clean, and mypy clean.
+
 ## T-017a (2026-05-23)
 
 - **Exploration findings:** The faithful-transmission change belongs in the

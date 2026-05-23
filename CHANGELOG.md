@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Added row-based metric modulation timing (T-021):
+  `senseweave.music_tracker.MetricModulation` now lets tracker scenes apply
+  duration-ratio changes from a specific row onward. A `3:2` modulation at row
+  `N` preserves earlier rows and lengthens row timing from `N` forward, with
+  runtime event durations and scheduler sleeps using the same row-duration
+  table. This changes elapsed tracker timing only; row placement, lane order,
+  groove metadata labels, dependencies, migrations, provider secrets, and
+  startup wiring are unchanged. Validation passed with `4979 passed, 11
+  skipped`, Ruff clean, and mypy clean.
+
 - Added faithful MIDI render regression coverage (T-017d):
   `tests/test_midi_faithful_render_contract.py` now locks the
   faithful-transmission render contract for pitch/rhythm preservation, explicit

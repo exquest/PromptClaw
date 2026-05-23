@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "too
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
 
 from senseweave.generative_scores import Note, Phrase, Score
-from senseweave.music_tracker import AutomationLane, TrackerSong, build_scene_from_score
+from senseweave.music_tracker import AutomationLane, MetricModulation, TrackerSong, build_scene_from_score
 from senseweave.music_tracker_runtime import (
     _apply_sensor_modulation,
     _clamp_sensor,
@@ -246,6 +246,30 @@ class TestScheduleScene:
         assert runtime_state["scene_metadata"]["payoff_focus"] == "primary"
         assert runtime_state["scene_metadata"]["section_function"] == "arrival"
         assert runtime_state["scene_metadata"]["text_hook"] == "answer the room"
+
+    def test_metric_modulation_changes_event_duration_and_row_sleeps_from_target_row(self, tmp_path):
+        scene = _sample_scene()
+        scene.metric_modulations = [
+            MetricModulation(at_row=4, ratio_num=3, ratio_den=2),
+        ]
+        played = []
+        slept = []
+
+        result = schedule_scene(
+            scene,
+            play_event=played.append,
+            sleep_fn=slept.append,
+            state_path=tmp_path / "tracker_state.json",
+            time_fn=lambda: 1000.0,
+        )
+
+        melody_after_modulation = next(
+            event for event in played if event.lane_name == "melody" and event.row == 4
+        )
+        assert result.completed is True
+        assert round(melody_after_modulation.duration_seconds, 4) == 0.375
+        assert slept[:4] == [0.125, 0.125, 0.125, 0.125]
+        assert slept[4:6] == [0.1875, 0.1875]
 
     def test_can_abort_mid_scene(self, tmp_path):
         scene = _sample_scene()
