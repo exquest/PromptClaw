@@ -67,6 +67,23 @@
   commands asserting no new migration. Human review requested before the next
   pipeline tick promotes the spurious FAIL. Lead retries are NOT being attempted
   per the documented SI-003 escalation policy.
+- **SI-003 false positive — 4th-pass exhaustion (2026-05-23, codex lead via
+  Thompson sampling):** A fourth orchestrator tick re-selected the lead (codex
+  candidate, project=promptclaw, 3 candidates) and Gemini returned a fresh
+  independent `Verdict: PASS` on all five rubric axes (correctness,
+  completeness, consistency, security, quality;
+  `Verify_T-054d_1779573441.log`). SI-003 then appended a fifth spurious
+  `Verdict: FAIL` to `sdp/verification/t-054d-verify.md`. Conditions for the
+  documented escalation still hold: only SI-003 flag outstanding,
+  `migration` mentions in `specs/t-054d-spec.md` are negative-assertion or
+  pre-existing-config references (lines 28, 94, 96), and `git diff --
+  promptclaw/coherence/migrations/` remains empty (`001_event_store.sql`,
+  `002_decision_store.sql` only — no T-054d additions). Per
+  `[[project-sdp-si003-false-positive]]` policy, no further schema-snapshot
+  retry attempted. Holding for human review or SI-003 rule patch before the
+  next pipeline tick. Recommended fix unchanged: tighten SI-003 to skip
+  negative-assertion / pre-existing-config / `rg`/`git diff`-no-op
+  `migration` mentions.
 
 ## T-054c (2026-05-23)
 

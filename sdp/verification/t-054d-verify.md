@@ -37,3 +37,12 @@ PASS. PromptClaw project-wide validation passed with `5211 passed, 11 skipped`. 
 - The test was successfully verified through code review and logs. 
 - Local execution of `npm run test:workers` in the verification turn failed with `EPERM` on `.vite-temp`, which is a known environment/seatbelt limitation and does not reflect on the quality of the implementation.
 - All ADP bookkeeping is in order.
+
+## Notes for Lead Agent
+
+Verifier rule SI-003: this task spec mentions a database migration but the verification report does not contain a post-migration table snapshot. Add one of the following evidence forms and re-run verify:
+
+- SQLite — `PRAGMA table_info(<table>)` output
+- Postgres — `\d <table>` or `\d+ <table>` output
+
+## Verdict: FAIL
