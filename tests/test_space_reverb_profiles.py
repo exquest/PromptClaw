@@ -610,6 +610,55 @@ def test_smoke_render_voice_fx_bus_ids_are_collected_by_master_smooth() -> None:
     assert set(emitted.values()) == master_bus_ids
 
 
+def test_t046_voice_mode_fx_bus_matrix_enumerates_every_combination() -> None:
+    """T-046: enumerate every (voice × mood mode) combination and assert the
+    fx_bus_id carried on the OSC `/s_new` args. Mood modes are matched,
+    expressive, and house-bound once per supported house, exhausting the
+    surface that `build_voice_s_new_args` selects between.
+    """
+    expected_matrix: dict[tuple[str, str], int] = {}
+    for voice in EXPECTED_VOICE_ORDER:
+        expected_matrix[(voice, "matched")] = EXPECTED_BUS_IDS[voice]
+        expected_matrix[(voice, "expressive")] = EXPECTED_BUS_IDS[
+            EXPRESSIVE_SPACE_VOICE_BY_VOICE[voice]
+        ]
+        for house, space_voice in HOUSE_BOUND_SPACE_VOICE_BY_HOUSE.items():
+            expected_matrix[(voice, f"house-bound::{house}")] = EXPECTED_BUS_IDS[
+                space_voice
+            ]
+
+    expected_modes_per_voice = 2 + len(HOUSE_BOUND_SPACE_VOICE_BY_HOUSE)
+    assert len(expected_matrix) == len(EXPECTED_VOICE_ORDER) * expected_modes_per_voice
+
+    observed_matrix: dict[tuple[str, str], int] = {}
+    node_id = 73000
+    for voice in EXPECTED_VOICE_ORDER:
+        for mode_key in ("matched", "expressive", *(
+            f"house-bound::{house}" for house in HOUSE_BOUND_SPACE_VOICE_BY_HOUSE
+        )):
+            if mode_key.startswith("house-bound::"):
+                kwargs: dict[str, object] = {
+                    "mood_mode": "house-bound",
+                    "active_house": mode_key.split("::", 1)[1],
+                }
+            else:
+                kwargs = {"mood_mode": mode_key}
+
+            args = build_voice_s_new_args(
+                voice,
+                node_id=node_id,
+                freq=220.0,
+                **kwargs,
+            )
+            node_id += 1
+
+            assert args[0] == f"sw_{voice}", (voice, mode_key)
+            assert args.count("fx_bus_id") == 1, (voice, mode_key)
+            observed_matrix[(voice, mode_key)] = _fx_bus_id_from_args(args)
+
+    assert observed_matrix == expected_matrix
+
+
 def test_spaces_directory_contains_only_expected_algorithmic_sources() -> None:
     expected_files = sorted(
         f"{profile.space_id}.scd" for profile in iter_voice_reverb_profiles()
