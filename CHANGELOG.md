@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Added composer meter trajectory planning (T-022b):
+  `senseweave.recursive_composer.plan_meter_trajectory(...)` now derives a
+  deterministic per-scene meter path from existing section arc phases while
+  composing a `ScoreTree`. `compose_score_tree(...)` attaches the resulting
+  `MeterTrajectory`, stamps each `SectionNode.scene_metadata` with
+  `meter_trajectory_*` keys, and records a compact path summary in
+  `arrangement_plan["meter_trajectory"]`. This is still metadata planning:
+  tracker row timing and active groove-meter selection are unchanged, no
+  dependencies or migrations were added, and startup identity hardening remains
+  covered by existing regression anchors. Validation passed with `4986 passed,
+  11 skipped`, Ruff clean, and mypy clean.
+
 - Added score-tree meter trajectory metadata (T-022a):
   `senseweave.score_tree.MeterTrajectory` now models an arc-level meter plan
   with ordered per-scene `MeterSceneValue` entries. `SectionNode.scene_metadata`

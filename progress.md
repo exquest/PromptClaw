@@ -526,7 +526,12 @@ Progress: [███████████████████████
 - **T-021**: pending — Pending.
 - **T-022**: split — Split into subtasks.
 - **T-022a**: complete — Defined score-tree `MeterTrajectory` / `MeterSceneValue`, added `SectionNode.scene_metadata`, preserved both through JSON round-trip, and carried `meter_trajectory_*` scene metadata into compiled tracker scenes without changing row scheduling. Validation passed with `4983 passed, 11 skipped`, Ruff clean, and mypy clean.
-- **T-022b**: pending — Pending.
+- **T-022b**: complete — Composer now plans deterministic arc-phase meter
+  trajectories during `compose_score_tree(...)`, attaches `MeterTrajectory`,
+  stamps each section's `meter_trajectory_*` scene metadata, and records the
+  meter path in `arrangement_plan` without changing tracker row timing or
+  active groove-meter selection. Validation passed with `4986 passed, 11
+  skipped`, Ruff clean, and mypy clean.
 - **T-022c**: pending — Pending.
 - **T-022d**: pending — Pending.
 - **T-023**: pending — Pending.

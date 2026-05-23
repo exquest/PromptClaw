@@ -14,6 +14,17 @@
   existing identity startup subsystem; current CLI, daemon, first-boot,
   governor, and narrative ASGI tests remain regression anchors rather than new
   startup work for this meter-planner slice.
+- **Reason:** Red phase and focused verification
+- **Details:** Red phase was confirmed with
+  `pytest tests/test_score_tree_composer.py::test_plan_meter_trajectory_uses_arc_phase_drift_table tests/test_score_tree_composer.py::test_recursive_composer_plans_meter_trajectory_for_full_arc tests/test_score_tree_composer.py::test_composed_meter_trajectory_survives_tracker_compile -q`
+  failing on the missing `plan_meter_trajectory` import before production code
+  changed. After implementation, the locked T-022b tests passed with `3
+  passed`, the full score-tree composer test file passed with `27 passed`, and
+  adjacent T-022a/T-021 carrier and timing anchors passed with `5 passed`.
+- **Reason:** Full validation
+- **Details:** Full validation passed with
+  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`:
+  `4986 passed, 11 skipped`, Ruff clean, and mypy clean.
 
 ## T-022a (2026-05-23)
 
