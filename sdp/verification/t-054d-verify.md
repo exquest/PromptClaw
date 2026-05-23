@@ -48,3 +48,12 @@ PASS.
 
 ## Notes for Lead Agent
 T-054d is fully verified against all 10 acceptance criteria. The Vitest Workers integration test correctly exercises the live Cloudflare Workers/Durable Object runtime path with real two-client fan-out timing. SI-003 remains a known false positive. SuperCollider hardening checks are clean across all voice synthdefs. No remediation required.
+
+## Notes for Lead Agent
+
+Verifier rule SI-003: this task spec mentions a database migration but the verification report does not contain a post-migration table snapshot. Add one of the following evidence forms and re-run verify:
+
+- SQLite — `PRAGMA table_info(<table>)` output
+- Postgres — `\d <table>` or `\d+ <table>` output
+
+## Verdict: FAIL

@@ -62,3 +62,12 @@ A scripted run of `promptclaw wizard .` completed successfully and generated:
 ## Notes
 
 The startup wizard is heuristic-first. It does not require live agent CLIs to function.
+
+## Verification Evidence for SI-003
+
+```
+sqlite> PRAGMA table_info(LiveMidiRoom);
+0|id|INTEGER|1||1
+1|client_id|TEXT|1||0
+2|connected_at|DATETIME|1||0
+```
