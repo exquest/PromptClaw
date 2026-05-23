@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~13h 9m remaining (76 tasks, low confidence, calibrating)
-Expected completion: 8:23 AM tomorrow.
-Progress: [████████████████████████████████░░░░░░] 85%  435 / 511 tasks complete
-  completed: 435, pending: 55, needs_split: 19, blocked: 0, needs_attn: 2, skipped: 34
+ETC: ~10h 59m remaining (70 tasks, low confidence, calibrating)
+Expected completion: 8:03 AM tomorrow.
+Progress: [█████████████████████████████████░░░░░] 86%  447 / 517 tasks complete
+  completed: 447, pending: 51, needs_split: 17, blocked: 0, needs_attn: 2, skipped: 36
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -480,18 +480,20 @@ Progress: [███████████████████████
 - **T-045@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-001**: complete — Completed with verdict PASS.
 - **T-002**: complete — Completed with verdict PASS.
-- **T-003**: needs_split — Timed out; run sdp-cli tasks split T-003 to break it down.
-- **T-003a**: complete — Added the SenseWeave voice-module affective bus reader helper behind `CYPHERCLAW_V2_COUPLING`; focused tests, startup identity anchors, and full validation passed.
-- **T-004**: pending — Pending.
-- **T-003b**: complete — Added the pure SenseWeave coupling multiplier helper with boundary and clamping tests; exploration mapped the PRD math to `1 + coupling_strength * affective_state` with both values clamped to `[0.0, 1.0]` and default strength `0.5`.
-- **T-005**: pending — Pending.
-- **T-006**: needs_split — Timed out; run sdp-cli tasks split T-006 to break it down.
-- **T-003c**: complete — Added render-time modulator depth scaling to the shared SenseWeave voice path; `depth_out = depth_in * multiplier` is covered across every `TIMBRE_MAP` timbre, startup identity anchors passed, and full validation passed.
-- **T-007**: pending — Pending.
-- **T-003d**: complete — Added the affective-coupling integration path and
-  tests proving flag-on known bus values scale modulator depths across every
-  `TIMBRE_MAP` timbre while flag-off output stays at baseline.
-- **T-008**: pending — Pending.
+- **T-003**: split — Split into subtasks.
+- **T-003a**: complete — Completed with verdict PASS.
+- **T-004**: complete — Completed with verdict PASS.
+- **T-003b**: complete — Completed with verdict PASS.
+- **T-005**: complete — Completed with verdict PASS.
+- **T-006**: split — Split into subtasks.
+- **T-003c**: complete — Completed with verdict PASS.
+- **T-006a**: complete — Completed with verdict PASS.
+- **T-007**: complete — Completed with verdict PASS.
+- **T-003d**: complete — Completed with verdict PASS.
+- **T-006b**: complete — Completed with verdict PASS.
+- **T-006c**: complete — Completed with verdict PASS.
+- **T-008**: complete — Completed with verdict PASS.
+- **T-006d**: pending — Pending.
 - **T-009**: pending — Pending.
 - **T-010**: pending — Pending.
 - **T-011**: pending — Pending.
@@ -558,37 +560,3 @@ Progress: [███████████████████████
 - **T-072**: pending — Pending.
 - **T-073**: pending — Pending.
 - **T-074**: pending — Pending.
-
-## T-003d ADP Progress (2026-05-23)
-
-- **Explore:** Read AGENTS.md, the CypherClaw v2 PRD/task graph for CC-070
-  through CC-075, prior T-003a/T-003b/T-003c specs, `ESCALATIONS.md`,
-  `CHANGELOG.md`, `my-claw/tools/senseweave/affective_state_bus.py`,
-  `my-claw/tools/senseweave/synthesis/senseweave_voice.py`,
-  `my-claw/tools/senseweave/synthesis/affective_state_bus.scd`,
-  `tests/test_affective_state_bus.py`, and `tests/test_senseweave_voice.py`.
-  Existing patterns split coupling into a flag-gated bus reader, a pure
-  multiplier helper, and render-time depth scaling. T-003d needs the integrated
-  voice path that reads a known bus value under the rollout flag, computes the
-  multiplier, and proves every `TIMBRE_MAP` voice emits the expected modulator
-  depths while flag-off output stays at the nominal baseline.
-- **Specify:** Wrote `specs/t-003d-spec.md` with problem statement, technical
-  approach, edge cases, and acceptance criteria with explicit VERIFY commands.
-- **Test:** Added `TestAffectiveCouplingIntegration` before implementation and
-  confirmed the red phase with
-  `pytest tests/test_senseweave_voice.py::TestAffectiveCouplingIntegration -q`
-  failing on the missing integrated voice method. Test assertions are now
-  locked.
-- **Implement:** Added `SenseweaveVoice.note_on_with_affective_coupling(...)`
-  as the minimal typed integration helper. It reads the affective bus through
-  the existing flag-gated helper, computes the existing coupling multiplier, and
-  delegates to `note_on(...)` with the existing render-time depth scaling path.
-- **Verify:** Focused coupling integration passed with `2 passed`; prior
-  reader/multiplier/scaling tests plus the new integration class passed with
-  `9 passed`; `tests/test_affective_state_bus.py` passed with `36 passed`;
-  startup identity hardening anchors passed with `11 passed`; full validation
-  passed with `4863 passed, 11 skipped`, Ruff clean, and mypy clean.
-- **Document:** Updated `CHANGELOG.md`, `ESCALATIONS.md`, this progress note,
-  and `specs/t-003d-spec.md`. No new dependencies, migrations, provider
-  secrets, database changes, runtime state directories, SuperCollider
-  compilation, or startup rewiring were introduced.

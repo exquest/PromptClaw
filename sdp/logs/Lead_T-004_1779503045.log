@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1276 chars)
+---
+
+T-004 is complete and committed (06f8120).
+
+**Summary:**
+- `affective_state_bus.py`: Added `affective_state_bus_decay(initial, elapsed, tau)` pure function (exponential `v0 * exp(-t/τ)`, clamped). Extended `AffectiveStateBusWriter` with `seed()` and decay-on-empty-tick semantics — when `flush()` finds no active contributors, it emits a `/c_set` with the decayed value tracked from the last bus state.
+- `affective_state_bus.scd`: Added `~affectiveStateBusDecaySeconds = 5.0` and a `\sw_affective_state_decay` SynthDef mirroring the Python-side time constant.
+- `test_affective_state_bus.py`: 11 new tests covering the pure decay math (value/e at t=τ, monotonic, clamping, ≈0 by 6τ, validation), writer seed → decay path, path-independence of incremental flushes, contributor re-engagement resetting the envelope, and the SCD stub declaring the constant + SynthDef.
+- Validation: 26/26 affective bus tests pass, full suite 4827 passed / 11 skipped, ruff and mypy clean.

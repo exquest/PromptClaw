@@ -459,3 +459,17 @@
 | run-t-043@20260515t214233z-1778913143 | T-043@20260515T214233Z | codex | claude | PASS | 867.8s | — |
 | run-t-044@20260515t214233z-1778914042 | T-044@20260515T214233Z | claude | gemini | PASS | 346.2s | — |
 | run-t-045@20260515t214233z-1778914415 | T-045@20260515T214233Z | claude | gemini | PASS | 497.8s | — |
+| run-t-001-1779500398 | T-001 | claude | gemini | — | 0.0s | — |
+| run-t-001-1779501982 | T-001 | claude | gemini | PASS | 459.0s | — |
+| run-t-002-1779502470 | T-002 | claude | gemini | PASS | 509.4s | — |
+| run-t-004-1779503003 | T-004 | claude | gemini | PASS | 360.6s | — |
+| run-t-005-1779503389 | T-005 | claude | gemini | PASS | 347.2s | — |
+| run-t-007-1779503759 | T-007 | claude | gemini | PASS | 290.2s | — |
+| run-t-003a-1779504089 | T-003a | codex | claude | PASS | 755.5s | — |
+| run-t-003b-1779504873 | T-003b | codex | claude | PASS | 618.2s | — |
+| run-t-003c-1779505517 | T-003c | codex | claude | PASS | 743.8s | — |
+| run-t-003d-1779506286 | T-003d | codex | claude | PASS | 675.9s | — |
+| run-t-008-1779506986 | T-008 | claude | gemini | PASS | 322.8s | — |
+| run-t-006a-1779507361 | T-006a | claude | gemini | PASS | 711.6s | — |
+| run-t-006b-1779508097 | T-006b | claude | gemini | PASS | 600.9s | — |
+| run-t-006c-1779508723 | T-006c | claude | gemini | PASS | 321.2s | — |

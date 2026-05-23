@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1378 chars)
+---
+
+T-006a complete. Committed `f00add3`.
+
+**What landed** (`tests/test_two_voice_coupling_fixture.py`):
+- `TwoVoiceCouplingFixture` dataclass + `build_two_voice_coupling_fixture()` builder + `two_voice_coupling_fixture` pytest fixture — reusable scaffolding for the rest of the T-006 sub-task series.
+- Voice A: vibrato depth `0.9` / rate `6.5 Hz` (well above any plausible coupling threshold once weighted by `AFFECTIVE_STATE_BUS_INTENSITY_WEIGHTS["vibrato_depth"] = 0.25`).
+- Voice B: baseline vibrato depth `0.1` / rate `4.0 Hz`.
+- `pre_coupling_vibrato_depth = 0.1` captured as the pre-coupling measurement.
+- `AffectiveStateBusWriter(enabled=True)` so downstream sub-tasks can drive coupling without env-toggling.
+- 7 tests verify: distinct voices, A > B intensity ordering, pre-coupling measurement matches B's initial depth, writer is enabled and idle, no OSC traffic at setup, and the pytest-fixture wiring resolves correctly.
+
+Validation: focused 7/7 ✓, related suites 78/78 ✓, ruff ✓, mypy ✓.

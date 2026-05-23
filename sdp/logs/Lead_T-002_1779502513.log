@@ -1,0 +1,10 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1285 chars)
+---
+
+T-002 done and committed as `7d030af`.
+
+**Implementation summary**
+
+- `my-claw/tools/senseweave/affective_state_bus.py`: added `AFFECTIVE_STATE_BUS_WINDOW_SECONDS = 2.0`, `AFFECTIVE_STATE_BUS_INTENSITY_WEIGHTS` (the four PRD §7.5.2 channels at equal weight), `voice_expression_intensity()` (weighted sum, clamped), and `AffectiveStateBusWriter` (per-voice rolling windows + `flush` emitting one `/c_set` per active voice in ascending order so the bus settles at the max-pooled value).
+- `tests/test_affective_state_bus.py`: 9 new tests covering the 2-second window constant, the weighted-intensity helper, per-voice `/c_set` writes within `[0,1]`, stale-sample pruning, voices dropped after pruning, input clamping, no-contributor flush, and constructor validation. 15/15 pass; `ruff` and `mypy` clean.

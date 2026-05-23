@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1266 chars)
+---
+
+T-005 complete. Summary:
+
+- Added `CYPHERCLAW_V2_COUPLING_ENV` constant and `coupling_enabled()` helper in `my-claw/tools/senseweave/affective_state_bus.py:30`. Reads the env var with the standard truthy spellings; defaults False.
+- `AffectiveStateBusWriter.__init__` now takes `enabled: bool | None = None`, resolving to `coupling_enabled()` when omitted. When disabled, `update`, `seed`, and `flush` are no-ops that send no OSC traffic; `flush` returns `0.0`.
+- Existing T-001–T-004 tests opt in via `enabled=True`; added 9 new T-005 tests covering env-var parsing, default-OFF behavior, explicit overrides, no-history-leak on flag flip, and the CC-074 acceptance scenario.
+- Validation: focused tests (36) ✓, ruff ✓, mypy ✓, full suite (4837 passed, 11 skipped) ✓.
+- Committed as `feat(senseweave): gate affective_state_bus writer on CYPHERCLAW_V2_COUPLING [T-005]` (ec6c7d6).
