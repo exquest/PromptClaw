@@ -261,9 +261,53 @@ def test_fatigue_multiplier_respects_real_environment_by_default() -> None:
     # If no env dict is passed, it should check os.environ.
     import os
     from unittest.mock import patch
-    
+
     with patch.dict(os.environ, {"CYPHERCLAW_V2_FATIGUE": "1"}):
         assert fatigue_multiplier(1.0) == 0.5
-        
+
     with patch.dict(os.environ, {"CYPHERCLAW_V2_FATIGUE": "0"}):
         assert fatigue_multiplier(1.0) == 1.0
+
+
+# T-011 / CC-080..082: explicit umbrella coverage for the three behaviors
+# the acceptance criteria call out — decay, threshold, and recovery — so a
+# reader can confirm at a glance that all three are exercised by the suite.
+
+
+def test_t011_decay_behavior_is_explicit() -> None:
+    # Decay: a saturated voice loses exactly half its load per half-life.
+    counter = FatigueCounter()
+    counter.add_note("violin", 1.0, now=0.0)
+    assert math.isclose(
+        counter.value("violin", now=FATIGUE_HALF_LIFE_SECONDS),
+        0.5,
+        rel_tol=1e-12,
+    )
+    assert math.isclose(
+        counter.value("violin", now=2 * FATIGUE_HALF_LIFE_SECONDS),
+        0.25,
+        rel_tol=1e-12,
+    )
+
+
+def test_t011_threshold_behavior_is_explicit() -> None:
+    # Threshold: at/below 0.7 no reduction; above 0.7 the multiplier drops.
+    env = {"CYPHERCLAW_V2_FATIGUE": "1"}
+    assert fatigue_multiplier(FATIGUE_THRESHOLD, env=env) == 1.0
+    assert fatigue_multiplier(FATIGUE_THRESHOLD + 1e-6, env=env) < 1.0
+    assert math.isclose(fatigue_multiplier(1.0, env=env), 0.5, rel_tol=1e-12)
+
+
+def test_t011_recovery_behavior_is_explicit() -> None:
+    # Recovery: a long silence returns a saturated voice toward 0,
+    # crossing back below the threshold so the multiplier is restored to 1.0.
+    env = {"CYPHERCLAW_V2_FATIGUE": "1"}
+    counter = FatigueCounter()
+    counter.add_note("violin", 1.0, now=0.0)
+    assert fatigue_multiplier(counter.value("violin", now=0.0), env=env) < 1.0
+
+    long_silence = 10 * FATIGUE_HALF_LIFE_SECONDS
+    recovered = counter.value("violin", now=long_silence)
+    assert recovered < FATIGUE_THRESHOLD
+    assert math.isclose(recovered, 0.5 ** 10, rel_tol=1e-12)
+    assert fatigue_multiplier(recovered, env=env) == 1.0
