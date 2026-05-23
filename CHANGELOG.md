@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Added T-048a morph phrase validation for the composer API:
+  `cypherclaw.composer_api` now exposes a validation-only FastAPI route,
+  `POST /api/v1/composer/morph-phrase`, plus typed Pydantic schemas for
+  `source_voice`, `target_voice`, and `morph_curve_type`. The schema normalizes
+  canonical CypherClaw voices and `sw_` aliases, accepts `linear` and
+  `equal-power` curve types, returns the numeric `morph_voice` curve value, and
+  rejects unknown voices, self-morphs, unsupported curves, and extra fields.
+  No new dependencies, database migrations, provider secrets, runtime state
+  directories, startup-flow changes, or SuperCollider source changes were
+  added. Existing `fx_bus_id` and `sw_sampler.scd` routing hardening anchors
+  remain green.
+
 - Added T-045d mood-space unit coverage: `tests/test_space_reverb_profiles.py`
   now covers the full OSC `fx_bus_id` mode matrix for matched default,
   expressive mismatch, and house-bound uniform routing across every canonical

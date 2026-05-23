@@ -1,5 +1,36 @@
 # Escalations
 
+## T-048a (2026-05-23)
+
+- **Reason:** Composer API boundary assumptions for morph phrase validation.
+- **Details:** No existing composer HTTP API module was present. T-048a adds a
+  small packaged `cypherclaw.composer_api` FastAPI factory instead of wiring
+  morph requests into the live `duet_composer.py` loop or generation queue.
+- **Assumption:** The canonical morph phrase voice vocabulary is the existing
+  `cypherclaw.space_reverb.VOICE_REVERB_PROFILES` key set. The API accepts
+  `sw_`-prefixed SynthDef aliases for caller convenience, but stores and
+  returns canonical voice names.
+- **Assumption:** The task asks for morph curve type, not an arbitrary curve
+  function. T-048a therefore exposes the two curve laws currently implemented
+  by `morph_voice.scd`: `linear` maps to SuperCollider `morph_curve=0`, and
+  `equal-power` maps to `morph_curve=1`.
+- **Candidate hardening:** The recurring SuperCollider failure modes are
+  explicitly verified by existing source tests: profiled voice SynthDefs must
+  declare `fx_bus_id`, and `sw_sampler.scd` must route through `fx_bus_id`
+  rather than the legacy `fx_bus` control.
+- **Dependencies and migrations:** No new dependencies, provider secrets,
+  database columns, migrations, runtime state directories, startup-flow
+  changes, agent commands, or SuperCollider source changes are required.
+- **Verification:** Red phase was confirmed with
+  `pytest tests/test_composer_api.py -q` failing at collection on missing
+  `cypherclaw.composer_api` before implementation. After implementation, the
+  locked T-048a tests passed with `11 passed`; the required `fx_bus_id` /
+  `sw_sampler.scd` hardening anchors passed with `3 passed`; focused Ruff and
+  mypy checks on the new composer API passed. The required final validation
+  (`pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
+  mypy src/`) passed with `5133 passed, 11 skipped`, Ruff clean, and mypy
+  clean.
+
 ## T-045d (2026-05-23)
 
 - **Reason:** Unit-coverage hardening assumptions for mood-driven space routing.

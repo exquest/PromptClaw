@@ -1,0 +1,199 @@
+from __future__ import annotations
+
+import json
+
+import pytest
+from fastapi.testclient import TestClient
+from pydantic import ValidationError
+
+from cypherclaw.composer_api.app import create_app
+from cypherclaw.composer_api.schemas import (
+    MORPH_CURVE_VALUE_BY_TYPE,
+    SUPPORTED_MORPH_CURVE_TYPES,
+    SUPPORTED_MORPH_VOICES,
+    MorphCurveType,
+    MorphPhraseRequest,
+    build_morph_phrase_response,
+)
+from cypherclaw.space_reverb import VOICE_REVERB_PROFILES
+
+
+def test_morph_phrase_schema_normalizes_voice_and_curve_aliases() -> None:
+    request = MorphPhraseRequest(
+        source_voice=" SW_PLUCK ",
+        target_voice="sw_bowed",
+        morph_curve_type="equal power",
+    )
+
+    assert request.source_voice == "pluck"
+    assert request.target_voice == "bowed"
+    assert request.morph_curve_type is MorphCurveType.EQUAL_POWER
+    response = build_morph_phrase_response(request)
+
+    assert response.model_dump(mode="json") == {
+        "accepted": True,
+        "source_voice": "pluck",
+        "target_voice": "bowed",
+        "morph_curve_type": "equal-power",
+        "morph_curve_value": 1,
+        "synthdef_name": "morph_voice",
+    }
+
+    linear = MorphPhraseRequest(
+        source_voice="breath",
+        target_voice="pad",
+        morph_curve_type="linear",
+    )
+    assert build_morph_phrase_response(linear).morph_curve_value == 0
+
+
+@pytest.mark.parametrize(
+    "payload,expected_text",
+    [
+        pytest.param(
+            {
+                "source_voice": "unknown",
+                "target_voice": "bowed",
+                "morph_curve_type": "linear",
+            },
+            "source_voice",
+            id="unknown-source",
+        ),
+        pytest.param(
+            {
+                "source_voice": "pluck",
+                "target_voice": "unknown",
+                "morph_curve_type": "linear",
+            },
+            "target_voice",
+            id="unknown-target",
+        ),
+        pytest.param(
+            {
+                "source_voice": "",
+                "target_voice": "bowed",
+                "morph_curve_type": "linear",
+            },
+            "source_voice",
+            id="blank-source",
+        ),
+        pytest.param(
+            {
+                "source_voice": "pluck",
+                "target_voice": "bowed",
+                "morph_curve_type": "sigmoid",
+            },
+            "morph_curve_type",
+            id="unsupported-curve",
+        ),
+        pytest.param(
+            {
+                "source_voice": "pluck",
+                "target_voice": "sw_pluck",
+                "morph_curve_type": "equal_power",
+            },
+            "source_voice and target_voice must differ",
+            id="same-normalized-voice",
+        ),
+    ],
+)
+def test_morph_phrase_schema_rejects_invalid_payloads(
+    payload: dict[str, object],
+    expected_text: str,
+) -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        MorphPhraseRequest(**payload)
+
+    assert expected_text in str(exc_info.value)
+
+
+def test_morph_phrase_endpoint_accepts_valid_request() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/v1/composer/morph-phrase",
+        json={
+            "source_voice": "sw_breath",
+            "target_voice": "tabla_tin",
+            "morph_curve_type": "equal_power",
+        },
+    )
+
+    assert response.status_code == 202
+    assert response.json() == {
+        "accepted": True,
+        "source_voice": "breath",
+        "target_voice": "tabla_tin",
+        "morph_curve_type": "equal-power",
+        "morph_curve_value": 1,
+        "synthdef_name": "morph_voice",
+    }
+
+
+@pytest.mark.parametrize(
+    "payload,expected_detail",
+    [
+        pytest.param(
+            {
+                "source_voice": "pluck",
+                "target_voice": "bowed",
+                "morph_curve_type": "linear",
+                "tempo": 90,
+            },
+            "tempo",
+            id="extra-field",
+        ),
+        pytest.param(
+            {
+                "source_voice": "sw_pad",
+                "target_voice": "pad",
+                "morph_curve_type": "linear",
+            },
+            "source_voice and target_voice must differ",
+            id="same-normalized-voice",
+        ),
+        pytest.param(
+            {
+                "source_voice": "pluck",
+                "target_voice": "bowed",
+                "morph_curve_type": "sigmoid",
+            },
+            "morph_curve_type",
+            id="unsupported-curve",
+        ),
+    ],
+)
+def test_morph_phrase_endpoint_rejects_invalid_requests(
+    payload: dict[str, object],
+    expected_detail: str,
+) -> None:
+    client = TestClient(create_app())
+
+    response = client.post("/api/v1/composer/morph-phrase", json=payload)
+
+    assert response.status_code == 422
+    assert expected_detail in response.text
+
+
+def test_morph_phrase_schema_exports_supported_vocabularies() -> None:
+    assert SUPPORTED_MORPH_VOICES == tuple(VOICE_REVERB_PROFILES)
+    assert "sw_pluck" not in SUPPORTED_MORPH_VOICES
+    assert SUPPORTED_MORPH_CURVE_TYPES == ("linear", "equal-power")
+    assert MORPH_CURVE_VALUE_BY_TYPE == {
+        MorphCurveType.LINEAR: 0,
+        MorphCurveType.EQUAL_POWER: 1,
+    }
+
+    diagnostic = {
+        "voices": SUPPORTED_MORPH_VOICES,
+        "curves": SUPPORTED_MORPH_CURVE_TYPES,
+        "curve_values": {
+            curve.value: value
+            for curve, value in MORPH_CURVE_VALUE_BY_TYPE.items()
+        },
+    }
+    decoded = json.loads(json.dumps(diagnostic, sort_keys=True))
+
+    assert decoded["voices"] == list(VOICE_REVERB_PROFILES)
+    assert decoded["curves"] == ["linear", "equal-power"]
+    assert decoded["curve_values"] == {"equal-power": 1, "linear": 0}

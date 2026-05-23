@@ -573,7 +573,7 @@ Progress: [███████████████████████
 - **T-047a**: pending — Pending.
 - **T-047b**: pending — Pending.
 - **T-048**: split — Split into subtasks.
-- **T-048a**: pending — Pending.
+- **T-048a**: complete — Exploration found no existing composer HTTP API module; closest patterns are `src/cypherclaw/image_api` and `src/cypherclaw/narrative_api` FastAPI factories, while the composer-facing music surface lives under `my-claw/tools/senseweave`. Added `specs/t-048a-spec.md`, locked red tests in `tests/test_composer_api.py`, and implemented a packaged `cypherclaw.composer_api` validation-only route for morph phrase requests. The schema reuses `cypherclaw.space_reverb.VOICE_REVERB_PROFILES` as the canonical voice set, accepts normalized `sw_` voice aliases, rejects invalid/self-morph payloads at the endpoint, maps `linear`/`equal-power` to the `morph_voice` numeric curve values, and preserves existing `fx_bus_id` / `sw_sampler.scd` hardening anchors. No new dependencies, no database migration, no provider secrets, no runtime state directories, no startup-flow changes, and no SuperCollider source changes were added. Red phase was confirmed before implementation; focused T-048a and hardening anchors passed with `14 passed`; final validation passed with `5133 passed, 11 skipped`, Ruff clean, and mypy clean.
 - **T-048b**: pending — Pending.
 - **T-048c**: pending — Pending.
 - **T-048d**: pending — Pending.
