@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- Added T-054d Workers-runtime live MIDI latency coverage to the holdenu
+  Cloudflare Worker: a new `@cloudflare/vitest-pool-workers` Vitest test
+  connects two WebSocket clients to `/api/cypherclaw/live-midi` through
+  `SELF.fetch`, sends a valid JSON MIDI event from client A, and asserts client
+  B receives the exact payload within 1000 ms. New Worker dev dependencies are
+  `vitest` and `@cloudflare/vitest-pool-workers`, with separate
+  `test:workers` and `check:workers` scripts so the existing dependency-free
+  Node suite remains intact. No D1 database migration, No Durable Object
+  migration change, provider secrets, R2 layout changes, runtime state
+  directories, startup-flow rewiring, fan-out runtime changes, or
+  SuperCollider source changes were added. Red phase was confirmed before
+  implementation by the missing Vitest runner; Worker `test:workers`, Worker
+  `npm test` (`39 passed`), Worker `npm run check`, and Worker
+  `npm run check:workers`, plus startup identity anchors (`8 passed`), all
+  passed. Final PromptClaw validation passed with `5211 passed, 11 skipped`,
+  Ruff clean, and mypy clean.
+
 - Added T-054c live MIDI Durable Object config hardening to the holdenu
   Cloudflare Worker: Wrangler now declares the `LIVE_MIDI_ROOM` ->
   `LiveMidiRoom` Durable Object binding and `new_sqlite_classes =

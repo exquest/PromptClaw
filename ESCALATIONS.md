@@ -1,5 +1,48 @@
 # Escalations
 
+## T-054d (2026-05-23)
+
+- **Reason:** Cross-repository Worker implementation and new Workers Vitest
+  test dependencies.
+- **Details:** T-054d keeps PromptClaw as the ADP/source-of-truth repo while
+  adding a Cloudflare Workers runtime Vitest fan-out latency test in the sibling
+  `/Users/anthony/Programming/catalog-explorer/worker` project established by
+  T-054a through T-054c.
+- **Assumption:** The existing `/api/cypherclaw/live-midi` route, `LiveMidiRoom`
+  Durable Object, `LIVE_MIDI_ROOM` binding, and Wrangler migrations are the
+  intended production path. The new test should exercise that path through
+  `SELF.fetch` rather than another fake WebSocket shim.
+- **Assumption:** Sub-second fan-out means client B receives the exact JSON MIDI
+  event payload from client A within 1000 ms after A sends it. The test measures
+  local Workers-runtime latency with `performance.now()` and uses a hard
+  1000 ms timeout to fail hangs quickly.
+- **New Worker dev dependencies:** T-054d is expected to add `vitest` and
+  `@cloudflare/vitest-pool-workers` to
+  `/Users/anthony/Programming/catalog-explorer/worker/package.json` and
+  `package-lock.json`. This is scoped to the Worker test harness.
+- **Candidate hardening:** The generated startup identity feedback targets the
+  existing PromptClaw startup subsystem, not the Cloudflare Worker room. Current
+  startup identity tests remain mandatory verification anchors for
+  `bootstrap_identity()` before `FirstBootAnnouncer`, standalone boot
+  persistence, federated boot persistence, and narrative ASGI import-time
+  identity reuse.
+- **Dependencies and migrations:** Aside from the Worker dev dependencies above,
+  no provider secrets, database columns, D1 migrations, Durable Object migration
+  changes, R2 layout changes, runtime state directories, startup-flow rewiring,
+  agent commands, or SuperCollider source changes are expected.
+- **Verification:** Red phase was confirmed with
+  `npx --no-install vitest run tests/cypherclaw-live-midi-latency.vitest.ts`
+  failing because `vitest` was not installed. After implementation, the Workers
+  Vitest latency test passed with `1 passed`, existing Worker `npm test` passed
+  with `39 passed`, Worker `npm run check` passed, and Worker
+  `npm run check:workers` passed. Startup identity hardening anchors passed with
+  `8 passed`. The implementation added only Worker test
+  harness dependencies/configuration and the new runtime test; no D1 database
+  migration, Durable Object migration change, R2 layout change, provider secret,
+  startup-flow rewiring, or SuperCollider source change was introduced. Final
+  PromptClaw validation passed with `5211 passed, 11 skipped`, Ruff clean, and
+  mypy clean.
+
 ## T-054c (2026-05-23)
 
 - **Reason:** Cross-repository Worker implementation and Wrangler environment
