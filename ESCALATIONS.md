@@ -1,5 +1,40 @@
 # Escalations
 
+## T-017d (2026-05-23)
+
+- **Reason:** Faithful render regression-test scope and startup-hardening assumptions
+- **Details:** Exploration found T-017d is a focused test-hardening task over
+  the existing T-017c faithful render contract. The affected path is
+  `src/cypherclaw/midi_loader.py` for ordered source events,
+  `src/cypherclaw/midi_scene.py` for the JSON-safe faithful scene and render
+  metadata, and `src/cypherclaw/midi_intake_daemon.py` for faithful manifest
+  wiring. This task assumes "faithful-transmission render" means the scene
+  contract already emitted by `build_faithful_midi_scene(...)`, not a new
+  SuperCollider or OSC runtime path. The generated startup hardening bullets
+  target the existing identity subsystem; `midi_intake_daemon.main()` already
+  invokes `bootstrap_identity()` before `FirstBootAnnouncer()`, and the
+  existing standalone/federated persistence tests remain mandatory regression
+  anchors rather than broadening this test-only faithful-render task into
+  startup rewiring. No new dependencies, migrations, provider secrets, database
+  columns, runtime state directories, HTTP routes, auth behavior, or agent
+  command strings are required.
+- **Reason:** Red-phase applicability for regression-only scope
+- **Details:** The new T-017d regression tests passed against the current
+  branch before production-code edits because commit `bd407de` (T-017c)
+  already implemented `FaithfulRenderSettings`, `render_pitch_hz`,
+  `render_voice`, and `render_space`. The pre-T-017c baseline commit
+  `9a29745` has none of those symbols, so these tests would fail there at
+  collection/import. No production implementation was changed for T-017d; the
+  task adds locked coverage over already-shipped behavior.
+- **Reason:** Verification results
+- **Details:** Focused faithful MIDI/render coverage passed with `78 passed`.
+  Startup identity hardening anchors passed with `11 passed`, covering
+  bootstrap-before-announcer ordering plus standalone/federated persistence.
+  Full validation passed with `pip install -e '.[dev]' && pytest tests/ -x &&
+  ruff check src/ tests/ && mypy src/`: `4967 passed, 11 skipped`, Ruff clean,
+  and mypy clean. No new dependencies or migrations were introduced.
+
+
 ## T-017c (2026-05-23)
 
 - **Reason:** Faithful render-settings scope and startup-hardening assumptions

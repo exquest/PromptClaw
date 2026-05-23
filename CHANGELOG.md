@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Added faithful MIDI render regression coverage (T-017d):
+  `tests/test_midi_faithful_render_contract.py` now locks the
+  faithful-transmission render contract for pitch/rhythm preservation, explicit
+  tuning application, and full voice/synth/matched-space assignment across the
+  canonical CypherClaw voices. This is test-hardening only; no production
+  render behavior, dependencies, migrations, provider secrets, runtime state,
+  or startup wiring changed. Validation passed with `4967 passed, 11 skipped`,
+  Ruff clean, and mypy clean.
+
 - Added faithful MIDI render settings (T-017c):
   `cypherclaw.midi_scene.FaithfulRenderSettings` now enriches
   `faithful_scene` steps with CypherClaw render metadata while preserving the

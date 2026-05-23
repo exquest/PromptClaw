@@ -516,7 +516,10 @@ Progress: [███████████████████████
   sequence, source tick durations, normalized velocities, and cumulative rows
   without invoking vocabulary fragment selection.
 - **T-017c**: complete — Completed with local validation PASS.
-- **T-017d**: pending — Pending.
+- **T-017d**: complete — Added focused faithful-render regression tests for
+  pitch/rhythm preservation, explicit tuning application, and all canonical
+  voice/synth/matched-space assignments. Validation passed with `4967 passed,
+  11 skipped`, Ruff clean, and mypy clean.
 - **T-018**: pending — Pending.
 - **T-019**: pending — Pending.
 - **T-020**: pending — Pending.
@@ -648,3 +651,31 @@ Progress: [███████████████████████
 - **Full validation:** `pip install -e '.[dev]' && pytest tests/ -x &&
   ruff check src/ tests/ && mypy src/` passed with `4964 passed, 11 skipped`,
   Ruff clean, and mypy clean.
+
+## T-017d (2026-05-23)
+
+- **Exploration findings:** The active ADP workflow is the task prompt's
+  Explore -> Specify -> Test -> Implement -> Verify -> Document template. The
+  faithful-transmission render path is already layered across
+  `src/cypherclaw/midi_loader.py` (ordered `FaithfulMidiEvent` records),
+  `src/cypherclaw/midi_scene.py` (scene mapping, tuning selection,
+  `render_pitch_hz`, voice/synth assignment, matched space metadata), and
+  `src/cypherclaw/midi_intake_daemon.py` (manifest wiring under
+  `faithful_scene`). Existing T-017c tests cover the broad behavior; T-017d
+  will add focused regression tests for pitch/rhythm preservation, explicit
+  tuning application, and all-voice matched space assignment without changing
+  prior locked assertions. Startup identity hardening is already wired before
+  `FirstBootAnnouncer()` and remains a regression-anchor command rather than
+  new startup work for this task.
+- **Test-development findings:** Added
+  `tests/test_midi_faithful_render_contract.py` with focused checks for
+  pitch/rhythm preservation under render metadata, explicit tuning application
+  without source-field rewrites, and all canonical voice/synth/matched-space
+  assignments including `sw_` alias normalization. The tests passed against the
+  current branch before production-code edits because T-017c already shipped
+  the render contract; the pre-T-017c baseline lacks the render symbols these
+  tests import. No T-017d production code changes were required.
+- **Verification:** Focused faithful MIDI/render coverage passed with
+  `78 passed`; startup identity hardening anchors passed with `11 passed`;
+  full validation `pip install -e '.[dev]' && pytest tests/ -x && ruff check
+  src/ tests/ && mypy src/` passed with `4967 passed, 11 skipped`, Ruff clean,
