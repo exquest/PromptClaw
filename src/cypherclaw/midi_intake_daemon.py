@@ -24,11 +24,13 @@ from pathlib import Path
 
 try:
     from cypherclaw.midi_fragments import empty_midi_fragments, extract_midi_fragments
+    from cypherclaw.midi_loader import load_faithful_midi_events
 except ImportError:
     from midi_fragments import (  # type: ignore[no-redef,import-not-found]
         empty_midi_fragments,
         extract_midi_fragments,
     )
+    from midi_loader import load_faithful_midi_events  # type: ignore[no-redef,import-not-found]
 
 try:
     from cypherclaw.first_boot import FirstBootAnnouncer, bootstrap_identity
@@ -213,15 +215,20 @@ def build_manifest(
     if not isinstance(fragments, dict):
         fragments = empty_midi_fragments()
 
-    return {
+    manifest = {
         "original_filename": src.name,
         "processed_at": stamp.isoformat(),
         "file_size": src.stat().st_size,
         "sha256": _sha256_of(src),
+        "mode": str(metadata.get("mode") or "fragment_extraction"),
         "mthd_header": mthd_header,
         "track_count": track_count,
         "fragments": fragments,
     }
+    faithful_events = metadata.get("faithful_events") if metadata else None
+    if isinstance(faithful_events, list):
+        manifest["faithful_events"] = faithful_events
+    return manifest
 
 
 def _sha256_of(path: Path) -> str:
@@ -251,6 +258,7 @@ def process_midi_file(
     *,
     processed_dir: Path | str | None = None,
     rejected_dir: Path | str | None = None,
+    faithful_transmission: bool = False,
 ) -> dict[str, object]:
     """Validate ``path``, move it to ``processed/`` or ``rejected/``, emit event.
 
@@ -276,11 +284,19 @@ def process_midi_file(
     header_info = read_mthd_header(src)
     metadata: dict[str, object] = dict(header_info or {})
     if valid:
-        try:
-            metadata["fragments"] = extract_midi_fragments(src)
-        except ValueError as exc:
-            LOGGER.warning("midi_fragment_extraction_failed path=%s error=%s", src, exc)
+        if faithful_transmission:
+            metadata["mode"] = "faithful_transmission"
+            metadata["faithful_events"] = [
+                event.to_dict() for event in load_faithful_midi_events(src)
+            ]
             metadata["fragments"] = empty_midi_fragments()
+        else:
+            metadata["mode"] = "fragment_extraction"
+            try:
+                metadata["fragments"] = extract_midi_fragments(src)
+            except ValueError as exc:
+                LOGGER.warning("midi_fragment_extraction_failed path=%s error=%s", src, exc)
+                metadata["fragments"] = empty_midi_fragments()
     target_dir = processed if valid else rejected
     target_dir.mkdir(parents=True, exist_ok=True)
     destination = _unique_destination(target_dir, src.name)
@@ -483,6 +499,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=1.0,
         help="Seconds between scans in poll mode (default: 1.0).",
     )
+    parser.add_argument(
+        "--faithful-transmission",
+        action="store_true",
+        help=(
+            "Load imported MIDI into ordered pitch/duration/velocity events "
+            "and bypass fragment extraction."
+        ),
+    )
     return parser.parse_args(list(argv) if argv is not None else None)
 
 
@@ -508,9 +532,14 @@ def main(
         install_signal_handlers(stop_event)
 
     LOGGER.info("midi_intake_daemon_started watch_dir=%s", args.watch_dir)
+
+    def dispatch_intake_file(path: Path) -> None:
+        process_midi_file(path, faithful_transmission=args.faithful_transmission)
+
     watch_loop(
         args.watch_dir,
         stop_event,
+        dispatch=dispatch_intake_file,
         poll_interval=args.poll_interval,
         use_watchdog=not args.poll,
     )
