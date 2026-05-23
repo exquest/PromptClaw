@@ -14,6 +14,7 @@ from cypherclaw.space_reverb import (
     SPACE_PROFILE_SOURCE,
     VOICE_REVERB_PROFILES,
     VoiceReverbProfile,
+    build_voice_s_new_args,
     get_voice_reverb_profile,
     iter_voice_reverb_profiles,
     summarize_voice_reverb_profiles,
@@ -192,6 +193,60 @@ def test_faithful_render_space_metadata_uses_shared_reverb_profiles() -> None:
         assert render_space["source"] == SPACE_PROFILE_SOURCE
         assert step["metadata"]["render_space_id"] == profile.space_id
         assert step["metadata"]["render_fx_bus_id"] == str(profile.fx_bus_id)
+
+
+def test_each_voice_routes_only_to_its_assigned_fx_bus() -> None:
+    """T-044: per-voice OSC args carry `fx_bus_id` and reach only the
+    matching FX return bus declared in the voice's reverb profile.
+    """
+    routings: dict[str, int] = {}
+    seen_buses: dict[int, str] = {}
+
+    for voice in EXPECTED_VOICE_ORDER:
+        args = build_voice_s_new_args(
+            voice,
+            node_id=70000,
+            freq=440.0,
+            amp=0.1,
+            attack=0.02,
+            release=0.8,
+        )
+
+        # The synthdef name leads the s_new arg list.
+        assert args[0] == f"sw_{voice}", (
+            f"voice {voice!r} must spawn sw_{voice}, got {args[0]!r}"
+        )
+        assert args[1] == 70000
+        assert args.count("fx_bus_id") == 1, (
+            f"voice {voice!r} must declare exactly one fx_bus_id routing"
+        )
+
+        bus = args[args.index("fx_bus_id") + 1]
+        expected_bus = VOICE_REVERB_PROFILES[voice].fx_bus_id
+        assert bus == expected_bus, (
+            f"voice {voice!r} routed to bus {bus}, expected {expected_bus}"
+        )
+        assert bus == EXPECTED_BUS_IDS[voice]
+
+        # Each voice's signal reaches ONLY its assigned FX bus.
+        assert bus not in seen_buses, (
+            f"voices {voice!r} and {seen_buses[bus]!r} share FX bus {bus}"
+        )
+        seen_buses[bus] = voice
+        routings[voice] = bus
+
+    assert routings == EXPECTED_BUS_IDS
+
+
+def test_voice_routing_args_default_to_profile_pluck_for_unknown_voice() -> None:
+    """Unknown voice names fall back to the pluck profile and its bus 16."""
+    args = build_voice_s_new_args(
+        "unknown_voice",
+        node_id=70001,
+        freq=220.0,
+    )
+    assert args[0] == "sw_pluck"
+    assert args[args.index("fx_bus_id") + 1] == VOICE_REVERB_PROFILES["pluck"].fx_bus_id
 
 
 def test_spaces_directory_contains_only_expected_algorithmic_sources() -> None:

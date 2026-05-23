@@ -211,6 +211,40 @@ def iter_voice_reverb_profiles() -> Iterator[VoiceReverbProfile]:
     return iter(VOICE_REVERB_PROFILES.values())
 
 
+def build_voice_s_new_args(
+    voice: str,
+    *,
+    node_id: int,
+    freq: float,
+    amp: float = 0.06,
+    attack: float = 0.01,
+    release: float = 1.0,
+    add_action: int = 0,
+    target_id: int = 0,
+) -> list[float | int | str]:
+    """Build a `/s_new` OSC arg list routing *voice* into its FX return bus.
+
+    Each voice synthdef exposes an ``fx_bus_id`` control selecting which
+    per-voice FX return bus its signal feeds. The bus id comes from the
+    voice's :class:`VoiceReverbProfile` so the dry voice signal and the
+    matching space reverb share the same return path. Unknown voices fall
+    back to the pluck profile (see :func:`get_voice_reverb_profile`).
+    """
+
+    profile = get_voice_reverb_profile(voice)
+    return [
+        f"sw_{profile.voice}",
+        int(node_id),
+        int(add_action),
+        int(target_id),
+        "freq", float(freq),
+        "amp", float(amp),
+        "attack", float(attack),
+        "release", float(release),
+        "fx_bus_id", int(profile.fx_bus_id),
+    ]
+
+
 def get_voice_reverb_profile(voice: str) -> VoiceReverbProfile:
     """Return the matched profile for ``voice`` or the pluck fallback."""
 
