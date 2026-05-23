@@ -79,13 +79,62 @@ def test_has_two_parallel_source_voices(scd_source: str) -> None:
 def test_morph_x_crossfades_source_a_and_source_b(scd_source: str) -> None:
     """morph_x=0 -> source A only; morph_x=1 -> source B only.
 
-    The skeleton uses a linear crossfade: gain_a = 1 - morph_x, gain_b = morph_x.
-    Pin both the inversion and the direct use so the contract can't drift.
+    The linear branch must be present: gain_a = 1 - x, gain_b = x.
+    Pin both the inversion and the clip so the contract can't drift.
     """
-    assert re.search(r"1\.0\s*-\s*morph_x", scd_source), (
-        "source A gain must be (1.0 - morph_x) so morph_x=0 plays A at unity"
+    assert re.search(r"1\.0\s*-\s*\b(?:x|morph_x\w*)\b", scd_source), (
+        "linear source A gain must be (1.0 - x) so morph_x=0 plays A at unity"
     )
-    # source B is gated directly by morph_x (after clip).
+    # morph_x must be clipped to [0.0, 1.0] before use.
     assert re.search(r"morph_x\.clip\(\s*0\.0\s*,\s*1\.0\s*\)", scd_source), (
-        "morph_x must be clipped to [0.0, 1.0] before use as source B gain"
+        "morph_x must be clipped to [0.0, 1.0] before use as a gain"
+    )
+
+
+def test_declares_morph_curve_selecting_equal_power_by_default(scd_source: str) -> None:
+    """`morph_curve` selects the crossfade law (0=linear, 1=equal-power).
+
+    Default is equal-power because it preserves perceived loudness across
+    the morph; the linear branch is retained for tests and special cases.
+    """
+    args = _arg_block(scd_source)
+    assert _arg_default(args, "morph_curve") == 1.0, (
+        "morph_curve must default to 1 (equal-power) — the musical default"
+    )
+
+
+def test_equal_power_branch_uses_quarter_cosine_pair(scd_source: str) -> None:
+    """Equal-power crossfade uses cos(x*pi/2) and sin(x*pi/2).
+
+    That pair satisfies gain_a^2 + gain_b^2 == 1 and hits unity at the
+    endpoints, so morph_x=0/1 still produces source A/B at full level.
+    """
+    assert re.search(r"cos\(\s*\w+\s*\*\s*0\.5pi\s*\)", scd_source), (
+        "equal-power source A gain must be cos(x * 0.5pi)"
+    )
+    assert re.search(r"sin\(\s*\w+\s*\*\s*0\.5pi\s*\)", scd_source), (
+        "equal-power source B gain must be sin(x * 0.5pi)"
+    )
+
+
+def test_morph_curve_selects_between_linear_and_equal_power(scd_source: str) -> None:
+    """Both gains are dispatched via Select.kr(morph_curve, ...).
+
+    Using Select.kr keeps the choice a per-synth control rather than a
+    compile-time constant, so the same SynthDef can render either law.
+    """
+    select_calls = re.findall(r"Select\.kr\(\s*morph_curve[^)]*\)", scd_source)
+    assert len(select_calls) >= 2, (
+        "both gain_a and gain_b must be selected by morph_curve via Select.kr"
+    )
+
+
+def test_summed_to_output_bus(scd_source: str) -> None:
+    """The two scaled sources are summed before being written to out_bus."""
+    assert re.search(
+        r"\(\s*source_a\s*\*\s*gain_a\s*\)\s*\+\s*\(\s*source_b\s*\*\s*gain_b\s*\)",
+        scd_source,
+    ), "scaled sources must be summed: (source_a * gain_a) + (source_b * gain_b)"
+    assert re.search(r"Out\.ar\(\s*out_bus\s*,", scd_source), (
+        "summed signal must be written to out_bus via Out.ar"
     )
