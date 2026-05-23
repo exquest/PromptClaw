@@ -27,7 +27,9 @@
   implemented. After implementation, focused T-048d tests passed with
   `7 passed`, adjacent composer/instrument morph tests passed with `28 passed`,
   startup identity hardening anchors passed with `11 passed`, and Ruff was
-  clean on touched source/test files.
+  clean on touched source/test files. Final validation
+  (`pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
+  mypy src/`) passed with `5150 passed, 11 skipped`, Ruff clean, and mypy clean.
 
 ## T-048c (2026-05-23)
 
