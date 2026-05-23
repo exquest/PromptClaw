@@ -571,3 +571,16 @@ Progress: [███████████████████████
 - **T-072**: pending — Pending.
 - **T-073**: pending — Pending.
 - **T-074**: pending — Pending.
+
+## T-017a (2026-05-23)
+
+- **Exploration findings:** The faithful-transmission change belongs in the
+  existing CypherClaw MIDI intake path. `src/cypherclaw/midi_intake_daemon.py`
+  validates and moves files, writes sidecar manifests, and currently always
+  calls `extract_midi_fragments(...)` for valid files. The dependency-free MIDI
+  event parser pattern already exists in `src/cypherclaw/midi_fragments.py`,
+  so T-017a can add a small faithful loader without adding `mido` or changing
+  the vocabulary database schema. Existing tests cover intake movement,
+  manifests, fragment extraction, vocabulary storage, and composer vocabulary
+  citations; startup identity hardening is already wired before
+  `FirstBootAnnouncer()` and remains a regression anchor.
