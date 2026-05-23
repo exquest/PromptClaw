@@ -493,3 +493,110 @@ def test_default_dispatch_invokes_process_midi_file(
     mod._default_dispatch(target)
 
     assert calls == [target]
+
+
+def _write_mthd_chunk(
+    path: Path, *, fmt: int = 1, ntrks: int = 4, division: int = 480
+) -> bytes:
+    body = (
+        b"\x00\x00\x00\x06"  # header length (always 6)
+        + fmt.to_bytes(2, "big")
+        + ntrks.to_bytes(2, "big")
+        + division.to_bytes(2, "big")
+    )
+    contents = mod.MIDI_HEADER_MAGIC + body
+    path.write_bytes(contents)
+    return contents
+
+
+def test_read_mthd_header_parses_format_tracks_division(tmp_path: Path) -> None:
+    target = tmp_path / "song.mid"
+    _write_mthd_chunk(target, fmt=1, ntrks=4, division=480)
+
+    info = mod.read_mthd_header(target)
+
+    assert info == {"format": 1, "track_count": 4, "division": 480}
+
+
+def test_read_mthd_header_returns_none_for_non_midi(tmp_path: Path) -> None:
+    target = tmp_path / "bad.mid"
+    target.write_bytes(b"RIFFxxxx" + b"\x00" * 16)
+    assert mod.read_mthd_header(target) is None
+
+
+def test_read_mthd_header_returns_none_for_truncated_file(tmp_path: Path) -> None:
+    target = tmp_path / "tiny.mid"
+    target.write_bytes(mod.MIDI_HEADER_MAGIC + b"\x00")
+    assert mod.read_mthd_header(target) is None
+
+
+def test_read_mthd_header_returns_none_for_missing_file(tmp_path: Path) -> None:
+    assert mod.read_mthd_header(tmp_path / "ghost.mid") is None
+
+
+def test_build_manifest_includes_all_required_fields(tmp_path: Path) -> None:
+    target = tmp_path / "alpha.mid"
+    contents = _write_mthd_chunk(target, fmt=1, ntrks=3, division=240)
+    metadata = mod.read_mthd_header(target)
+
+    manifest = mod.build_manifest(target, extracted_metadata=metadata)
+
+    assert manifest["original_filename"] == "alpha.mid"
+    assert manifest["file_size"] == len(contents)
+    assert manifest["sha256"] == hashlib.sha256(contents).hexdigest()
+    assert manifest["mthd_header"] == {
+        "format": 1,
+        "track_count": 3,
+        "division": 240,
+    }
+    assert manifest["track_count"] == 3
+    assert isinstance(manifest["processed_at"], str)
+    assert manifest["processed_at"].endswith("+00:00")
+
+
+def test_build_manifest_without_metadata_omits_header_info(tmp_path: Path) -> None:
+    target = tmp_path / "alpha.mid"
+    target.write_bytes(b"\x00" * 16)
+
+    manifest = mod.build_manifest(target)
+
+    assert manifest["mthd_header"] is None
+    assert manifest["track_count"] is None
+    assert manifest["original_filename"] == "alpha.mid"
+    assert manifest["file_size"] == 16
+
+
+def test_build_manifest_uses_supplied_timestamp(tmp_path: Path) -> None:
+    from datetime import datetime, timezone
+
+    target = tmp_path / "alpha.mid"
+    target.write_bytes(b"\x00")
+    stamp = datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
+
+    manifest = mod.build_manifest(target, processed_at=stamp)
+
+    assert manifest["processed_at"] == "2026-01-02T03:04:05+00:00"
+
+
+def test_build_manifest_is_json_serializable(tmp_path: Path) -> None:
+    target = tmp_path / "alpha.mid"
+    _write_mthd_chunk(target)
+
+    manifest = mod.build_manifest(
+        target, extracted_metadata=mod.read_mthd_header(target)
+    )
+
+    # Round-trip through JSON to ensure the sidecar can be written verbatim.
+    assert json.loads(json.dumps(manifest)) == manifest
+
+
+def test_build_manifest_normalizes_non_utc_timestamp(tmp_path: Path) -> None:
+    from datetime import datetime, timedelta, timezone
+
+    target = tmp_path / "alpha.mid"
+    target.write_bytes(b"\x00")
+    stamp = datetime(2026, 1, 2, 5, 4, 5, tzinfo=timezone(timedelta(hours=2)))
+
+    manifest = mod.build_manifest(target, processed_at=stamp)
+
+    assert manifest["processed_at"] == "2026-01-02T03:04:05+00:00"

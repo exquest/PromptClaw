@@ -145,6 +145,68 @@ def validate_midi_header(path: Path | str) -> bool:
     return header == MIDI_HEADER_MAGIC
 
 
+def read_mthd_header(path: Path | str) -> dict[str, int] | None:
+    """Parse the 14-byte MThd chunk and return ``{format, track_count, division}``.
+
+    Returns ``None`` when the file is missing, unreadable, too short, or not
+    prefixed with the ``MThd`` magic.
+    """
+
+    try:
+        with Path(path).open("rb") as fh:
+            chunk = fh.read(14)
+    except (FileNotFoundError, IsADirectoryError, PermissionError):
+        return None
+    if len(chunk) < 14 or chunk[:4] != MIDI_HEADER_MAGIC:
+        return None
+    return {
+        "format": int.from_bytes(chunk[8:10], "big"),
+        "track_count": int.from_bytes(chunk[10:12], "big"),
+        "division": int.from_bytes(chunk[12:14], "big"),
+    }
+
+
+def build_manifest(
+    file_path: Path | str,
+    *,
+    extracted_metadata: dict[str, object] | None = None,
+    processed_at: datetime | None = None,
+) -> dict[str, object]:
+    """Return a JSON-serializable sidecar manifest for a processed MIDI file.
+
+    ``extracted_metadata`` should contain whatever the intake stage was able to
+    pull from the file; callers typically pass the output of
+    :func:`read_mthd_header`. Recognized keys are ``format``, ``track_count``,
+    and ``division`` (folded into the ``mthd_header`` block, with
+    ``track_count`` also promoted to the top level for convenience).
+    """
+
+    src = Path(file_path)
+    stamp = (processed_at or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    metadata = extracted_metadata or {}
+
+    mthd_header: dict[str, object] | None
+    if any(k in metadata for k in ("format", "track_count", "division")):
+        mthd_header = {
+            "format": metadata.get("format"),
+            "track_count": metadata.get("track_count"),
+            "division": metadata.get("division"),
+        }
+    else:
+        mthd_header = None
+
+    track_count = metadata.get("track_count") if metadata else None
+
+    return {
+        "original_filename": src.name,
+        "processed_at": stamp.isoformat(),
+        "file_size": src.stat().st_size,
+        "sha256": _sha256_of(src),
+        "mthd_header": mthd_header,
+        "track_count": track_count,
+    }
+
+
 def _sha256_of(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as fh:
