@@ -11,12 +11,15 @@ from typing import Any
 from cypherclaw.midi_loader import FaithfulMidiEvent
 from cypherclaw.midi_scene import FaithfulRenderSettings, build_faithful_midi_scene
 from cypherclaw.space_reverb import (
+    EXPRESSIVE_SPACE_VOICE_BY_VOICE,
+    HOUSE_BOUND_SPACE_VOICE_BY_HOUSE,
     SPACE_PROFILE_SOURCE,
     VOICE_REVERB_PROFILES,
     VoiceReverbProfile,
     build_voice_s_new_args,
     get_voice_reverb_profile,
     iter_voice_reverb_profiles,
+    resolve_voice_space_profile,
     summarize_voice_reverb_profiles,
 )
 
@@ -228,6 +231,103 @@ def test_faithful_render_space_metadata_uses_shared_reverb_profiles() -> None:
         assert render_space["source"] == SPACE_PROFILE_SOURCE
         assert step["metadata"]["render_space_id"] == profile.space_id
         assert step["metadata"]["render_fx_bus_id"] == str(profile.fx_bus_id)
+
+
+def test_space_selection_resolver_matched_uses_voice_mood_mapping() -> None:
+    for voice in EXPECTED_VOICE_ORDER:
+        selected = resolve_voice_space_profile(voice, mood_mode="matched")
+
+        assert selected is VOICE_REVERB_PROFILES[voice]
+        assert selected.space_id == EXPECTED_SPACE_IDS[voice]
+        assert selected.fx_bus_id == EXPECTED_BUS_IDS[voice]
+
+    assert resolve_voice_space_profile("sw_breath", mood_mode="matched").voice == "breath"
+    assert resolve_voice_space_profile("unknown_voice", mood_mode="matched").voice == "pluck"
+    assert resolve_voice_space_profile("choir", mood_mode="unknown").voice == "choir"
+
+
+def test_space_selection_resolver_expressive_uses_deliberate_mismatch_rule() -> None:
+    expected_mismatches = {
+        "pluck": "kotekan",
+        "breath": "pad",
+        "choir": "bowed",
+        "kotekan": "tabla_tin",
+        "pad": "pluck",
+        "bowed": "breath",
+        "tabla_tin": "choir",
+    }
+
+    assert EXPRESSIVE_SPACE_VOICE_BY_VOICE == expected_mismatches
+
+    for voice, space_voice in expected_mismatches.items():
+        selected = resolve_voice_space_profile(voice, mood_mode="expressive")
+
+        assert selected is VOICE_REVERB_PROFILES[space_voice]
+        assert selected.voice != voice
+        assert selected.fx_bus_id == EXPECTED_BUS_IDS[space_voice]
+
+
+def test_space_selection_resolver_house_bound_uses_active_house_space_for_all_voices() -> None:
+    expected_house_space_voices = {
+        "house_monastery": "choir",
+        "house_chamber": "breath",
+        "house_garden": "tabla_tin",
+        "house_procession": "kotekan",
+        "house_workshop": "pluck",
+    }
+
+    assert HOUSE_BOUND_SPACE_VOICE_BY_HOUSE == expected_house_space_voices
+
+    for house, space_voice in expected_house_space_voices.items():
+        profile = VOICE_REVERB_PROFILES[space_voice]
+        for voice in EXPECTED_VOICE_ORDER:
+            selected = resolve_voice_space_profile(
+                voice,
+                mood_mode="house-bound",
+                active_house=house,
+            )
+
+            assert selected is profile
+            assert selected.space_id == EXPECTED_SPACE_IDS[space_voice]
+            assert selected.fx_bus_id == EXPECTED_BUS_IDS[space_voice]
+
+    assert (
+        resolve_voice_space_profile("pluck", mood_mode="house_bound", active_house="garden").voice
+        == "tabla_tin"
+    )
+    assert (
+        resolve_voice_space_profile(
+            "unknown_voice",
+            mood_mode="house-bound",
+            active_house="unknown_house",
+        ).voice
+        == "breath"
+    )
+
+
+def test_voice_s_new_args_apply_mood_space_without_changing_sounding_voice() -> None:
+    expressive_args = build_voice_s_new_args(
+        "pluck",
+        node_id=70100,
+        freq=330.0,
+        mood_mode="expressive",
+    )
+    house_bound_args = build_voice_s_new_args(
+        "sw_bowed",
+        node_id=70101,
+        freq=220.0,
+        mood_mode="house-bound",
+        active_house="house_garden",
+    )
+
+    assert expressive_args[0] == "sw_pluck"
+    assert expressive_args[expressive_args.index("fx_bus_id") + 1] == EXPECTED_BUS_IDS[
+        "kotekan"
+    ]
+    assert house_bound_args[0] == "sw_bowed"
+    assert house_bound_args[house_bound_args.index("fx_bus_id") + 1] == EXPECTED_BUS_IDS[
+        "tabla_tin"
+    ]
 
 
 def test_each_voice_routes_only_to_its_assigned_fx_bus() -> None:

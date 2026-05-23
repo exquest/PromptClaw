@@ -21,6 +21,7 @@ from cypherclaw.midi_scene import (
     parse_mood_mode,
     validate_faithful_scene_metadata,
 )
+from cypherclaw.space_reverb import VOICE_REVERB_PROFILES
 
 
 def _varlen(value: int) -> bytes:
@@ -508,6 +509,61 @@ def test_scene_metadata_round_trips_explicit_mood_modes(
     assert metadata["mood_mode"] == expected
     assert step_metadata["mood_mode"] == expected
     validate_faithful_scene_metadata(metadata)
+
+
+def test_faithful_scene_render_space_follows_mood_mode_resolver() -> None:
+    events = (
+        FaithfulMidiEvent(pitch=60, duration=96, velocity=96),
+        FaithfulMidiEvent(pitch=62, duration=96, velocity=88),
+        FaithfulMidiEvent(pitch=64, duration=96, velocity=80),
+    )
+    voice_sequence = ("pluck", "breath", "choir")
+    cases = (
+        (
+            "matched",
+            ("pluck", "breath", "choir"),
+        ),
+        (
+            "expressive",
+            ("kotekan", "pad", "bowed"),
+        ),
+        (
+            "house-bound",
+            ("tabla_tin", "tabla_tin", "tabla_tin"),
+        ),
+    )
+
+    for mood_mode, expected_space_voices in cases:
+        scene = build_faithful_midi_scene(
+            events,
+            render_settings=FaithfulRenderSettings(
+                mood_mode=mood_mode,
+                active_house="house_garden",
+                voice_sequence=voice_sequence,
+            ),
+        )
+        payload = scene.to_dict()
+        steps = payload["pattern"]["lanes"][0]["steps"]
+
+        assert payload["metadata"]["mood_mode"] == mood_mode
+        assert payload["metadata"]["active_house"] == "house_garden"
+        assert [step["render_voice"] for step in steps] == list(voice_sequence)
+
+        for step, expected_space_voice in zip(
+            steps,
+            expected_space_voices,
+            strict=True,
+        ):
+            profile = VOICE_REVERB_PROFILES[expected_space_voice]
+
+            assert step["render_space"]["voice"] == expected_space_voice
+            assert step["render_space"]["space_id"] == profile.space_id
+            assert step["render_space"]["fx_bus_id"] == profile.fx_bus_id
+            assert step["metadata"]["render_space_voice"] == expected_space_voice
+            assert step["metadata"]["render_space_id"] == profile.space_id
+            assert step["metadata"]["render_fx_bus_id"] == str(profile.fx_bus_id)
+            assert step["metadata"]["mood_mode"] == mood_mode
+            assert step["metadata"]["active_house"] == "house_garden"
 
 
 def test_validate_faithful_scene_metadata_rejects_missing_and_bad_curve() -> None:
