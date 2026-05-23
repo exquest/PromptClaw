@@ -23,6 +23,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 try:
+    from cypherclaw.midi_fragments import empty_midi_fragments, extract_midi_fragments
+except ImportError:
+    from midi_fragments import (  # type: ignore[no-redef,import-not-found]
+        empty_midi_fragments,
+        extract_midi_fragments,
+    )
+
+try:
     from cypherclaw.first_boot import FirstBootAnnouncer, bootstrap_identity
 except ImportError:
     try:
@@ -182,6 +190,8 @@ def build_manifest(
     :func:`read_mthd_header`. Recognized keys are ``format``, ``track_count``,
     and ``division`` (folded into the ``mthd_header`` block, with
     ``track_count`` also promoted to the top level for convenience).
+    When present, ``fragments`` is copied into the manifest; otherwise an empty
+    fragment payload is emitted.
     """
 
     src = Path(file_path)
@@ -199,6 +209,9 @@ def build_manifest(
         mthd_header = None
 
     track_count = metadata.get("track_count") if metadata else None
+    fragments = metadata.get("fragments") if metadata else None
+    if not isinstance(fragments, dict):
+        fragments = empty_midi_fragments()
 
     return {
         "original_filename": src.name,
@@ -207,6 +220,7 @@ def build_manifest(
         "sha256": _sha256_of(src),
         "mthd_header": mthd_header,
         "track_count": track_count,
+        "fragments": fragments,
     }
 
 
@@ -258,15 +272,22 @@ def process_midi_file(
 
     size = src.stat().st_size
     sha256 = _sha256_of(src)
-    header_info = read_mthd_header(src)
     valid = validate_midi_header(src)
+    header_info = read_mthd_header(src)
+    metadata: dict[str, object] = dict(header_info or {})
+    if valid:
+        try:
+            metadata["fragments"] = extract_midi_fragments(src)
+        except ValueError as exc:
+            LOGGER.warning("midi_fragment_extraction_failed path=%s error=%s", src, exc)
+            metadata["fragments"] = empty_midi_fragments()
     target_dir = processed if valid else rejected
     target_dir.mkdir(parents=True, exist_ok=True)
     destination = _unique_destination(target_dir, src.name)
     shutil.move(str(src), str(destination))
 
     if valid:
-        manifest = build_manifest(destination, extracted_metadata=header_info)
+        manifest = build_manifest(destination, extracted_metadata=metadata)
         manifest_path = destination.with_suffix(destination.suffix + ".json")
         manifest_path.write_text(
             json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8"

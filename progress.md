@@ -506,7 +506,7 @@ Progress: [███████████████████████
 - **T-013b**: pending — Pending.
 - **T-013c**: complete — Completed with verdict PASS. Added `process_intake_cycle(...)` so a single intake scan can move stable MIDI files through the shared processed/rejected pipeline; valid processed files now have one-cycle integration coverage asserting the moved MIDI and `<midi filename>.json` sidecar both exist with valid manifest JSON. Validation passed with `4936 passed, 11 skipped`, Ruff clean, and mypy clean. No new dependencies or migrations.
 - **T-012d**: pending — Pending.
-- **T-014**: pending — Pending.
+- **T-014**: complete — Completed with verdict PASS. Added a stdlib MIDI fragment extractor for processed intake manifests: hand-crafted MIDI tests now assert melodic motifs of 3-7 notes, rhythm cells, block-chord progressions, channel-10 groove patterns, and sidecar `fragments` integration. Exploration confirmed the affected surface is `src/cypherclaw/midi_intake_daemon.py` plus focused extractor/spec/tests; startup identity hardening stayed as a regression anchor and passed. Validation passed with `4941 passed, 11 skipped`, Ruff clean, and mypy clean. No new dependencies or migrations.
 - **T-015**: pending — Pending.
 - **T-016**: pending — Pending.
 - **T-017**: needs_split — Timed out; run sdp-cli tasks split T-017 to break it down.

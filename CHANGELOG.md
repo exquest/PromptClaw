@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Added MIDI fragment extraction to processed intake manifests (T-014):
+  `cypherclaw.midi_fragments.extract_midi_fragments(...)` now parses
+  hand-crafted Standard MIDI Files without new dependencies and extracts
+  melodic motifs (3-7 notes), rhythm cells, chord progressions, and channel-10
+  drum groove patterns. `cypherclaw.midi_intake_daemon.process_midi_file(...)`
+  writes the extracted fragment block into valid processed-file sidecar
+  manifests while rejected files continue to skip sidecars. Validation passed
+  with `4941 passed, 11 skipped`, Ruff clean, and mypy clean; startup identity
+  hardening anchors remain green. No dependency, migration, provider secret,
+  database behavior, runtime state directory, HTTP route, or startup rewiring
+  was introduced.
+
 - Wired MIDI intake manifest sidecars into a one-cycle intake path (T-013c):
   `cypherclaw.midi_intake_daemon.process_intake_cycle(...)` now scans an
   intake directory once, skips unstable candidates, processes stable MIDI files
