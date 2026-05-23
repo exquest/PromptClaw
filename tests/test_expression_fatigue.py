@@ -167,30 +167,34 @@ def test_threshold_and_reduction_defaults_match_prd() -> None:
 
 def test_multiplier_is_one_below_threshold() -> None:
     # Below 0.7 the voice is "fresh" — nominal expression magnitudes pass through.
-    assert fatigue_multiplier(0.0) == 1.0
-    assert fatigue_multiplier(0.5) == 1.0
-    assert fatigue_multiplier(FATIGUE_THRESHOLD) == 1.0
+    env = {"CYPHERCLAW_V2_FATIGUE": "1"}
+    assert fatigue_multiplier(0.0, env=env) == 1.0
+    assert fatigue_multiplier(0.5, env=env) == 1.0
+    assert fatigue_multiplier(FATIGUE_THRESHOLD, env=env) == 1.0
 
 
 def test_multiplier_reduces_above_threshold() -> None:
     # Just above the threshold: 1 - 0.5 * 0.70001 ≈ 0.65 — already a reduction.
-    just_above = fatigue_multiplier(FATIGUE_THRESHOLD + 1e-6)
+    env = {"CYPHERCLAW_V2_FATIGUE": "1"}
+    just_above = fatigue_multiplier(FATIGUE_THRESHOLD + 1e-6, env=env)
     assert just_above < 1.0
 
     # At a counter value of 1.0 the multiplier hits its floor of 0.5.
-    assert math.isclose(fatigue_multiplier(1.0), 0.5, rel_tol=1e-12)
+    assert math.isclose(fatigue_multiplier(1.0, env=env), 0.5, rel_tol=1e-12)
 
 
 def test_multiplier_clamps_counter_at_one() -> None:
     # A counter value above 1.0 saturates — the multiplier does not keep falling.
-    assert math.isclose(fatigue_multiplier(2.5), 0.5, rel_tol=1e-12)
+    env = {"CYPHERCLAW_V2_FATIGUE": "1"}
+    assert math.isclose(fatigue_multiplier(2.5, env=env), 0.5, rel_tol=1e-12)
 
 
 def test_multiplier_honors_custom_threshold_and_reduction() -> None:
     # Custom threshold raises the cutoff; custom reduction changes the slope.
-    assert fatigue_multiplier(0.8, threshold=0.9) == 1.0
+    env = {"CYPHERCLAW_V2_FATIGUE": "1"}
+    assert fatigue_multiplier(0.8, threshold=0.9, env=env) == 1.0
     assert math.isclose(
-        fatigue_multiplier(1.0, threshold=0.5, reduction=0.25),
+        fatigue_multiplier(1.0, threshold=0.5, reduction=0.25, env=env),
         0.75,
         rel_tol=1e-12,
     )
@@ -198,13 +202,52 @@ def test_multiplier_honors_custom_threshold_and_reduction() -> None:
 
 def test_multiplier_applied_to_counter_value_above_and_below_threshold() -> None:
     # CC-081 acceptance: multiplier applied above threshold, not applied below.
+    # We must enable the flag for this test as it's now gated by default.
+    env = {"CYPHERCLAW_V2_FATIGUE": "1"}
     counter = FatigueCounter()
     counter.add_note("violin", 0.3, now=0.0)
     below = counter.value("violin", now=0.0)
     assert below < FATIGUE_THRESHOLD
-    assert fatigue_multiplier(below) == 1.0
+    assert fatigue_multiplier(below, env=env) == 1.0
 
     counter.add_note("cello", 0.9, now=0.0)
     above = counter.value("cello", now=0.0)
     assert above > FATIGUE_THRESHOLD
-    assert fatigue_multiplier(above) < 1.0
+    assert fatigue_multiplier(above, env=env) < 1.0
+
+
+def test_long_silence_recovery_to_zero() -> None:
+    # CC-082: Long silences allow the counter to recover toward 0.
+    counter = FatigueCounter()
+    counter.add_note("violin", 1.0, now=0.0)
+    
+    # 10 half-lives (300s) = 0.5^10 = 1/1024 approx 0.00097
+    long_silence = 10 * FATIGUE_HALF_LIFE_SECONDS
+    recovered_value = counter.value("violin", now=long_silence)
+    
+    assert recovered_value < 0.001
+    assert recovered_value > 0.0
+    assert math.isclose(recovered_value, 0.5 ** 10, rel_tol=1e-12)
+
+
+def test_fatigue_feature_is_gated_by_env_flag() -> None:
+    # CC-083: Default OFF returns 1.0 multiplier regardless of counter value.
+    assert fatigue_multiplier(1.0, env={}) == 1.0
+    assert fatigue_multiplier(1.0, env={"CYPHERCLAW_V2_FATIGUE": "0"}) == 1.0
+    
+    # Truthy values activate the reduction.
+    for truthy in ("1", "true", "yes", "on", "enabled"):
+        env = {"CYPHERCLAW_V2_FATIGUE": truthy}
+        assert fatigue_multiplier(1.0, env=env) == 0.5
+
+
+def test_fatigue_multiplier_respects_real_environment_by_default() -> None:
+    # If no env dict is passed, it should check os.environ.
+    import os
+    from unittest.mock import patch
+    
+    with patch.dict(os.environ, {"CYPHERCLAW_V2_FATIGUE": "1"}):
+        assert fatigue_multiplier(1.0) == 0.5
+        
+    with patch.dict(os.environ, {"CYPHERCLAW_V2_FATIGUE": "0"}):
+        assert fatigue_multiplier(1.0) == 1.0

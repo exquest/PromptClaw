@@ -12,9 +12,28 @@ the recovery behavior (CC-082), and the ``CYPHERCLAW_V2_FATIGUE`` env-gate
 (CC-083). Counter state is in-process only — composer restarts produce
 fresh, rested voices, as the PRD requires.
 """
-from __future__ import annotations
-
+import math
+import os
+from collections.abc import Mapping
 from dataclasses import dataclass
+
+
+# PRD §7.5.2 / CC-083: the entire fatigue feature is gated by
+# ``CYPHERCLAW_V2_FATIGUE``, default OFF.
+CYPHERCLAW_V2_FATIGUE_ENV = "CYPHERCLAW_V2_FATIGUE"
+_FATIGUE_TRUE_VALUES = frozenset({"1", "true", "yes", "on", "enabled"})
+
+
+def fatigue_enabled(env: Mapping[str, str] | None = None) -> bool:
+    """Return True iff ``CYPHERCLAW_V2_FATIGUE`` is set to a truthy value.
+
+    Default OFF: an unset, empty, or non-truthy value resolves to False.
+    """
+    source = os.environ if env is None else env
+    raw = source.get(CYPHERCLAW_V2_FATIGUE_ENV)
+    if raw is None:
+        return False
+    return raw.strip().lower() in _FATIGUE_TRUE_VALUES
 
 
 # PRD §7.5.2 / CC-080: half-life of ~30 seconds for the exponential decay.
@@ -31,14 +50,20 @@ def fatigue_multiplier(
     counter_value: float,
     threshold: float = FATIGUE_THRESHOLD,
     reduction: float = FATIGUE_REDUCTION,
+    *,
+    env: Mapping[str, str] | None = None,
 ) -> float:
     """Return the multiplier for expression parameters at ``counter_value``.
 
     Below or at ``threshold`` the multiplier is ``1.0`` (no reduction). Above
     the threshold it follows the PRD formula
-    ``1 - reduction * clamp(counter_value, 0.0, 1.0)``, so a fully-saturated
-    counter halves expression-parameter magnitudes at the default settings.
+    ``1 - reduction * clamp(counter_value, 0.0, 1.0)``.
+
+    Per CC-083, this returns ``1.0`` (no reduction) when the
+    ``CYPHERCLAW_V2_FATIGUE`` environment flag is OFF.
     """
+    if not fatigue_enabled(env):
+        return 1.0
     if counter_value <= threshold:
         return 1.0
     normalized = min(1.0, max(0.0, float(counter_value)))
