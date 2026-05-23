@@ -70,6 +70,39 @@ def test_boot_scripts_seed_master_via_master_bus_helper() -> None:
         )
 
 
+def test_master_smooth_scd_provisions_seven_voice_fx_buses() -> None:
+    """T-042: seven dedicated FX return buses, one per Korsakov voice,
+    routed into the compressor input so per-voice effects ride the same
+    glue compression and reverb tail as the dry mix.
+    """
+    text = SCD_PATH.read_text(encoding="utf-8")
+    voice_names = ("gong", "pluck", "bowed", "bell", "kotekan", "choir", "breath")
+
+    defaults = _scd_declared_defaults(text)
+    for voice in voice_names:
+        control = f"fx_bus_{voice}"
+        assert control in defaults, f"sw_master_smooth must declare '{control}' control"
+
+    bus_indices = [int(defaults[f"fx_bus_{v}"]) for v in voice_names]
+    assert len(set(bus_indices)) == len(voice_names), (
+        f"each voice FX bus must be unique, got {dict(zip(voice_names, bus_indices))}"
+    )
+
+    for voice in voice_names:
+        pattern = re.compile(rf"In\.ar\(\s*fx_bus_{voice}\b")
+        assert pattern.search(text), (
+            f"sw_master_smooth must read FX bus '{voice}' via In.ar(fx_bus_{voice}, ...)"
+        )
+
+    compander_idx = text.find("Compander.ar")
+    assert compander_idx > 0, "sw_master_smooth must invoke Compander.ar"
+    pre_comp = text[:compander_idx]
+    for voice in voice_names:
+        assert f"fx_bus_{voice}" in pre_comp, (
+            f"fx_bus_{voice} must be routed BEFORE the master compressor"
+        )
+
+
 def test_boot_scripts_have_no_hardcoded_master_bus_literals() -> None:
     for script in (START_AUDIO_PATH, RESTART_COMPOSER_PATH):
         text = script.read_text(encoding="utf-8")
