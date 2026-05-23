@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~11h 1m remaining (52 tasks, low confidence, calibrating)
-Expected completion: 5:22 PM today.
-Progress: [██████████████████████████████████░░░░] 90%  491 / 543 tasks complete
-  completed: 491, pending: 42, needs_split: 8, blocked: 0, needs_attn: 2, skipped: 45
+ETC: ~10h 43m remaining (52 tasks, low confidence, calibrating)
+Expected completion: 5:38 PM today.
+Progress: [██████████████████████████████████░░░░] 90%  494 / 546 tasks complete
+  completed: 494, pending: 43, needs_split: 7, blocked: 0, needs_attn: 2, skipped: 46
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -543,8 +543,8 @@ Progress: [███████████████████████
 - **T-036**: complete — Completed with verdict PASS.
 - **T-037**: complete — Completed with verdict PASS.
 - **T-038**: complete — Completed with verdict PASS.
-- **T-039**: pending — Pending.
-- **T-040**: pending — Pending.
+- **T-039**: complete — Completed with verdict PASS.
+- **T-040**: complete — Completed with verdict PASS.
 - **T-041**: pending — Pending.
 - **T-042**: pending — Pending.
 - **T-043**: pending — Pending.
@@ -570,7 +570,11 @@ Progress: [███████████████████████
 - **T-051**: pending — Pending.
 - **T-052**: pending — Pending.
 - **T-053**: split — Split into subtasks.
-- **T-054**: needs_split — Timed out; run sdp-cli tasks split T-054 to break it down.
+- **T-054**: split — Split into subtasks.
+- **T-054a**: pending — Pending.
+- **T-054b**: pending — Pending.
+- **T-054c**: pending — Pending.
+- **T-054d**: pending — Pending.
 - **T-053a**: pending — Pending.
 - **T-055**: needs_split — Timed out; run sdp-cli tasks split T-055 to break it down.
 - **T-056**: needs_split — Timed out; run sdp-cli tasks split T-056 to break it down.
@@ -595,29 +599,3 @@ Progress: [███████████████████████
 - **T-072**: pending — Pending.
 - **T-073**: pending — Pending.
 - **T-074**: pending — Pending.
-
-## Manual ADP Notes — T-039 (2026-05-23)
-
-- Explore: Read the CypherClaw v2 PRD and design statement tuning sections,
-  ADP/task templates, existing tuning modules, `midi_scene.py` tuning metadata,
-  score-tree composer/trajectory models, tracker metadata handoff, and related
-  tests. Existing pattern: composer plans deterministic per-section metadata
-  in `recursive_composer.py`, stores typed trajectory objects in
-  `score_tree.py`, mirrors compact payloads in `arrangement_plan`, and lets
-  `tracker_compiler.py` carry section metadata into tracker scenes.
-- Scope finding: T-039 maps to CC-046/T-056 and should add composer-side
-  tuning selection/log metadata only; pitch math and morph operator already
-  exist from T-033 through T-038. Startup identity hardening is already wired
-  through MIDI intake and narrative API startup paths and covered by existing
-  persistence/order tests, so this task will re-run those anchors instead of
-  changing unrelated startup code.
-- Specify/Test: Wrote `specs/t-039-spec.md`, then added locked score-tree
-  composer tests for phase-rule tuning selection, deterministic 30-minute arc
-  log lines, tracker metadata propagation, and JSON round-trip behavior. Red
-  phase failed as expected on missing `plan_tuning_trajectory`.
-- Implement/Verify: Added typed `TuningSceneValue`/`TuningTrajectory` models,
-  composer-side `plan_tuning_trajectory`, per-section tuning metadata,
-  `arrangement_plan["tuning_trajectory"]["composer_log"]`, and tracker metadata
-  propagation. Focused score-tree/tuning coverage passed with `82 passed`;
-  startup identity anchors passed with `9 passed`; full validation passed with
-  `5052 passed, 11 skipped`, Ruff clean, and mypy clean.

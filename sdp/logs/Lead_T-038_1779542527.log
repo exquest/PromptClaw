@@ -1,0 +1,10 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1277 chars)
+---
+
+T-038 committed as `c0392b0`.
+
+- Added `tuning_morph_target_name` and `tuning_morph_curve` fields to `FaithfulRenderSettings` and the scene metadata dict in `src/cypherclaw/midi_scene.py`, with helper normalizers and a curve allowlist (`linear`, `ease_in`, `ease_out`, `sigmoid`).
+- Added `validate_faithful_scene_metadata()` that enforces presence of `tuning_system_name`, `tuning_morph_target_name`, and `tuning_morph_curve` and checks the curve is in `SUPPORTED_MORPH_CURVES`.
+- Added regression tests in `tests/test_midi_scene.py` covering the new fields, JSON round-trip, defaults, validator error paths, and the supported-curves set.
+- Validation: `pytest tests/` → 5048 passed, 11 skipped; `ruff check` clean; `mypy src/cypherclaw/midi_scene.py` clean.

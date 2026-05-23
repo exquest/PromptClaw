@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1270 chars)
+---
+
+T-040 implemented and committed as `9f74fb3`.
+
+**Changes:**
+- `src/cypherclaw/tuning/flags.py` — new module exposing `CYPHERCLAW_V2_TUNING_MORPH_ENV` constant and `tuning_morph_enabled(env=None)` reader that defaults OFF, matching the established `expression/fatigue.py` pattern (CC-047 / PRD §Feature 5).
+- `src/cypherclaw/tuning/__init__.py` — re-exports the new symbols.
+- `tests/test_tuning_flags.py` — 9 regression tests covering default-OFF, truthy/falsy parsing, real-env reading, env-mapping override, isolation from sibling v2 flags, and import-time decoupling.
+
+**Validation:** `pytest tests/` → 5061 passed, 11 skipped; `ruff check src/ tests/` clean; `mypy src/` clean.
