@@ -17,6 +17,7 @@ server side; tests pin the two in lockstep.
 """
 from __future__ import annotations
 
+import math
 from collections import deque
 from dataclasses import dataclass, field
 from typing import Any
@@ -57,6 +58,25 @@ def seed_affective_state_bus(client: Any, value: float = 0.0) -> float:
     args = affective_state_bus_c_set_args(value)
     client.send_message("/c_set", args)
     return float(args[1])
+
+
+def affective_state_bus_decay(
+    initial: float,
+    elapsed_seconds: float,
+    tau: float = AFFECTIVE_STATE_BUS_DECAY_SECONDS,
+) -> float:
+    """Exponential slow-decay toward 0 with time constant ``tau`` seconds.
+
+    Returns ``initial * exp(-elapsed / tau)`` clamped to the bus range.
+    ``elapsed_seconds <= 0`` returns the clamped initial value unchanged
+    (no time has passed). Negative or zero ``tau`` is rejected.
+    """
+    if tau <= 0:
+        raise ValueError("tau must be positive")
+    clamped_initial = _clamp_affect(initial)
+    if elapsed_seconds <= 0:
+        return clamped_initial
+    return _clamp_affect(clamped_initial * math.exp(-float(elapsed_seconds) / float(tau)))
 
 
 def voice_expression_intensity(
@@ -112,11 +132,17 @@ class AffectiveStateBusWriter:
     def __init__(
         self,
         window_seconds: float = AFFECTIVE_STATE_BUS_WINDOW_SECONDS,
+        decay_tau_seconds: float = AFFECTIVE_STATE_BUS_DECAY_SECONDS,
     ) -> None:
         if window_seconds <= 0:
             raise ValueError("window_seconds must be positive")
+        if decay_tau_seconds <= 0:
+            raise ValueError("decay_tau_seconds must be positive")
         self.window_seconds = float(window_seconds)
+        self.decay_tau_seconds = float(decay_tau_seconds)
         self._voices: dict[str, _VoiceWindow] = {}
+        self._last_bus_value: float = 0.0
+        self._last_bus_time: float | None = None
 
     def update(self, voice_id: str, intensity: float, *, now: float) -> float:
         """Record ``intensity`` (clamped to [0,1]) for ``voice_id`` at ``now``."""
@@ -133,12 +159,30 @@ class AffectiveStateBusWriter:
         window.prune(now, self.window_seconds)
         return window.mean()
 
-    def flush(self, client: Any, *, now: float) -> float:
-        """Write per-voice means to the bus; return the max-pooled value.
+    def seed(self, client: Any, value: float, *, now: float) -> float:
+        """Seed the bus and bookkeeping state to ``value`` at ``now``.
 
-        Sends one ``/c_set`` per voice with samples in the current window,
-        ordered by mean ascending so the bus ends at the max value. Voices
-        whose windows are empty after pruning are dropped from the trace.
+        Provided so callers can start a decay test (or boot the runtime)
+        from a known bus value without having to fake contributor history.
+        """
+        seeded = seed_affective_state_bus(client, value)
+        self._last_bus_value = seeded
+        self._last_bus_time = float(now)
+        return seeded
+
+    def flush(self, client: Any, *, now: float) -> float:
+        """Write per-voice means to the bus; return the bus value after the tick.
+
+        With active contributors: sends one ``/c_set`` per voice with
+        samples in the current window, ordered by mean ascending so the
+        bus ends at the max value. Voices whose windows are empty after
+        pruning are dropped from the trace.
+
+        With no active contributors: emits a single ``/c_set`` with the
+        exponentially-decayed value (time constant
+        :attr:`decay_tau_seconds`) computed from the last bus value and
+        the elapsed time. This is the slow-decay-toward-0 behavior
+        required by PRD §7.5.2.
         """
         active: list[tuple[str, float]] = []
         for voice_id, window in self._voices.items():
@@ -147,9 +191,23 @@ class AffectiveStateBusWriter:
                 continue
             active.append((voice_id, window.mean()))
         active.sort(key=lambda item: (item[1], item[0]))
-        max_pooled = 0.0
-        for _, mean in active:
-            client.send_message("/c_set", [AFFECTIVE_STATE_BUS_INDEX, mean])
-            if mean > max_pooled:
-                max_pooled = mean
-        return max_pooled
+        if active:
+            max_pooled = 0.0
+            for _, mean in active:
+                client.send_message("/c_set", [AFFECTIVE_STATE_BUS_INDEX, mean])
+                if mean > max_pooled:
+                    max_pooled = mean
+            self._last_bus_value = max_pooled
+            self._last_bus_time = float(now)
+            return max_pooled
+        if self._last_bus_time is None or self._last_bus_value <= AFFECTIVE_STATE_BUS_MIN:
+            self._last_bus_time = float(now)
+            return self._last_bus_value
+        elapsed = float(now) - self._last_bus_time
+        decayed = affective_state_bus_decay(
+            self._last_bus_value, elapsed, self.decay_tau_seconds
+        )
+        client.send_message("/c_set", [AFFECTIVE_STATE_BUS_INDEX, decayed])
+        self._last_bus_value = decayed
+        self._last_bus_time = float(now)
+        return decayed

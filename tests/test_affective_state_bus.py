@@ -1,6 +1,7 @@
 """Tests for the shared `affective_state_bus` control-bus provisioning."""
 from __future__ import annotations
 
+import math
 import os
 import re
 import sys
@@ -19,6 +20,7 @@ from senseweave.affective_state_bus import (
     AFFECTIVE_STATE_BUS_WINDOW_SECONDS,
     AffectiveStateBusWriter,
     affective_state_bus_c_set_args,
+    affective_state_bus_decay,
     seed_affective_state_bus,
     voice_expression_intensity,
 )
@@ -225,3 +227,134 @@ def test_writer_rejects_non_positive_window_seconds() -> None:
         AffectiveStateBusWriter(window_seconds=0.0)
     with pytest.raises(ValueError):
         AffectiveStateBusWriter(window_seconds=-1.0)
+
+
+# --- T-004 / PRD §7.5.2: slow-decay-toward-0 with ~5s time constant -------
+
+
+def test_decay_returns_initial_when_no_time_has_passed() -> None:
+    assert affective_state_bus_decay(0.8, 0.0) == 0.8
+    assert affective_state_bus_decay(0.5, -1.0) == 0.5
+
+
+def test_decay_at_one_time_constant_is_initial_over_e() -> None:
+    # Exponential decay: value(tau) == initial / e.
+    initial = 1.0
+    decayed = affective_state_bus_decay(initial, AFFECTIVE_STATE_BUS_DECAY_SECONDS)
+    expected = initial * math.exp(-1.0)
+    assert math.isclose(decayed, expected, rel_tol=1e-9)
+
+
+def test_decay_clamps_output_into_bus_range() -> None:
+    # Out-of-range initial is clamped before applying the decay envelope.
+    assert affective_state_bus_decay(2.0, 0.0) == AFFECTIVE_STATE_BUS_MAX
+    assert affective_state_bus_decay(-1.0, 1.0) == AFFECTIVE_STATE_BUS_MIN
+    # Output stays in [0, 1] for any positive elapsed time.
+    for elapsed in (0.0, 1.0, 5.0, 50.0):
+        v = affective_state_bus_decay(1.0, elapsed)
+        assert AFFECTIVE_STATE_BUS_MIN <= v <= AFFECTIVE_STATE_BUS_MAX
+
+
+def test_decay_is_monotonically_decreasing_toward_zero() -> None:
+    samples = [
+        affective_state_bus_decay(1.0, t)
+        for t in (0.0, 1.0, 2.5, 5.0, 10.0, 30.0)
+    ]
+    for prev, curr in zip(samples, samples[1:]):
+        assert curr < prev
+    # 6 time constants ≈ 0.25% of initial — effectively zero.
+    assert affective_state_bus_decay(1.0, 6 * AFFECTIVE_STATE_BUS_DECAY_SECONDS) < 0.01
+
+
+def test_decay_rejects_non_positive_tau() -> None:
+    import pytest
+
+    with pytest.raises(ValueError):
+        affective_state_bus_decay(1.0, 1.0, tau=0.0)
+    with pytest.raises(ValueError):
+        affective_state_bus_decay(1.0, 1.0, tau=-1.0)
+
+
+def test_writer_seed_records_value_and_emits_c_set() -> None:
+    writer = AffectiveStateBusWriter()
+    osc = _RecordingOSC()
+
+    seeded = writer.seed(osc, 0.9, now=0.0)
+
+    assert seeded == 0.9
+    assert osc.messages == [("/c_set", [AFFECTIVE_STATE_BUS_INDEX, 0.9])]
+
+
+def test_writer_seeded_bus_decays_toward_zero_with_five_second_time_constant() -> None:
+    writer = AffectiveStateBusWriter()
+    osc = _RecordingOSC()
+
+    writer.seed(osc, 1.0, now=0.0)
+    osc.messages.clear()
+
+    # One time constant later: value should be ~1/e.
+    bus_after_tau = writer.flush(osc, now=AFFECTIVE_STATE_BUS_DECAY_SECONDS)
+    assert math.isclose(bus_after_tau, math.exp(-1.0), rel_tol=1e-9)
+    assert len(osc.messages) == 1
+    address, args = osc.messages[0]
+    assert address == "/c_set"
+    assert args[0] == AFFECTIVE_STATE_BUS_INDEX
+    assert math.isclose(args[1], math.exp(-1.0), rel_tol=1e-9)
+
+
+def test_writer_decay_is_path_independent_across_multiple_flushes() -> None:
+    # Flushing in small increments and flushing once after the same elapsed
+    # time must reach the same decayed value (modulo float epsilon), because
+    # exp(-(a+b)/tau) == exp(-a/tau) * exp(-b/tau).
+    one_shot = AffectiveStateBusWriter()
+    one_shot_osc = _RecordingOSC()
+    one_shot.seed(one_shot_osc, 1.0, now=0.0)
+    one_shot_value = one_shot.flush(one_shot_osc, now=10.0)
+
+    stepped = AffectiveStateBusWriter()
+    stepped_osc = _RecordingOSC()
+    stepped.seed(stepped_osc, 1.0, now=0.0)
+    for t in (1.0, 2.5, 4.0, 7.5, 10.0):
+        stepped_value = stepped.flush(stepped_osc, now=t)
+
+    assert math.isclose(one_shot_value, stepped_value, rel_tol=1e-12)
+
+
+def test_writer_decay_resets_when_a_contributor_re_engages() -> None:
+    writer = AffectiveStateBusWriter()
+    osc = _RecordingOSC()
+
+    writer.seed(osc, 1.0, now=0.0)
+    writer.flush(osc, now=5.0)  # decayed toward 1/e
+    osc.messages.clear()
+
+    # A fresh contributor at intensity 0.6 should pin the bus to that value
+    # on the next flush — the decay envelope only applies in absentia.
+    writer.update("violin", 0.6, now=5.5)
+    bus = writer.flush(osc, now=5.5)
+    assert bus == 0.6
+    assert osc.messages[-1] == ("/c_set", [AFFECTIVE_STATE_BUS_INDEX, 0.6])
+
+
+def test_writer_rejects_non_positive_decay_tau_seconds() -> None:
+    import pytest
+
+    with pytest.raises(ValueError):
+        AffectiveStateBusWriter(decay_tau_seconds=0.0)
+    with pytest.raises(ValueError):
+        AffectiveStateBusWriter(decay_tau_seconds=-1.0)
+
+
+def test_affective_state_bus_scd_declares_decay_time_constant() -> None:
+    text = SCD_PATH.read_text(encoding="utf-8")
+
+    decay_match = re.search(r"~affectiveStateBusDecaySeconds\s*=\s*([0-9.]+)", text)
+    assert decay_match is not None, (
+        "stub must declare ~affectiveStateBusDecaySeconds for T-004"
+    )
+    assert float(decay_match.group(1)) == AFFECTIVE_STATE_BUS_DECAY_SECONDS
+
+    assert "SynthDef(\\sw_affective_state_decay" in text, (
+        "stub must declare the slow-decay SynthDef so the bus drifts to 0 "
+        "when no voice is writing"
+    )

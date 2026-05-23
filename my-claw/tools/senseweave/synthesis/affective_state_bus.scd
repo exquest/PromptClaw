@@ -20,6 +20,7 @@
 ~affectiveStateBusChannels = 1;
 ~affectiveStateBusMin = 0.0;
 ~affectiveStateBusMax = 1.0;
+~affectiveStateBusDecaySeconds = 5.0;
 
 // Reader-side macro used by every voice SynthDef in T-003: read the
 // shared bus, clamp it to the documented [0, 1] range, and return the
@@ -54,5 +55,30 @@ SynthDef(\sw_affective_state_reader, {
     effectiveDepth  = nominal_depth * (1.0 + (coupling * affect));
 
     Out.kr(out_bus, effectiveDepth);
+}).writeDefFile("synthdefs/");
+
+// Slow-decay synth (T-004 / PRD §7.5.2). Reads the shared bus, applies
+// an exponential decay toward 0 with the documented ~5s time constant,
+// and writes the decayed value back to the same bus. Per-voice writers
+// re-assert the bus on every tick they have contributors, so the decay
+// only takes effect when the writer has been silent — matching the
+// Python-side `AffectiveStateBusWriter.flush` semantics.
+//
+//   decayed = current * exp(-dt / tau)
+//
+// `Decay.kr` is not used here because it is impulse-driven; the bus
+// instead carries the *current* affect value, so we apply a first-order
+// IIR lowpass toward 0 (`LagUD.kr` with downward lag = tau, upward lag
+// = 0) which is equivalent at the documented time constant.
+SynthDef(\sw_affective_state_decay, {
+    | tau = 5.0 |
+
+    var affect, decayed;
+
+    affect  = In.kr(~affectiveStateBusIndex, ~affectiveStateBusChannels)
+                .clip(~affectiveStateBusMin, ~affectiveStateBusMax);
+    decayed = LagUD.kr(affect, lagTimeU: 0.0, lagTimeD: tau);
+
+    ReplaceOut.kr(~affectiveStateBusIndex, decayed);
 }).writeDefFile("synthdefs/");
 )
