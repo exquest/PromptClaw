@@ -16,11 +16,13 @@ from cypherclaw import midi_vocabulary_store as store
 from cypherclaw.render.events import IntentTag, PerformanceIntent, SectionEnvelope
 from inner_life.world_model import WorldModel
 from senseweave.composition_gate import evaluate_score_tree
-from senseweave.form_grammar import plan_form
+from senseweave.form_grammar import PlannedSection, plan_form
 from senseweave.piece_brief import build_piece_brief
 from senseweave.piece_commission import commission_piece
-from senseweave.recursive_composer import compose_score_tree
+from senseweave.procedural_arc import directive_for_elapsed
+from senseweave.recursive_composer import compose_score_tree, plan_meter_trajectory
 from senseweave.score_tree import ScoreTree
+from senseweave.tracker_compiler import compile_score_tree_to_tracker
 
 
 def _compose_tree(
@@ -72,6 +74,68 @@ def _score_tree_hash(tree: ScoreTree) -> str:
     return hashlib.sha256(tree.to_json().encode("utf-8")).hexdigest()
 
 
+def test_plan_meter_trajectory_uses_arc_phase_drift_table() -> None:
+    sections = (
+        PlannedSection("Opening", "invocation", 20.0, harmonic_role="tonic"),
+        PlannedSection("Pattern", "statement", 20.0, harmonic_role="tonic"),
+        PlannedSection("Dialogue", "development", 20.0, harmonic_role="predominant"),
+        PlannedSection("Return", "recap", 20.0, harmonic_role="authentic"),
+        PlannedSection("Residue", "afterglow", 20.0, harmonic_role="plagal"),
+    )
+    elapsed_by_scene = {
+        "Opening": 1.0,
+        "Pattern": 7.0,
+        "Dialogue": 15.0,
+        "Return": 22.0,
+        "Residue": 28.0,
+    }
+    directives = {
+        scene_name: directive_for_elapsed(
+            elapsed,
+            cadence_state="occupied_day",
+            cycle_minutes=30.0,
+        )
+        for scene_name, elapsed in elapsed_by_scene.items()
+    }
+
+    trajectory = plan_meter_trajectory(
+        sections,
+        directives,
+        cadence_state="occupied_day",
+        groove_identity="pulse",
+        trajectory_seed="t-022b-fixture",
+    )
+    repeated = plan_meter_trajectory(
+        sections,
+        directives,
+        cadence_state="occupied_day",
+        groove_identity="pulse",
+        trajectory_seed="t-022b-fixture",
+    )
+
+    assert trajectory is not None
+    assert trajectory == repeated
+    assert trajectory.arc_plan == "arc_phase_drift"
+    assert trajectory.arc_phase == "Divination->Emergence->Conversation->Convergence->Crystallization"
+    assert tuple(value.scene_name for value in trajectory.scene_values) == tuple(
+        section.scene_name for section in sections
+    )
+    meters = tuple(value.meter for value in trajectory.scene_values)
+    assert len(set(meters)) >= 4
+    assert "15/16" in meters
+    assert "7/8" in meters
+    dialogue = trajectory.scene_value_for("Dialogue")
+    assert dialogue is not None
+    assert dialogue.subdivision == "polyrhythmic"
+    assert dialogue.groove_timing == "metric_modulation"
+    assert dialogue.metric_modulation == "5:4"
+    assert dialogue.polymeter == (3, 4)
+    assert all(
+        isinstance(value, str)
+        for value in trajectory.metadata_for_scene("Dialogue").values()
+    )
+
+
 def test_recursive_composer_builds_complete_score_tree() -> None:
     tree = _compose_tree()
 
@@ -81,6 +145,48 @@ def test_recursive_composer_builds_complete_score_tree() -> None:
     assert tree.primary_hook_text
     assert tree.planned_duration_s > 0
     assert tree.form.section_functions
+
+
+def test_recursive_composer_plans_meter_trajectory_for_full_arc() -> None:
+    tree = _compose_tree(composition_seed="t-022b-full-arc")
+
+    assert tree.meter_trajectory is not None
+    assert len(tree.meter_trajectory.scene_values) == len(tree.sections)
+    assert tuple(value.scene_name for value in tree.meter_trajectory.scene_values) == tuple(
+        section.scene_name for section in tree.sections
+    )
+    meter_path = [value.meter for value in tree.meter_trajectory.scene_values]
+    assert any(meter in {"7/8", "11/8", "15/16"} for meter in meter_path)
+    assert tree.arrangement_plan["meter_trajectory"]["meter_path"] == meter_path
+    assert tree.arrangement_plan["meter_trajectory"]["arc_plan"] == "arc_phase_drift"
+    for section, value in zip(tree.sections, tree.meter_trajectory.scene_values):
+        assert section.scene_metadata["meter_trajectory_id"] == tree.meter_trajectory.trajectory_id
+        assert section.scene_metadata["meter_trajectory_scene"] == section.scene_name
+        assert section.scene_metadata["meter_trajectory_meter"] == value.meter
+        assert json.loads(section.scene_metadata["meter_trajectory_path"]) == meter_path
+
+
+def test_composed_meter_trajectory_survives_tracker_compile() -> None:
+    tree = _compose_tree(composition_seed="t-022b-compile")
+
+    compiled = compile_score_tree_to_tracker(
+        tree,
+        mood={"energy": 0.58, "valence": 0.63, "arousal": 0.44},
+        family_name="bloom",
+        patch_name="house_garden",
+        cadence_state="occupied_day",
+        progression_profile="open_day",
+    )
+
+    assert tree.meter_trajectory is not None
+    meter_path = [value.meter for value in tree.meter_trajectory.scene_values]
+    scene_by_name = {scene.name: scene for scene in compiled.tracker_song.scenes}
+    for section, value in zip(tree.sections, tree.meter_trajectory.scene_values):
+        scene = scene_by_name[section.scene_name]
+        assert scene.metadata["meter_trajectory_id"] == tree.meter_trajectory.trajectory_id
+        assert scene.metadata["meter_trajectory_scene"] == section.scene_name
+        assert scene.metadata["meter_trajectory_meter"] == value.meter
+        assert json.loads(scene.metadata["meter_trajectory_path"]) == meter_path
 
 
 def test_recursive_composer_seed_is_deterministic_and_attaches_render_metadata() -> None:
