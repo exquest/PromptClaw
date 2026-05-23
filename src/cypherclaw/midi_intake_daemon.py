@@ -26,12 +26,15 @@ try:
     from cypherclaw.first_boot import FirstBootAnnouncer, bootstrap_identity
 except ImportError:
     try:
-        from first_boot import FirstBootAnnouncer, bootstrap_identity
+        from first_boot import (  # type: ignore[no-redef,import-not-found]
+            FirstBootAnnouncer,
+            bootstrap_identity,
+        )
     except ImportError:
-        def bootstrap_identity(*args, **kwargs) -> object:
+        def bootstrap_identity(*args: object, **kwargs: object) -> object:  # type: ignore[no-redef,misc]
             return None
 
-        class FirstBootAnnouncer:
+        class FirstBootAnnouncer:  # type: ignore[no-redef]
             def maybe_announce(self) -> object:
                 return None
 
@@ -145,7 +148,7 @@ def validate_midi_header(path: Path | str) -> bool:
     return header == MIDI_HEADER_MAGIC
 
 
-def read_mthd_header(path: Path | str) -> dict[str, int] | None:
+def read_mthd_header(path: Path | str) -> dict[str, object] | None:
     """Parse the 14-byte MThd chunk and return ``{format, track_count, division}``.
 
     Returns ``None`` when the file is missing, unreadable, too short, or not
