@@ -25,12 +25,14 @@ from pathlib import Path
 try:
     from cypherclaw.midi_fragments import empty_midi_fragments, extract_midi_fragments
     from cypherclaw.midi_loader import load_faithful_midi_events
+    from cypherclaw.midi_scene import build_faithful_midi_scene
 except ImportError:
     from midi_fragments import (  # type: ignore[no-redef,import-not-found]
         empty_midi_fragments,
         extract_midi_fragments,
     )
     from midi_loader import load_faithful_midi_events  # type: ignore[no-redef,import-not-found]
+    from midi_scene import build_faithful_midi_scene  # type: ignore[no-redef,import-not-found]
 
 try:
     from cypherclaw.first_boot import FirstBootAnnouncer, bootstrap_identity
@@ -228,6 +230,9 @@ def build_manifest(
     faithful_events = metadata.get("faithful_events") if metadata else None
     if isinstance(faithful_events, list):
         manifest["faithful_events"] = faithful_events
+    faithful_scene = metadata.get("faithful_scene") if metadata else None
+    if isinstance(faithful_scene, dict):
+        manifest["faithful_scene"] = faithful_scene
     return manifest
 
 
@@ -285,10 +290,16 @@ def process_midi_file(
     metadata: dict[str, object] = dict(header_info or {})
     if valid:
         if faithful_transmission:
+            faithful_events = tuple(load_faithful_midi_events(src))
             metadata["mode"] = "faithful_transmission"
             metadata["faithful_events"] = [
-                event.to_dict() for event in load_faithful_midi_events(src)
+                event.to_dict() for event in faithful_events
             ]
+            metadata["faithful_scene"] = build_faithful_midi_scene(
+                faithful_events,
+                source_name=src.name,
+                ticks_per_beat=_int_metadata(metadata.get("division"), default=480),
+            ).to_dict()
             metadata["fragments"] = empty_midi_fragments()
         else:
             metadata["mode"] = "fragment_extraction"
@@ -319,6 +330,17 @@ def process_midi_file(
     }
     LOGGER.info("midi_intake_event %s", json.dumps(event, sort_keys=True))
     return event
+
+
+def _int_metadata(value: object, *, default: int) -> int:
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return default
+    return default
 
 
 def process_intake_cycle(
