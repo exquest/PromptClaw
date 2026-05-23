@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Replaced the `cypherclaw.holdenu.com` root placeholder with the T-028a static
+  public stream scaffold in the holdenu Worker: `GET /` now serves a static
+  HTML page with the live HLS audio element wired to
+  `/api/cypherclaw/live.m3u8`, a `glyphweave-backdrop` container, and a
+  `cypherclaw-visualizer` canvas carrying the future
+  `/api/cypherclaw/live-features` hook. `HEAD /` and the host gate remain
+  intact. Added locked Worker tests for the root scaffold. Validation passed
+  with Worker `npm test` (`13 passed`), Worker `npm run check`, startup
+  identity anchors (`11 passed`), and full PromptClaw validation (`4997 passed,
+  11 skipped`, Ruff clean, mypy clean).
+
 - Bound `cypherclaw.holdenu.com` to the holdenu API Worker over HTTPS
   (T-027): added a `custom_domain = true` route to the Worker's
   `wrangler.toml`, which provisioned the Cloudflare-managed DNS record and

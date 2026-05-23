@@ -1,5 +1,36 @@
 # Escalations
 
+## T-028a (2026-05-23)
+
+- **Reason:** Cross-repository Worker location and scaffold-only scope
+- **Details:** The PromptClaw repository is the ADP source of truth, but the
+  public `cypherclaw.holdenu.com` root route is implemented by the sibling
+  `/Users/anthony/Programming/catalog-explorer/worker` Cloudflare Worker, where
+  T-027 added the placeholder landing page. T-028a therefore keeps the spec,
+  progress, changelog, and startup-hardening regression anchors in PromptClaw
+  while replacing the Worker placeholder with a static public stream scaffold
+  in `catalog-explorer`. This subtask owns only the static HTML structure: the
+  live `<audio>` element, GlyphWeave backdrop placeholder, and canvas visualizer
+  placeholder. Live canvas drawing, hls.js fallback, archive feed UI, and the
+  SSE endpoint implementation remain later T-028 subtasks.
+- **Scope decision:** No new dependencies, database migrations, provider
+  secrets, runtime state directories, or startup-flow rewiring are required.
+  The generated startup identity hardening bullets target already-covered
+  startup paths (`midi_intake_daemon.main()`, narrative ASGI import, and
+  first-boot persistence); T-028a will re-run those anchors rather than broadening
+  a static page scaffold into identity subsystem work. The T-026 HLS/Ogg segment
+  compatibility escalation remains unchanged because this task only points the
+  page at the established playlist endpoint.
+- **Reason:** Red phase and verification results
+- **Details:** Red phase was confirmed before implementation with
+  `npm test` in `/Users/anthony/Programming/catalog-explorer/worker` failing
+  the three new landing-page assertions because the T-027 placeholder lacked
+  `cypherclaw-live-page`, `cypherclaw-live-audio`, `glyphweave-backdrop`, and
+  `cypherclaw-visualizer`. After implementation, Worker `npm test` passed with
+  `13 passed`, Worker `npm run check` passed, startup identity hardening anchors
+  passed with `11 passed`, and full PromptClaw validation passed with
+  `4997 passed, 11 skipped`, Ruff clean, and mypy clean.
+
 ## T-025 (2026-05-23)
 
 - **Reason:** Cross-repository Worker location and route-auth assumption

@@ -583,3 +583,31 @@ Progress: [███████████████████████
 - **T-072**: pending — Pending.
 - **T-073**: pending — Pending.
 - **T-074**: pending — Pending.
+
+## T-028a ADP Notes (2026-05-23)
+
+- **Explore:** Read AGENTS.md, the R750 ADP doc, CypherClaw v2 PRD Feature 3,
+  CC-024 acceptance criteria, Sprint 1 task breakdown, the visual-presence
+  design statement, the existing `catalog-explorer/worker` root route, and
+  existing Worker landing tests. Exploration found T-027 already host-gates
+  `cypherclaw.holdenu.com/` in the sibling Worker with a placeholder page; this
+  task replaces that placeholder with the static public stream scaffold.
+- **Scope:** Implement only the basic root HTML structure for T-028a: live audio
+  element, GlyphWeave backdrop placeholder, and canvas visualizer placeholder.
+  SSE drawing, hls.js fallback, archive feed UI, and stream container changes
+  remain later subtasks.
+- **Specify:** Wrote `specs/t-028a-spec.md` with the problem statement,
+  technical approach, edge cases, and VERIFY command for each acceptance
+  criterion.
+- **Test:** Added locked Worker tests for the root stream scaffold. Red phase
+  was confirmed with `/Users/anthony/Programming/catalog-explorer/worker`
+  `npm test` failing on the missing page id, audio element, GlyphWeave backdrop,
+  and canvas visualizer placeholders before production changes.
+- **Implement:** Replaced the Worker root placeholder with static HTML containing
+  `cypherclaw-live-audio`, `glyphweave-backdrop`, and
+  `cypherclaw-visualizer` wired to the existing live playlist and future
+  live-features endpoint.
+- **Verify:** Worker `npm test` passed with `13 passed`; Worker
+  `npm run check` passed; startup identity anchors passed with `11 passed`;
+  full PromptClaw validation passed with `4997 passed, 11 skipped`, Ruff clean,
+  and mypy clean.
