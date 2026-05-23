@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1294 chars)
+---
+
+T-036 is already complete (committed in `353906a`). Verified:
+
+- `src/cypherclaw/render/events.py:156` — `Event` carries `freq_hz: float | None` through JSON/OSC bundles
+- `my-claw/supercollider/render_contract.scd:64` — uses `pbind[\freq_hz] ?? { (pbind[\midinote] ? 60).midicps }` so non-12-TET scenes route Hz directly to `\freq`, 12-TET falls back to `midicps`
+- `tests/test_render_events.py` — regression tests confirm freq_hz survives the OSC round-trip and defaults to `None` for legacy scenes
+- All 25 render-event tests pass
+
+Nothing to do here — task already shipped and verified.

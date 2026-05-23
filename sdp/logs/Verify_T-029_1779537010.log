@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2907 chars)
+---
+
+**Verdict: PASS**
+
+All four acceptance tests pass, the full suite holds at 5001 passed / 11 skipped, and all candidate hardening checks are confirmed addressed:
+
+- `bootstrap_identity` is the first call in every execution path (`archive_due_sessions`, `_dry_run`, `run`)
+- Both standalone and federated identity modes exercise the same startup path
+- The identity-persistence integration test covers two sequential boots and verifies `instance_id` stability
+- No secrets committed; SigV4 signing uses proper HMAC-SHA256 with URL-escaped metadata headers
+
+Report written to `sdp/verification/t-029-verify.md` and committed.

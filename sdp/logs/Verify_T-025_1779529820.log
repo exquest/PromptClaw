@@ -1,0 +1,17 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2760 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+All five acceptance criteria verified:
+
+1. **Authenticated POST → R2** — Worker test confirms segment written to `cypherclaw/live/2026-05-23/seg-42.opus`, body and metadata intact, visible via R2 listing. ✓
+2. **Unauthenticated POST rejected** — 401 returned, R2 listing stays empty. ✓
+3. **TypeScript strict-clean** — `tsc --noEmit` exits 0. ✓
+4. **Startup identity regression anchors** — all 11 pass. ✓
+5. **Full PromptClaw validation** — 4997 passed, ruff clean, mypy clean. ✓
+
+**One minor note:** the 400-path edge cases (missing body, non-integer sequence, invalid timestamp) are correct by code inspection but have no automated test coverage. Implementation logic is sound; this is a follow-on hardening item, not a blocker.
+
+Report committed at `sdp/verification/t-025-verify.md`.

@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1250 chars)
+---
+
+T-019 done.
+
+**What changed**
+- `src/cypherclaw/midi_intake_daemon.py:264` — `process_midi_file()` gains a `vocabulary_db_path` keyword; when set (non-faithful path), extracted fragments are written to the SQLite vocabulary store. Wired a `--vocabulary-db` CLI flag through `main()`.
+- `tests/test_midi_intake_to_vocabulary.py` — new end-to-end integration test runs the daemon in poll mode, drops a melody MIDI into the inbox, and asserts vocabulary rows appear in under the 60-second budget; plus unit-level coverage for the new hook and its `None` default.
+
+**Validation**: `pytest tests/` → 4975 passed / 11 skipped; `ruff check src/ tests/` clean; `mypy src/` clean. Committed as `1cf668e`.

@@ -1,0 +1,18 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1313 chars)
+---
+
+T-027 complete. Acceptance criterion met: `curl -I https://cypherclaw.holdenu.com/` → `HTTP/2 200` with `cf-ray` header.
+
+**Summary of changes**
+
+In `catalog-explorer` (commit `06eb2e9`):
+- `worker/wrangler.toml` — added `[[routes]]` with `pattern = "cypherclaw.holdenu.com"` and `custom_domain = true` so Cloudflare provisioned the DNS record + universal-SSL cert and bound the hostname to the holdenu API Worker.
+- `worker/src/index.ts` — added a host check that serves a minimal 200 HTML placeholder for `GET /` and `HEAD /` on `cypherclaw.holdenu.com` (handles both methods, since `curl -I` is HEAD).
+- `worker/tests/cypherclaw-landing.test.js` — 3 new tests (GET landing, HEAD acceptance, explorer-host fall-through). All 11 worker tests pass.
+
+In `PromptClaw` (commit `ccb5a69`):
+- `CHANGELOG.md` — T-027 entry.
+- `progress.md` — T-027 → complete (verdict PASS).
+
+Deployed the worker via `wrangler deploy`; the richer streaming + visualizer landing page is reserved for T-028 (already subtasked T-028a–d).

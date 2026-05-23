@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~11h 20m remaining (57 tasks, low confidence, calibrating)
-Expected completion: 2:31 PM today.
-Progress: [██████████████████████████████████░░░░] 89%  477 / 534 tasks complete
-  completed: 477, pending: 44, needs_split: 11, blocked: 0, needs_attn: 2, skipped: 42
+ETC: ~9h 41m remaining (54 tasks, low confidence, calibrating)
+Expected completion: 3:32 PM today.
+Progress: [██████████████████████████████████░░░░] 90%  489 / 543 tasks complete
+  completed: 489, pending: 44, needs_split: 8, blocked: 0, needs_attn: 2, skipped: 45
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -529,17 +529,17 @@ Progress: [███████████████████████
 - **T-026**: complete — Completed with verdict PASS WITH NOTES.
 - **T-027**: complete — Completed with verdict PASS.
 - **T-028**: split — Split into subtasks.
-- **T-028a**: pending — Pending.
-- **T-028b**: pending — Pending.
+- **T-028a**: complete — Completed with verdict PASS.
+- **T-028b**: complete — Completed with verdict PASS.
 - **T-028c**: complete — Completed with verdict PASS.
 - **T-028d**: complete — Completed with verdict PASS.
-- **T-029**: complete — Completed with local verification PASS.
-- **T-030**: complete — Completed with local verification PASS.
-- **T-031**: pending — Pending.
-- **T-032**: pending — Pending.
-- **T-033**: pending — Pending.
-- **T-034**: pending — Pending.
-- **T-035**: pending — Pending.
+- **T-029**: complete — Completed with verdict PASS.
+- **T-030**: complete — Completed with verdict PASS.
+- **T-031**: complete — Completed with verdict PASS.
+- **T-032**: complete — Completed with verdict PASS.
+- **T-033**: complete — Completed with verdict PASS.
+- **T-034**: complete — Completed with verdict PASS.
+- **T-035**: complete — Completed with verdict PASS.
 - **T-036**: pending — Pending.
 - **T-037**: pending — Pending.
 - **T-038**: pending — Pending.
@@ -555,19 +555,31 @@ Progress: [███████████████████████
 - **T-045c**: pending — Pending.
 - **T-045d**: pending — Pending.
 - **T-046**: pending — Pending.
-- **T-047**: needs_split — Timed out; run sdp-cli tasks split T-047 to break it down.
-- **T-048**: needs_split — Timed out; run sdp-cli tasks split T-048 to break it down.
+- **T-047**: split — Split into subtasks.
+- **T-047a**: pending — Pending.
+- **T-047b**: pending — Pending.
+- **T-048**: split — Split into subtasks.
+- **T-048a**: pending — Pending.
+- **T-048b**: pending — Pending.
+- **T-048c**: pending — Pending.
+- **T-048d**: pending — Pending.
+- **T-047c**: pending — Pending.
+- **T-047d**: pending — Pending.
 - **T-049**: pending — Pending.
 - **T-050**: pending — Pending.
 - **T-051**: pending — Pending.
 - **T-052**: pending — Pending.
-- **T-053**: needs_split — Timed out; run sdp-cli tasks split T-053 to break it down.
+- **T-053**: split — Split into subtasks.
 - **T-054**: needs_split — Timed out; run sdp-cli tasks split T-054 to break it down.
+- **T-053a**: pending — Pending.
 - **T-055**: needs_split — Timed out; run sdp-cli tasks split T-055 to break it down.
 - **T-056**: needs_split — Timed out; run sdp-cli tasks split T-056 to break it down.
+- **T-053b**: pending — Pending.
 - **T-057**: needs_split — Timed out; run sdp-cli tasks split T-057 to break it down.
+- **T-053c**: pending — Pending.
 - **T-058**: needs_split — Timed out; run sdp-cli tasks split T-058 to break it down.
 - **T-059**: needs_split — Timed out; run sdp-cli tasks split T-059 to break it down.
+- **T-053d**: pending — Pending.
 - **T-060**: needs_split — Timed out; run sdp-cli tasks split T-060 to break it down.
 - **T-061**: pending — Pending.
 - **T-062**: pending — Pending.
@@ -583,264 +595,3 @@ Progress: [███████████████████████
 - **T-072**: pending — Pending.
 - **T-073**: pending — Pending.
 - **T-074**: pending — Pending.
-
-## T-032 Phase 0 Explore (2026-05-23)
-
-- Read the CypherClaw v2 PRD snapshot, requirements register, and implementation
-  plan entries for CC-020 through CC-028. T-032 closes the Sprint 3 public
-  stream path after the streamer, Worker ingest, playlist, live page, archive,
-  and composer-count isolation tasks.
-- Read the existing stream components and tests:
-  `my-claw/tools/audio_streamer.py`, `tests/test_audio_streamer.py`,
-  `my-claw/tools/session_archiver.py`, `tests/test_session_archiver.py`, the
-  sibling `catalog-explorer/worker/src/index.ts`, and all current
-  `catalog-explorer/worker/tests/cypherclaw-*.test.js` files.
-- Existing architecture: the JACK streamer writes 6-second Ogg/Opus segments
-  from `SuperCollider:out_1`/`out_2`; the Worker accepts authenticated segment
-  POSTs into R2 under `cypherclaw/live/{date}/seg-{sequence}.opus`; the playlist
-  route lists recent R2 objects; the public root page initializes the live
-  browser `<audio>` element against `/api/cypherclaw/live.m3u8`.
-- Gap found: there is no streamer-side POST helper and no end-to-end regression
-  that drives a tone-generator segment through Worker ingest, R2 storage,
-  playlist/segment retrieval, and browser `<audio>` initialization while logging
-  latency against the 30-second budget.
-- Scope decision: use a CI-safe scripted tone segment and fake R2 bucket for the
-  automated Worker E2E while keeping the existing Ogg/Opus HLS decode caveat
-  explicit. No new dependencies, migrations, provider secrets, or startup
-  identity rewiring are required; the existing identity hardening anchors remain
-  mandatory regression checks.
-
-## T-032 ADP Notes (2026-05-23)
-
-- **Specify:** Wrote `specs/t-032-spec.md` with the problem statement,
-  technical approach, edge cases, acceptance criteria, and VERIFY commands for
-  the streamer upload helper, scripted Worker E2E, Worker checks, identity
-  anchors, bookkeeping, and full PromptClaw validation.
-- **Test Development:** Added locked tests before implementation. Red phase was
-  confirmed with
-  `pytest tests/test_audio_streamer.py::test_post_segment_to_worker_sends_streamer_headers_and_reports_latency -q`
-  failing on missing streamer upload symbols, and
-  `cd /Users/anthony/Programming/catalog-explorer/worker && npm test -- tests/cypherclaw-e2e.test.js`
-  failing because Worker ingest did not yet return latency metadata.
-- **Implement:** Added `SegmentUploadConfig`, `SegmentUploadResult`,
-  `build_segment_upload_request()`, and `post_segment_to_worker()` to
-  `my-claw/tools/audio_streamer.py`. Updated the holdenu Worker to allow
-  `X-CypherClaw-Source`, compute ingest latency from
-  `X-CypherClaw-Captured-At`, return `latency_ms`, and persist source/latency
-  metadata only when the source marker is present.
-- **Verify:** Focused streamer upload coverage passed. Related streamer and
-  archiver tests passed with `9 passed`. Worker `npm test` passed with
-  `31 passed` and logged `cypherclaw_t032_latency_ms=1777`; Worker
-  `npm run check` passed. Startup identity anchors passed with `11 passed`.
-  Full validation passed with `5004 passed, 11 skipped`, Ruff clean, and mypy
-  clean.
-
-## T-028a ADP Notes (2026-05-23)
-
-- **Explore:** Read AGENTS.md, the R750 ADP doc, CypherClaw v2 PRD Feature 3,
-  CC-024 acceptance criteria, Sprint 1 task breakdown, the visual-presence
-  design statement, the existing `catalog-explorer/worker` root route, and
-  existing Worker landing tests. Exploration found T-027 already host-gates
-  `cypherclaw.holdenu.com/` in the sibling Worker with a placeholder page; this
-  task replaces that placeholder with the static public stream scaffold.
-- **Scope:** Implement only the basic root HTML structure for T-028a: live audio
-  element, GlyphWeave backdrop placeholder, and canvas visualizer placeholder.
-  SSE drawing, hls.js fallback, archive feed UI, and stream container changes
-  remain later subtasks.
-- **Specify:** Wrote `specs/t-028a-spec.md` with the problem statement,
-  technical approach, edge cases, and VERIFY command for each acceptance
-  criterion.
-- **Test:** Added locked Worker tests for the root stream scaffold. Red phase
-  was confirmed with `/Users/anthony/Programming/catalog-explorer/worker`
-  `npm test` failing on the missing page id, audio element, GlyphWeave backdrop,
-  and canvas visualizer placeholders before production changes.
-- **Implement:** Replaced the Worker root placeholder with static HTML containing
-  `cypherclaw-live-audio`, `glyphweave-backdrop`, and
-  `cypherclaw-visualizer` wired to the existing live playlist and future
-  live-features endpoint.
-- **Verify:** Worker `npm test` passed with `13 passed`; Worker
-  `npm run check` passed; startup identity anchors passed with `11 passed`;
-  full PromptClaw validation passed with `4997 passed, 11 skipped`, Ruff clean,
-  and mypy clean.
-
-## ADP Notes: T-028b
-
-- **Phase 0 Explore (2026-05-23):** Read the CypherClaw v2 PRD stream-page
-  section, requirements register, implementation plan, design statement,
-  T-028a spec/verification, existing Worker root HTML, Worker landing/playlist/
-  segment tests, PromptClaw startup identity tests, CHANGELOG, and ESCALATIONS.
-  The affected implementation remains the sibling
-  `/Users/anthony/Programming/catalog-explorer/worker/src/index.ts` route for
-  `cypherclaw.holdenu.com`; PromptClaw remains the ADP source of truth for
-  specs, progress, changelog, and escalation notes. T-028a shipped only the
-  static scaffold, while T-028b owns the real GlyphWeave-style CSS/image
-  backdrop layer and browser playback wiring for `/api/cypherclaw/live.m3u8`.
-  Existing startup identity hardening tests already cover bootstrap persistence
-  and bootstrap-before-announcer ordering and will be re-run as regression
-  anchors.
-- **Phase 1 Specify (2026-05-23):** Wrote `specs/t-028b-spec.md` with the
-  problem statement, technical approach, edge cases, and VERIFY commands. The
-  spec records the hls.js runtime dependency and keeps the T-026 Ogg/Opus HLS
-  decode caveat out in the open.
-- **Phase 2 Test Development (2026-05-23):** Added locked Worker assertions for
-  rendered GlyphWeave backdrop image layers and native-HLS/hls.js playback
-  initialization. Red phase was confirmed with
-  `npm test -- tests/cypherclaw-landing.test.js` failing the two new assertions
-  against the T-028a scaffold.
-- **Phase 3 Implement (2026-05-23):** Updated the holdenu Worker root HTML with
-  three animated `data-glyphweave-layer` image-backed backdrop layers,
-  reduced-motion handling, `data-stream-url` / `data-playback-mode` audio hooks,
-  and `initCypherClawAudio()` for native HLS, hls.js, and direct fallback.
-- **Phase 4 Verify (2026-05-23):** Focused Worker landing tests passed after
-  implementation; full Worker `npm test` passed with `15 passed`; Worker
-  `npm run check` passed; mandatory startup identity anchors passed with
-  `11 passed`; full PromptClaw validation passed with `4997 passed, 11 skipped`,
-  Ruff clean, and mypy clean.
-
-## ADP Notes: T-028c
-
-- **Phase 0 Explore (2026-05-23):** Read AGENTS.md, the CypherClaw v2
-  requirements register, implementation plan, PRD snapshot Feature 3, CC-024
-  acceptance criteria, T-028a/T-028b specs, CHANGELOG, ESCALATIONS, the sibling
-  `/Users/anthony/Programming/catalog-explorer/worker/src/index.ts` root route,
-  Worker landing tests, playlist tests, segment tests, README, and wrangler
-  route config. Exploration found the active UI surface remains the
-  host-gated holdenu Worker route for `cypherclaw.holdenu.com`; T-028a shipped
-  the stream scaffold and T-028b shipped the GlyphWeave-style backdrop plus
-  HLS playback wiring. The canvas still has only a static background and the
-  `data-live-features-url="/api/cypherclaw/live-features"` hook. No current
-  Worker route serves that live-features path. T-028c therefore owns the
-  browser-side canvas draw loop, an SSE client connected to that hook, and a
-  minimal SSE-compatible feed response so the client does not connect to a 404.
-  Durable-object fanout, producer POST ingestion, archive feed rendering, MIDI
-  WebSocket composition, and HLS segment-container repair remain outside this
-  slice. Existing startup identity hardening anchors already cover
-  `bootstrap_identity()` persistence and bootstrap-before-`FirstBootAnnouncer`
-  ordering and will be re-run as mandatory regression checks.
-- **Phase 1 Specify (2026-05-23):** Wrote `specs/t-028c-spec.md` with the
-  problem statement, technical approach, edge cases, and VERIFY commands for the
-  canvas draw loop, SSE client, minimal `live-features` SSE response, Worker
-  checks, startup hardening anchors, bookkeeping, and full PromptClaw validation.
-- **Phase 2 Test Development (2026-05-23):** Added locked Worker assertions for
-  `initCypherClawVisualizer()`, `requestAnimationFrame(drawVisualizerFrame)`,
-  device-pixel-ratio canvas sizing, `EventSource` wiring against
-  `data-live-features-url`, JSON feature parsing, feed diagnostics, and
-  `GET /api/cypherclaw/live-features` SSE headers/payload. Red phase was
-  confirmed with `npm test -- tests/cypherclaw-landing.test.js` failing the
-  three new T-028c assertions against the T-028b page.
-- **Phase 3 Implement (2026-05-23):** Updated the holdenu Worker root HTML with
-  canvas feed/draw diagnostic attributes, a browser-side visualizer state
-  object, 2D canvas sizing, ambient/live feature drawing, SSE message handling,
-  EventSource lifecycle management, and a minimal public
-  `/api/cypherclaw/live-features` `text/event-stream` bootstrap response.
-- **Phase 4 Verify (2026-05-23):** Focused Worker landing tests passed with
-  `18 passed`; full Worker `npm test` passed with `18 passed`; Worker
-  `npm run check` passed; mandatory startup identity anchors passed with
-  `11 passed`; `git diff --check` passed in both PromptClaw and
-  catalog-explorer; full PromptClaw validation passed with `4997 passed,
-  11 skipped`, Ruff clean, and mypy clean.
-
-## T-028d ADP Notes
-
-### Phase 0 Explore
-
-- Read the CypherClaw v2 PRD, requirements register, task graph, and
-  implementation-plan entries for CC-024/T-028. The public page must play the
-  live stream, show a GlyphWeave backdrop, and run a canvas visualizer driven by
-  the live-features SSE feed; the broader Durable Object fanout remains backend
-  work outside this slice.
-- Read prior T-028a/T-028b/T-028c specs and current escalation notes. The
-  established pattern is to keep ADP artifacts in PromptClaw while implementing
-  the public page in `/Users/anthony/Programming/catalog-explorer/worker`.
-- Read the affected Worker route and tests:
-  `/Users/anthony/Programming/catalog-explorer/worker/src/index.ts`,
-  `tests/cypherclaw-landing.test.js`, `tests/cypherclaw-playlist.test.js`, and
-  `tests/cypherclaw-segment.test.js`. The current T-028c visualizer opens
-  EventSource, parses JSON messages, and draws from a flat feature object.
-- Read `my-claw/tools/self_listener.py` and the handoff docs for
-  `/tmp/glyph_audio_features.json`. The live feature contract includes flat
-  audio fields plus visual fields such as brightness, motion, texture, density,
-  salience, arc metadata, DSP blocks, and artistic identity.
-- Exploration finding: T-028d should add SSE event normalization and a runtime
-  canvas-rendering test, not new storage, routes, secrets, npm packages,
-  database migrations, or startup identity rewiring.
-
-### Phase 1 Specify
-
-- Wrote `specs/t-028d-spec.md` with the problem statement, technical approach,
-  edge cases, and VERIFY commands for SSE event normalization, canvas rendering,
-  Worker checks, startup identity anchors, bookkeeping, and full PromptClaw
-  validation.
-
-### Phase 2 Test Development
-
-- Added locked Worker runtime tests in
-  `/Users/anthony/Programming/catalog-explorer/worker/tests/cypherclaw-visualizer-runtime.test.js`
-  before production changes. The tests evaluate the actual inline page script
-  returned by the Worker with fake DOM, canvas, and EventSource objects.
-- Red phase was confirmed with
-  `npm test -- tests/cypherclaw-visualizer-runtime.test.js` failing the two new
-  T-028d assertions because the T-028c runtime did not normalize nested
-  `audio`/`visual`/`scene`/`tuning` SSE payloads or map flat
-  `spectral_centroid_hz` into the rendered state.
-
-### Phase 3 Implement
-
-- Updated the holdenu Worker inline visualizer runtime to normalize flat and
-  nested SSE feature payloads, preserve stable audio/visual/scene/tuning fields,
-  count feed events, carry last scene/tuning diagnostics, keep rendering after
-  invalid JSON, and map brightness, motion, texture, density, salience, onset
-  rate, RMS, pitch, and spectral centroid into the canvas draw loop.
-- Expanded the minimal `/api/cypherclaw/live-features` bootstrap event with the
-  same audio/visual feature vocabulary while keeping durable fanout and producer
-  ingestion out of scope.
-
-### Phase 4 Verify
-
-- Focused red/green Worker runtime command passed after implementation with
-  `20 passed`; full Worker `npm test` passed with `20 passed`; Worker
-  `npm run check` passed.
-- Mandatory startup identity hardening anchors passed with `11 passed`, covering
-  `bootstrap_identity()` persistence, standalone/federated reuse, and
-  bootstrap-before-`FirstBootAnnouncer` ordering.
-- Required PromptClaw validation
-  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`
-  passed with `4997 passed, 11 skipped`, Ruff clean, and mypy clean.
-
-## T-029 ADP Notes
-
-- **T-029 Phase 0 Explore:** Read the CypherClaw v2 ADP snapshot,
-  implementation plan, task graph, requirements register, and design
-  statement. The archive requirement is CC-025: `session_archiver.py` must
-  create sessions approximately every 8 minutes or more, name them with the
-  `{House-Imagery} / {Tuning-Character} — {DD Month}` pattern, and upload them
-  under `cypherclaw/archive/{session_id}/` in R2.
-- **Affected code patterns:** `my-claw/tools/audio_streamer.py` already writes
-  6-second Ogg/Opus segment files and bootstraps identity before JACK work.
-  The sibling holdenu Worker stores live segments under
-  `cypherclaw/live/{YYYY-MM-DD}/seg-{sequence}.opus` with R2 custom metadata.
-  Existing archive-path helpers are local-disk oriented, so T-029 needs a new
-  session archiver tool with injectable R2 upload behavior for tests.
-- **Testing direction:** Use synthetic segment files and sidecar metadata to
-  simulate 30 minutes of uptime without live JACK or Cloudflare credentials.
-  Verify at least 3 complete sessions, title metadata, archive object keys,
-  idempotent state, and startup identity persistence.
-- **Phase 1 Specify:** Wrote `specs/t-029-spec.md` with the problem statement,
-  technical approach, edge cases, and VERIFY commands for synthetic uptime,
-  CypherClaw title derivation, R2 archive keys, idempotent state, startup
-  identity hardening, bookkeeping, and full validation.
-- **Phase 2 Test Development:** Added locked tests in
-  `tests/test_session_archiver.py` before implementation. Red phase was
-  confirmed with `pytest tests/test_session_archiver.py -q` failing at
-  collection because `session_archiver.py` did not exist.
-- **Phase 3 Implement:** Added `my-claw/tools/session_archiver.py` with
-  sidecar-aware Opus segment discovery, complete 480-second session planning,
-  duration-weighted house/tuning metadata, CypherClaw archive titles,
-  `cypherclaw/archive/{session_id}/session.opus` and `metadata.json` uploads,
-  local idempotency state, a stdlib R2/S3-compatible PUT client, dry-run CLI,
-  and startup `bootstrap_identity()` wiring.
-- **Phase 4 Verify:** Focused `tests/test_session_archiver.py` passed with
-  `4 passed`; related streamer/archive tests passed with `18 passed`;
-  mandatory startup identity anchors passed with `11 passed`; dry-run CLI
-  returned an empty successful plan for an empty segment directory; required
-  validation passed with `5001 passed, 11 skipped`, Ruff clean, and mypy clean.

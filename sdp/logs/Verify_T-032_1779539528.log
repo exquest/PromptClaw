@@ -1,0 +1,17 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2824 chars)
+---
+
+**Verdict: PASS**
+
+All 7 acceptance criteria verified:
+
+1. **Spec** — `specs/t-032-spec.md` complete with all required sections.
+2. **Phase 0 docs** — `progress.md` lines 595–641 document the exploration findings.
+3. **Typed upload helper** — `post_segment_to_worker` sends all canonical headers and parses `latency_ms`; locked test passes.
+4. **Worker E2E test** — `cypherclaw-e2e.test.js` drives the full scripted path (ingest → fake R2 → playlist → segment proxy → browser `<audio>`) and logs `cypherclaw_t032_latency_ms=1776` (well under the 30s budget).
+5. **Worker regression** — 31/31 Worker tests pass; live-page, playlist, segment, archive-feed, visualizer all intact.
+6. **Startup hardening** — `start_streamer` calls `bootstrap_identity` before `popen_factory` (event order asserted); both standalone and federated modes covered; 11 hardening anchors green.
+7. **Bookkeeping** — CHANGELOG, progress.md, and ESCALATIONS all document scope and validation results.
+
+Full suite: `5004 passed, 11 skipped` · ruff: clean · mypy: clean (41 files).

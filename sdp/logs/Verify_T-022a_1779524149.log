@@ -1,0 +1,17 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2699 chars)
+---
+
+**Verdict: PASS**
+
+All acceptance criteria confirmed:
+
+| AC | Test | Result |
+|---|---|---|
+| 1 — trajectory emits scene metadata | `test_meter_trajectory_emits_scene_metadata` | PASS |
+| 2 — JSON round-trip + legacy defaults | 2 round-trip tests | PASS |
+| 3 — compiler carries scene metadata | `test_tracker_compiler_carries_meter_trajectory_scene_metadata` | PASS |
+| 4 — regression anchors (metric modulation + startup identity) | 9 tests | PASS |
+| 5 — full suite | 4983 passed, 11 skipped | PASS |
+
+One cosmetic note: `_scene_metadata_for_section` uses `getattr(section, "scene_metadata", {})` where direct attribute access would suffice — non-blocking. Report committed at `sdp/verification/t-022a-verify.md`.
