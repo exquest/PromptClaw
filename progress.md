@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~9h 57m remaining (67 tasks, low confidence, calibrating)
-Expected completion: 7:53 AM tomorrow.
-Progress: [█████████████████████████████████░░░░░] 87%  455 / 522 tasks complete
-  completed: 455, pending: 50, needs_split: 15, blocked: 0, needs_attn: 2, skipped: 38
+ETC: ~12h 37m remaining (66 tasks, low confidence, calibrating)
+Expected completion: 11:27 AM tomorrow.
+Progress: [█████████████████████████████████░░░░░] 87%  459 / 525 tasks complete
+  completed: 459, pending: 50, needs_split: 14, blocked: 0, needs_attn: 2, skipped: 39
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -503,13 +503,17 @@ Progress: [███████████████████████
 - **T-013**: split — Split into subtasks.
 - **T-013a**: complete — Completed with verdict PASS.
 - **T-012c**: complete — Completed with verdict PASS.
-- **T-013b**: pending — Pending.
-- **T-013c**: complete — Completed with verdict PASS. Added `process_intake_cycle(...)` so a single intake scan can move stable MIDI files through the shared processed/rejected pipeline; valid processed files now have one-cycle integration coverage asserting the moved MIDI and `<midi filename>.json` sidecar both exist with valid manifest JSON. Validation passed with `4936 passed, 11 skipped`, Ruff clean, and mypy clean. No new dependencies or migrations.
-- **T-012d**: pending — Pending.
-- **T-014**: complete — Completed with verdict PASS. Added a stdlib MIDI fragment extractor for processed intake manifests: hand-crafted MIDI tests now assert melodic motifs of 3-7 notes, rhythm cells, block-chord progressions, channel-10 groove patterns, and sidecar `fragments` integration. Exploration confirmed the affected surface is `src/cypherclaw/midi_intake_daemon.py` plus focused extractor/spec/tests; startup identity hardening stayed as a regression anchor and passed. Validation passed with `4941 passed, 11 skipped`, Ruff clean, and mypy clean. No new dependencies or migrations.
-- **T-015**: pending — Pending.
+- **T-013b**: complete — Completed with verdict PASS.
+- **T-013c**: complete — Completed with verdict PASS.
+- **T-012d**: complete — Completed with verdict PASS.
+- **T-014**: complete — Completed with verdict PASS.
+- **T-015**: complete — Completed with verdict PASS.
 - **T-016**: pending — Pending.
-- **T-017**: needs_split — Timed out; run sdp-cli tasks split T-017 to break it down.
+- **T-017**: split — Split into subtasks.
+- **T-017a**: pending — Pending.
+- **T-017b**: pending — Pending.
+- **T-017c**: pending — Pending.
+- **T-017d**: pending — Pending.
 - **T-018**: pending — Pending.
 - **T-019**: pending — Pending.
 - **T-020**: pending — Pending.

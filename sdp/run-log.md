@@ -481,3 +481,8 @@
 | run-t-012b-1779510983 | T-012b | claude | gemini | PASS | 433.0s | — |
 | run-t-012c-1779511440 | T-012c | claude | gemini | PASS | 368.9s | — |
 | run-t-013a-1779511844 | T-013a | claude | gemini | PASS | 341.6s | — |
+| run-t-013b-1779512211 | T-013b | claude | gemini | PASS | 1256.8s | — |
+| run-t-013c-1779513494 | T-013c | codex | claude | PASS | 685.6s | — |
+| run-t-012d-1779514202 | T-012d | claude | gemini | PASS | 196.8s | — |
+| run-t-014-1779514422 | T-014 | codex | claude | PASS | 928.7s | — |
+| run-t-015-1779515429 | T-015 | claude | gemini | PASS | 273.0s | — |
