@@ -533,7 +533,7 @@ Progress: [███████████████████████
 - **T-028b**: pending — Pending.
 - **T-028c**: complete — Completed with verdict PASS.
 - **T-028d**: complete — Completed with verdict PASS.
-- **T-029**: pending — Pending.
+- **T-029**: complete — Completed with local verification PASS.
 - **T-030**: pending — Pending.
 - **T-031**: pending — Pending.
 - **T-032**: pending — Pending.
@@ -755,3 +755,41 @@ Progress: [███████████████████████
 - Required PromptClaw validation
   `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`
   passed with `4997 passed, 11 skipped`, Ruff clean, and mypy clean.
+
+## T-029 ADP Notes
+
+- **T-029 Phase 0 Explore:** Read the CypherClaw v2 ADP snapshot,
+  implementation plan, task graph, requirements register, and design
+  statement. The archive requirement is CC-025: `session_archiver.py` must
+  create sessions approximately every 8 minutes or more, name them with the
+  `{House-Imagery} / {Tuning-Character} — {DD Month}` pattern, and upload them
+  under `cypherclaw/archive/{session_id}/` in R2.
+- **Affected code patterns:** `my-claw/tools/audio_streamer.py` already writes
+  6-second Ogg/Opus segment files and bootstraps identity before JACK work.
+  The sibling holdenu Worker stores live segments under
+  `cypherclaw/live/{YYYY-MM-DD}/seg-{sequence}.opus` with R2 custom metadata.
+  Existing archive-path helpers are local-disk oriented, so T-029 needs a new
+  session archiver tool with injectable R2 upload behavior for tests.
+- **Testing direction:** Use synthetic segment files and sidecar metadata to
+  simulate 30 minutes of uptime without live JACK or Cloudflare credentials.
+  Verify at least 3 complete sessions, title metadata, archive object keys,
+  idempotent state, and startup identity persistence.
+- **Phase 1 Specify:** Wrote `specs/t-029-spec.md` with the problem statement,
+  technical approach, edge cases, and VERIFY commands for synthetic uptime,
+  CypherClaw title derivation, R2 archive keys, idempotent state, startup
+  identity hardening, bookkeeping, and full validation.
+- **Phase 2 Test Development:** Added locked tests in
+  `tests/test_session_archiver.py` before implementation. Red phase was
+  confirmed with `pytest tests/test_session_archiver.py -q` failing at
+  collection because `session_archiver.py` did not exist.
+- **Phase 3 Implement:** Added `my-claw/tools/session_archiver.py` with
+  sidecar-aware Opus segment discovery, complete 480-second session planning,
+  duration-weighted house/tuning metadata, CypherClaw archive titles,
+  `cypherclaw/archive/{session_id}/session.opus` and `metadata.json` uploads,
+  local idempotency state, a stdlib R2/S3-compatible PUT client, dry-run CLI,
+  and startup `bootstrap_identity()` wiring.
+- **Phase 4 Verify:** Focused `tests/test_session_archiver.py` passed with
+  `4 passed`; related streamer/archive tests passed with `18 passed`;
+  mandatory startup identity anchors passed with `11 passed`; dry-run CLI
+  returned an empty successful plan for an empty segment directory; required
+  validation passed with `5001 passed, 11 skipped`, Ruff clean, and mypy clean.

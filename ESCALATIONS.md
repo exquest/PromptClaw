@@ -1,5 +1,34 @@
 # Escalations
 
+## T-029 (2026-05-23)
+
+- **Reason:** R2 upload scope and runtime credential assumption
+- **Details:** T-029 implements the PromptClaw-side runtime archiver in
+  `my-claw/tools/session_archiver.py`; it does not add a new Worker archive
+  ingest route. The tool writes archive objects directly under
+  `cypherclaw/archive/{session_id}/` through an injectable R2/S3-compatible
+  upload client. Tests use a fake R2 client, so no live Cloudflare credentials,
+  provider secrets, or cost-bearing uploads are required during validation.
+- **Assumptions:** Local stream segments are complete `.opus` files with
+  optional `.json` sidecars carrying `captured_at`, `duration`, `patch_name` or
+  `house`, and `tuning`. Missing sidecars fall back to filename/filesystem
+  timing and default segment duration. Ogg/Opus sessions are concatenated as
+  chained Ogg byte streams rather than invoking ffmpeg.
+- **Dependencies and migrations:** No new Python or npm dependencies, database
+  columns, or migrations are required.
+- **Startup hardening:** The new archiver startup path invokes
+  `bootstrap_identity()` before archive work and exposes standalone/federated
+  identity arguments. T-029 adds an archiver identity-persistence regression and
+  re-runs the existing CLI, first-boot, daemon-ordering, and narrative ASGI
+  identity anchors.
+- **Verification:** Red phase failed as expected before implementation
+  because `session_archiver.py` was missing. After implementation,
+  `pytest tests/test_session_archiver.py -q` passed with `4 passed`, related
+  archive/streamer tests passed with `18 passed`, mandatory startup identity
+  anchors passed with `11 passed`, the dry-run CLI returned a successful empty
+  plan for an empty segment directory, and the required validation command
+  passed with `5001 passed, 11 skipped`, Ruff clean, and mypy clean.
+
 ## T-028d (2026-05-23)
 
 - **Reason:** Cross-repository Worker location and SSE event-normalization

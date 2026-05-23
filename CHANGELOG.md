@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Added the T-029 CypherClaw session archiver:
+  `my-claw/tools/session_archiver.py` now groups completed local Opus stream
+  segments into 8-minute archive windows, derives CypherClaw titles from
+  dominant house and primary tuning metadata, concatenates each session into
+  `session.opus`, and uploads `session.opus` plus `metadata.json` under
+  `cypherclaw/archive/{session_id}/` through an injectable R2/S3-compatible
+  client. The archiver persists local state to avoid duplicate uploads and
+  bootstraps identity before startup work for standalone and federated modes.
+  Added synthetic-uptime tests proving 30 minutes yields 3 archived sessions,
+  title metadata follows the CypherClaw naming pattern, repeat runs are
+  idempotent, and archiver startup preserves identity across boots. No new
+  dependencies or migrations were added.
+
 - Added the T-028d SSE-driven CypherClaw visualizer hardening in the holdenu
   Worker: the live page now normalizes flat `/tmp/glyph_audio_features.json`
   payloads and future nested `audio`/`visual`/`scene`/`tuning` SSE envelopes
