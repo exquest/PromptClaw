@@ -1,0 +1,10 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1438 chars)
+---
+
+T-015 done.
+
+- Added `src/cypherclaw/midi_vocabulary_store.py` — idempotent migration creating the `fragments` table with the required schema (`id`, `source_file`, `kind`, `interval_pattern_json`, `duration_pattern_json`, `source_key`, `source_tempo`, `harmonic_context_json`), plus `connect`, `insert_fragment`, `ingest_extracted_fragments`, and `query_fragments` helpers.
+- Added `tests/test_midi_vocabulary_store.py` — 5 tests covering schema, idempotency, insert/query round-trip, ingestion of an `extract_midi_fragments` payload across all 4 kinds, and the sample query acceptance check.
+- Full suite green: 4946 passed / 11 skipped; `ruff check src/ tests/` and `mypy src/` clean.
+- Committed as `212fbc0` — `feat(midi-intake): SQLite vocabulary store [T-015]`.
