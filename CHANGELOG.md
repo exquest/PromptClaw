@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Added T-048c single-line morph phrase generation for the composer API:
+  requests to `POST /api/v1/composer/morph-phrase` that include
+  `phrase_curve` now return an endpoint-inclusive `single_line_phrase` with
+  deterministic `morph_x` frames, normalized source/target voices,
+  `morph_voice` synthdef metadata, and OSC-ready `control_args` carrying
+  `morph_x` plus the numeric `morph_curve` gain-law selector. Requests that
+  omit `phrase_curve` keep the existing T-048a validation-only response shape.
+  `morph_curve_type` remains the SuperCollider `linear`/`equal-power`
+  gain-law selector, while `phrase_curve` uses the T-048b composer-side
+  `linear`/`exponential`/`sigmoid` progression curves. No new dependencies,
+  No database migration, provider secrets, runtime state directories,
+  startup-flow changes, or SuperCollider source changes were added. Existing
+  `fx_bus_id` and `sw_sampler.scd` routing hardening anchors remain green.
+  Red phase was confirmed before implementation, and final validation passed
+  with `5144 passed, 11 skipped`, Ruff clean, and mypy clean.
+
 - Added T-048b morph curve interpolation helpers:
   `cypherclaw.instrument_morph` now provides typed composer-side
   `linear`, `exponential`, and `sigmoid` phrase curves, scalar interpolation,

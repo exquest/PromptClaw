@@ -1,5 +1,39 @@
 # Escalations
 
+## T-048c (2026-05-23)
+
+- **Reason:** Composer phrase-generation compatibility assumptions.
+- **Details:** T-048a's `morph_curve_type` remains the SuperCollider gain-law
+  selector for `morph_voice.scd` (`linear` / `equal-power`), while T-048b's
+  `MorphInterpolationCurve` remains the composer-side phrase progression curve
+  (`linear` / `exponential` / `sigmoid`) for computing `morph_x`.
+- **Assumption:** To preserve locked T-048a assertions, requests that omit
+  `phrase_curve` keep the existing validation-only response. Requests that
+  include `phrase_curve` ask the same handler to generate a single-line morph
+  phrase with endpoint-inclusive control frames.
+- **Assumption:** Generated frames should carry OSC-ready control args for
+  `morph_voice` (`morph_x` and numeric `morph_curve`) rather than trying to
+  encode source/target voices as SuperCollider controls, because the current
+  `morph_voice.scd` source does not declare source/target voice-name controls.
+- **Candidate hardening:** The recurring SuperCollider failure modes are
+  verified by existing source tests: all profiled voice SynthDefs must declare
+  `fx_bus_id`, and `sw_sampler.scd` must route through `fx_bus_id` rather than
+  the legacy `fx_bus` control.
+- **Dependencies and migrations:** No new dependencies, provider secrets,
+  database columns, migrations, runtime state directories, startup-flow
+  changes, agent commands, or SuperCollider source changes are required.
+- **Verification:** Red phase was confirmed with
+  `pytest tests/test_composer_api.py::test_morph_phrase_endpoint_generates_single_line_phrase_from_voice_pair_and_phrase_curve tests/test_composer_api.py::test_morph_phrase_endpoint_rejects_invalid_phrase_generation_fields -q`
+  failing on the missing phrase-generation request fields before implementation.
+  After implementation, `pytest tests/test_composer_api.py -q` passed with
+  `14 passed`, `pytest tests/test_composer_api.py tests/test_instrument_morph_curves.py -q`
+  passed with `22 passed`, the required `fx_bus_id` / `sw_sampler.scd`
+  hardening anchors passed with `3 passed`, focused Ruff and mypy checks passed,
+  and the required final validation
+  (`pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
+  mypy src/`) passed with `5144 passed, 11 skipped`, Ruff clean, and mypy clean.
+  No new dependencies or migrations were introduced.
+
 ## T-048b (2026-05-23)
 
 - **Reason:** Curve terminology spans two layers.

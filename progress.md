@@ -589,7 +589,20 @@ Progress: [███████████████████████
   passed with `11 passed`, startup identity hardening anchors passed with
   `8 passed`, and final validation passed with `5141 passed, 11 skipped`, Ruff
   clean, and mypy clean.
-- **T-048c**: pending — Pending.
+- **T-048c**: complete — Completed with verdict PASS. Phase 0 Explore found
+  T-048a already owns the validation-only composer API request/response
+  contract, T-048b owns composer-side `linear`/`exponential`/`sigmoid`
+  `morph_x` interpolation, and `morph_voice.scd` owns the `linear` /
+  `equal-power` SuperCollider gain-law selector. The request handler now
+  generates an endpoint-inclusive single-line morph phrase when callers provide
+  `phrase_curve`, while preserving the locked validation-only response when
+  `phrase_curve` is omitted. Red phase was confirmed before implementation,
+  focused composer and instrument-morph tests passed with `22 passed`, routing
+  hardening anchors passed with `3 passed`, and final validation passed with
+  `5144 passed, 11 skipped`, Ruff clean, and mypy clean. No new dependencies,
+  No database migration, provider secrets, runtime state directories,
+  startup-flow changes, or SuperCollider source changes were added; `fx_bus_id`
+  and `sw_sampler.scd` routing anchors remain green.
 - **T-048d**: pending — Pending.
 - **T-047c**: pending — Pending.
 - **T-047d**: pending — Pending.

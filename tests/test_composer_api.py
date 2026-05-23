@@ -15,6 +15,7 @@ from cypherclaw.composer_api.schemas import (
     MorphPhraseRequest,
     build_morph_phrase_response,
 )
+from cypherclaw.instrument_morph import morph_curve_position
 from cypherclaw.space_reverb import VOICE_REVERB_PROFILES
 
 
@@ -128,6 +129,95 @@ def test_morph_phrase_endpoint_accepts_valid_request() -> None:
         "morph_curve_value": 1,
         "synthdef_name": "morph_voice",
     }
+
+
+def test_morph_phrase_endpoint_generates_single_line_phrase_from_voice_pair_and_phrase_curve() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/v1/composer/morph-phrase",
+        json={
+            "source_voice": "sw_pluck",
+            "target_voice": "choir",
+            "morph_curve_type": "equal_power",
+            "phrase_curve": "sigmoid",
+            "phrase_frame_count": 5,
+        },
+    )
+
+    assert response.status_code == 202
+    payload = response.json()
+    assert payload["accepted"] is True
+    assert payload["source_voice"] == "pluck"
+    assert payload["target_voice"] == "choir"
+    assert payload["morph_curve_type"] == "equal-power"
+    assert payload["morph_curve_value"] == 1
+    assert payload["synthdef_name"] == "morph_voice"
+
+    phrase = payload["single_line_phrase"]
+    assert phrase["source_voice"] == "pluck"
+    assert phrase["target_voice"] == "choir"
+    assert phrase["phrase_curve"] == "sigmoid"
+    assert phrase["frame_count"] == 5
+    assert phrase["morph_curve_value"] == 1
+    assert phrase["synthdef_name"] == "morph_voice"
+
+    frames = phrase["frames"]
+    expected_positions = [0.0, 0.25, 0.5, 0.75, 1.0]
+    assert [frame["frame_index"] for frame in frames] == [0, 1, 2, 3, 4]
+    assert [frame["position"] for frame in frames] == pytest.approx(
+        expected_positions
+    )
+    assert [frame["morph_x"] for frame in frames] == pytest.approx(
+        [morph_curve_position(position, "sigmoid") for position in expected_positions]
+    )
+
+    for frame in frames:
+        assert frame["synthdef_name"] == "morph_voice"
+        assert frame["control_args"] == [
+            "morph_x",
+            frame["morph_x"],
+            "morph_curve",
+            1,
+        ]
+
+
+@pytest.mark.parametrize(
+    "payload,expected_detail",
+    [
+        pytest.param(
+            {
+                "source_voice": "pluck",
+                "target_voice": "bowed",
+                "morph_curve_type": "linear",
+                "phrase_curve": "bouncy",
+            },
+            "phrase_curve",
+            id="unsupported-phrase-curve",
+        ),
+        pytest.param(
+            {
+                "source_voice": "pluck",
+                "target_voice": "bowed",
+                "morph_curve_type": "linear",
+                "phrase_curve": "linear",
+                "phrase_frame_count": 1,
+            },
+            "phrase_frame_count",
+            id="too-few-frames",
+        ),
+    ],
+)
+def test_morph_phrase_endpoint_rejects_invalid_phrase_generation_fields(
+    payload: dict[str, object],
+    expected_detail: str,
+) -> None:
+    client = TestClient(create_app())
+
+    response = client.post("/api/v1/composer/morph-phrase", json=payload)
+
+    assert response.status_code == 422
+    assert expected_detail in response.text
 
 
 @pytest.mark.parametrize(

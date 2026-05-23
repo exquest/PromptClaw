@@ -7,6 +7,11 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
+from cypherclaw.instrument_morph import (
+    MorphInterpolationCurve,
+    morph_curve_position,
+    normalize_morph_interpolation_curve,
+)
 from cypherclaw.space_reverb import VOICE_REVERB_PROFILES
 
 
@@ -21,10 +26,14 @@ SUPPORTED_MORPH_VOICES: tuple[str, ...] = tuple(VOICE_REVERB_PROFILES)
 SUPPORTED_MORPH_CURVE_TYPES: tuple[str, ...] = tuple(
     curve.value for curve in MorphCurveType
 )
+SUPPORTED_PHRASE_CURVES: tuple[str, ...] = tuple(
+    curve.value for curve in MorphInterpolationCurve
+)
 MORPH_CURVE_VALUE_BY_TYPE: dict[MorphCurveType, int] = {
     MorphCurveType.LINEAR: 0,
     MorphCurveType.EQUAL_POWER: 1,
 }
+MorphControlArg = str | int | float
 
 
 class MorphPhraseRequest(BaseModel):
@@ -35,6 +44,8 @@ class MorphPhraseRequest(BaseModel):
     source_voice: str = Field(min_length=1)
     target_voice: str = Field(min_length=1)
     morph_curve_type: MorphCurveType
+    phrase_curve: MorphInterpolationCurve | None = None
+    phrase_frame_count: int = Field(default=5, ge=2)
 
     @field_validator("source_voice", "target_voice", mode="before")
     @classmethod
@@ -69,6 +80,16 @@ class MorphPhraseRequest(BaseModel):
             f"{SUPPORTED_MORPH_CURVE_TYPES!r}, got {value!r}"
         )
 
+    @field_validator("phrase_curve", mode="before")
+    @classmethod
+    def normalize_phrase_curve(cls, value: object) -> str | None:
+        """Normalize composer-side phrase progression curve aliases."""
+
+        if value is None:
+            return None
+        raw = getattr(value, "value", value)
+        return normalize_morph_interpolation_curve(str(raw)).value
+
     @model_validator(mode="after")
     def validate_distinct_voices(self) -> Self:
         """Reject morphs that do not move between two different voices."""
@@ -97,6 +118,38 @@ class MorphPhraseResponse(BaseModel):
     synthdef_name: str = "morph_voice"
 
 
+class SingleLineMorphFrame(BaseModel):
+    """One endpoint-inclusive composer frame for a morph phrase."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    frame_index: int
+    position: float
+    morph_x: float
+    synthdef_name: str = "morph_voice"
+    control_args: tuple[MorphControlArg, ...]
+
+
+class SingleLineMorphPhrase(BaseModel):
+    """Generated single-line morph phrase for later OSC scheduling."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source_voice: str
+    target_voice: str
+    phrase_curve: MorphInterpolationCurve
+    frame_count: int
+    morph_curve_value: int
+    synthdef_name: str = "morph_voice"
+    frames: tuple[SingleLineMorphFrame, ...]
+
+
+class GeneratedMorphPhraseResponse(MorphPhraseResponse):
+    """Accepted morph phrase request with generated composer frames."""
+
+    single_line_phrase: SingleLineMorphPhrase
+
+
 def build_morph_phrase_response(request: MorphPhraseRequest) -> MorphPhraseResponse:
     """Build the JSON-safe response for a validated morph phrase request."""
 
@@ -108,12 +161,66 @@ def build_morph_phrase_response(request: MorphPhraseRequest) -> MorphPhraseRespo
     )
 
 
+def build_single_line_morph_phrase(
+    request: MorphPhraseRequest,
+) -> SingleLineMorphPhrase:
+    """Generate an endpoint-inclusive morph phrase from a validated request."""
+
+    phrase_curve = request.phrase_curve or MorphInterpolationCurve.LINEAR
+    last_index = request.phrase_frame_count - 1
+    frames: list[SingleLineMorphFrame] = []
+    for index in range(request.phrase_frame_count):
+        position = index / last_index
+        morph_x = morph_curve_position(position, phrase_curve)
+        frames.append(
+            SingleLineMorphFrame(
+                frame_index=index,
+                position=position,
+                morph_x=morph_x,
+                control_args=(
+                    "morph_x",
+                    morph_x,
+                    "morph_curve",
+                    request.morph_curve_value,
+                ),
+            )
+        )
+    return SingleLineMorphPhrase(
+        source_voice=request.source_voice,
+        target_voice=request.target_voice,
+        phrase_curve=phrase_curve,
+        frame_count=request.phrase_frame_count,
+        morph_curve_value=request.morph_curve_value,
+        frames=tuple(frames),
+    )
+
+
+def build_generated_morph_phrase_response(
+    request: MorphPhraseRequest,
+) -> GeneratedMorphPhraseResponse:
+    """Build a response containing a generated single-line morph phrase."""
+
+    return GeneratedMorphPhraseResponse(
+        source_voice=request.source_voice,
+        target_voice=request.target_voice,
+        morph_curve_type=request.morph_curve_type,
+        morph_curve_value=request.morph_curve_value,
+        single_line_phrase=build_single_line_morph_phrase(request),
+    )
+
+
 __all__ = [
+    "GeneratedMorphPhraseResponse",
     "MORPH_CURVE_VALUE_BY_TYPE",
     "SUPPORTED_MORPH_CURVE_TYPES",
     "SUPPORTED_MORPH_VOICES",
+    "SUPPORTED_PHRASE_CURVES",
     "MorphCurveType",
     "MorphPhraseRequest",
     "MorphPhraseResponse",
+    "SingleLineMorphFrame",
+    "SingleLineMorphPhrase",
+    "build_generated_morph_phrase_response",
     "build_morph_phrase_response",
+    "build_single_line_morph_phrase",
 ]
