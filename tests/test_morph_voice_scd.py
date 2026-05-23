@@ -20,6 +20,7 @@ SCD_PATH = (
     / "tools"
     / "senseweave"
     / "synthesis"
+    / "voices"
     / "morph_voice.scd"
 )
 
