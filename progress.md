@@ -584,3 +584,11 @@ Progress: [███████████████████████
   manifests, fragment extraction, vocabulary storage, and composer vocabulary
   citations; startup identity hardening is already wired before
   `FirstBootAnnouncer()` and remains a regression anchor.
+- **Red/green verification:** Red phase was confirmed by
+  `pytest tests/test_midi_faithful_loader.py -q` failing on the missing
+  `cypherclaw.midi_loader` module. Green verification passed the locked
+  faithful-loader tests (`5 passed`), adjacent MIDI/composer vocabulary tests
+  (`62 passed`), and startup identity hardening anchors (`11 passed`). Full
+  validation passed with `pip install -e '.[dev]' && pytest tests/ -x && ruff
+  check src/ tests/ && mypy src/`: `4956 passed, 11 skipped`, Ruff clean, and
+  mypy clean. No new dependencies or migrations were introduced.

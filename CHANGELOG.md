@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Added faithful-transmission MIDI intake (T-017a):
+  `cypherclaw.midi_loader.load_faithful_midi_events(...)` now returns ordered
+  source-note events with `pitch`, source-tick `duration`, and `velocity`.
+  `cypherclaw-midi-intake --faithful-transmission` and
+  `process_midi_file(..., faithful_transmission=True)` write processed
+  manifests with `mode: "faithful_transmission"` and `faithful_events` while
+  bypassing fragment extraction and preserving an empty `fragments` block for
+  compatibility. Default intake remains `mode: "fragment_extraction"` and keeps
+  existing MIDI fragment extraction behavior. Validation passed with `4956
+  passed, 11 skipped`, Ruff clean, and mypy clean; startup identity hardening
+  anchors remain green.
+
 - Added score-tree MIDI vocabulary citations (T-016):
   `cypherclaw.composer_vocabulary_bridge` now reads populated MIDI vocabulary
   databases, normalizes melodic/rhythm fragments into composer material, and
