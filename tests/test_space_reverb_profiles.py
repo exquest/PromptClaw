@@ -16,9 +16,12 @@ from cypherclaw.space_reverb import (
     SPACE_PROFILE_SOURCE,
     VOICE_REVERB_PROFILES,
     VoiceReverbProfile,
+    active_house_from_scene_metadata,
     build_voice_s_new_args,
     get_voice_reverb_profile,
     iter_voice_reverb_profiles,
+    mood_mode_from_scene_metadata,
+    resolve_scene_voice_space_profile,
     resolve_voice_space_profile,
     summarize_voice_reverb_profiles,
 )
@@ -303,6 +306,36 @@ def test_space_selection_resolver_house_bound_uses_active_house_space_for_all_vo
         ).voice
         == "breath"
     )
+
+
+def test_scene_space_context_uses_active_house_then_patch_name() -> None:
+    explicit_house = {
+        "mood_mode": "house-bound",
+        "active_house": "house_garden",
+        "patch_name": "house_monastery",
+    }
+    patch_only = {
+        "mood_mode": "house-bound",
+        "patch_name": "house_monastery",
+    }
+    space_mode_only = {"space_mode": "expressive"}
+    unknown_house = {
+        "mood_mode": "house-bound",
+        "patch_name": "unknown_house",
+    }
+
+    assert mood_mode_from_scene_metadata(explicit_house) == "house-bound"
+    assert active_house_from_scene_metadata(explicit_house) == "house_garden"
+    assert resolve_scene_voice_space_profile("pluck", explicit_house).voice == "tabla_tin"
+
+    assert active_house_from_scene_metadata(patch_only) == "house_monastery"
+    assert resolve_scene_voice_space_profile("pluck", patch_only).voice == "choir"
+
+    assert mood_mode_from_scene_metadata(space_mode_only) == "expressive"
+    assert resolve_scene_voice_space_profile("pluck", space_mode_only).voice == "kotekan"
+
+    assert active_house_from_scene_metadata(unknown_house) == "house_chamber"
+    assert resolve_scene_voice_space_profile("pluck", unknown_house).voice == "breath"
 
 
 def test_voice_s_new_args_apply_mood_space_without_changing_sounding_voice() -> None:

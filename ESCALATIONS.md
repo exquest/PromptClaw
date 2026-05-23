@@ -1,5 +1,36 @@
 # Escalations
 
+## T-045c (2026-05-23)
+
+- **Reason:** Scene playback resolver-wiring assumptions.
+- **Details:** T-045c wires the T-045b space resolver through tracker scene
+  event metadata and live voice playback. The intended behavior is that the
+  sounding synth voice remains the requested runtime-safe voice while
+  `fx_bus_id` follows the resolver-selected space for the scene's `mood_mode`
+  and house context.
+- **Assumption:** Tracker scenes do not always carry an explicit
+  `active_house`. In house-bound mode, `patch_name` is the live house context
+  because instrument patches are already named `house_monastery`,
+  `house_chamber`, `house_garden`, `house_procession`, or `house_workshop`.
+  Explicit `active_house` wins; unknown or missing house context falls back to
+  the existing resolver default, `house_chamber`.
+- **Candidate hardening:** The recurring SuperCollider failure modes are
+  already anchored by source tests: all profiled voice SynthDefs declare
+  `fx_bus_id`, and `sw_sampler.scd` uses `fx_bus_id` rather than `fx_bus`.
+  T-045c keeps that contract and verifies it without changing SCD sources.
+- **Dependencies and migrations:** No new dependencies, provider secrets,
+  database columns, migrations, runtime state directories, HTTP routes, or
+  SuperCollider source changes are required.
+- **Verification:** Red phase was confirmed with the locked T-045c scene
+  playback tests failing at collection on the missing scene metadata helper
+  export before implementation. After implementation, the locked T-045c tests
+  passed with `5 passed`, focused resolver/tracker/voice/sampler hardening
+  anchors passed with `94 passed`, startup identity anchors passed with
+  `11 passed`, and the required final validation
+  (`pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
+  mypy src/`) passed with `5106 passed, 11 skipped`, Ruff clean, and mypy
+  clean.
+
 ## T-045b (2026-05-23)
 
 - **Reason:** Resolver-slice assumptions for mood-driven space selection.

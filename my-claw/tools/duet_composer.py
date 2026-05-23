@@ -29,6 +29,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "senseweave"))
 from pythonosc import udp_client
 
 from cypherclaw.composer_vocabulary_bridge import scene_vocabulary_log_suffix
+from cypherclaw.space_reverb import (
+    VOICE_REVERB_PROFILES,
+    active_house_from_scene_metadata,
+    resolve_voice_space_profile,
+)
 
 # Senseweave ADSR voice for sustained sounds
 from senseweave.synthesis.senseweave_voice import SenseweaveVoice, PAD, BREATH, SWELL, STAB
@@ -259,6 +264,12 @@ def _json_ready(value: object) -> object:
     return str(value)
 
 
+def _active_house_from_scene_metadata(scene_metadata: Mapping[str, object]) -> str:
+    """Return the live house context used for house-bound space routing."""
+
+    return active_house_from_scene_metadata(scene_metadata)
+
+
 def _request_payload(req: object) -> object:
     if isinstance(req, dict):
         payload = dict(req)
@@ -450,6 +461,8 @@ def play_voice(
     release: float | None = None,
     *,
     role: str = "",
+    mood_mode: object = "matched",
+    active_house: object | None = None,
 ) -> None:
     """Play a note on a named voice.
 
@@ -459,7 +472,12 @@ def play_voice(
     if voice_name in _SUSTAINED:
         # Use SenseweaveVoice — has ADSR and note_off capability
         _sw_voice.set_timbre(voice_name)
-        _sw_voice.note_on(freq, amp)
+        _sw_voice.note_on(
+            freq,
+            amp,
+            mood_mode=mood_mode,
+            active_house=active_house,
+        )
     else:
         # Fire and forget — natural decay
         resolved_voice = resolve_runtime_voice_name(voice_name)
@@ -490,6 +508,16 @@ def play_voice(
             "verb", defaults.get("verb", 0.15) + shape.verb_add + performance.verb_add,
             "dly", defaults.get("dly", 0.0) + shape.dly_add + performance.dly_add,
         ])
+        profile_voice = (
+            resolved_voice[3:] if resolved_voice.startswith("sw_") else resolved_voice
+        )
+        if profile_voice in VOICE_REVERB_PROFILES:
+            space_profile = resolve_voice_space_profile(
+                resolved_voice,
+                mood_mode=mood_mode,
+                active_house=active_house,
+            )
+            args.extend(["fx_bus_id", int(space_profile.fx_bus_id)])
         highpass_hz = max(shape.highpass_hz, performance.highpass_hz)
         saturation_mix = shape.saturation_mix + performance.saturation_add
         if highpass_hz > 0.0:
@@ -1264,6 +1292,8 @@ def tracker_solo_song(initial_key: str, song_num: int) -> str:
             event.amplitude,
             event.duration_seconds,
             role=event.role,
+            mood_mode=event.scene_metadata.get("mood_mode", "matched"),
+            active_house=_active_house_from_scene_metadata(event.scene_metadata),
         )
         beat_duration = 60.0 / max(score.tempo_bpm, 1.0)
         _learner.record_note(

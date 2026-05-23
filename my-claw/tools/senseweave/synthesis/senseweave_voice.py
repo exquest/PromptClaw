@@ -23,7 +23,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
-from cypherclaw.space_reverb import VOICE_REVERB_PROFILES
+from cypherclaw.space_reverb import VOICE_REVERB_PROFILES, resolve_voice_space_profile
 from senseweave.affective_state_bus import (
     AFFECTIVE_STATE_BUS_INDEX,
     AFFECTIVE_STATE_BUS_MAX,
@@ -202,6 +202,8 @@ class SenseweaveVoice:
         *,
         modulator_depths: Mapping[str, float] | None = None,
         coupling_multiplier: float = 1.0,
+        mood_mode: object = "matched",
+        active_house: object | None = None,
     ) -> int:
         """Start a note. Returns node ID for later note_off.
 
@@ -227,11 +229,15 @@ class SenseweaveVoice:
             "attack", envelope.attack,
             "release", release,
         ]
-        profile = VOICE_REVERB_PROFILES.get(
-            synth[3:] if synth.startswith("sw_") else synth
-        )
+        voice_name = synth[3:] if synth.startswith("sw_") else synth
+        profile = VOICE_REVERB_PROFILES.get(voice_name)
         if profile is not None:
-            s_new_args.extend(["fx_bus_id", int(profile.fx_bus_id)])
+            space_profile = resolve_voice_space_profile(
+                voice_name,
+                mood_mode=mood_mode,
+                active_house=active_house,
+            )
+            s_new_args.extend(["fx_bus_id", int(space_profile.fx_bus_id)])
         if modulator_depths:
             for name, depth in scale_modulator_depths(
                 modulator_depths,
@@ -269,6 +275,8 @@ class SenseweaveVoice:
         modulator_depths: Mapping[str, float] | None = None,
         env: Mapping[str, str] | None = None,
         coupling_strength: float = DEFAULT_COUPLING_STRENGTH,
+        mood_mode: object = "matched",
+        active_house: object | None = None,
     ) -> int:
         """Start a note after deriving depth coupling from the affective bus."""
         bus_value = read_affective_state_bus(control_bus_reader, env=env)
@@ -282,6 +290,8 @@ class SenseweaveVoice:
             adsr,
             modulator_depths=modulator_depths,
             coupling_multiplier=coupling_multiplier,
+            mood_mode=mood_mode,
+            active_house=active_house,
         )
 
     def note_off(self, node_id: int | None = None) -> None:

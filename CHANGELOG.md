@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Added T-045c scene playback resolver wiring: tracker scene events now carry
+  resolver-derived `mood_mode`, `active_house`, `render_space_voice`,
+  `render_space_id`, and `render_fx_bus_id` metadata, and live playback passes
+  the same scene context into `SenseweaveVoice.note_on(...)` and
+  `play_voice(...)`. House-bound scene playback uses explicit `active_house`
+  first, then `patch_name`, then the existing `house_chamber` fallback, while
+  preserving each event's sounding synth voice and routing only the profiled
+  voice's `fx_bus_id` through the resolved space. No new dependencies,
+  database migrations, provider secrets, runtime state directories, HTTP routes,
+  startup-flow changes, or SuperCollider source changes were added.
+
 - Added the T-045b space-selection resolver: matched mode keeps each voice in
   its canonical space profile, expressive mode routes voices through a
   deterministic no-self-match mismatch table, and house-bound mode forces every

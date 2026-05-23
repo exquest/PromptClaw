@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from typing import Any
 
@@ -246,6 +246,24 @@ def normalize_active_house(active_house: object) -> str:
     return DEFAULT_HOUSE_BOUND_HOUSE
 
 
+def mood_mode_from_scene_metadata(scene_metadata: Mapping[str, object] | None) -> str:
+    """Return the normalized mood-space mode encoded in scene metadata."""
+
+    metadata = scene_metadata or {}
+    return _normalize_mood_mode(
+        metadata.get("mood_mode") or metadata.get("space_mode")
+    )
+
+
+def active_house_from_scene_metadata(scene_metadata: Mapping[str, object] | None) -> str:
+    """Return the canonical active house encoded in scene metadata."""
+
+    metadata = scene_metadata or {}
+    return normalize_active_house(
+        metadata.get("active_house") or metadata.get("patch_name")
+    )
+
+
 def iter_voice_reverb_profiles() -> Iterator[VoiceReverbProfile]:
     """Yield profiles in canonical CypherClaw design order."""
 
@@ -318,6 +336,19 @@ def resolve_voice_space_profile(
     else:
         space_voice = voice_profile.voice
     return VOICE_REVERB_PROFILES[space_voice]
+
+
+def resolve_scene_voice_space_profile(
+    voice: str,
+    scene_metadata: Mapping[str, object] | None,
+) -> VoiceReverbProfile:
+    """Return the reverb profile selected by a scene's mood-space metadata."""
+
+    return resolve_voice_space_profile(
+        voice,
+        mood_mode=mood_mode_from_scene_metadata(scene_metadata),
+        active_house=active_house_from_scene_metadata(scene_metadata),
+    )
 
 
 def summarize_voice_reverb_profiles() -> dict[str, Any]:

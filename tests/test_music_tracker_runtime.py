@@ -26,6 +26,7 @@ from senseweave.music_tracker_runtime import (
     write_delta_track,
 )
 from cypherclaw.render.events import Event
+from cypherclaw.space_reverb import VOICE_REVERB_PROFILES
 
 
 def _sample_scene():
@@ -137,6 +138,28 @@ class TestBuildSceneEvents:
 
         assert monastery_melody.frequency_hz < procession_melody.frequency_hz
         assert monastery_texture.frequency_hz <= procession_texture.frequency_hz
+
+    def test_resolves_mood_space_metadata_from_scene_context(self):
+        scene = _sample_scene()
+        scene.metadata["mood_mode"] = "house-bound"
+        scene.metadata["patch_name"] = "house_garden"
+
+        events = build_scene_events(scene)
+        profiled_events = [
+            event for event in events if event.voice in VOICE_REVERB_PROFILES
+        ]
+        garden_profile = VOICE_REVERB_PROFILES["tabla_tin"]
+
+        assert profiled_events
+        assert any(event.voice != "tabla_tin" for event in profiled_events)
+        for event in profiled_events:
+            assert event.scene_metadata["mood_mode"] == "house-bound"
+            assert event.scene_metadata["patch_name"] == "house_garden"
+            assert event.metadata["mood_mode"] == "house-bound"
+            assert event.metadata["active_house"] == "house_garden"
+            assert event.metadata["render_space_voice"] == "tabla_tin"
+            assert event.metadata["render_space_id"] == garden_profile.space_id
+            assert event.metadata["render_fx_bus_id"] == str(garden_profile.fx_bus_id)
 
     def test_keeps_primary_roles_above_live_audibility_floor(self):
         scene = _sample_scene()

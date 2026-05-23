@@ -556,7 +556,17 @@ Progress: [███████████████████████
 - **T-045**: split — Split into subtasks.
 - **T-045a**: complete — Added the schema-only mood-mode enum with `matched` default, `expressive`, and `house-bound`; faithful MIDI scene payloads now carry `mood_mode` at top level and per step, tracker `TrackerScene` metadata defaults/normalizes the same field, and validators reject unsupported serialized values. Red phase was confirmed in `tests/test_midi_scene.py` and `tests/test_music_tracker.py`; focused routing hardening anchors for `fx_bus_id` / `sw_sampler.scd` passed, and full validation passed with `5096 passed, 11 skipped`, Ruff clean, and mypy clean.
 - **T-045b**: complete — Implemented the space-selection resolver: matched uses canonical voice profiles, expressive applies the deterministic mismatch table, and house-bound maps the active house to a shared space for all voices while preserving sounding synth voices in OSC args.
-- **T-045c**: pending — Pending.
+- **T-045c**: complete — Completed with verdict PASS. Scene playback now carries
+  resolver-selected space metadata through tracker events and live OSC note
+  routing: each voice keeps its sounding synth, while profiled voices receive
+  the `fx_bus_id` for the resolved scene space. House-bound playback resolves
+  house context from explicit `active_house`, then `patch_name`, then the
+  existing `house_chamber` default. No new dependencies, database migrations,
+  provider secrets, runtime state directories, HTTP routes, startup-flow
+  changes, or SuperCollider source changes were added. Red phase was confirmed
+  before implementation, focused hardening anchors passed with `94 passed`,
+  startup identity anchors passed with `11 passed`, and final validation passed
+  with `5106 passed, 11 skipped`, Ruff clean, and mypy clean.
 - **T-045d**: pending — Pending.
 - **T-046**: pending — Pending.
 - **T-047**: split — Split into subtasks.

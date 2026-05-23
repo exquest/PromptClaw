@@ -351,12 +351,20 @@ omits `vocabulary_fragment_id` metadata so downstream renderers can preserve the
 imported pitch/rhythm sequence without treating it as selected vocabulary.
 That faithful render handoff now also carries CypherClaw's own render settings
 without rewriting the imported structure. Scene metadata exposes
-`tuning_system_name`, `arc_phase`, `voice_sequence`, and `space_mode`; each
-faithful step keeps the source MIDI `pitch` and `duration_ticks` while adding
-`render_pitch_hz`, `render_voice`, `render_synth`, and matched `render_space`
-settings. Still phases (`Listen`, `Divination`) select 5-limit just intonation,
-motion phases (`Conversation`, `Procession`) select Gamelan Slendro, unknown
-phases fall back to 12-TET, and unknown voices fall back to `pluck`.
+`tuning_system_name`, `arc_phase`, `voice_sequence`, `mood_mode`,
+`active_house`, and `space_mode`; each faithful step keeps the source MIDI
+`pitch` and `duration_ticks` while adding `render_pitch_hz`, `render_voice`,
+`render_synth`, and resolver-selected `render_space` settings. Still phases
+(`Listen`, `Divination`) select 5-limit just intonation, motion phases
+(`Conversation`, `Procession`) select Gamelan Slendro, unknown phases fall back
+to 12-TET, and unknown voices fall back to `pluck`.
+T-045c extends the same space handoff into tracker scene playback:
+`music_tracker_runtime.py` adds `render_space_voice`, `render_space_id`, and
+`render_fx_bus_id` to scheduled events, while `duet_composer.py` passes scene
+`mood_mode` plus house context into `play_voice()`. House-bound playback uses
+explicit `active_house` first and `patch_name` as the live house fallback before
+the default house. No new dependencies or database migrations are part of this
+handoff.
 Score-tree composition now publishes the same tuning contract for composed
 arcs through `TuningTrajectory`. Composer scenes carry `tuning_system_name`,
 `tuning_morph_target_name`, `tuning_morph_curve`, `tuning_transition_kind`,

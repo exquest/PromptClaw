@@ -15,6 +15,11 @@ from pathlib import Path
 from typing import Any, Callable
 
 from cypherclaw.render.events import Event
+from cypherclaw.space_reverb import (
+    active_house_from_scene_metadata,
+    mood_mode_from_scene_metadata,
+    resolve_scene_voice_space_profile,
+)
 
 from .generative_scores import _scale_degree_to_freq, role_octave_shift_for_patch
 from .music_tracker import (
@@ -155,13 +160,27 @@ def build_scene_events(
 ) -> list[ScheduledTrackerEvent]:
     """Convert tracker steps into sorted runtime events."""
 
-    patch_name = scene.metadata.get("patch_name", "")
+    scene_metadata = dict(scene.metadata)
+    patch_name = scene_metadata.get("patch_name", "")
+    mood_mode = mood_mode_from_scene_metadata(scene_metadata)
+    active_house = active_house_from_scene_metadata(scene_metadata)
     events: list[ScheduledTrackerEvent] = []
     lane_order = {lane.name: index for index, lane in enumerate(scene.pattern.lanes)}
     for lane in scene.pattern.lanes:
         voice = _voice_for_lane(lane)
         for step in lane.steps:
             octave_shift = step.octave_shift + role_octave_shift_for_patch(lane.role, patch_name)
+            space_profile = resolve_scene_voice_space_profile(voice, scene_metadata)
+            event_metadata = dict(step.metadata)
+            event_metadata.update(
+                {
+                    "mood_mode": mood_mode,
+                    "active_house": active_house,
+                    "render_space_voice": space_profile.voice,
+                    "render_space_id": space_profile.space_id,
+                    "render_fx_bus_id": str(space_profile.fx_bus_id),
+                }
+            )
             events.append(
                 ScheduledTrackerEvent(
                     song_title=song_title,
@@ -184,8 +203,8 @@ def build_scene_events(
                     ),
                     amplitude=_amplitude_for_lane(lane.role, step.velocity, step.accent),
                     accent=step.accent,
-                    metadata=dict(step.metadata),
-                    scene_metadata=dict(scene.metadata),
+                    metadata=event_metadata,
+                    scene_metadata=dict(scene_metadata),
                 )
             )
     return sorted(

@@ -495,3 +495,30 @@ class TestFxBusRouting:
             f"stale fx_bus_id {first_bus} from {first_timbre} leaked into "
             f"{second_timbre} /s_new args"
         )
+
+    def test_note_on_uses_resolved_mood_space_without_changing_synth(self) -> None:
+        from cypherclaw.space_reverb import VOICE_REVERB_PROFILES
+
+        expressive_osc = MagicMock()
+        expressive_voice = SenseweaveVoice(osc=expressive_osc, timbre="stab")
+        expressive_voice.note_on(220.0, mood_mode="expressive")
+        expressive_args = expressive_osc.send_message.call_args[0][1]
+
+        assert expressive_args[0] == "sw_pluck"
+        assert expressive_args[expressive_args.index("fx_bus_id") + 1] == (
+            VOICE_REVERB_PROFILES["kotekan"].fx_bus_id
+        )
+
+        house_osc = MagicMock()
+        house_voice = SenseweaveVoice(osc=house_osc, timbre="warm")
+        house_voice.note_on(
+            220.0,
+            mood_mode="house-bound",
+            active_house="house_garden",
+        )
+        house_args = house_osc.send_message.call_args[0][1]
+
+        assert house_args[0] == "sw_bowed"
+        assert house_args[house_args.index("fx_bus_id") + 1] == (
+            VOICE_REVERB_PROFILES["tabla_tin"].fx_bus_id
+        )
