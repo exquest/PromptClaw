@@ -6,7 +6,9 @@ import os
 import signal
 import sys
 import threading
+import time
 from pathlib import Path
+from types import SimpleNamespace
 
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
@@ -145,3 +147,206 @@ def test_identity_persistence_between_boots(tmp_path):
         # Second boot
         id2 = mod.bootstrap_identity(identity_path=identity_path)
         assert id1.instance_id == id2.instance_id
+
+
+def test_is_midi_path_accepts_mid_and_midi_case_insensitive(tmp_path: Path) -> None:
+    assert mod._is_midi_path(tmp_path / "a.mid") is True
+    assert mod._is_midi_path(tmp_path / "b.MIDI") is True
+    assert mod._is_midi_path(tmp_path / "c.MiD") is True
+
+
+def test_is_midi_path_rejects_non_midi(tmp_path: Path) -> None:
+    assert mod._is_midi_path(tmp_path / "song.wav") is False
+    assert mod._is_midi_path(tmp_path / "song.txt") is False
+    assert mod._is_midi_path(tmp_path / "no_extension") is False
+
+
+def test_wait_for_stable_size_returns_true_when_size_stops_changing(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "song.mid"
+    target.write_bytes(b"\x00" * 16)
+
+    assert (
+        mod.wait_for_stable_size(
+            target, poll_interval=0.01, stable_for=0.03, timeout=2.0
+        )
+        is True
+    )
+
+
+def test_wait_for_stable_size_returns_true_after_growth_settles(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "song.mid"
+    target.write_bytes(b"\x00")
+
+    def grow() -> None:
+        for i in range(3):
+            time.sleep(0.02)
+            with target.open("ab") as fh:
+                fh.write(b"\x00" * 4)
+
+    t = threading.Thread(target=grow)
+    t.start()
+    try:
+        result = mod.wait_for_stable_size(
+            target, poll_interval=0.01, stable_for=0.05, timeout=2.0
+        )
+    finally:
+        t.join()
+
+    assert result is True
+
+
+def test_wait_for_stable_size_returns_false_when_file_missing(tmp_path: Path) -> None:
+    missing = tmp_path / "ghost.mid"
+    assert (
+        mod.wait_for_stable_size(
+            missing, poll_interval=0.01, stable_for=0.02, timeout=0.1
+        )
+        is False
+    )
+
+
+def test_midi_event_handler_dispatches_on_created_for_midi(tmp_path: Path) -> None:
+    target = tmp_path / "alpha.mid"
+    target.write_bytes(b"\x00" * 4)
+
+    dispatched: list[Path] = []
+    handler = mod.MidiEventHandler(
+        dispatch=lambda p: dispatched.append(p),
+        wait_for_stable=lambda p: True,
+    )
+    event = SimpleNamespace(
+        is_directory=False, src_path=str(target), dest_path=None
+    )
+    handler.on_created(event)
+
+    assert dispatched == [target]
+
+
+def test_midi_event_handler_ignores_non_midi_on_created(tmp_path: Path) -> None:
+    target = tmp_path / "song.wav"
+    target.write_bytes(b"")
+
+    dispatched: list[Path] = []
+    handler = mod.MidiEventHandler(
+        dispatch=lambda p: dispatched.append(p),
+        wait_for_stable=lambda p: True,
+    )
+    event = SimpleNamespace(is_directory=False, src_path=str(target))
+    handler.on_created(event)
+
+    assert dispatched == []
+
+
+def test_midi_event_handler_on_moved_uses_dest_path(tmp_path: Path) -> None:
+    src = tmp_path / "tmp.partial"
+    dest = tmp_path / "final.mid"
+    dest.write_bytes(b"\x00" * 4)
+
+    dispatched: list[Path] = []
+    handler = mod.MidiEventHandler(
+        dispatch=lambda p: dispatched.append(p),
+        wait_for_stable=lambda p: True,
+    )
+    event = SimpleNamespace(
+        is_directory=False, src_path=str(src), dest_path=str(dest)
+    )
+    handler.on_moved(event)
+
+    assert dispatched == [dest]
+
+
+def test_midi_event_handler_skips_directory_events(tmp_path: Path) -> None:
+    dispatched: list[Path] = []
+    handler = mod.MidiEventHandler(
+        dispatch=lambda p: dispatched.append(p),
+        wait_for_stable=lambda p: True,
+    )
+    event = SimpleNamespace(
+        is_directory=True, src_path=str(tmp_path / "sub"), dest_path=None
+    )
+    handler.on_created(event)
+    handler.on_moved(event)
+
+    assert dispatched == []
+
+
+def test_midi_event_handler_skips_when_size_not_stable(tmp_path: Path) -> None:
+    target = tmp_path / "alpha.mid"
+    target.write_bytes(b"\x00")
+
+    dispatched: list[Path] = []
+    handler = mod.MidiEventHandler(
+        dispatch=lambda p: dispatched.append(p),
+        wait_for_stable=lambda p: False,
+    )
+    event = SimpleNamespace(
+        is_directory=False, src_path=str(target), dest_path=None
+    )
+    handler.on_created(event)
+
+    assert dispatched == []
+
+
+def test_watch_loop_falls_back_to_polling_when_watchdog_missing(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setattr(mod, "_HAS_WATCHDOG", False)
+
+    dispatched: list[Path] = []
+    stop_event = threading.Event()
+
+    def producer() -> None:
+        time.sleep(0.05)
+        (tmp_path / "new.mid").write_bytes(b"\x00" * 4)
+        time.sleep(0.1)
+        stop_event.set()
+
+    t = threading.Thread(target=producer)
+    t.start()
+    try:
+        mod.watch_loop(
+            tmp_path,
+            stop_event,
+            dispatch=lambda p: dispatched.append(p),
+            poll_interval=0.02,
+            wait_for_stable=lambda p: True,
+        )
+    finally:
+        t.join()
+
+    assert any(p.name == "new.mid" for p in dispatched)
+
+
+def test_watch_loop_polling_does_not_redispatch_existing_files(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setattr(mod, "_HAS_WATCHDOG", False)
+
+    existing = tmp_path / "existing.mid"
+    existing.write_bytes(b"\x00" * 4)
+
+    dispatched: list[Path] = []
+    stop_event = threading.Event()
+
+    def stopper() -> None:
+        time.sleep(0.1)
+        stop_event.set()
+
+    t = threading.Thread(target=stopper)
+    t.start()
+    try:
+        mod.watch_loop(
+            tmp_path,
+            stop_event,
+            dispatch=lambda p: dispatched.append(p),
+            poll_interval=0.02,
+            wait_for_stable=lambda p: True,
+        )
+    finally:
+        t.join()
+
+    assert dispatched == []

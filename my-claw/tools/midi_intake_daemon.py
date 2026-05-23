@@ -14,7 +14,8 @@ import logging
 import signal
 import sys
 import threading
-from collections.abc import Sequence
+import time
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 try:
@@ -31,10 +32,154 @@ except ImportError:
                 return None
 
 
+try:
+    from watchdog.events import FileSystemEventHandler  # type: ignore[import-untyped]
+    from watchdog.observers import Observer  # type: ignore[import-untyped]
+
+    _HAS_WATCHDOG = True
+except ImportError:  # pragma: no cover - exercised via fallback path
+    _HAS_WATCHDOG = False
+
+    class FileSystemEventHandler:  # type: ignore[no-redef]
+        """Fallback stub when watchdog is unavailable."""
+
+    Observer = None  # type: ignore[assignment,misc]
+
+
 DEFAULT_WATCH_DIR = Path("/home/user/cypherclaw/midi-inbox/")
 MIDI_EXTENSIONS: tuple[str, ...] = (".mid", ".midi")
 
 LOGGER = logging.getLogger("cypherclaw.midi_intake_daemon")
+
+
+def _is_midi_path(path: Path | str) -> bool:
+    return Path(path).suffix.lower() in MIDI_EXTENSIONS
+
+
+def wait_for_stable_size(
+    path: Path | str,
+    *,
+    poll_interval: float = 0.25,
+    stable_for: float = 0.5,
+    timeout: float = 30.0,
+) -> bool:
+    """Block until ``path``'s size is unchanged for ``stable_for`` seconds.
+
+    Returns ``True`` when the file size settles, or ``False`` if the file
+    disappears or the ``timeout`` elapses before that happens.
+    """
+
+    target = Path(path)
+    deadline = time.monotonic() + timeout
+    last_size: int | None = None
+    last_change = time.monotonic()
+
+    while time.monotonic() < deadline:
+        try:
+            size = target.stat().st_size
+        except FileNotFoundError:
+            return False
+
+        now = time.monotonic()
+        if size != last_size:
+            last_size = size
+            last_change = now
+        elif now - last_change >= stable_for:
+            return True
+
+        time.sleep(poll_interval)
+
+    return False
+
+
+class MidiEventHandler(FileSystemEventHandler):
+    """Dispatch MIDI files seen via ``on_created``/``on_moved`` events."""
+
+    def __init__(
+        self,
+        *,
+        dispatch: Callable[[Path], None],
+        wait_for_stable: Callable[[Path], bool] = wait_for_stable_size,
+    ) -> None:
+        super().__init__()
+        self._dispatch = dispatch
+        self._wait_for_stable = wait_for_stable
+
+    def _handle(self, raw_path: str) -> None:
+        path = Path(raw_path)
+        if not _is_midi_path(path):
+            return
+        if not self._wait_for_stable(path):
+            LOGGER.info("midi_skipped path=%s reason=unstable_or_missing", path)
+            return
+        LOGGER.info("midi_detected path=%s", path)
+        self._dispatch(path)
+
+    def on_created(self, event: object) -> None:
+        if getattr(event, "is_directory", False):
+            return
+        self._handle(getattr(event, "src_path", ""))
+
+    def on_moved(self, event: object) -> None:
+        if getattr(event, "is_directory", False):
+            return
+        dest = getattr(event, "dest_path", None) or getattr(event, "src_path", "")
+        self._handle(str(dest))
+
+
+def _default_dispatch(path: Path) -> None:
+    LOGGER.info("midi_dispatch path=%s", path)
+
+
+def watch_loop(
+    watch_dir: Path | str,
+    stop_event: threading.Event,
+    *,
+    dispatch: Callable[[Path], None] = _default_dispatch,
+    poll_interval: float = 1.0,
+    wait_for_stable: Callable[[Path], bool] = wait_for_stable_size,
+) -> None:
+    """Watch ``watch_dir`` until ``stop_event`` is set.
+
+    Uses ``watchdog.Observer`` when available; otherwise falls back to a
+    poll-based scan that tracks previously seen paths so existing files are
+    not re-dispatched.
+    """
+
+    watch_path = Path(watch_dir)
+    watch_path.mkdir(parents=True, exist_ok=True)
+
+    if _HAS_WATCHDOG:
+        handler = MidiEventHandler(
+            dispatch=dispatch, wait_for_stable=wait_for_stable
+        )
+        observer = Observer()
+        observer.schedule(handler, str(watch_path), recursive=False)
+        observer.start()
+        LOGGER.info("watch_started backend=watchdog watch_dir=%s", watch_path)
+        try:
+            while not stop_event.is_set():
+                stop_event.wait(timeout=poll_interval)
+        finally:
+            observer.stop()
+            observer.join()
+            LOGGER.info("watch_stopped backend=watchdog")
+        return
+
+    LOGGER.info("watch_started backend=poll watch_dir=%s", watch_path)
+    seen: set[Path] = {p for p in scan_once(watch_path)}
+    while not stop_event.is_set():
+        for path in scan_once(watch_path):
+            if path in seen:
+                continue
+            if not wait_for_stable(path):
+                LOGGER.info("midi_skipped path=%s reason=unstable_or_missing", path)
+                continue
+            seen.add(path)
+            LOGGER.info("midi_detected path=%s", path)
+            dispatch(path)
+        stop_event.wait(timeout=poll_interval)
+    LOGGER.info("watch_stopped backend=poll")
 
 
 def configure_logging(level: int = logging.INFO) -> None:
