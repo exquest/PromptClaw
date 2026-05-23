@@ -90,6 +90,22 @@ class MeterSceneValue:
         object.__setattr__(self, "metric_modulation", str(self.metric_modulation or ""))
         object.__setattr__(self, "polymeter", _coerce_polymeter(self.polymeter))
 
+    def to_metadata_entry(self, *, index: int, scene_count: int) -> dict[str, object]:
+        entry: dict[str, object] = {
+            "scene_name": self.scene_name,
+            "index": index,
+            "scene_count": scene_count,
+            "meter": self.meter,
+            "subdivision": self.subdivision,
+            "groove_timing": self.groove_timing,
+            "phrase_breath": self.phrase_breath,
+        }
+        if self.metric_modulation:
+            entry["metric_modulation"] = self.metric_modulation
+        if self.polymeter is not None:
+            entry["polymeter"] = list(self.polymeter)
+        return entry
+
 
 @dataclass(frozen=True)
 class MeterTrajectory:
@@ -133,6 +149,12 @@ class MeterTrajectory:
                 "meter_trajectory_groove_timing": value.groove_timing,
                 "meter_trajectory_phrase_breath": value.phrase_breath,
                 "meter_trajectory_path": json.dumps([item.meter for item in self.scene_values]),
+                "meter_trajectory_entry": json.dumps(
+                    value.to_metadata_entry(
+                        index=index,
+                        scene_count=len(self.scene_values),
+                    )
+                ),
             }
             if self.arc_phase:
                 metadata["meter_trajectory_arc_phase"] = self.arc_phase

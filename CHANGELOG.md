@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Added meter trajectory scene metadata emission (T-022c):
+  `MeterTrajectory.metadata_for_scene(...)` now includes a JSON-safe
+  `meter_trajectory_entry` payload for the matching planned scene value,
+  `arrangement_plan["meter_trajectory"]` records ordered `scene_entries`, and
+  `build_korsakov_tracker_song(...)` can derive per-scene trajectory metadata
+  from that compact payload during generic tracker scene emission. This remains
+  metadata-only: tracker row timing and active groove-meter selection are
+  unchanged, and no dependencies or migrations were added. Validation passed
+  with `4989 passed, 11 skipped`, Ruff clean, and mypy clean.
+
 - Added composer meter trajectory planning (T-022b):
   `senseweave.recursive_composer.plan_meter_trajectory(...)` now derives a
   deterministic per-scene meter path from existing section arc phases while

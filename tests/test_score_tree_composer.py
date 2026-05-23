@@ -166,6 +166,26 @@ def test_recursive_composer_plans_meter_trajectory_for_full_arc() -> None:
         assert json.loads(section.scene_metadata["meter_trajectory_path"]) == meter_path
 
 
+def test_recursive_composer_records_meter_trajectory_scene_entries() -> None:
+    tree = _compose_tree(composition_seed="t-022c-scene-entries")
+
+    assert tree.meter_trajectory is not None
+    payload = tree.arrangement_plan["meter_trajectory"]
+    entries = payload["scene_entries"]
+
+    assert len(entries) == len(tree.sections)
+    for index, (entry, section, value) in enumerate(
+        zip(entries, tree.sections, tree.meter_trajectory.scene_values)
+    ):
+        assert entry["scene_name"] == section.scene_name
+        assert entry["index"] == index
+        assert entry["scene_count"] == len(tree.sections)
+        assert entry["meter"] == value.meter
+        assert entry["subdivision"] == value.subdivision
+        assert entry["groove_timing"] == value.groove_timing
+        assert entry["phrase_breath"] == value.phrase_breath
+
+
 def test_composed_meter_trajectory_survives_tracker_compile() -> None:
     tree = _compose_tree(composition_seed="t-022b-compile")
 

@@ -293,6 +293,25 @@ def test_meter_trajectory_emits_scene_metadata() -> None:
     assert trajectory.metadata_for_scene("Missing") == {}
 
 
+def test_meter_trajectory_emits_scene_metadata_entry_payload() -> None:
+    trajectory = _meter_trajectory()
+
+    metadata = trajectory.metadata_for_scene("Development")
+    entry = json.loads(metadata["meter_trajectory_entry"])
+
+    assert entry == {
+        "scene_name": "Development",
+        "index": 1,
+        "scene_count": 3,
+        "meter": "15/16",
+        "subdivision": "dotted",
+        "groove_timing": "metric_modulation",
+        "phrase_breath": "asymmetric",
+        "metric_modulation": "5:4",
+        "polymeter": [3, 4],
+    }
+
+
 def test_score_tree_round_trips_meter_trajectory_and_scene_metadata() -> None:
     tree = _tree_with_meter_metadata()
 

@@ -183,15 +183,20 @@ def _meter_scene_value(
 
 
 def _meter_trajectory_payload(trajectory: MeterTrajectory) -> dict[str, object]:
+    scene_count = len(trajectory.scene_values)
     return {
         "trajectory_id": trajectory.trajectory_id,
         "arc_plan": trajectory.arc_plan,
         "arc_phase": trajectory.arc_phase,
-        "scene_count": len(trajectory.scene_values),
+        "scene_count": scene_count,
         "scene_names": [value.scene_name for value in trajectory.scene_values],
         "meter_path": [value.meter for value in trajectory.scene_values],
         "subdivision_path": [value.subdivision for value in trajectory.scene_values],
         "groove_timing_path": [value.groove_timing for value in trajectory.scene_values],
+        "scene_entries": [
+            value.to_metadata_entry(index=index, scene_count=scene_count)
+            for index, value in enumerate(trajectory.scene_values)
+        ],
         "metric_modulations": [
             value.metric_modulation
             for value in trajectory.scene_values

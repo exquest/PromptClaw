@@ -521,6 +521,69 @@ class TestBuildKorsakovTrackerSong:
         recap = next(scene for scene in song.scenes if scene.name == "Recap")
         assert recap.metadata["payoff_focus"] == "primary"
 
+    def test_emits_meter_trajectory_entries_from_compact_score_metadata(self):
+        score = _sample_score()
+        score.metadata["meter_trajectory"] = json.dumps(
+            {
+                "trajectory_id": "meter-arc-song",
+                "arc_plan": "arc_phase_drift",
+                "arc_phase": "Emergence->Conversation->Convergence",
+                "scene_count": 3,
+                "meter_path": ["4/4", "15/16", "7/8"],
+                "scene_entries": [
+                    {
+                        "scene_name": "Theme",
+                        "index": 0,
+                        "scene_count": 3,
+                        "meter": "4/4",
+                        "subdivision": "straight",
+                        "groove_timing": "grid",
+                        "phrase_breath": "regular",
+                    },
+                    {
+                        "scene_name": "Development",
+                        "index": 1,
+                        "scene_count": 3,
+                        "meter": "15/16",
+                        "subdivision": "polyrhythmic",
+                        "groove_timing": "metric_modulation",
+                        "phrase_breath": "asymmetric",
+                        "metric_modulation": "5:4",
+                        "polymeter": [3, 4],
+                    },
+                    {
+                        "scene_name": "Recap",
+                        "index": 2,
+                        "scene_count": 3,
+                        "meter": "7/8",
+                        "subdivision": "shuffle",
+                        "groove_timing": "push",
+                        "phrase_breath": "fractured",
+                        "metric_modulation": "3:2",
+                    },
+                ],
+            }
+        )
+
+        song = build_korsakov_tracker_song(score, title="Meter Path")
+
+        theme = next(scene for scene in song.scenes if scene.name == "Theme")
+        development = next(scene for scene in song.scenes if scene.name == "Development")
+        emergence = next(scene for scene in song.scenes if scene.name == "Emergence")
+        assert theme.metadata["meter_trajectory_id"] == "meter-arc-song"
+        assert theme.metadata["meter_trajectory_scene"] == "Theme"
+        assert theme.metadata["meter_trajectory_index"] == "0"
+        assert theme.metadata["meter_trajectory_meter"] == "4/4"
+        assert json.loads(theme.metadata["meter_trajectory_path"]) == ["4/4", "15/16", "7/8"]
+        development_entry = json.loads(development.metadata["meter_trajectory_entry"])
+        assert development.metadata["meter_trajectory_meter"] == "15/16"
+        assert development.metadata["meter_trajectory_metric_modulation"] == "5:4"
+        assert json.loads(development.metadata["meter_trajectory_polymeter"]) == [3, 4]
+        assert development_entry["scene_name"] == "Development"
+        assert development_entry["meter"] == "15/16"
+        assert development_entry["polymeter"] == [3, 4]
+        assert "meter_trajectory_entry" not in emergence.metadata
+
     def test_tracker_metadata_identifies_current_lead_and_support_roles(self):
         score = _sample_score()
         score.metadata["current_lead_role"] = "theramini"

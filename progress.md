@@ -532,7 +532,11 @@ Progress: [███████████████████████
   meter path in `arrangement_plan` without changing tracker row timing or
   active groove-meter selection. Validation passed with `4986 passed, 11
   skipped`, Ruff clean, and mypy clean.
-- **T-022c**: pending — Pending.
+- **T-022c**: complete — Meter trajectory scene metadata now carries a JSON
+  `meter_trajectory_entry` payload per scene and generic tracker scene
+  emission can derive per-scene trajectory keys from the compact planned
+  trajectory payload. Validation passed with `4989 passed, 11 skipped`, Ruff
+  clean, and mypy clean.
 - **T-022d**: pending — Pending.
 - **T-023**: pending — Pending.
 - **T-024**: pending — Pending.
@@ -586,6 +590,34 @@ Progress: [███████████████████████
 - **T-072**: pending — Pending.
 - **T-073**: pending — Pending.
 - **T-074**: pending — Pending.
+
+
+## T-022c (2026-05-23)
+
+- **Exploration findings:** The active ADP workflow is the task prompt's
+  Explore -> Specify -> Test -> Implement -> Verify -> Document sequence. The
+  affected meter-metadata surface is `my-claw/tools/senseweave/score_tree.py`
+  (`MeterTrajectory.metadata_for_scene`), `recursive_composer.py`
+  (`plan_meter_trajectory` and `arrangement_plan["meter_trajectory"]`),
+  `tracker_compiler.py` (score-tree section metadata to scene scores), and
+  `music_tracker.py` (`build_korsakov_tracker_song` scene metadata emission).
+  T-022a/T-022b already produce flattened `meter_trajectory_*` keys when the
+  score-tree compiler supplies scene-specific metadata; T-022c will add the
+  explicit per-scene `meter_trajectory_entry` payload and teach generic tracker
+  scene emission to derive those keys from the compact planned trajectory
+  metadata. The generated startup-hardening bullets target the existing
+  identity startup subsystem, which is already covered by regression anchors,
+  so this task treats them as required verification rather than unrelated
+  startup rewiring.
+- **Red/green verification:** Red phase was confirmed with the locked T-022c
+  tests failing on missing `meter_trajectory_entry`, missing
+  `arrangement_plan["meter_trajectory"]["scene_entries"]`, and missing compact
+  metadata derivation in `build_korsakov_tracker_song(...)`. Green verification
+  passed the focused T-022c tests, adjacent score-tree/composer/tracker/compiler
+  coverage (`95 passed`), startup identity hardening anchors (`11 passed`), and
+  the required validation command `pip install -e '.[dev]' && pytest tests/ -x
+  && ruff check src/ tests/ && mypy src/` (`4989 passed, 11 skipped`, Ruff
+  clean, mypy clean). No new dependencies or migrations were introduced.
 
 ## T-021 (2026-05-23)
 

@@ -1159,6 +1159,9 @@ def test_tracker_compiler_carries_meter_trajectory_scene_metadata() -> None:
         assert scene.metadata["meter_trajectory_scene"] == section.scene_name
         assert scene.metadata["meter_trajectory_meter"] == section.scene_metadata["meter_trajectory_meter"]
         assert json.loads(scene.metadata["meter_trajectory_path"])
+        entry = json.loads(scene.metadata["meter_trajectory_entry"])
+        assert entry["scene_name"] == section.scene_name
+        assert entry["meter"] == section.scene_metadata["meter_trajectory_meter"]
 
 
 def test_production_course_metadata_survives_compose_compile_schedule() -> None:

@@ -1019,6 +1019,22 @@ def _metadata_json_map(value: str | None) -> dict[str, str]:
     return {str(key): str(item) for key, item in data.items()}
 
 
+def _metadata_json_object(value: object) -> dict[str, object]:
+    if not value:
+        return {}
+    if isinstance(value, Mapping):
+        return {str(key): item for key, item in value.items()}
+    if not isinstance(value, str):
+        return {}
+    try:
+        data = json.loads(value)
+    except (TypeError, ValueError):
+        return {}
+    if not isinstance(data, Mapping):
+        return {}
+    return {str(key): item for key, item in data.items()}
+
+
 def _metadata_int_tuple(value: str | None) -> tuple[int, ...]:
     if not value:
         return ()
@@ -1756,7 +1772,110 @@ _METER_TRAJECTORY_METADATA_KEYS = (
     "meter_trajectory_polymeter",
     "meter_trajectory_path",
     "meter_trajectory_rationale",
+    "meter_trajectory_entry",
 )
+
+
+def _sequence_items(value: object) -> list[object]:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        return []
+    return list(value)
+
+
+def _meter_trajectory_entries(payload: Mapping[str, object]) -> list[dict[str, object]]:
+    raw_entries = payload.get("scene_entries", payload.get("scene_values", ()))
+    entries: list[dict[str, object]] = [
+        {str(key): value for key, value in entry.items()}
+        for entry in _sequence_items(raw_entries)
+        if isinstance(entry, Mapping)
+    ]
+    if entries:
+        return entries
+
+    scene_names = _sequence_items(payload.get("scene_names", ()))
+    meter_path = _sequence_items(payload.get("meter_path", ()))
+    subdivision_path = _sequence_items(payload.get("subdivision_path", ()))
+    groove_timing_path = _sequence_items(payload.get("groove_timing_path", ()))
+    if not scene_names:
+        return []
+    try:
+        scene_count = int(payload.get("scene_count") or len(scene_names))
+    except (TypeError, ValueError):
+        scene_count = len(scene_names)
+    for index, scene_name in enumerate(scene_names):
+        entry = {
+            "scene_name": str(scene_name),
+            "index": index,
+            "scene_count": scene_count,
+        }
+        if index < len(meter_path):
+            entry["meter"] = str(meter_path[index])
+        if index < len(subdivision_path):
+            entry["subdivision"] = str(subdivision_path[index])
+        if index < len(groove_timing_path):
+            entry["groove_timing"] = str(groove_timing_path[index])
+        entries.append(entry)
+    return entries
+
+
+def _meter_trajectory_path(
+    payload: Mapping[str, object],
+    entries: Sequence[Mapping[str, object]],
+) -> list[str]:
+    raw_path = _sequence_items(payload.get("meter_path", ()))
+    if raw_path:
+        return [str(item) for item in raw_path]
+    return [
+        str(entry.get("meter", "") or "")
+        for entry in entries
+        if str(entry.get("meter", "") or "").strip()
+    ]
+
+
+def _meter_trajectory_metadata_for_scene(
+    payload_value: object,
+    scene_name: str,
+) -> dict[str, str]:
+    payload = _metadata_json_object(payload_value)
+    if not payload:
+        return {}
+    entries = _meter_trajectory_entries(payload)
+    if not entries:
+        return {}
+    path = _meter_trajectory_path(payload, entries)
+    for fallback_index, entry in enumerate(entries):
+        if str(entry.get("scene_name", "") or "") != scene_name:
+            continue
+        index = str(entry.get("index", fallback_index))
+        scene_count = str(entry.get("scene_count", payload.get("scene_count", len(entries))))
+        metadata = {
+            "meter_trajectory_id": str(payload.get("trajectory_id", "") or ""),
+            "meter_trajectory_arc_plan": str(payload.get("arc_plan", "") or ""),
+            "meter_trajectory_scene": scene_name,
+            "meter_trajectory_index": index,
+            "meter_trajectory_scene_count": scene_count,
+            "meter_trajectory_meter": str(entry.get("meter", "") or ""),
+            "meter_trajectory_subdivision": str(entry.get("subdivision", "") or ""),
+            "meter_trajectory_groove_timing": str(entry.get("groove_timing", "") or ""),
+            "meter_trajectory_phrase_breath": str(entry.get("phrase_breath", "") or ""),
+            "meter_trajectory_path": json.dumps(path),
+            "meter_trajectory_entry": json.dumps(entry),
+        }
+        arc_phase = str(payload.get("arc_phase", "") or "")
+        if arc_phase:
+            metadata["meter_trajectory_arc_phase"] = arc_phase
+        rationale = str(payload.get("rationale", "") or "")
+        if rationale:
+            metadata["meter_trajectory_rationale"] = rationale
+        metric_modulation = str(entry.get("metric_modulation", "") or "")
+        if metric_modulation:
+            metadata["meter_trajectory_metric_modulation"] = metric_modulation
+        polymeter = _sequence_items(entry.get("polymeter", ()))
+        if polymeter:
+            metadata["meter_trajectory_polymeter"] = json.dumps(polymeter)
+        return {key: value for key, value in metadata.items() if str(value).strip()}
+    return {}
+
 
 _PRODUCTION_COURSE_METADATA_KEYS = (
     "production_mode_scale",
@@ -2717,6 +2836,15 @@ def build_korsakov_tracker_song(
             "groove_family": str(score.metadata.get("groove_family", arrangement.groove_family) or arrangement.groove_family),
             "text_hook": str(score.metadata.get("text_hook", "") or ""),
         }
+        scene_metadata.update(
+            _meter_trajectory_metadata_for_scene(
+                source_score.metadata.get(
+                    "meter_trajectory",
+                    score.metadata.get("meter_trajectory"),
+                ),
+                template.name,
+            )
+        )
         for key in _TRANSITION_METADATA_KEYS:
             value = source_score.metadata.get(key)
             if value:

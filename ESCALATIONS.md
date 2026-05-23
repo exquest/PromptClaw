@@ -1381,6 +1381,34 @@ reasoning effor...
 
 ## frac-0107 (2026-05-03)
 
+## T-022c (2026-05-23)
+
+- **Reason:** Meter trajectory scene metadata scope and startup-hardening assumptions
+- **Details:** Exploration found T-022a/T-022b already define and plan
+  `MeterTrajectory` values, stamp flattened `meter_trajectory_*` keys into
+  score-tree sections, and carry those keys through the score-tree compiler.
+  T-022c assumes the remaining gap is generic tracker scene metadata emission:
+  scenes should carry the matching planned `meter_trajectory_entry` payload and
+  should be able to derive per-scene trajectory metadata from the compact
+  composer payload. No new dependency, migration, database column, provider
+  secret, runtime state directory, HTTP route, auth behavior, or agent command
+  string is required. The generated startup hardening bullets target the
+  existing identity startup subsystem; CLI startup, first-boot persistence,
+  daemon bootstrap-before-announcer ordering, standalone/federated identity
+  reuse, and narrative ASGI import persistence are covered by existing tests
+  and will be re-run as regression anchors rather than changing unrelated
+  startup flow.
+- **Reason:** Red phase and validation results
+- **Details:** Red phase was confirmed with the locked focused T-022c tests
+  failing on missing `meter_trajectory_entry`, missing compact
+  `scene_entries`, and missing generic tracker derivation from compact score
+  metadata. After implementation, focused T-022c tests passed, adjacent
+  score-tree/composer/tracker/compiler coverage passed with `95 passed`,
+  startup identity hardening anchors passed with `11 passed`, and full
+  validation `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/
+  tests/ && mypy src/` passed with `4989 passed, 11 skipped`, Ruff clean, and
+  mypy clean. No new dependencies or migrations were introduced.
+
 - **Reason:** Research-runtime test-depth scope and startup-hardening assumptions
 - **Details:** Exploration found the affected surface is `tests/test_research_runtime.py`, with production behavior in `my-claw/tools/researcher.py` and `my-claw/tools/research_tools.py`. The production research runtime already implements meaningful one-path behavior for scope classification, quick/medium/deep research flows, tool-backed findings, report persistence, experiment execution, and benchmark aggregation. This task therefore preserves production behavior unless the new red tests expose a concrete gap, and deepens the locked test surface with one deterministic end-to-end class plus a depth gate. No standalone ADP documentation file was found beyond the task prompt's Explore -> Specify -> Test -> Implement -> Verify -> Document phases, so those phases are treated as the active workflow. The generated startup hardening bullets target the existing identity startup subsystem; CLI, first-boot, daemon-ordering, and narrative ASGI tests already cover `bootstrap_identity()` before `FirstBootAnnouncer` and standalone/federated identity persistence, so they will be re-run as regression anchors rather than broadening this research-runtime test task. No new dependencies, migrations, provider secrets, database columns, runtime state directories, HTTP routes, or auth behavior are required.
 - **Reason:** Red phase and validation results
