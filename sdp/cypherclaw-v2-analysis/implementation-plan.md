@@ -1,9 +1,9 @@
 # CypherClaw v2 — Performance, Tuning, Space, and Public Presence PRD — Implementation Plan
 
-**Generated:** 2026-05-22T23:57:10.803724+00:00
+**Generated:** 2026-05-23T02:04:45.156402+00:00
 **Source:** PRD v1.0
-**Total tasks:** 62
-**Estimated effort:** ~243 hours
+**Total tasks:** 74
+**Estimated effort:** ~288 hours
 
 ---
 
@@ -85,7 +85,7 @@ Sprints are sequential. Tasks within a sprint can run in parallel unless a depen
 
 *Subtotal: ~30 hours*
 
-### Sprint 5: Model Comparison Hardening
+### Sprint 5: Library & CRUD Polish
 
 **Depends on:** Sprint 0 (Infrastructure & Billing), Sprint 1 (Versioning System)
 
@@ -100,23 +100,35 @@ Sprints are sequential. Tasks within a sprint can run in parallel unless a depen
 - **T-050** [T1] Within-family parameter walks generate continuous low-rate modulation on key parameters per voice. (~3h) → deps: T-001, T-012
 - **T-051** [T1] The `CYPHERCLAW_V2_INSTRUMENT_MORPH` env flag controls activation, defaulting OFF. (~3h) → deps: T-001, T-012
 - **T-052** [T1] Unit tests cover crossfade scheduling and morph curve shapes. (~3h) → deps: T-001, T-012
+- **T-053** [T2] The composer publishes live MIDI events (note_on, note_off, control_change, pitch_bend) to a `live_midi_emitter.py` daemon that batches and POSTs them to the Cloudflare Worker's `/api/cypherclaw/midi-event` endpoint. Events are tagged with voice, scene, and tuning context. (~6h) → deps: T-001, T-012
+- **T-054** [T2] The Cloudflare Worker exposes a `/api/cypherclaw/live-midi` WebSocket (Durable Object backed) that fans out received MIDI events to connected browser clients with sub-second latency. (~6h) → deps: T-001, T-012
+- **T-055** [T2] The canvas visualizer on cypherclaw.holdenu.com consumes the live MIDI WebSocket and renders discrete event-driven graphics (e.g. notes appear as discrete shapes with pitch-to-position and velocity-to-size mappings) in addition to the continuous audio-feature reactions. The MIDI feed and audio-feature feed are composited in the same canvas. (~6h) → deps: T-001, T-012
+- **T-056** [T1] Depends on CC-001 through CC-005 and CC-102. Render a 60-second reference sample of CypherClaw composing with per-voice reverb spaces active, upload it via `session_archiver.py` as `cypherclaw/archive/checkpoints/feature-1-reverb-spaces-{timestamp}/`, send a Telegram notification with the archive URL on cypherclaw.holdenu.com, and pause the queue until Anthony returns APPROVE / REWORK / REJECT via the checkpoint approval mechanism. (~3h) → deps: T-001, T-012
+- **T-057** [T1] Depends on CC-010 through CC-017 and CC-102. Render a 60-second reference sample of CypherClaw composing with MIDI-influenced vocabulary fragments active (with a known seed MIDI in the inbox), upload as `cypherclaw/archive/checkpoints/feature-2-midi-ingestion-{timestamp}/`, send a Telegram notification with the archive URL, and pause until APPROVE / REWORK / REJECT. (~3h) → deps: T-001, T-012
+- **T-058** [T1] Render a 60-second reference sample of CypherClaw streaming live on cypherclaw.holdenu.com. CC-020 and CC-022 and CC-024 must be complete. Save a captured copy to `/home/user/cypherclaw/var/reference-renders/feature-3-stream-{timestamp}.opus` for local backup, send a Telegram notification with the public page URL, and pause until Anthony returns APPROVE / REWORK / REJECT. This is the first checkpoint; subsequent checkpoints rely on this streaming pipeline being approved. (~3h) → deps: T-001, T-012
+- **T-059** [T1] Depends on CC-030 through CC-033 and CC-102. Render a 60-second reference sample of CypherClaw composing with meter morphing active (a scripted arc that exercises per-scene meter changes plus a metric modulation event), upload as `cypherclaw/archive/checkpoints/feature-4-meter-morph-{timestamp}/`, send a Telegram notification with the archive URL, and pause until APPROVE / REWORK / REJECT. (~3h) → deps: T-001, T-012
+- **T-060** [T1] Depends on CC-040 through CC-048 and CC-102. Render a 60-second reference sample with `CYPHERCLAW_V2_TUNING_MORPH=1` (5-limit JI for Listen, Slendro for Conversation, with a morph at the transition), upload as `cypherclaw/archive/checkpoints/feature-5-tuning-morph-{timestamp}/` with both flag-on and flag-off A/B excerpts, send a Telegram notification with the archive URL, and pause until APPROVE / REWORK / REJECT. (~3h) → deps: T-001, T-012
+- **T-061** [T1] Depends on CC-050 through CC-055 and CC-102. Render a 60-second reference sample with `CYPHERCLAW_V2_INSTRUMENT_MORPH=1` (a scripted phrase exercising single-line morph, section-boundary crossfade, and within-family parameter walk), upload as `cypherclaw/archive/checkpoints/feature-6-instrument-morph-{timestamp}/` with A/B excerpts, send a Telegram notification with the archive URL, and pause until APPROVE / REWORK / REJECT. (~3h) → deps: T-001, T-012
+- **T-062** [T1] Depends on CC-060 through CC-069 and CC-102. Render a 60-second reference sample with the expression layer fully active (all 11 gestures available, voice allowlists enforced, scene-phase scaling applied), upload as `cypherclaw/archive/checkpoints/feature-7-expression-{timestamp}/`, send a Telegram notification with the archive URL, and pause until APPROVE / REWORK / REJECT. (~3h) → deps: T-001, T-012
+- **T-063** [T1] Depends on CC-070 through CC-075 and CC-102. Render a 60-second reference sample with `CYPHERCLAW_V2_COUPLING=1` (a scripted multi-voice arc that exercises cross-voice coupling), upload as `cypherclaw/archive/checkpoints/feature-8-coupling-{timestamp}/` with A/B excerpts, send a Telegram notification with the archive URL, and pause until APPROVE / REWORK / REJECT. (~3h) → deps: T-001, T-012
+- **T-064** [T1] Depends on CC-080 through CC-084 and CC-102. Render a 60-second reference sample with `CYPHERCLAW_V2_FATIGUE=1` (a scripted high-intensity passage followed by a recovery passage), upload as `cypherclaw/archive/checkpoints/feature-9-fatigue-{timestamp}/` with A/B excerpts, send a Telegram notification with the archive URL, and pause until APPROVE / REWORK / REJECT. (~3h) → deps: T-001, T-012
 
-*Subtotal: ~42 hours*
+*Subtotal: ~87 hours*
 
 ### Sprint 6: Stretch Goals
 
 **Depends on:** Sprint 0 (Infrastructure & Billing)
 
-- **T-053** [T2] All voice synthdefs accept the expression control parameters: `vib_rate`, `vib_depth`, `trem_rate`, `trem_depth`, `bend_start_hz`, `bend_end_hz`, `bend_curve_shape`, `attack_mode`, `late_release_extension`, `harmonic_resonance_profile_id`, `spectral_granulation_amount`, `spectral_smear_amount`. (~6h) → deps: T-001
-- **T-054** [T2] Each voice provides internal LFOs (vibrato pitch LFO, tremolo amplitude LFO, spectral granulation) where allowed by the voice's gesture allowlist. (~6h) → deps: T-001
-- **T-055** [T2] The expression module implements 11 named gestures (Weeping, Shimmering, Ghostly, Sighing, Agitated, Breath-shaped, Pulsing, Fracturing, Hollowing, Tension-Build, Echo-Location). (~6h) → deps: T-001
-- **T-056** [T1] The voice-to-gesture allowlist per `cypherclaw-v2-design-statement-2026-05-22.md` §7.3 is enforced; forbidden combinations are rejected. (~3h) → deps: T-001
-- **T-057** [T1] The scene-phase intensity multiplier table per §7.4 is applied at gesture application time. (~3h) → deps: T-001
-- **T-058** [T2] Pedal logic (Sustain, Resonant with Decay Modulation, Half-pedal) is implemented per voice family. (~6h) → deps: T-001
-- **T-059** [T1] Contour analysis classifies each note as peak, ascending, descending, static, or valley. (~3h) → deps: T-001
-- **T-060** [T1] The composer applies contour-aware dynamics multipliers and attack shapes when emitting notes. (~3h) → deps: T-001
-- **T-061** [T1] Unit tests cover each gesture's expression-parameter output. (~3h) → deps: T-001
-- **T-062** [T1] The renamed terminology (Spectral Granulation, Harmonic Resonance Profile, Spectral Smear) is used consistently across code, schemas, and documentation. (~3h) → deps: T-001
+- **T-065** [T2] All voice synthdefs accept the expression control parameters: `vib_rate`, `vib_depth`, `trem_rate`, `trem_depth`, `bend_start_hz`, `bend_end_hz`, `bend_curve_shape`, `attack_mode`, `late_release_extension`, `harmonic_resonance_profile_id`, `spectral_granulation_amount`, `spectral_smear_amount`. (~6h) → deps: T-001
+- **T-066** [T2] Each voice provides internal LFOs (vibrato pitch LFO, tremolo amplitude LFO, spectral granulation) where allowed by the voice's gesture allowlist. (~6h) → deps: T-001
+- **T-067** [T2] The expression module implements 11 named gestures (Weeping, Shimmering, Ghostly, Sighing, Agitated, Breath-shaped, Pulsing, Fracturing, Hollowing, Tension-Build, Echo-Location). (~6h) → deps: T-001
+- **T-068** [T1] The voice-to-gesture allowlist per `cypherclaw-v2-design-statement-2026-05-22.md` §7.3 is enforced; forbidden combinations are rejected. (~3h) → deps: T-001
+- **T-069** [T1] The scene-phase intensity multiplier table per §7.4 is applied at gesture application time. (~3h) → deps: T-001
+- **T-070** [T2] Pedal logic (Sustain, Resonant with Decay Modulation, Half-pedal) is implemented per voice family. (~6h) → deps: T-001
+- **T-071** [T1] Contour analysis classifies each note as peak, ascending, descending, static, or valley. (~3h) → deps: T-001
+- **T-072** [T1] The composer applies contour-aware dynamics multipliers and attack shapes when emitting notes. (~3h) → deps: T-001
+- **T-073** [T1] Unit tests cover each gesture's expression-parameter output. (~3h) → deps: T-001
+- **T-074** [T1] The renamed terminology (Spectral Granulation, Harmonic Resonance Profile, Spectral Smear) is used consistently across code, schemas, and documentation. (~3h) → deps: T-001
 
 *Subtotal: ~42 hours*
 
@@ -124,7 +136,7 @@ Sprints are sequential. Tasks within a sprint can run in parallel unless a depen
 
 ## Requirements Coverage
 
-- **MUST requirements:** 61/61 covered
+- **MUST requirements:** 73/73 covered
 - **SHOULD requirements:** 1 included as stretch
 
 **✓ All MUST requirements covered.**

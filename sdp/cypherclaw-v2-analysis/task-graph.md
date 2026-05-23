@@ -1,8 +1,8 @@
 # CypherClaw v2 — Performance, Tuning, Space, and Public Presence PRD — Task Graph
 
-**Generated:** 2026-05-22T23:57:10.803724+00:00
-**Total tasks:** 62
-**Estimated effort:** ~243 hours
+**Generated:** 2026-05-23T02:04:45.156402+00:00
+**Total tasks:** 74
+**Estimated effort:** ~288 hours
 
 ---
 
@@ -92,7 +92,7 @@
 
 ---
 
-## Sprint 5 — Model Comparison Hardening
+## Sprint 5 — Library & CRUD Polish
 
 | Order | Task ID | Description | Tier | Complexity | Est (hrs) | Reqs | Deps | Criteria |
 |-------|---------|-------------|------|------------|-----------|------|------|----------|
@@ -107,8 +107,20 @@
 | 50 | T-050 | Within-family parameter walks generate continuous low-rate modulation on key parameters per voice. | T1 | 3 | 3 | CC-053 | T-001, T-012 | OSC trace shows continuous parameter values within the expected depth band. |
 | 51 | T-051 | The `CYPHERCLAW_V2_INSTRUMENT_MORPH` env flag controls activation, defaulting OFF. | T1 | 3 | 3 | CC-054 | T-001, T-012 | Module reads env var; default behavior matches OFF state. |
 | 52 | T-052 | Unit tests cover crossfade scheduling and morph curve shapes. | T1 | 2 | 3 | CC-055 | T-001, T-012 | Test suite includes scheduling, curve, and OSC integration tests. |
+| 53 | T-053 | The composer publishes live MIDI events (note_on, note_off, control_change, pitch_bend) to a `live_midi_emitter.py` daemon that batches and POSTs them to the Cloudflare Worker's `/api/cypherclaw/midi-event` endpoint. Events are tagged with voice, scene, and tuning context. | T2 | 6 | 6 | CC-090 | T-001, T-012 | Integration test: a scripted composer arc emits notes; the Worker receives the batched MIDI events with the expected metadata within 500 ms of emission. |
+| 54 | T-054 | The Cloudflare Worker exposes a `/api/cypherclaw/live-midi` WebSocket (Durable Object backed) that fans out received MIDI events to connected browser clients with sub-second latency. | T2 | 5 | 6 | CC-091 | T-001, T-012 | Integration test: a browser client subscribes to the WebSocket; events POSTed to `/api/cypherclaw/midi-event` arrive at the client within 1 second. |
+| 55 | T-055 | The canvas visualizer on cypherclaw.holdenu.com consumes the live MIDI WebSocket and renders discrete event-driven graphics (e.g. notes appear as discrete shapes with pitch-to-position and velocity-to-size mappings) in addition to the continuous audio-feature reactions. The MIDI feed and audio-feature feed are composited in the same canvas. | T2 | 8 | 6 | CC-092 | T-001, T-012 | Manual visual verification: notes visibly appear on the canvas synchronized with the audio; browser-automation test confirms `<canvas>` draw calls increase when MIDI events arrive. |
+| 56 | T-056 | Depends on CC-001 through CC-005 and CC-102. Render a 60-second reference sample of CypherClaw composing with per-voice reverb spaces active, upload it via `session_archiver.py` as `cypherclaw/archive/checkpoints/feature-1-reverb-spaces-{timestamp}/`, send a Telegram notification with the archive URL on cypherclaw.holdenu.com, and pause the queue until Anthony returns APPROVE / REWORK / REJECT via the checkpoint approval mechanism. | T1 | 13 | 3 | CC-100 | T-001, T-012 | Task transitions to APPROVED only after explicit operator verdict is recorded; REWORK verdicts spawn one or more follow-up tasks; reference sample is playable from the archive feed on cypherclaw.holdenu.com. |
+| 57 | T-057 | Depends on CC-010 through CC-017 and CC-102. Render a 60-second reference sample of CypherClaw composing with MIDI-influenced vocabulary fragments active (with a known seed MIDI in the inbox), upload as `cypherclaw/archive/checkpoints/feature-2-midi-ingestion-{timestamp}/`, send a Telegram notification with the archive URL, and pause until APPROVE / REWORK / REJECT. | T1 | 12 | 3 | CC-101 | T-001, T-012 | Task transitions to APPROVED only after explicit operator verdict; sample audibly contains the seeded MIDI fragment; sample is playable from cypherclaw.holdenu.com. |
+| 58 | T-058 | Render a 60-second reference sample of CypherClaw streaming live on cypherclaw.holdenu.com. CC-020 and CC-022 and CC-024 must be complete. Save a captured copy to `/home/user/cypherclaw/var/reference-renders/feature-3-stream-{timestamp}.opus` for local backup, send a Telegram notification with the public page URL, and pause until Anthony returns APPROVE / REWORK / REJECT. This is the first checkpoint; subsequent checkpoints rely on this streaming pipeline being approved. | T1 | 15 | 3 | CC-102 | T-001, T-012 | Task transitions to APPROVED only after explicit operator verdict; the holdenu.com page is reachable; audio plays end-to-end; CC-020, CC-022, CC-024 are complete. |
+| 59 | T-059 | Depends on CC-030 through CC-033 and CC-102. Render a 60-second reference sample of CypherClaw composing with meter morphing active (a scripted arc that exercises per-scene meter changes plus a metric modulation event), upload as `cypherclaw/archive/checkpoints/feature-4-meter-morph-{timestamp}/`, send a Telegram notification with the archive URL, and pause until APPROVE / REWORK / REJECT. | T1 | 13 | 3 | CC-103 | T-001, T-012 | Task transitions to APPROVED only after explicit operator verdict; reference sample audibly demonstrates meter changes; sample is playable from cypherclaw.holdenu.com. |
+| 60 | T-060 | Depends on CC-040 through CC-048 and CC-102. Render a 60-second reference sample with `CYPHERCLAW_V2_TUNING_MORPH=1` (5-limit JI for Listen, Slendro for Conversation, with a morph at the transition), upload as `cypherclaw/archive/checkpoints/feature-5-tuning-morph-{timestamp}/` with both flag-on and flag-off A/B excerpts, send a Telegram notification with the archive URL, and pause until APPROVE / REWORK / REJECT. | T1 | 13 | 3 | CC-104 | T-001, T-012 | Task transitions to APPROVED only after explicit operator verdict; both A/B excerpts are retrievable from the archive feed; tuning shift is audible. |
+| 61 | T-061 | Depends on CC-050 through CC-055 and CC-102. Render a 60-second reference sample with `CYPHERCLAW_V2_INSTRUMENT_MORPH=1` (a scripted phrase exercising single-line morph, section-boundary crossfade, and within-family parameter walk), upload as `cypherclaw/archive/checkpoints/feature-6-instrument-morph-{timestamp}/` with A/B excerpts, send a Telegram notification with the archive URL, and pause until APPROVE / REWORK / REJECT. | T1 | 12 | 3 | CC-105 | T-001, T-012 | Task transitions to APPROVED only after explicit operator verdict; morph trajectories are audible from the archive feed. |
+| 62 | T-062 | Depends on CC-060 through CC-069 and CC-102. Render a 60-second reference sample with the expression layer fully active (all 11 gestures available, voice allowlists enforced, scene-phase scaling applied), upload as `cypherclaw/archive/checkpoints/feature-7-expression-{timestamp}/`, send a Telegram notification with the archive URL, and pause until APPROVE / REWORK / REJECT. | T1 | 13 | 3 | CC-106 | T-001, T-012 | Task transitions to APPROVED only after explicit operator verdict; reference sample audibly demonstrates gesture vocabulary. |
+| 63 | T-063 | Depends on CC-070 through CC-075 and CC-102. Render a 60-second reference sample with `CYPHERCLAW_V2_COUPLING=1` (a scripted multi-voice arc that exercises cross-voice coupling), upload as `cypherclaw/archive/checkpoints/feature-8-coupling-{timestamp}/` with A/B excerpts, send a Telegram notification with the archive URL, and pause until APPROVE / REWORK / REJECT. | T1 | 11 | 3 | CC-107 | T-001, T-012 | Task transitions to APPROVED only after explicit operator verdict; coupling is audible from the archive feed. |
+| 64 | T-064 | Depends on CC-080 through CC-084 and CC-102. Render a 60-second reference sample with `CYPHERCLAW_V2_FATIGUE=1` (a scripted high-intensity passage followed by a recovery passage), upload as `cypherclaw/archive/checkpoints/feature-9-fatigue-{timestamp}/` with A/B excerpts, send a Telegram notification with the archive URL, and pause until APPROVE / REWORK / REJECT. | T1 | 11 | 3 | CC-108 | T-001, T-012 | Task transitions to APPROVED only after explicit operator verdict; fatigue and recovery are audible from the archive feed. |
 
-**Sprint 5 total:** ~42 hrs
+**Sprint 5 total:** ~87 hrs
 
 ---
 
@@ -116,16 +128,16 @@
 
 | Order | Task ID | Description | Tier | Complexity | Est (hrs) | Reqs | Deps | Criteria |
 |-------|---------|-------------|------|------------|-----------|------|------|----------|
-| 53 | T-053 | All voice synthdefs accept the expression control parameters: `vib_rate`, `vib_depth`, `trem_rate`, `trem_depth`, `bend_start_hz`, `bend_end_hz`, `bend_curve_shape`, `attack_mode`, `late_release_extension`, `harmonic_resonance_profile_id`, `spectral_granulation_amount`, `spectral_smear_amount`. | T2 | 7 | 6 | CC-060 | T-001 | Synthdef diff shows every voice exposes the listed parameters; live OSC sets each parameter without error. |
-| 54 | T-054 | Each voice provides internal LFOs (vibrato pitch LFO, tremolo amplitude LFO, spectral granulation) where allowed by the voice's gesture allowlist. | T2 | 4 | 6 | CC-061 | T-001 | Per-voice rendering with each modulator enabled produces audible modulation matching the rate and depth set. |
-| 55 | T-055 | The expression module implements 11 named gestures (Weeping, Shimmering, Ghostly, Sighing, Agitated, Breath-shaped, Pulsing, Fracturing, Hollowing, Tension-Build, Echo-Location). | T2 | 4 | 6 | CC-062 | T-001 | Unit tests assert that each gesture function returns an OSC payload with the expected expression parameters. |
-| 56 | T-056 | The voice-to-gesture allowlist per `cypherclaw-v2-design-statement-2026-05-22.md` §7.3 is enforced; forbidden combinations are rejected. | T1 | 4 | 3 | CC-063 | T-001 | Unit test attempts every forbidden combination and asserts each is refused. |
-| 57 | T-057 | The scene-phase intensity multiplier table per §7.4 is applied at gesture application time. | T1 | 3 | 3 | CC-064 | T-001 | Unit test verifies multiplier values per phase match the design statement. |
-| 58 | T-058 | Pedal logic (Sustain, Resonant with Decay Modulation, Half-pedal) is implemented per voice family. | T2 | 3 | 6 | CC-065 | T-001 | Integration test engages each pedal and confirms the expected voice behavior. |
-| 59 | T-059 | Contour analysis classifies each note as peak, ascending, descending, static, or valley. | T1 | 3 | 3 | CC-066 | T-001 | Unit tests on synthetic note sequences assert the expected classification. |
-| 60 | T-060 | The composer applies contour-aware dynamics multipliers and attack shapes when emitting notes. | T1 | 3 | 3 | CC-067 | T-001 | OSC trace shows `dynamics_multiplier` and `attack_shape` set per note in accordance with the contour. |
-| 61 | T-061 | Unit tests cover each gesture's expression-parameter output. | T1 | 4 | 3 | CC-069 | T-001 | Tests enumerate all 11 gestures and assert expected outputs. |
-| 62 | T-062 | The renamed terminology (Spectral Granulation, Harmonic Resonance Profile, Spectral Smear) is used consistently across code, schemas, and documentation. | T1 | 5 | 3 | CC-068 | T-001 | Lint pass finds no surviving references to the previous names in v2 modules. |
+| 65 | T-065 | All voice synthdefs accept the expression control parameters: `vib_rate`, `vib_depth`, `trem_rate`, `trem_depth`, `bend_start_hz`, `bend_end_hz`, `bend_curve_shape`, `attack_mode`, `late_release_extension`, `harmonic_resonance_profile_id`, `spectral_granulation_amount`, `spectral_smear_amount`. | T2 | 7 | 6 | CC-060 | T-001 | Synthdef diff shows every voice exposes the listed parameters; live OSC sets each parameter without error. |
+| 66 | T-066 | Each voice provides internal LFOs (vibrato pitch LFO, tremolo amplitude LFO, spectral granulation) where allowed by the voice's gesture allowlist. | T2 | 4 | 6 | CC-061 | T-001 | Per-voice rendering with each modulator enabled produces audible modulation matching the rate and depth set. |
+| 67 | T-067 | The expression module implements 11 named gestures (Weeping, Shimmering, Ghostly, Sighing, Agitated, Breath-shaped, Pulsing, Fracturing, Hollowing, Tension-Build, Echo-Location). | T2 | 4 | 6 | CC-062 | T-001 | Unit tests assert that each gesture function returns an OSC payload with the expected expression parameters. |
+| 68 | T-068 | The voice-to-gesture allowlist per `cypherclaw-v2-design-statement-2026-05-22.md` §7.3 is enforced; forbidden combinations are rejected. | T1 | 4 | 3 | CC-063 | T-001 | Unit test attempts every forbidden combination and asserts each is refused. |
+| 69 | T-069 | The scene-phase intensity multiplier table per §7.4 is applied at gesture application time. | T1 | 3 | 3 | CC-064 | T-001 | Unit test verifies multiplier values per phase match the design statement. |
+| 70 | T-070 | Pedal logic (Sustain, Resonant with Decay Modulation, Half-pedal) is implemented per voice family. | T2 | 3 | 6 | CC-065 | T-001 | Integration test engages each pedal and confirms the expected voice behavior. |
+| 71 | T-071 | Contour analysis classifies each note as peak, ascending, descending, static, or valley. | T1 | 3 | 3 | CC-066 | T-001 | Unit tests on synthetic note sequences assert the expected classification. |
+| 72 | T-072 | The composer applies contour-aware dynamics multipliers and attack shapes when emitting notes. | T1 | 3 | 3 | CC-067 | T-001 | OSC trace shows `dynamics_multiplier` and `attack_shape` set per note in accordance with the contour. |
+| 73 | T-073 | Unit tests cover each gesture's expression-parameter output. | T1 | 4 | 3 | CC-069 | T-001 | Tests enumerate all 11 gestures and assert expected outputs. |
+| 74 | T-074 | The renamed terminology (Spectral Granulation, Harmonic Resonance Profile, Spectral Smear) is used consistently across code, schemas, and documentation. | T1 | 5 | 3 | CC-068 | T-001 | Lint pass finds no surviving references to the previous names in v2 modules. |
 
 **Sprint 6 total:** ~42 hrs
 
@@ -138,7 +150,7 @@
 - **Sprint 2 (Quality Scoring):** 4 tasks, ~18 hrs
 - **Sprint 3 (Improvement Engine Hardening):** 9 tasks, ~42 hrs
 - **Sprint 4 (Public REST API):** 9 tasks, ~30 hrs
-- **Sprint 5 (Model Comparison Hardening):** 11 tasks, ~42 hrs
+- **Sprint 5 (Library & CRUD Polish):** 23 tasks, ~87 hrs
 - **Sprint 6 (Stretch Goals):** 10 tasks, ~42 hrs
 
-**Total: 62 tasks, ~243 hours**
+**Total: 74 tasks, ~288 hours**
