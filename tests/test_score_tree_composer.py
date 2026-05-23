@@ -136,6 +136,79 @@ def test_plan_meter_trajectory_uses_arc_phase_drift_table() -> None:
     )
 
 
+def test_plan_meter_trajectory_restarts_phase_drift_per_arc_cycle() -> None:
+    sections = (
+        PlannedSection("OpeningA", "invocation", 12.0, harmonic_role="tonic"),
+        PlannedSection("PatternA", "statement", 12.0, harmonic_role="tonic"),
+        PlannedSection("DialogueA", "development", 12.0, harmonic_role="predominant"),
+        PlannedSection("ReturnA", "recap", 12.0, harmonic_role="authentic"),
+        PlannedSection("ResidueA", "afterglow", 12.0, harmonic_role="plagal"),
+        PlannedSection("OpeningB", "invocation", 12.0, harmonic_role="tonic"),
+        PlannedSection("PatternB", "statement", 12.0, harmonic_role="tonic"),
+    )
+    elapsed_by_scene = {
+        "OpeningA": 1.0,
+        "PatternA": 7.0,
+        "DialogueA": 15.0,
+        "ReturnA": 22.0,
+        "ResidueA": 28.0,
+        "OpeningB": 31.0,
+        "PatternB": 37.0,
+    }
+    directives = {
+        section.scene_name: directive_for_elapsed(
+            elapsed_by_scene[section.scene_name],
+            cadence_state="occupied_day",
+            cycle_minutes=30.0,
+        )
+        for section in sections
+    }
+
+    trajectory = plan_meter_trajectory(
+        sections,
+        directives,
+        cadence_state="occupied_day",
+        groove_identity="pulse",
+        trajectory_seed="t-022d-arc-cycle",
+    )
+
+    assert trajectory is not None
+    assert tuple(directives[section.scene_name].phase.name for section in sections) == (
+        "Divination",
+        "Emergence",
+        "Conversation",
+        "Convergence",
+        "Crystallization",
+        "Divination",
+        "Emergence",
+    )
+    assert tuple(value.meter for value in trajectory.scene_values) == (
+        "free",
+        "4/4",
+        "15/16",
+        "7/8",
+        "3/4",
+        "free",
+        "4/4",
+    )
+    opening_b = trajectory.scene_value_for("OpeningB")
+    pattern_b = trajectory.scene_value_for("PatternB")
+    assert opening_b is not None
+    assert pattern_b is not None
+    assert opening_b.subdivision == "rubato"
+    assert opening_b.groove_timing == "rubato"
+    assert pattern_b.subdivision == "straight"
+    assert json.loads(trajectory.metadata_for_scene("OpeningB")["meter_trajectory_path"]) == [
+        "free",
+        "4/4",
+        "15/16",
+        "7/8",
+        "3/4",
+        "free",
+        "4/4",
+    ]
+
+
 def test_recursive_composer_builds_complete_score_tree() -> None:
     tree = _compose_tree()
 
@@ -207,6 +280,37 @@ def test_composed_meter_trajectory_survives_tracker_compile() -> None:
         assert scene.metadata["meter_trajectory_scene"] == section.scene_name
         assert scene.metadata["meter_trajectory_meter"] == value.meter
         assert json.loads(scene.metadata["meter_trajectory_path"]) == meter_path
+
+
+def test_composed_meter_trajectory_scene_metadata_round_trips_through_json_and_tracker() -> None:
+    tree = _compose_tree(composition_seed="t-022d-metadata-roundtrip")
+    restored = ScoreTree.from_dict(json.loads(tree.to_json()))
+
+    compiled = compile_score_tree_to_tracker(
+        restored,
+        mood={"energy": 0.58, "valence": 0.63, "arousal": 0.44},
+        family_name="bloom",
+        patch_name="house_garden",
+        cadence_state="occupied_day",
+        progression_profile="open_day",
+    )
+
+    assert restored.meter_trajectory == tree.meter_trajectory
+    assert restored.meter_trajectory is not None
+    meter_path = [value.meter for value in restored.meter_trajectory.scene_values]
+    scene_by_name = {scene.name: scene for scene in compiled.tracker_song.scenes}
+    for section, value in zip(restored.sections, restored.meter_trajectory.scene_values):
+        expected_metadata = restored.meter_trajectory.metadata_for_scene(section.scene_name)
+        assert section.scene_metadata == expected_metadata
+
+        scene = scene_by_name[section.scene_name]
+        assert scene.metadata["meter_trajectory_id"] == restored.meter_trajectory.trajectory_id
+        assert scene.metadata["meter_trajectory_scene"] == section.scene_name
+        assert scene.metadata["meter_trajectory_meter"] == value.meter
+        assert json.loads(scene.metadata["meter_trajectory_path"]) == meter_path
+        assert json.loads(scene.metadata["meter_trajectory_entry"]) == json.loads(
+            section.scene_metadata["meter_trajectory_entry"]
+        )
 
 
 def test_recursive_composer_seed_is_deterministic_and_attaches_render_metadata() -> None:

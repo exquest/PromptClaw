@@ -537,7 +537,11 @@ Progress: [███████████████████████
   emission can derive per-scene trajectory keys from the compact planned
   trajectory payload. Validation passed with `4989 passed, 11 skipped`, Ruff
   clean, and mypy clean.
-- **T-022d**: pending — Pending.
+- **T-022d**: complete — Added arc-cycle meter trajectory reset coverage and
+  composed scene metadata JSON round-trip coverage. The planner now restarts
+  per-phase drift counts when a plan crosses from `Crystallization` back to
+  `Divination`. Validation passed with `4991 passed, 11 skipped`, Ruff clean,
+  and mypy clean.
 - **T-023**: pending — Pending.
 - **T-024**: pending — Pending.
 - **T-025**: pending — Pending.
@@ -590,6 +594,33 @@ Progress: [███████████████████████
 - **T-072**: pending — Pending.
 - **T-073**: pending — Pending.
 - **T-074**: pending — Pending.
+
+
+## T-022d (2026-05-23)
+
+- **Exploration findings:** The active ADP workflow is the task prompt's
+  Explore -> Specify -> Test -> Implement -> Verify -> Document sequence. The
+  affected meter-trajectory surface is `my-claw/tools/senseweave/score_tree.py`
+  for `MeterTrajectory` / `SectionNode.scene_metadata`,
+  `my-claw/tools/senseweave/recursive_composer.py` for
+  `plan_meter_trajectory(...)`, `my-claw/tools/senseweave/tracker_compiler.py`
+  for score-tree to scene-score metadata propagation, and
+  `my-claw/tools/senseweave/music_tracker.py` for compact metadata derivation
+  during generic tracker scene emission. T-022a/T-022b/T-022c already cover the
+  base carrier, planner, and emission paths; T-022d will harden the uncovered
+  arc-cycle reset case and add a composed score-tree JSON round-trip to tracker
+  metadata test. The generated startup-hardening bullets target the existing
+  identity startup subsystem, which already has regression anchors, so this
+  meter task will re-run those tests rather than modify startup flow.
+- **Red/focused verification:** Red phase was confirmed with
+  `pytest tests/test_score_tree_composer.py::test_plan_meter_trajectory_restarts_phase_drift_per_arc_cycle tests/test_score_tree_composer.py::test_composed_meter_trajectory_scene_metadata_round_trips_through_json_and_tracker -q`
+  failing on the second-cycle `Divination` scene inheriting the prior cycle's
+  second drift cell. After implementation, those locked tests passed with `2
+  passed`, the trajectory/metadata anchors passed with `8 passed`, and startup
+  identity hardening anchors passed with `11 passed`.
+- **Full validation:** `pip install -e '.[dev]' && pytest tests/ -x && ruff
+  check src/ tests/ && mypy src/` passed with `4991 passed, 11 skipped`, Ruff
+  clean, and mypy clean. No new dependencies or migrations were introduced.
 
 
 ## T-022c (2026-05-23)

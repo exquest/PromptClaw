@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Added arc-cycle meter trajectory hardening (T-022d):
+  `senseweave.recursive_composer.plan_meter_trajectory(...)` now restarts
+  phase drift counts when a planned piece crosses the procedural arc boundary
+  from `Crystallization` back to `Divination`, so a new arc cycle begins from
+  the first drift cell for each phase instead of inheriting occurrence counts
+  from the prior cycle. Added regression coverage for that arc-cycle path and
+  for composed score-tree scene metadata round-tripping through JSON restore
+  and tracker compilation. This remains metadata-only: tracker row timing and
+  active groove-meter selection are unchanged, and no dependencies or
+  migrations were added. Validation passed with `4991 passed, 11 skipped`,
+  Ruff clean, and mypy clean.
+
 - Added meter trajectory scene metadata emission (T-022c):
   `MeterTrajectory.metadata_for_scene(...)` now includes a JSON-safe
   `meter_trajectory_entry` payload for the matching planned scene value,

@@ -1,5 +1,36 @@
 # Escalations
 
+## T-022d (2026-05-23)
+
+- **Reason:** Meter trajectory test-hardening scope and startup-hardening assumptions
+- **Details:** Exploration found T-022d builds on T-022a/T-022b/T-022c rather
+  than adding a new active meter runtime. This task assumes the missing
+  trajectory-planning coverage is the arc-cycle boundary case where a composed
+  piece crosses from `Crystallization` back to `Divination`; the planner should
+  restart phase drift counts for the new procedural arc cycle while keeping
+  repeated phases inside one continuous cycle deterministic. It also adds a
+  composed score-tree JSON round-trip to tracker-scene metadata regression. No
+  dependencies, migrations, database columns, provider secrets, or active
+  tracker row-timing changes are in scope. The generated startup identity
+  hardening bullets target the existing identity subsystem; current CLI,
+  first-boot, governor, daemon-ordering, and narrative ASGI tests remain
+  mandatory regression anchors rather than new startup rewiring for this meter
+  task.
+- **Reason:** Red phase and focused verification
+- **Details:** Red phase was confirmed with
+  `pytest tests/test_score_tree_composer.py::test_plan_meter_trajectory_restarts_phase_drift_per_arc_cycle tests/test_score_tree_composer.py::test_composed_meter_trajectory_scene_metadata_round_trips_through_json_and_tracker -q`
+  failing because the second-cycle `Divination` scene planned `4/4` instead of
+  restarting at the first `Divination` drift cell (`free`). The implementation
+  detects canonical procedural arc wraps and clears phase occurrence counts at
+  the cycle boundary. Focused verification passed with `2 passed`,
+  trajectory/metadata anchors passed with `8 passed`, and startup identity
+  hardening anchors passed with `11 passed`.
+- **Reason:** Full validation
+- **Details:** Full validation passed with
+  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`:
+  `4991 passed, 11 skipped`, Ruff clean, and mypy clean. No new dependencies or
+  migrations were introduced.
+
 ## T-022b (2026-05-23)
 
 - **Reason:** Composer meter-trajectory planner scope and startup-hardening assumptions

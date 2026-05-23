@@ -18,7 +18,7 @@ from .form_grammar import FormPlan, PlannedSection, phrase_family_slots
 from .hook_engine import build_hook_profile
 from .piece_brief import PieceBrief
 from .piece_commission import PieceCommission
-from .procedural_arc import ArcDirective, directive_for_elapsed
+from .procedural_arc import ARC_PHASES, ArcDirective, directive_for_elapsed
 from .production_course import course_for_section
 from .score_tree import (
     MeterSceneValue,
@@ -97,6 +97,10 @@ _DEFAULT_METER_DRIFT: tuple[_MeterDriftCell, ...] = (
     _MeterDriftCell("5/4", "dotted", "metric_modulation", "long", "4:3"),
 )
 
+_ARC_PHASE_ORDER: dict[str, int] = {
+    phase.name: index for index, phase in enumerate(ARC_PHASES)
+}
+
 
 def _arc_metadata(directive: ArcDirective) -> dict[str, str]:
     return {
@@ -166,6 +170,16 @@ def _meter_cell_for_phase(phase_name: str, occurrence_index: int) -> _MeterDrift
     return cells[occurrence_index % len(cells)]
 
 
+def _starts_new_arc_cycle(previous_phase_name: str | None, phase_name: str) -> bool:
+    if previous_phase_name is None:
+        return False
+    previous_index = _ARC_PHASE_ORDER.get(previous_phase_name)
+    current_index = _ARC_PHASE_ORDER.get(phase_name)
+    if previous_index is None or current_index is None:
+        return False
+    return current_index < previous_index
+
+
 def _meter_scene_value(
     section: PlannedSection,
     *,
@@ -227,13 +241,17 @@ def plan_meter_trajectory(
     phase_names: list[str] = []
     phase_occurrences: dict[str, int] = {}
     scene_values: list[MeterSceneValue] = []
+    previous_phase_name: str | None = None
     for section in sections:
         phase_name = _meter_phase_for_section(section, directives)
+        if _starts_new_arc_cycle(previous_phase_name, phase_name):
+            phase_occurrences.clear()
         phase_names.append(phase_name)
         occurrence_index = phase_occurrences.get(phase_name, 0)
         phase_occurrences[phase_name] = occurrence_index + 1
         cell = _meter_cell_for_phase(phase_name, occurrence_index)
         scene_values.append(_meter_scene_value(section, cell=cell))
+        previous_phase_name = phase_name
 
     phase_path = tuple(dict.fromkeys(phase_names))
     trajectory_id = "meter-" + _scoped_seed_id(
