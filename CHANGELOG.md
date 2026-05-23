@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Added T-048b morph curve interpolation helpers:
+  `cypherclaw.instrument_morph` now provides typed composer-side
+  `linear`, `exponential`, and `sigmoid` phrase curves, scalar interpolation,
+  numeric voice-parameter map interpolation, and endpoint-inclusive parameter
+  frames for later OSC scheduling. This is separate from T-048a's
+  `linear`/`equal-power` SuperCollider gain-law selector and does not alter the
+  composer API validation contract. No new dependencies, database migrations,
+  provider secrets, runtime state directories, startup-flow changes, or
+  SuperCollider source changes were added; startup identity hardening remains
+  covered by the existing startup tests.
+
 - Added T-048a morph phrase validation for the composer API:
   `cypherclaw.composer_api` now exposes a validation-only FastAPI route,
   `POST /api/v1/composer/morph-phrase`, plus typed Pydantic schemas for

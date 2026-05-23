@@ -574,7 +574,21 @@ Progress: [███████████████████████
 - **T-047b**: pending — Pending.
 - **T-048**: split — Split into subtasks.
 - **T-048a**: complete — Exploration found no existing composer HTTP API module; closest patterns are `src/cypherclaw/image_api` and `src/cypherclaw/narrative_api` FastAPI factories, while the composer-facing music surface lives under `my-claw/tools/senseweave`. Added `specs/t-048a-spec.md`, locked red tests in `tests/test_composer_api.py`, and implemented a packaged `cypherclaw.composer_api` validation-only route for morph phrase requests. The schema reuses `cypherclaw.space_reverb.VOICE_REVERB_PROFILES` as the canonical voice set, accepts normalized `sw_` voice aliases, rejects invalid/self-morph payloads at the endpoint, maps `linear`/`equal-power` to the `morph_voice` numeric curve values, and preserves existing `fx_bus_id` / `sw_sampler.scd` hardening anchors. No new dependencies, no database migration, no provider secrets, no runtime state directories, no startup-flow changes, and no SuperCollider source changes were added. Red phase was confirmed before implementation; focused T-048a and hardening anchors passed with `14 passed`; final validation passed with `5133 passed, 11 skipped`, Ruff clean, and mypy clean.
-- **T-048b**: pending — Pending.
+- **T-048b**: complete — Completed with verdict PASS. Phase 0 Explore found
+  T-047 provides the `morph_voice` SynthDef and T-048a provides request
+  validation, but no composer-side interpolation helper existed for generating
+  `morph_x`/voice-parameter values across a phrase. Added
+  `cypherclaw.instrument_morph` with typed `linear`, `exponential`, and
+  `sigmoid` morph curve interpolation, scalar interpolation, numeric
+  source/target voice-parameter interpolation, and endpoint-inclusive parameter
+  frames. T-048a's `linear`/`equal-power` values remain SynthDef crossfade-law
+  selectors. No new dependencies, No database migration, no provider secrets,
+  no runtime state directories, no startup-flow changes, and no SuperCollider
+  source changes were added. Red phase was confirmed before implementation;
+  focused T-048b tests passed with `8 passed`, composer API compatibility
+  passed with `11 passed`, startup identity hardening anchors passed with
+  `8 passed`, and final validation passed with `5141 passed, 11 skipped`, Ruff
+  clean, and mypy clean.
 - **T-048c**: pending — Pending.
 - **T-048d**: pending — Pending.
 - **T-047c**: pending — Pending.

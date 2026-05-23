@@ -1,5 +1,34 @@
 # Escalations
 
+## T-048b (2026-05-23)
+
+- **Reason:** Curve terminology spans two layers.
+- **Details:** T-048a's `morph_curve_type` is the SuperCollider gain-law
+  selector for `morph_voice.scd` (`linear` / `equal-power`). T-048b implements
+  composer-side phrase interpolation curves (`linear` / `exponential` /
+  `sigmoid`) for `morph_x` and numeric voice-parameter maps without changing
+  the T-048a API contract or previous locked assertions.
+- **Assumption:** Source/target voice parameter maps can expose different key
+  sets. Shared numeric parameters interpolate; one-sided parameters are
+  preserved rather than invented from a zero default.
+- **Candidate hardening:** The generated `bootstrap_identity()` feedback
+  targets the existing startup identity subsystem. This task does not touch
+  startup flow, but the existing CLI, first-boot, and governor startup identity
+  anchors are re-run as the regression check.
+- **Dependencies and migrations:** No new dependencies, provider secrets,
+  database columns, migrations, runtime state directories, startup-flow
+  changes, agent commands, or SuperCollider source changes are required.
+- **Verification:** Red phase was confirmed with
+  `pytest tests/test_instrument_morph_curves.py -q` failing at collection on
+  missing `cypherclaw.instrument_morph` before implementation. After
+  implementation, the locked T-048b tests passed with `8 passed`, existing
+  T-048a composer API tests passed with `11 passed`, startup identity anchors
+  passed with `8 passed`, and focused Ruff/mypy checks on the new package
+  passed. Final validation
+  (`pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
+  mypy src/`) passed with `5141 passed, 11 skipped`, Ruff clean, and mypy
+  clean.
+
 ## T-048a (2026-05-23)
 
 - **Reason:** Composer API boundary assumptions for morph phrase validation.
