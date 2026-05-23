@@ -1,5 +1,12 @@
 # Escalations
 
+## T-003a (2026-05-23)
+
+- **Reason:** Coupling reader scope and startup-hardening assumptions
+- **Details:** Exploration found the affected surface is the SenseWeave voice module (`my-claw/tools/senseweave/synthesis/senseweave_voice.py`), the existing affective bus contract in `my-claw/tools/senseweave/affective_state_bus.py`, and their tests. T-001/T-002/T-004/T-005 already provide the shared bus constants, writer, slow decay, and `CYPHERCLAW_V2_COUPLING` flag parser. This subtask assumes T-003a should add only a typed Python reader helper that calls a supplied control-bus reader for `AFFECTIVE_STATE_BUS_INDEX` when coupling is enabled, returns `0.0` without reading when coupling is off, and clamps enabled values into `[0.0, 1.0]`. Later T-003 subtasks own applying the coupling multiplier to voice modulators. The generated startup hardening bullets target the existing identity startup subsystem; current CLI, first-boot, daemon-ordering, and narrative ASGI tests already cover `bootstrap_identity()` before `FirstBootAnnouncer` and standalone/federated persistence, so they remain regression anchors rather than broadening this voice-reader task into startup rewiring. No new dependencies, migrations, provider secrets, database columns, runtime state directories, or agent command strings are required.
+- **Reason:** Red phase, implementation verification, and hardening-anchor results
+- **Details:** Red phase was confirmed with `pytest tests/test_senseweave_voice.py::TestAffectiveStateBusReader -q` failing on the missing `read_affective_state_bus` import before production code changed. After implementation, the locked reader tests passed with `3 passed`, `pytest tests/test_affective_state_bus.py -q` passed with `36 passed`, `pytest tests/test_senseweave_voice.py tests/test_senseweave_voice_depth.py -q` passed with `36 passed`, focused Ruff and `git diff --check` passed, and the startup identity hardening anchor command passed with `11 passed`. The required validation command `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` passed with `4857 passed, 11 skipped`, Ruff clean, and mypy clean. No new dependencies, migrations, provider secrets, database columns, startup rewiring, or runtime state directories were introduced.
+
 ## T-043@20260515T214233Z (2026-05-16)
 
 - **Reason:** PAL deploy rollback CLI scope and startup-hardening assumptions

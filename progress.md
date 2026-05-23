@@ -481,6 +481,7 @@ Progress: [███████████████████████
 - **T-001**: complete — Completed with verdict PASS.
 - **T-002**: complete — Completed with verdict PASS.
 - **T-003**: needs_split — Timed out; run sdp-cli tasks split T-003 to break it down.
+- **T-003a**: complete — Added the SenseWeave voice-module affective bus reader helper behind `CYPHERCLAW_V2_COUPLING`; focused tests, startup identity anchors, and full validation passed.
 - **T-004**: pending — Pending.
 - **T-005**: pending — Pending.
 - **T-006**: needs_split — Timed out; run sdp-cli tasks split T-006 to break it down.

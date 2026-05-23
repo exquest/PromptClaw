@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Added the SenseWeave affective bus reader helper (T-003a):
+  `senseweave.synthesis.senseweave_voice.read_affective_state_bus(...)` now
+  reads the canonical `affective_state_bus` control-bus index only when
+  `CYPHERCLAW_V2_COUPLING` is enabled, clamps enabled values into `[0.0, 1.0]`,
+  and returns `0.0` without touching the bus reader when coupling is off. This
+  adds no dependency, migration, provider secret, database behavior, or startup
+  rewiring.
+
 - Added approval-gated PAL deploy rollback CLI (T-043@20260515T214233Z):
   `promptclaw pal deploy rollback PROJECT_ROOT --remote-inventory PATH
   --backup-id ID --approve-rollback` now restores a local PAL deploy backup

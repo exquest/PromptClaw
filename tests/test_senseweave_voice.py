@@ -7,6 +7,10 @@ from unittest.mock import MagicMock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
 
+from senseweave.affective_state_bus import (
+    AFFECTIVE_STATE_BUS_INDEX,
+    CYPHERCLAW_V2_COUPLING_ENV,
+)
 from senseweave.synthesis.senseweave_voice import (
     PAD,
     PRESETS,
@@ -14,7 +18,56 @@ from senseweave.synthesis.senseweave_voice import (
     STAB,
     TIMBRE_MAP,
     SenseweaveVoice,
+    read_affective_state_bus,
 )
+
+
+class _ControlBusReader:
+    def __init__(self, value: float) -> None:
+        self.value = value
+        self.read_indices: list[int] = []
+
+    def read_control_bus(self, bus_index: int) -> float:
+        self.read_indices.append(bus_index)
+        return self.value
+
+
+class TestAffectiveStateBusReader:
+    def test_reader_returns_bus_value_when_coupling_enabled(self) -> None:
+        reader = _ControlBusReader(0.62)
+
+        value = read_affective_state_bus(
+            reader,
+            env={CYPHERCLAW_V2_COUPLING_ENV: "1"},
+        )
+
+        assert value == 0.62
+        assert reader.read_indices == [AFFECTIVE_STATE_BUS_INDEX]
+
+    def test_reader_returns_zero_without_touching_bus_when_flag_off(self) -> None:
+        reader = _ControlBusReader(0.91)
+
+        default_off = read_affective_state_bus(reader, env={})
+        explicit_off = read_affective_state_bus(
+            reader,
+            env={CYPHERCLAW_V2_COUPLING_ENV: "0"},
+        )
+
+        assert default_off == 0.0
+        assert explicit_off == 0.0
+        assert reader.read_indices == []
+
+    def test_reader_clamps_bus_values_when_coupling_enabled(self) -> None:
+        enabled_env = {CYPHERCLAW_V2_COUPLING_ENV: "true"}
+
+        assert read_affective_state_bus(
+            _ControlBusReader(1.5),
+            env=enabled_env,
+        ) == 1.0
+        assert read_affective_state_bus(
+            _ControlBusReader(-0.25),
+            env=enabled_env,
+        ) == 0.0
 
 
 class TestADSR:

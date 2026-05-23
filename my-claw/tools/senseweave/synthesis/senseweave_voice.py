@@ -18,14 +18,52 @@ operator-readable summary without changing the live OSC path.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 import time
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
+from senseweave.affective_state_bus import (
+    AFFECTIVE_STATE_BUS_INDEX,
+    AFFECTIVE_STATE_BUS_MAX,
+    AFFECTIVE_STATE_BUS_MIN,
+    coupling_enabled,
+)
+
 
 class OSCSender(Protocol):
     """Protocol for sending OSC messages to scsynth."""
+
     def send_message(self, address: str, args: list) -> None: ...
+
+
+class ControlBusReader(Protocol):
+    """Protocol for reading a SuperCollider control bus value."""
+
+    def read_control_bus(self, bus_index: int) -> float: ...
+
+
+def _clamp_affective_state_bus_value(value: float) -> float:
+    return max(AFFECTIVE_STATE_BUS_MIN, min(AFFECTIVE_STATE_BUS_MAX, float(value)))
+
+
+def read_affective_state_bus(
+    reader: ControlBusReader,
+    *,
+    env: Mapping[str, str] | None = None,
+) -> float:
+    """Read the shared affective-state bus when coupling is enabled.
+
+    ``CYPHERCLAW_V2_COUPLING`` defaults OFF via
+    :func:`senseweave.affective_state_bus.coupling_enabled`. When OFF, this
+    returns ``0.0`` without touching the reader, keeping the voice layer
+    behaviorally inert until the rollout flag is explicitly enabled.
+    """
+    if not coupling_enabled(env):
+        return 0.0
+    return _clamp_affective_state_bus_value(
+        reader.read_control_bus(AFFECTIVE_STATE_BUS_INDEX)
+    )
 
 
 @dataclass(frozen=True)
