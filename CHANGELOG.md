@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Bound `cypherclaw.holdenu.com` to the holdenu API Worker over HTTPS
+  (T-027): added a `custom_domain = true` route to the Worker's
+  `wrangler.toml`, which provisioned the Cloudflare-managed DNS record and
+  universal-SSL certificate for the hostname. The Worker now serves a
+  minimal `GET /` and `HEAD /` placeholder landing page (200 OK,
+  `text/html`) on `cypherclaw.holdenu.com` so the DNS + Worker + TLS chain
+  has a 200 response to verify against; the richer streaming + visualizer
+  page ships in T-028. Added three Node tests covering the GET landing, the
+  HEAD acceptance criterion (T-027), and the explorer-host fall-through.
+  Verified live: `curl -I https://cypherclaw.holdenu.com/` returns
+  `HTTP/2 200` with a `cf-ray` header (a0034ee62fa50ccf-PDX).
+
 - Added Cloudflare Worker CypherClaw HLS playlist + segment GET (T-026):
   the holdenu API Worker now serves `GET /api/cypherclaw/live.m3u8` with a
   valid HLS v3 rolling-window playlist (EXTM3U, VERSION, TARGETDURATION,

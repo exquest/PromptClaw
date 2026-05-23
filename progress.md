@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~9h 55m remaining (58 tasks, low confidence, calibrating)
-Expected completion: 12:48 PM today.
-Progress: [██████████████████████████████████░░░░] 89%  476 / 534 tasks complete
-  completed: 476, pending: 45, needs_split: 11, blocked: 0, needs_attn: 2, skipped: 42
+ETC: ~11h 20m remaining (57 tasks, low confidence, calibrating)
+Expected completion: 2:31 PM today.
+Progress: [██████████████████████████████████░░░░] 89%  477 / 534 tasks complete
+  completed: 477, pending: 44, needs_split: 11, blocked: 0, needs_attn: 2, skipped: 42
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -526,15 +526,8 @@ Progress: [███████████████████████
 - **T-023**: complete — Completed with verdict PASS.
 - **T-024**: complete — Completed with verdict PASS.
 - **T-025**: complete — Completed with verdict PASS WITH NOTES.
-- **T-026**: complete — Cloudflare Worker now serves a valid HLS playlist at
-  `GET /api/cypherclaw/live.m3u8` and range-serves stored segments at
-  `GET /api/cypherclaw/segment/<key>`. Playlist is a rolling window of recent
-  Opus segments under `cypherclaw/live/{YYYY-MM-DD}/seg-{N}.opus`, straddles
-  the UTC date boundary, and emits valid HLS v3 directives. Validation passed
-  with Worker `npm test` (`8 passed`), Worker `npx tsc --noEmit`, startup
-  identity anchors (`11 passed`), and full PromptClaw validation
-  (`4997 passed, 11 skipped`, Ruff clean, mypy clean).
-- **T-027**: pending — Pending.
+- **T-026**: complete — Completed with verdict PASS WITH NOTES.
+- **T-027**: complete — Completed with verdict PASS.
 - **T-028**: split — Split into subtasks.
 - **T-028a**: pending — Pending.
 - **T-028b**: pending — Pending.
