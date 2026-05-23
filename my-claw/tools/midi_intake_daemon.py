@@ -10,12 +10,16 @@ follow-up task.
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import logging
+import shutil
 import signal
 import sys
 import threading
 import time
 from collections.abc import Callable, Sequence
+from datetime import datetime, timezone
 from pathlib import Path
 
 try:
@@ -48,6 +52,9 @@ except ImportError:  # pragma: no cover - exercised via fallback path
 
 DEFAULT_WATCH_DIR = Path("/home/user/cypherclaw/midi-inbox/")
 MIDI_EXTENSIONS: tuple[str, ...] = (".mid", ".midi")
+MIDI_HEADER_MAGIC: bytes = b"MThd"
+PROCESSED_SUBDIR: str = "processed"
+REJECTED_SUBDIR: str = "rejected"
 
 LOGGER = logging.getLogger("cypherclaw.midi_intake_daemon")
 
@@ -127,8 +134,81 @@ class MidiEventHandler(FileSystemEventHandler):
         self._handle(str(dest))
 
 
+def validate_midi_header(path: Path | str) -> bool:
+    """Return ``True`` when ``path`` begins with the ``MThd`` magic bytes."""
+
+    try:
+        with Path(path).open("rb") as fh:
+            header = fh.read(len(MIDI_HEADER_MAGIC))
+    except (FileNotFoundError, IsADirectoryError, PermissionError):
+        return False
+    return header == MIDI_HEADER_MAGIC
+
+
+def _sha256_of(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _unique_destination(target_dir: Path, name: str) -> Path:
+    candidate = target_dir / name
+    if not candidate.exists():
+        return candidate
+    stem = candidate.stem
+    suffix = candidate.suffix
+    counter = 1
+    while True:
+        candidate = target_dir / f"{stem}.{counter}{suffix}"
+        if not candidate.exists():
+            return candidate
+        counter += 1
+
+
+def process_midi_file(
+    path: Path | str,
+    *,
+    processed_dir: Path | str | None = None,
+    rejected_dir: Path | str | None = None,
+) -> dict[str, object]:
+    """Validate ``path``, move it to ``processed/`` or ``rejected/``, emit event.
+
+    Returns the JSON event record describing the outcome. The record contains
+    the original path, file size, sha256, ISO8601 UTC timestamp, status
+    (``processed`` or ``rejected``), and the destination path. The same
+    record is emitted to :data:`LOGGER` as a JSON line prefixed with
+    ``midi_intake_event ``.
+    """
+
+    src = Path(path)
+    parent = src.parent
+    processed = Path(processed_dir) if processed_dir else parent / PROCESSED_SUBDIR
+    rejected = Path(rejected_dir) if rejected_dir else parent / REJECTED_SUBDIR
+
+    size = src.stat().st_size
+    sha256 = _sha256_of(src)
+    valid = validate_midi_header(src)
+    target_dir = processed if valid else rejected
+    target_dir.mkdir(parents=True, exist_ok=True)
+    destination = _unique_destination(target_dir, src.name)
+    shutil.move(str(src), str(destination))
+
+    event: dict[str, object] = {
+        "path": str(src),
+        "size": size,
+        "sha256": sha256,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "status": "processed" if valid else "rejected",
+        "destination": str(destination),
+    }
+    LOGGER.info("midi_intake_event %s", json.dumps(event, sort_keys=True))
+    return event
+
+
 def _default_dispatch(path: Path) -> None:
-    LOGGER.info("midi_dispatch path=%s", path)
+    process_midi_file(path)
 
 
 def watch_loop(

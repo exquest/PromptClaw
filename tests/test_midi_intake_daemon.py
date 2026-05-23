@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
+import logging
 import os
 import signal
 import sys
@@ -350,3 +353,143 @@ def test_watch_loop_polling_does_not_redispatch_existing_files(
         t.join()
 
     assert dispatched == []
+
+
+def _write_valid_midi(path: Path, body: bytes = b"\x00\x00\x00\x06\x00\x00\x00\x01\x00\x60") -> bytes:
+    contents = mod.MIDI_HEADER_MAGIC + body
+    path.write_bytes(contents)
+    return contents
+
+
+def test_validate_midi_header_accepts_mthd(tmp_path: Path) -> None:
+    target = tmp_path / "ok.mid"
+    _write_valid_midi(target)
+    assert mod.validate_midi_header(target) is True
+
+
+def test_validate_midi_header_rejects_non_mthd(tmp_path: Path) -> None:
+    target = tmp_path / "bad.mid"
+    target.write_bytes(b"RIFFxxxx" + b"\x00" * 16)
+    assert mod.validate_midi_header(target) is False
+
+
+def test_validate_midi_header_rejects_missing_file(tmp_path: Path) -> None:
+    assert mod.validate_midi_header(tmp_path / "ghost.mid") is False
+
+
+def test_validate_midi_header_rejects_truncated_file(tmp_path: Path) -> None:
+    target = tmp_path / "tiny.mid"
+    target.write_bytes(b"MT")
+    assert mod.validate_midi_header(target) is False
+
+
+def test_process_midi_file_moves_valid_to_processed(tmp_path: Path) -> None:
+    target = tmp_path / "alpha.mid"
+    contents = _write_valid_midi(target)
+
+    event = mod.process_midi_file(target)
+
+    processed_dir = tmp_path / "processed"
+    moved = processed_dir / "alpha.mid"
+    assert processed_dir.is_dir()
+    assert moved.is_file()
+    assert not target.exists()
+    assert event["status"] == "processed"
+    assert event["path"] == str(target)
+    assert event["destination"] == str(moved)
+    assert event["size"] == len(contents)
+    assert event["sha256"] == hashlib.sha256(contents).hexdigest()
+    assert isinstance(event["timestamp"], str)
+    # ISO 8601 UTC, parseable
+    assert event["timestamp"].endswith("+00:00")
+
+
+def test_process_midi_file_moves_invalid_to_rejected(tmp_path: Path) -> None:
+    target = tmp_path / "bad.mid"
+    target.write_bytes(b"NOPE" + b"\x00" * 8)
+
+    event = mod.process_midi_file(target)
+
+    rejected = tmp_path / "rejected" / "bad.mid"
+    assert rejected.is_file()
+    assert not target.exists()
+    assert event["status"] == "rejected"
+    assert event["destination"] == str(rejected)
+
+
+def test_process_midi_file_uses_custom_dirs(tmp_path: Path) -> None:
+    target = tmp_path / "alpha.mid"
+    _write_valid_midi(target)
+    out = tmp_path / "out"
+    rej = tmp_path / "rej"
+
+    event = mod.process_midi_file(target, processed_dir=out, rejected_dir=rej)
+
+    assert (out / "alpha.mid").is_file()
+    assert not rej.exists()
+    assert event["status"] == "processed"
+
+
+def test_process_midi_file_avoids_overwriting_existing_destination(
+    tmp_path: Path,
+) -> None:
+    processed_dir = tmp_path / "processed"
+    processed_dir.mkdir()
+    (processed_dir / "alpha.mid").write_bytes(b"OLD")
+
+    target = tmp_path / "alpha.mid"
+    _write_valid_midi(target)
+
+    event = mod.process_midi_file(target)
+
+    assert (processed_dir / "alpha.mid").read_bytes() == b"OLD"
+    new_dest = Path(str(event["destination"]))
+    assert new_dest.exists()
+    assert new_dest != processed_dir / "alpha.mid"
+
+
+def test_process_midi_file_emits_json_event_to_log(tmp_path: Path) -> None:
+    target = tmp_path / "alpha.mid"
+    _write_valid_midi(target)
+
+    records: list[logging.LogRecord] = []
+
+    class _Capture(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            records.append(record)
+
+    handler = _Capture(level=logging.INFO)
+    previous_level = mod.LOGGER.level
+    mod.LOGGER.addHandler(handler)
+    mod.LOGGER.setLevel(logging.INFO)
+    try:
+        event = mod.process_midi_file(target)
+    finally:
+        mod.LOGGER.removeHandler(handler)
+        mod.LOGGER.setLevel(previous_level)
+
+    matching = [r for r in records if "midi_intake_event" in r.getMessage()]
+    assert matching, "expected a midi_intake_event log line"
+    payload = matching[-1].getMessage().split("midi_intake_event ", 1)[1]
+    parsed = json.loads(payload)
+    assert parsed["status"] == "processed"
+    assert parsed["sha256"] == event["sha256"]
+    assert parsed["path"] == str(target)
+
+
+def test_default_dispatch_invokes_process_midi_file(
+    tmp_path: Path, monkeypatch
+) -> None:
+    target = tmp_path / "alpha.mid"
+    _write_valid_midi(target)
+
+    calls: list[Path] = []
+
+    def fake_process(path, **kwargs):
+        calls.append(Path(path))
+        return {"status": "processed"}
+
+    monkeypatch.setattr(mod, "process_midi_file", fake_process)
+    mod._default_dispatch(target)
+
+    assert calls == [target]
