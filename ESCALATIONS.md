@@ -1,5 +1,33 @@
 # Escalations
 
+## T-045d (2026-05-23)
+
+- **Reason:** Unit-coverage hardening assumptions for mood-driven space routing.
+- **Details:** T-045d adds a compact unit-test matrix over the existing
+  T-045b/T-045c space resolver and OSC `fx_bus_id` emission. It does not add a
+  new routing mode or change SuperCollider sources.
+- **Assumption:** "No active house is set" in house-bound mode uses the
+  existing resolver default, `house_chamber`, which maps to
+  `breath/glass_bell_jar` and bus `17`. This preserves the fallback already
+  documented and implemented by T-045b/T-045c.
+- **Candidate hardening:** The generated `bootstrap_identity()` feedback
+  targets the existing startup identity subsystem. Current daemon,
+  first-boot, governor, and narrative ASGI tests cover startup invocation,
+  persistence between boots, and bootstrap-before-`FirstBootAnnouncer`
+  ordering, so T-045d re-runs those anchors rather than broadening this
+  resolver unit-coverage task into startup rewiring.
+- **Dependencies and migrations:** No new dependencies, provider secrets,
+  database columns, migrations, runtime state directories, HTTP routes,
+  startup-flow changes, or SuperCollider source changes are required.
+- **Verification:** Red phase was confirmed with the locked T-045d fallback
+  test failing on missing `summarize_voice_reverb_profiles()` fallback fields
+  before implementation. After implementation, the locked T-045d tests passed
+  with `2 passed`, adjacent mood-space anchors passed with `38 passed`,
+  startup identity anchors passed with `13 passed`, and the required final
+  validation (`pip install -e '.[dev]' && pytest tests/ -x && ruff check src/
+  tests/ && mypy src/`) passed with `5108 passed, 11 skipped`, Ruff clean,
+  and mypy clean.
+
 ## T-045c (2026-05-23)
 
 - **Reason:** Scene playback resolver-wiring assumptions.

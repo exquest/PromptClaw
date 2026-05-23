@@ -567,7 +567,7 @@ Progress: [███████████████████████
   before implementation, focused hardening anchors passed with `94 passed`,
   startup identity anchors passed with `11 passed`, and final validation passed
   with `5106 passed, 11 skipped`, Ruff clean, and mypy clean.
-- **T-045d**: pending — Pending.
+- **T-045d**: complete — Added T-045d mood-space unit coverage for the OSC `fx_bus_id` mode matrix: matched default, expressive mismatch, and house-bound uniform routing now cover every canonical voice, and house-bound mode with no active house is pinned to the documented `house_chamber` fallback. `summarize_voice_reverb_profiles()` now exposes that fallback for diagnostics. No new dependencies, No database migration, no provider secrets, no runtime state directories, no HTTP routes, no startup-flow changes, and no SuperCollider source changes were added. Red phase was confirmed before implementation, focused mood-space anchors passed with `38 passed`, startup identity hardening anchors passed with `13 passed`, and final validation passed with `5108 passed, 11 skipped`, Ruff clean, and mypy clean.
 - **T-046**: pending — Pending.
 - **T-047**: split — Split into subtasks.
 - **T-047a**: pending — Pending.

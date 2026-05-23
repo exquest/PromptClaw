@@ -11,6 +11,7 @@ from typing import Any
 from cypherclaw.midi_loader import FaithfulMidiEvent
 from cypherclaw.midi_scene import FaithfulRenderSettings, build_faithful_midi_scene
 from cypherclaw.space_reverb import (
+    DEFAULT_HOUSE_BOUND_HOUSE,
     EXPRESSIVE_SPACE_VOICE_BY_VOICE,
     HOUSE_BOUND_SPACE_VOICE_BY_HOUSE,
     SPACE_PROFILE_SOURCE,
@@ -102,6 +103,10 @@ def _assert_json_safe(value: Any) -> None:
     elif isinstance(value, list):
         for child in value:
             _assert_json_safe(child)
+
+
+def _fx_bus_id_from_args(args: list[float | int | str]) -> int:
+    return int(args[args.index("fx_bus_id") + 1])
 
 
 def _master_smooth_arg_block(source: str) -> str:
@@ -361,6 +366,89 @@ def test_voice_s_new_args_apply_mood_space_without_changing_sounding_voice() -> 
     assert house_bound_args[house_bound_args.index("fx_bus_id") + 1] == EXPECTED_BUS_IDS[
         "tabla_tin"
     ]
+
+
+def test_voice_routing_fx_bus_matrix_covers_all_mood_modes() -> None:
+    """T-045d: every supported voice routes to the expected FX bus by mode."""
+
+    cases: tuple[tuple[str, dict[str, object], dict[str, str]], ...] = (
+        (
+            "matched default",
+            {},
+            {voice: voice for voice in EXPECTED_VOICE_ORDER},
+        ),
+        (
+            "expressive mismatch",
+            {"mood_mode": "expressive"},
+            dict(EXPRESSIVE_SPACE_VOICE_BY_VOICE),
+        ),
+        (
+            "house-bound uniform",
+            {"mood_mode": "house-bound", "active_house": "house_garden"},
+            {voice: "tabla_tin" for voice in EXPECTED_VOICE_ORDER},
+        ),
+    )
+
+    for label, kwargs, expected_space_by_voice in cases:
+        routed_bus_by_voice: dict[str, int] = {}
+        routed_space_by_voice: dict[str, str] = {}
+        for index, voice in enumerate(EXPECTED_VOICE_ORDER):
+            args = build_voice_s_new_args(
+                voice,
+                node_id=71000 + index,
+                freq=220.0 + index,
+                **kwargs,
+            )
+            expected_space_voice = expected_space_by_voice[voice]
+            expected_profile = VOICE_REVERB_PROFILES[expected_space_voice]
+
+            assert args[0] == f"sw_{voice}", label
+            assert _fx_bus_id_from_args(args) == expected_profile.fx_bus_id, label
+            routed_bus_by_voice[voice] = expected_profile.fx_bus_id
+            routed_space_by_voice[voice] = expected_space_voice
+
+        if label == "expressive mismatch":
+            assert all(
+                space_voice != voice
+                for voice, space_voice in routed_space_by_voice.items()
+            )
+        if label == "house-bound uniform":
+            assert set(routed_bus_by_voice.values()) == {
+                VOICE_REVERB_PROFILES["tabla_tin"].fx_bus_id
+            }
+
+
+def test_house_bound_without_active_house_uses_documented_default_house_space() -> None:
+    """T-045d: missing active-house context uses the documented fallback."""
+
+    fallback_space_voice = HOUSE_BOUND_SPACE_VOICE_BY_HOUSE[DEFAULT_HOUSE_BOUND_HOUSE]
+    fallback_profile = VOICE_REVERB_PROFILES[fallback_space_voice]
+    summary = summarize_voice_reverb_profiles()
+
+    assert summary["default_house_bound_house"] == DEFAULT_HOUSE_BOUND_HOUSE
+    assert summary["default_house_bound_space_voice"] == fallback_space_voice
+    assert summary["default_house_bound_fx_bus_id"] == fallback_profile.fx_bus_id
+    assert active_house_from_scene_metadata({"mood_mode": "house-bound"}) == (
+        DEFAULT_HOUSE_BOUND_HOUSE
+    )
+
+    for index, voice in enumerate(EXPECTED_VOICE_ORDER):
+        args = build_voice_s_new_args(
+            voice,
+            node_id=72000 + index,
+            freq=330.0 + index,
+            mood_mode="house-bound",
+        )
+        selected = resolve_voice_space_profile(voice, mood_mode="house-bound")
+        scene_selected = resolve_scene_voice_space_profile(
+            voice,
+            {"mood_mode": "house-bound"},
+        )
+
+        assert args[0] == f"sw_{voice}"
+        assert _fx_bus_id_from_args(args) == fallback_profile.fx_bus_id
+        assert selected.voice == fallback_space_voice
+        assert scene_selected.voice == fallback_space_voice
 
 
 def test_each_voice_routes_only_to_its_assigned_fx_bus() -> None:

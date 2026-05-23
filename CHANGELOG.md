@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Added T-045d mood-space unit coverage: `tests/test_space_reverb_profiles.py`
+  now covers the full OSC `fx_bus_id` mode matrix for matched default,
+  expressive mismatch, and house-bound uniform routing across every canonical
+  CypherClaw voice, plus the no-active-house fallback to `house_chamber`
+  (`breath/glass_bell_jar`, bus `17`). `summarize_voice_reverb_profiles()`
+  now exposes that default fallback for diagnostics. No new dependencies,
+  database migrations, provider secrets, runtime state directories, HTTP
+  routes, startup-flow changes, or SuperCollider source changes were added.
+
 - Added T-045c scene playback resolver wiring: tracker scene events now carry
   resolver-derived `mood_mode`, `active_house`, `render_space_voice`,
   `render_space_id`, and `render_fx_bus_id` metadata, and live playback passes

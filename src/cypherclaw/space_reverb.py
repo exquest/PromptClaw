@@ -354,11 +354,18 @@ def resolve_scene_voice_space_profile(
 def summarize_voice_reverb_profiles() -> dict[str, Any]:
     """Return a JSON-safe summary of all per-voice reverb profiles."""
 
+    default_house_space_voice = HOUSE_BOUND_SPACE_VOICE_BY_HOUSE[
+        DEFAULT_HOUSE_BOUND_HOUSE
+    ]
+    default_house_profile = VOICE_REVERB_PROFILES[default_house_space_voice]
     return {
         "source": SPACE_PROFILE_SOURCE,
         "voice_order": list(VOICE_REVERB_PROFILES),
         "expressive_space_voice_by_voice": dict(EXPRESSIVE_SPACE_VOICE_BY_VOICE),
         "house_bound_space_voice_by_house": dict(HOUSE_BOUND_SPACE_VOICE_BY_HOUSE),
+        "default_house_bound_house": DEFAULT_HOUSE_BOUND_HOUSE,
+        "default_house_bound_space_voice": default_house_space_voice,
+        "default_house_bound_fx_bus_id": default_house_profile.fx_bus_id,
         "profiles": [
             {
                 "voice": profile.voice,
