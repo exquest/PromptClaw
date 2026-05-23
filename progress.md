@@ -603,7 +603,7 @@ Progress: [███████████████████████
   No database migration, provider secrets, runtime state directories,
   startup-flow changes, or SuperCollider source changes were added; `fx_bus_id`
   and `sw_sampler.scd` routing anchors remain green.
-- **T-048d**: pending — Pending.
+- **T-048d**: complete — Completed with verdict PASS. Phase 0 Explore found the active ADP process in the task prompt and prior specs, with no separate standalone ADP document beyond existing SDP/PRD materials. Affected files were `src/cypherclaw/composer_api/{app.py,schemas.py,__init__.py}`, `src/cypherclaw/instrument_morph/{curves.py,__init__.py}`, and existing tests `tests/test_composer_api.py`, `tests/test_instrument_morph_curves.py`, plus startup identity hardening anchors. Added T-048d schema validation coverage for generation-only fields, every curve type across `phrase_curve` and `morph_curve_type`, and end-to-end morph phrase generation. The schema now rejects explicit `phrase_frame_count` without `phrase_curve`. No new dependencies, No database migration, provider secrets, runtime state directories, startup-flow rewiring, or SuperCollider source changes were added. Red phase was confirmed before implementation, focused composer/instrument tests passed with `28 passed`, startup identity anchors passed with `11 passed`, and final validation is required before closeout.
 - **T-047c**: pending — Pending.
 - **T-047d**: pending — Pending.
 - **T-049**: pending — Pending.

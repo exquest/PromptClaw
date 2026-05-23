@@ -10,12 +10,13 @@ from cypherclaw.composer_api.app import create_app
 from cypherclaw.composer_api.schemas import (
     MORPH_CURVE_VALUE_BY_TYPE,
     SUPPORTED_MORPH_CURVE_TYPES,
+    SUPPORTED_PHRASE_CURVES,
     SUPPORTED_MORPH_VOICES,
     MorphCurveType,
     MorphPhraseRequest,
     build_morph_phrase_response,
 )
-from cypherclaw.instrument_morph import morph_curve_position
+from cypherclaw.instrument_morph import MorphInterpolationCurve, morph_curve_position
 from cypherclaw.space_reverb import VOICE_REVERB_PROFILES
 
 
@@ -182,6 +183,108 @@ def test_morph_phrase_endpoint_generates_single_line_phrase_from_voice_pair_and_
         ]
 
 
+def test_morph_phrase_endpoint_rejects_frame_count_without_phrase_curve() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/v1/composer/morph-phrase",
+        json={
+            "source_voice": "pluck",
+            "target_voice": "bowed",
+            "morph_curve_type": "linear",
+            "phrase_frame_count": 7,
+        },
+    )
+
+    assert response.status_code == 422
+    assert "phrase_frame_count requires phrase_curve" in response.text
+
+    validation_only = client.post(
+        "/api/v1/composer/morph-phrase",
+        json={
+            "source_voice": "pluck",
+            "target_voice": "bowed",
+            "morph_curve_type": "linear",
+        },
+    )
+    assert validation_only.status_code == 202
+    assert "single_line_phrase" not in validation_only.json()
+
+
+@pytest.mark.parametrize("phrase_curve", [curve.value for curve in MorphInterpolationCurve])
+def test_morph_phrase_endpoint_generates_each_phrase_curve_type(
+    phrase_curve: str,
+) -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/v1/composer/morph-phrase",
+        json={
+            "source_voice": "sw_pluck",
+            "target_voice": "sw_bowed",
+            "morph_curve_type": "equal_power",
+            "phrase_curve": phrase_curve,
+            "phrase_frame_count": 5,
+        },
+    )
+
+    assert response.status_code == 202
+    phrase = response.json()["single_line_phrase"]
+    assert phrase["phrase_curve"] == phrase_curve
+
+    expected_positions = [0.0, 0.25, 0.5, 0.75, 1.0]
+    frames = phrase["frames"]
+    assert [frame["position"] for frame in frames] == pytest.approx(
+        expected_positions
+    )
+    assert [frame["morph_x"] for frame in frames] == pytest.approx(
+        [
+            morph_curve_position(position, phrase_curve)
+            for position in expected_positions
+        ]
+    )
+    assert frames[0]["morph_x"] == 0.0
+    assert frames[-1]["morph_x"] == 1.0
+
+
+@pytest.mark.parametrize(
+    "morph_curve_type,expected_curve_value",
+    [
+        pytest.param("linear", 0, id="linear"),
+        pytest.param("equal-power", 1, id="equal-power"),
+    ],
+)
+def test_morph_phrase_endpoint_generates_each_synth_gain_law_curve_type(
+    morph_curve_type: str,
+    expected_curve_value: int,
+) -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/v1/composer/morph-phrase",
+        json={
+            "source_voice": "breath",
+            "target_voice": "pad",
+            "morph_curve_type": morph_curve_type,
+            "phrase_curve": "linear",
+            "phrase_frame_count": 3,
+        },
+    )
+
+    assert response.status_code == 202
+    payload = response.json()
+    assert payload["morph_curve_value"] == expected_curve_value
+    phrase = payload["single_line_phrase"]
+    assert phrase["morph_curve_value"] == expected_curve_value
+    for frame in phrase["frames"]:
+        assert frame["control_args"] == [
+            "morph_x",
+            frame["morph_x"],
+            "morph_curve",
+            expected_curve_value,
+        ]
+
+
 @pytest.mark.parametrize(
     "payload,expected_detail",
     [
@@ -269,6 +372,9 @@ def test_morph_phrase_schema_exports_supported_vocabularies() -> None:
     assert SUPPORTED_MORPH_VOICES == tuple(VOICE_REVERB_PROFILES)
     assert "sw_pluck" not in SUPPORTED_MORPH_VOICES
     assert SUPPORTED_MORPH_CURVE_TYPES == ("linear", "equal-power")
+    assert SUPPORTED_PHRASE_CURVES == tuple(
+        curve.value for curve in MorphInterpolationCurve
+    )
     assert MORPH_CURVE_VALUE_BY_TYPE == {
         MorphCurveType.LINEAR: 0,
         MorphCurveType.EQUAL_POWER: 1,
@@ -277,6 +383,7 @@ def test_morph_phrase_schema_exports_supported_vocabularies() -> None:
     diagnostic = {
         "voices": SUPPORTED_MORPH_VOICES,
         "curves": SUPPORTED_MORPH_CURVE_TYPES,
+        "phrase_curves": SUPPORTED_PHRASE_CURVES,
         "curve_values": {
             curve.value: value
             for curve, value in MORPH_CURVE_VALUE_BY_TYPE.items()
@@ -286,4 +393,5 @@ def test_morph_phrase_schema_exports_supported_vocabularies() -> None:
 
     assert decoded["voices"] == list(VOICE_REVERB_PROFILES)
     assert decoded["curves"] == ["linear", "equal-power"]
+    assert decoded["phrase_curves"] == ["linear", "exponential", "sigmoid"]
     assert decoded["curve_values"] == {"equal-power": 1, "linear": 0}

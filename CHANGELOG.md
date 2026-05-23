@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Added T-048d morph phrase test hardening: composer API tests now cover schema
+  validation for generation-only fields, every curve type in both layers
+  (`phrase_curve` `linear`/`exponential`/`sigmoid` and `morph_curve_type`
+  `linear`/`equal-power`), and end-to-end morph phrase generation for the
+  endpoint-inclusive `single_line_phrase` response. The schema now rejects an
+  explicit `phrase_frame_count` unless `phrase_curve` is also provided, avoiding
+  silent validation-only responses for generation-shaped requests. No new
+  dependencies, No database migration, provider secrets, runtime state
+  directories, startup-flow rewiring, or SuperCollider source changes were
+  added. Startup identity hardening remains covered by existing CLI, daemon,
+  standalone/federated persistence, and narrative ASGI anchors.
+
 - Added T-048c single-line morph phrase generation for the composer API:
   requests to `POST /api/v1/composer/morph-phrase` that include
   `phrase_curve` now return an endpoint-inclusive `single_line_phrase` with

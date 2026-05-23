@@ -1,5 +1,34 @@
 # Escalations
 
+## T-048d (2026-05-23)
+
+- **Reason:** Test-hardening scope and schema-boundary assumptions.
+- **Details:** T-048d covers the completed T-048 composer morph phrase surface:
+  schema validation, every composer-side phrase curve, every `morph_voice`
+  SynthDef gain-law curve, and end-to-end generated phrase responses.
+- **Assumption:** `phrase_frame_count` is a generation-only field. Supplying it
+  without `phrase_curve` should fail validation instead of being silently
+  ignored by the validation-only response path.
+- **Assumption:** The two curve layers remain distinct: `morph_curve_type`
+  selects the SuperCollider gain law (`linear` / `equal-power`), while
+  `phrase_curve` selects composer-side `morph_x` progression (`linear` /
+  `exponential` / `sigmoid`).
+- **Candidate hardening:** The generated startup identity feedback targets the
+  existing startup subsystem. Current CLI, daemon ordering, standalone/federated
+  persistence, and narrative ASGI tests cover `bootstrap_identity()` startup
+  invocation before `FirstBootAnnouncer`; T-048d keeps those tests as mandatory
+  anchors rather than changing unrelated startup flow.
+- **Dependencies and migrations:** No new dependencies, provider secrets,
+  database columns, migrations, runtime state directories, agent commands,
+  startup-flow rewiring, or SuperCollider source changes are expected.
+- **Verification:** Red phase was confirmed with
+  `pytest tests/test_composer_api.py::test_morph_phrase_endpoint_rejects_frame_count_without_phrase_curve -q`
+  failing because the endpoint returned `202` before the schema guard was
+  implemented. After implementation, focused T-048d tests passed with
+  `7 passed`, adjacent composer/instrument morph tests passed with `28 passed`,
+  startup identity hardening anchors passed with `11 passed`, and Ruff was
+  clean on touched source/test files.
+
 ## T-048c (2026-05-23)
 
 - **Reason:** Composer phrase-generation compatibility assumptions.

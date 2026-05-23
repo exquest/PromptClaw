@@ -98,6 +98,14 @@ class MorphPhraseRequest(BaseModel):
             raise ValueError("source_voice and target_voice must differ")
         return self
 
+    @model_validator(mode="after")
+    def validate_generation_fields(self) -> Self:
+        """Reject generation-only fields when generation was not requested."""
+
+        if self.phrase_curve is None and "phrase_frame_count" in self.model_fields_set:
+            raise ValueError("phrase_frame_count requires phrase_curve")
+        return self
+
     @property
     def morph_curve_value(self) -> int:
         """Return the numeric SuperCollider ``morph_curve`` value."""
