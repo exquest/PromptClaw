@@ -534,7 +534,7 @@ Progress: [███████████████████████
 - **T-028c**: complete — Completed with verdict PASS.
 - **T-028d**: complete — Completed with verdict PASS.
 - **T-029**: complete — Completed with local verification PASS.
-- **T-030**: pending — Pending.
+- **T-030**: complete — Completed with local verification PASS.
 - **T-031**: pending — Pending.
 - **T-032**: pending — Pending.
 - **T-033**: pending — Pending.

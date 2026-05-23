@@ -1,5 +1,33 @@
 # Escalations
 
+## T-030 (2026-05-23)
+
+- **Reason:** Cross-repository Worker location and read-time R2 listing scope
+- **Details:** PromptClaw remains the ADP source of truth, but the
+  `cypherclaw.holdenu.com` archive feed renders inside the sibling
+  `/Users/anthony/Programming/catalog-explorer/worker` Cloudflare Worker. T-030
+  therefore keeps bookkeeping in PromptClaw while adding the worker-side
+  rendering and a Node snapshot test in `catalog-explorer`. The page now lists
+  R2 objects under `cypherclaw/archive/` and reads each `metadata.json` at
+  request time to build the feed; no new database table, durable object,
+  background job, or API endpoint is introduced.
+- **Scope decision:** The feed is server-rendered into the existing landing
+  HTML and uses the existing `/api/cypherclaw/segment/...` proxy for playback,
+  so no new public API surface or client-side fetching is required. Per the
+  T1 instructions, no spec is written and no unrelated bookkeeping is touched.
+  Audio playback for each session is a standard `<audio controls preload="none"
+  src="…/session.opus">` element; no autoplay, no playlist, no listener
+  counters, and no analytics are added.
+- **Dependencies and migrations:** No new Python or npm dependencies, database
+  columns, or migrations are required.
+- **Verification:** Snapshot test in
+  `catalog-explorer/worker/tests/cypherclaw-archive-feed.test.js` covers the
+  rendered HTML for a fixture session list plus ordering, playable audio,
+  empty-state, HTML escaping, R2 listing, and end-to-end page embedding;
+  `npm test` passed with `30 passed` and `npm run check` passed clean. Manual
+  UI verification at `https://cypherclaw.holdenu.com/` is deferred to the
+  T-030 Worker deploy in `catalog-explorer`.
+
 ## T-029 (2026-05-23)
 
 - **Reason:** R2 upload scope and runtime credential assumption
@@ -166,6 +194,36 @@
   `13 passed`, Worker `npm run check` passed, startup identity hardening anchors
   passed with `11 passed`, and full PromptClaw validation passed with
   `4997 passed, 11 skipped`, Ruff clean, and mypy clean.
+
+## T-026 (2026-05-23)
+
+- **Reason:** PRD segment container format is incompatible with standard HLS
+  players
+- **Details:** T-024 emits Ogg/Opus segments (`.opus` files) and T-025 stores
+  them under `cypherclaw/live/{date}/seg-{seq}.opus`. T-026 adds the
+  `GET /api/cypherclaw/live.m3u8` playlist and `GET /api/cypherclaw/segment/...`
+  retrieval endpoints exactly per the PRD, and the emitted playlist is a
+  valid HLS manifest (`#EXTM3U`, `#EXT-X-VERSION:3`, `#EXT-X-TARGETDURATION`,
+  `#EXT-X-MEDIA-SEQUENCE`, ordered `#EXTINF` + URI pairs). However, the
+  acceptance criterion ("`hls.js` validator or `ffplay` successfully plays the
+  live stream") cannot be satisfied with raw Ogg/Opus segments: ffmpeg's HLS
+  demuxer rejects `.opus` segment extensions (`URL ... is not in
+  allowed_segment_extensions`) even with `-allowed_extensions ALL`, because
+  raw Ogg is not a supported HLS segment container. hls.js has the same
+  limitation. Standard HLS requires CMAF/fMP4 (`.m4s`) or MPEG-TS (`.ts`); both
+  can carry Opus.
+- **Recommendation:** Follow-on task on T-024 to re-package each 6-second
+  segment as fragmented MP4 (CMAF, `.m4s`) carrying the existing Opus stream,
+  and adjust T-025's R2 key suffix accordingly. The T-026 playlist endpoint
+  here is forward-compatible: it derives the segment URI from the R2 key and
+  the `#EXTINF` duration from R2 custom metadata, so once the suffix and
+  container change in T-024, the playlist will start serving HLS-playable
+  segments with no Worker change required.
+- **Scope decision:** Shipping the playlist + retrieval endpoints now per
+  CC-022, because the segment container format is a structural T-024 concern
+  and rewriting the encoder is out of T-026's scope. Worker tests
+  (`npm test`, `npx tsc --noEmit`) and PromptClaw regression anchors stay
+  green.
 
 ## T-025 (2026-05-23)
 

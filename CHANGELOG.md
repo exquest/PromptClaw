@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Added the T-030 CypherClaw archive feed to the `cypherclaw.holdenu.com`
+  landing page in the sibling holdenu Worker. The page now lists archived
+  sessions in reverse chronological order under
+  `<section id="cypherclaw-archive-feed">`, with one `<audio controls>` element
+  per session pointing at the stored `session.opus` through the existing
+  `/api/cypherclaw/segment/...` proxy and rendering title, ISO start time,
+  duration in minutes, dominant house, and primary tuning. Sessions are sourced
+  from R2 under the `cypherclaw/archive/` prefix by parsing each
+  `metadata.json`, and the feed renders an explicit empty state when no
+  sessions exist. Added a Node test suite covering a deterministic snapshot of
+  the rendered feed for a fixture session list, reverse-chronological ordering,
+  per-session playable audio elements, R2 listing, HTML escaping, empty-state
+  rendering, and end-to-end page embedding. No new npm packages, provider
+  secrets, database migrations, runtime state directories, or startup-flow
+  rewiring are required.
+
 - Added the T-029 CypherClaw session archiver:
   `my-claw/tools/session_archiver.py` now groups completed local Opus stream
   segments into 8-minute archive windows, derives CypherClaw titles from
