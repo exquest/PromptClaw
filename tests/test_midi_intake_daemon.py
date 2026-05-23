@@ -697,3 +697,54 @@ def test_watch_loop_poll_mode_avoids_reprocessing_after_move(
     # Should have been dispatched exactly once
     assert len(dispatched_paths) == 1
     assert dispatched_paths[0].name == "test.mid"
+
+def test_cleanup_processed_deletes_orphaned_manifests(tmp_path: Path) -> None:
+    """Verify that cleanup_processed removes manifests for missing MIDI files."""
+    processed = tmp_path / "processed"
+    processed.mkdir()
+
+    # Healthy pair
+    (processed / "ok.mid").write_bytes(b"")
+    (processed / "ok.mid.json").write_text("{}")
+
+    # Orphan manifest (.mid.json)
+    (processed / "orphan.mid.json").write_text("{}")
+
+    # Orphan manifest (.midi.json)
+    (processed / "orphan.midi.json").write_text("{}")
+
+    # Non-manifest JSON (should be ignored because it doesn't end in a MIDI extension)
+    (processed / "other.json").write_text("{}")
+
+    count = mod.cleanup_processed(processed)
+    assert count == 2
+    assert (processed / "ok.mid.json").exists()
+    assert not (processed / "orphan.mid.json").exists()
+    assert not (processed / "orphan.midi.json").exists()
+    assert (processed / "other.json").exists()
+
+
+def test_cleanup_processed_returns_zero_for_missing_dir(tmp_path: Path) -> None:
+    assert mod.cleanup_processed(tmp_path / "missing") == 0
+
+
+def test_main_invokes_cleanup_when_flag_provided(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Ensure --cleanup flag triggers cleanup_processed in main."""
+    cleanup_calls: list[Path] = []
+
+    def mock_cleanup(processed_dir: Path | str) -> int:
+        cleanup_calls.append(Path(processed_dir))
+        return 0
+
+    monkeypatch.setattr(mod, "cleanup_processed", mock_cleanup)
+    monkeypatch.setattr(mod, "configure_logging", lambda *_a, **_k: None)
+    # mock scan_once to avoid actual filesystem work in watch_dir
+    monkeypatch.setattr(mod, "scan_once", lambda *_a: [])
+
+    # Run main with --cleanup and a specific watch-dir
+    mod.main(["--watch-dir", str(tmp_path), "--cleanup"])
+
+    expected_processed = tmp_path / mod.PROCESSED_SUBDIR
+    assert cleanup_calls == [expected_processed]

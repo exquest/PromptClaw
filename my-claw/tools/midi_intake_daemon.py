@@ -368,6 +368,39 @@ def scan_once(watch_dir: Path | str) -> list[Path]:
     return found
 
 
+def cleanup_processed(processed_dir: Path | str) -> int:
+    """Delete sidecar manifests whose MIDI files are missing.
+
+    Returns the number of manifests deleted.
+    """
+    processed = Path(processed_dir)
+    if not processed.is_dir():
+        return 0
+
+    deleted_count = 0
+    for manifest_path in processed.glob("*.json"):
+        # The manifest sidecar for 'alpha.mid' is 'alpha.mid.json'
+        # So we strip '.json' to find the supposed MIDI file.
+        midi_path = manifest_path.with_suffix("")
+
+        # Only cleanup if the stem looks like a MIDI file (Hardening)
+        if midi_path.suffix.lower() not in MIDI_EXTENSIONS:
+            continue
+
+        if not midi_path.exists():
+            LOGGER.info("cleanup_deleted_orphan path=%s", manifest_path)
+            manifest_path.unlink()
+            deleted_count += 1
+
+    if deleted_count > 0:
+        LOGGER.info(
+            "cleanup_complete processed_dir=%s deleted=%d",
+            processed,
+            deleted_count,
+        )
+    return deleted_count
+
+
 def install_signal_handlers(stop_event: threading.Event) -> None:
     """Wire SIGINT/SIGTERM to set ``stop_event``."""
 
@@ -392,6 +425,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             f"(default: {DEFAULT_WATCH_DIR})."
         ),
     )
+    parser.add_argument(
+        "--cleanup",
+        action="store_true",
+        help="Delete orphaned manifest sidecars from the processed directory.",
+    )
     return parser.parse_args(list(argv) if argv is not None else None)
 
 
@@ -404,6 +442,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     # Federated clones announce on first boot (FEDREAD-004)
     FirstBootAnnouncer().maybe_announce()
+
+    if args.cleanup:
+        processed_dir = args.watch_dir / PROCESSED_SUBDIR
+        cleanup_processed(processed_dir)
 
     stop_event = threading.Event()
     install_signal_handlers(stop_event)
