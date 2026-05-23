@@ -292,18 +292,19 @@ def watch_loop(
     dispatch: Callable[[Path], None] = _default_dispatch,
     poll_interval: float = 1.0,
     wait_for_stable: Callable[[Path], bool] = wait_for_stable_size,
+    use_watchdog: bool = True,
 ) -> None:
     """Watch ``watch_dir`` until ``stop_event`` is set.
 
-    Uses ``watchdog.Observer`` when available; otherwise falls back to a
-    poll-based scan that tracks previously seen paths so existing files are
-    not re-dispatched.
+    Uses ``watchdog.Observer`` when available and ``use_watchdog`` is True;
+    otherwise falls back to a poll-based scan that tracks previously seen
+    paths so existing files are not re-dispatched.
     """
 
     watch_path = Path(watch_dir)
     watch_path.mkdir(parents=True, exist_ok=True)
 
-    if _HAS_WATCHDOG:
+    if _HAS_WATCHDOG and use_watchdog:
         handler = MidiEventHandler(
             dispatch=dispatch, wait_for_stable=wait_for_stable
         )
@@ -430,10 +431,24 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Delete orphaned manifest sidecars from the processed directory.",
     )
+    parser.add_argument(
+        "--poll",
+        action="store_true",
+        help="Force poll-based watching even if watchdog is available.",
+    )
+    parser.add_argument(
+        "--poll-interval",
+        type=float,
+        default=1.0,
+        help="Seconds between scans in poll mode (default: 1.0).",
+    )
     return parser.parse_args(list(argv) if argv is not None else None)
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(
+    argv: Sequence[str] | None = None,
+    stop_event: threading.Event | None = None,
+) -> int:
     args = parse_args(argv)
     configure_logging()
 
@@ -447,11 +462,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         processed_dir = args.watch_dir / PROCESSED_SUBDIR
         cleanup_processed(processed_dir)
 
-    stop_event = threading.Event()
-    install_signal_handlers(stop_event)
+    if stop_event is None:
+        stop_event = threading.Event()
+        install_signal_handlers(stop_event)
 
     LOGGER.info("midi_intake_daemon_started watch_dir=%s", args.watch_dir)
-    scan_once(args.watch_dir)
+    watch_loop(
+        args.watch_dir,
+        stop_event,
+        poll_interval=args.poll_interval,
+        use_watchdog=not args.poll,
+    )
     LOGGER.info("midi_intake_daemon_exiting")
     return 0
 

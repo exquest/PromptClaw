@@ -85,29 +85,23 @@ def test_install_signal_handlers_sets_stop_event() -> None:
         signal.signal(signal.SIGTERM, previous_term)
         signal.signal(signal.SIGINT, previous_int)
 
-
-def test_main_invokes_scan_once_and_returns_zero(
+def test_main_invokes_watch_loop_and_returns_zero(
     tmp_path: Path, monkeypatch
 ) -> None:
-    calls: list[Path] = []
+    watch_calls: list[Path] = []
 
-    def fake_scan(path: Path | str) -> list[Path]:
-        calls.append(Path(path))
-        return []
+    def fake_watch(path: Path | str, _stop: threading.Event, **_k: object) -> None:
+        watch_calls.append(Path(path))
 
-    monkeypatch.setattr(mod, "scan_once", fake_scan)
+    monkeypatch.setattr(mod, "watch_loop", fake_watch)
     monkeypatch.setattr(mod, "configure_logging", lambda *_a, **_k: None)
 
-    previous_term = signal.getsignal(signal.SIGTERM)
-    previous_int = signal.getsignal(signal.SIGINT)
-    try:
-        rc = mod.main(["--watch-dir", str(tmp_path)])
-    finally:
-        signal.signal(signal.SIGTERM, previous_term)
-        signal.signal(signal.SIGINT, previous_int)
+    # We need to mock signal handlers because they might fail in some environments
+    # or interfere with the test runner.
+    monkeypatch.setattr(signal, "signal", lambda *_a: None)
 
-    assert rc == 0
-    assert calls == [tmp_path]
+    assert mod.main(["--watch-dir", str(tmp_path)]) == 0
+    assert watch_calls == [tmp_path]
 
 
 def test_main_invokes_bootstrap_identity(monkeypatch) -> None:
@@ -126,12 +120,13 @@ def test_main_invokes_bootstrap_identity(monkeypatch) -> None:
     monkeypatch.setattr(mod, "bootstrap_identity", fake_bootstrap)
     monkeypatch.setattr(mod, "FirstBootAnnouncer", FakeAnnouncer)
     monkeypatch.setattr(mod, "configure_logging", lambda *_a, **_k: None)
-    monkeypatch.setattr(mod, "scan_once", lambda *_a, **_k: [])
+    monkeypatch.setattr(mod, "watch_loop", lambda *_a, **_k: None)
 
     # Mock signal to avoid real signal handling
     monkeypatch.setattr(signal, "signal", lambda *_a, **_k: None)
 
-    mod.main(["--watch-dir", "/tmp"])
+    mod.main([])
+
     assert identity_called is True
     assert announce_called is True
 
@@ -740,11 +735,58 @@ def test_main_invokes_cleanup_when_flag_provided(
 
     monkeypatch.setattr(mod, "cleanup_processed", mock_cleanup)
     monkeypatch.setattr(mod, "configure_logging", lambda *_a, **_k: None)
-    # mock scan_once to avoid actual filesystem work in watch_dir
-    monkeypatch.setattr(mod, "scan_once", lambda *_a: [])
+    # mock watch_loop to avoid blocking
+    monkeypatch.setattr(mod, "watch_loop", lambda *_a, **_k: None)
 
     # Run main with --cleanup and a specific watch-dir
     mod.main(["--watch-dir", str(tmp_path), "--cleanup"])
 
     expected_processed = tmp_path / mod.PROCESSED_SUBDIR
     assert cleanup_calls == [expected_processed]
+
+def test_daemon_full_integration_poll(tmp_path: Path) -> None:
+    """Full integration using poll backend: run main, drop file, verify manifest."""
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+
+    stop_event = threading.Event()
+    # We must mock FirstBootAnnouncer.maybe_announce to avoid network/external effects
+    # and configure_logging to avoid spamming the test output.
+    daemon_thread = threading.Thread(
+        target=mod.main,
+        kwargs={
+            "argv": [
+                "--watch-dir", str(inbox),
+                "--poll",
+                "--poll-interval", "0.05"
+            ],
+            "stop_event": stop_event
+        }
+    )
+
+    daemon_thread.start()
+    try:
+        # Wait for daemon to be ready
+        time.sleep(0.2)
+
+        target = inbox / "test.mid"
+        _write_valid_midi(target)
+
+        # Wait for it to process (poll interval is 0.05)
+        processed_dir = inbox / "processed"
+        manifest_path = processed_dir / "test.mid.json"
+
+        deadline = time.monotonic() + 5.0
+        while time.monotonic() < deadline:
+            if manifest_path.exists():
+                break
+            time.sleep(0.1)
+
+        assert manifest_path.is_file(), "Manifest sidecar was not created in time"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        assert manifest["original_filename"] == "test.mid"
+        assert manifest["track_count"] == 1
+
+    finally:
+        stop_event.set()
+        daemon_thread.join(timeout=2.0)
