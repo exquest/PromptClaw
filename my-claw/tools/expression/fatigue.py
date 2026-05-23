@@ -12,7 +12,6 @@ the recovery behavior (CC-082), and the ``CYPHERCLAW_V2_FATIGUE`` env-gate
 (CC-083). Counter state is in-process only — composer restarts produce
 fresh, rested voices, as the PRD requires.
 """
-import math
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
