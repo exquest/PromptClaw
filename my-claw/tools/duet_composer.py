@@ -20,12 +20,15 @@ import signal
 import sys
 import threading
 import time
+from collections.abc import Mapping
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "senseweave"))
 
 from pythonosc import udp_client
+
+from cypherclaw.composer_vocabulary_bridge import scene_vocabulary_log_suffix
 
 # Senseweave ADSR voice for sustained sounds
 from senseweave.synthesis.senseweave_voice import SenseweaveVoice, PAD, BREATH, SWELL, STAB
@@ -160,6 +163,9 @@ _conditioner = None
 _generation_last_enqueued_at: float | None = None
 _GENERATION_QUEUE_DB_ENV = "CYPHERCLAW_GENERATION_QUEUE_DB"
 _DEFAULT_GENERATION_QUEUE_DB = Path("/home/user/cypherclaw-data/generation_queue.db")
+_MIDI_VOCABULARY_DB_ENV = "CYPHERCLAW_MIDI_VOCABULARY_DB"
+_VOCABULARY_CURIOSITY_ENV = "CYPHERCLAW_VOCABULARY_CURIOSITY"
+_DEFAULT_MIDI_VOCABULARY_DB = Path("/home/user/cypherclaw-data/state/midi_vocabulary.sqlite")
 
 
 def _generation_enabled() -> bool:
@@ -170,6 +176,23 @@ def _generation_enabled() -> bool:
         "true",
         "yes",
     }
+
+
+def _midi_vocabulary_db_path() -> Path | None:
+    configured = os.environ.get(_MIDI_VOCABULARY_DB_ENV)
+    path = Path(configured).expanduser() if configured else _DEFAULT_MIDI_VOCABULARY_DB
+    return path if path.exists() else None
+
+
+def _vocabulary_curiosity(narrative_state: Mapping[str, object] | None) -> float:
+    raw_value = os.environ.get(_VOCABULARY_CURIOSITY_ENV)
+    if raw_value is None and narrative_state is not None:
+        raw_value = narrative_state.get("curiosity")
+    try:
+        value = float(raw_value) if raw_value is not None else 0.15
+    except (TypeError, ValueError):
+        value = 0.15
+    return max(0.0, min(1.0, value))
 
 
 def _get_generation_queue() -> object | None:
@@ -854,6 +877,7 @@ def _build_score_tree_piece(
         form_class=commission.form_class,
         composition_mode=commission.composition_mode,
     ) or {}
+    narrative_state = _read_narrative_state()
     brief = build_piece_brief(
         world=world,
         commission=commission,
@@ -861,7 +885,7 @@ def _build_score_tree_piece(
         cadence_state=tracker_plan.cadence_state,
         progression_profile=progression_profile,
         repertoire_hint=repertoire_hint or structural_hint,
-        narrative=_read_narrative_state() or None,
+        narrative=narrative_state or None,
     )
     form = plan_form(
         commission=commission,
@@ -878,6 +902,8 @@ def _build_score_tree_piece(
         song_num=song_num,
         mood=mood,
         repertoire_hint=repertoire_hint or structural_hint,
+        vocabulary_db_path=_midi_vocabulary_db_path(),
+        vocabulary_curiosity=_vocabulary_curiosity(narrative_state),
     )
     gate = evaluate_score_tree(score_tree)
     return commission, score_tree, gate
@@ -1293,9 +1319,10 @@ def tracker_solo_song(initial_key: str, song_num: int) -> str:
             extras=extras,
         )
         send_face_message(caption, 6)
+        vocabulary_suffix = scene_vocabulary_log_suffix(getattr(scene, "metadata", {}) or {})
         print(
             f"  [{scene.name}] rows={scene.pattern.rows} tempo={scene.tempo_bpm:.1f} "
-            f"lanes={len(scene.pattern.lanes)}",
+            f"lanes={len(scene.pattern.lanes)}{vocabulary_suffix}",
             flush=True,
         )
 

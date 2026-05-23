@@ -15,6 +15,8 @@ import json
 from dataclasses import dataclass, field, replace
 from typing import Mapping, Sequence
 
+from cypherclaw.composer_vocabulary_bridge import VOCABULARY_METADATA_KEYS
+
 from .arrangement_engine import (
     RegisterBand,
     build_arrangement_plan,
@@ -1626,6 +1628,7 @@ _SECTION_PHRASE_METADATA_KEYS = (
     "is_cadential",
     "contour_apex",
     "contour_apex_index",
+    *VOCABULARY_METADATA_KEYS,
 )
 
 _SAMPLE_GESTURE_METADATA_KEYS = (
@@ -2627,6 +2630,10 @@ def build_korsakov_tracker_song(
             if value:
                 scene_metadata[key] = str(value)
         for key in _PRODUCTION_COURSE_METADATA_KEYS:
+            value = source_score.metadata.get(key)
+            if value:
+                scene_metadata[key] = str(value)
+        for key in VOCABULARY_METADATA_KEYS:
             value = source_score.metadata.get(key)
             if value:
                 scene_metadata[key] = str(value)

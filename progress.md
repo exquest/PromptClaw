@@ -508,7 +508,7 @@ Progress: [███████████████████████
 - **T-012d**: complete — Completed with verdict PASS.
 - **T-014**: complete — Completed with verdict PASS.
 - **T-015**: complete — Completed with verdict PASS.
-- **T-016**: pending — Pending.
+- **T-016**: complete — Composer now reads populated `midi_vocabulary.sqlite` databases, plans deterministic curiosity-governed scene citations, applies cited fragments through score-tree/tracker handoff metadata, and logs `vocabulary_fragment_id` at scene start. Validation passed with `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` (`4951 passed, 11 skipped`, Ruff clean, mypy clean).
 - **T-017**: split — Split into subtasks.
 - **T-017a**: pending — Pending.
 - **T-017b**: pending — Pending.

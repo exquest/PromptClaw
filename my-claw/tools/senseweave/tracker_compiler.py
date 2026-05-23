@@ -3,8 +3,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
-from typing import Mapping
+from typing import Mapping, Sequence
 
+from cypherclaw.composer_vocabulary_bridge import (
+    VOCABULARY_METADATA_KEYS,
+    citation_metadata_from_payload,
+)
 from cypherclaw.render.features import feature_metadata_for_phrase
 
 from .generative_scores import (
@@ -277,6 +281,83 @@ def _with_render_features(phrase: Phrase, *, key: str) -> Phrase:
     metadata = dict(phrase.metadata)
     metadata.update(feature_metadata_for_phrase(phrase.notes, key=key))
     return _replace_phrase(phrase, metadata=metadata)
+
+
+def _vocabulary_citation_for_section(
+    score_tree: ScoreTree,
+    section: SectionNode,
+) -> Mapping[str, object]:
+    citations = score_tree.arrangement_plan.get("vocabulary_fragments", {})
+    if not isinstance(citations, Mapping):
+        return {}
+    citation = citations.get(section.scene_name)
+    if not isinstance(citation, Mapping):
+        return {}
+    return citation
+
+
+def _payload_sequence(value: object) -> tuple[object, ...]:
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except (TypeError, ValueError):
+            return ()
+        value = parsed
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        return tuple(value)
+    return ()
+
+
+def _payload_int_sequence(value: object) -> tuple[int, ...]:
+    result: list[int] = []
+    for item in _payload_sequence(value):
+        try:
+            result.append(int(item))
+        except (TypeError, ValueError):
+            continue
+    return tuple(result)
+
+
+def _payload_float_sequence(value: object) -> tuple[float, ...]:
+    result: list[float] = []
+    for item in _payload_sequence(value):
+        try:
+            result.append(float(item))
+        except (TypeError, ValueError):
+            continue
+    return tuple(result)
+
+
+def _apply_vocabulary_citation(
+    phrase: Phrase,
+    citation: Mapping[str, object],
+) -> Phrase:
+    if not citation or phrase.role not in {"melody", "counter"}:
+        return phrase
+    degrees = _payload_int_sequence(citation.get("degree_pattern"))
+    durations = _payload_float_sequence(citation.get("duration_pattern"))
+    if not degrees and not durations:
+        return phrase
+
+    notes: list[Note] = []
+    for index, note in enumerate(phrase.notes):
+        degree = note.scale_degree
+        duration = note.duration_beats
+        if index < len(degrees):
+            degree = int(_clamp(float(degrees[index]), 1.0, 8.0))
+        if index < len(durations):
+            duration = round(_clamp(float(durations[index]), 0.25, 4.0), 2)
+        notes.append(
+            Note(
+                scale_degree=degree,
+                duration_beats=duration,
+                accent=note.accent or index == 0,
+            )
+        )
+
+    metadata = dict(phrase.metadata)
+    metadata.update(citation_metadata_from_payload(citation))
+    return _replace_phrase(phrase, notes=notes, metadata=metadata)
 
 
 def _thin_phrase(phrase: Phrase, keep_every: int) -> Phrase:
@@ -1213,6 +1294,7 @@ def _section_score(
     rhythm_development = _rhythm_development_for_function(section.function)
     sample_gesture_metadata = _sample_gesture_metadata_for_section(score_tree, section)
     arc_metadata = _production_arc_metadata_for_section(score_tree, section)
+    vocabulary_citation = _vocabulary_citation_for_section(score_tree, section)
     section_mood = _section_mood(base_mood, function=section.function)
     revision = revise_score(
         section_mood,
@@ -1251,7 +1333,11 @@ def _section_score(
             motif=motif,
         )
         progressed = _apply_section_progression(expanded, section_progression)
-        featured = _with_render_features(progressed, key=section_score.key)
+        vocabulary_shaped = _apply_vocabulary_citation(
+            progressed,
+            vocabulary_citation,
+        )
+        featured = _with_render_features(vocabulary_shaped, key=section_score.key)
         phrases.append(_with_transition_profile(featured, transition_profile or {}))
     metadata = dict(section_score.metadata)
     metadata.update(
@@ -1275,6 +1361,8 @@ def _section_score(
         metadata.update(sample_gesture_metadata)
     if arc_metadata:
         metadata.update(arc_metadata)
+    if vocabulary_citation:
+        metadata.update(citation_metadata_from_payload(vocabulary_citation))
     if transition_profile:
         metadata.update({str(key): str(value) for key, value in transition_profile.items() if str(value).strip()})
     for key in PRODUCTION_COURSE_KEYS:
@@ -1409,6 +1497,9 @@ def compile_score_tree_to_tracker(
         }
     )
     for key in (*_ARC_METADATA_KEYS, "arc_phase_contour"):
+        if key in score_tree.metadata:
+            score.metadata[key] = score_tree.metadata[key]
+    for key in VOCABULARY_METADATA_KEYS:
         if key in score_tree.metadata:
             score.metadata[key] = score_tree.metadata[key]
     section_courses = {

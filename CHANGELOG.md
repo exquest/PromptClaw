@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Added score-tree MIDI vocabulary citations (T-016):
+  `cypherclaw.composer_vocabulary_bridge` now reads populated MIDI vocabulary
+  databases, normalizes melodic/rhythm fragments into composer material, and
+  deterministically cites scene fragments at a rate governed by curiosity.
+  Score-tree composition records the cited fragment payloads, tracker
+  compilation applies cited melodic material to melody/counter phrases, and
+  compiled scene/lane/step metadata plus live scene-start logs expose
+  `vocabulary_fragment_id` provenance. This reuses the existing vocabulary
+  schema and adds no dependency, migration, provider secret, or new runtime
+  state directory. Validation passed with `4951 passed, 11 skipped`, Ruff
+  clean, and mypy clean; startup identity hardening anchors remain green.
+
 - Added MIDI fragment extraction to processed intake manifests (T-014):
   `cypherclaw.midi_fragments.extract_midi_fragments(...)` now parses
   hand-crafted Standard MIDI Files without new dependencies and extracts

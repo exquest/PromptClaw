@@ -5,12 +5,14 @@ import json
 import os
 import sys
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
 
+from cypherclaw import midi_vocabulary_store as store
 from cypherclaw.render.events import IntentTag, PerformanceIntent, SectionEnvelope
 from inner_life.world_model import WorldModel
 from senseweave.composition_gate import evaluate_score_tree
@@ -21,7 +23,12 @@ from senseweave.recursive_composer import compose_score_tree
 from senseweave.score_tree import ScoreTree
 
 
-def _compose_tree(*, composition_seed: str | None = None):
+def _compose_tree(
+    *,
+    composition_seed: str | None = None,
+    vocabulary_db_path: Path | None = None,
+    vocabulary_curiosity: float = 0.15,
+):
     commission = commission_piece(
         cadence_state="occupied_day",
         day_phase="day",
@@ -56,6 +63,8 @@ def _compose_tree(*, composition_seed: str | None = None):
         song_num=8,
         mood={"energy": 0.58, "valence": 0.63, "arousal": 0.44},
         composition_seed=composition_seed,
+        vocabulary_db_path=vocabulary_db_path,
+        vocabulary_curiosity=vocabulary_curiosity,
     )
 
 
@@ -414,3 +423,41 @@ def test_score_tree_round_trip_preserves_nested_nodes() -> None:
     assert restored.sections[0].phrases[0].motif_refs == tree.sections[0].phrases[0].motif_refs
     assert restored.motifs[0].anchor_degrees == tree.motifs[0].anchor_degrees
     assert restored.commission.reason_tags == tree.commission.reason_tags
+
+
+def _single_fragment_vocabulary_db(tmp_path: Path) -> tuple[Path, int]:
+    db_path = tmp_path / "midi_vocabulary.sqlite"
+    conn = store.connect(db_path)
+    try:
+        fragment_id = store.insert_fragment(
+            conn,
+            source_file="seed.mid",
+            kind="melodic_motif",
+            interval_pattern=[2, 2, 3],
+            duration_pattern=[1.0, 0.5, 0.5, 2.0],
+            source_key="C major",
+            source_tempo=120.0,
+            harmonic_context={"pitch_classes": [0, 2, 4, 7]},
+        )
+    finally:
+        conn.close()
+    return db_path, fragment_id
+
+
+def test_score_tree_composer_cites_vocabulary_fragments_from_db(tmp_path: Path) -> None:
+    db_path, fragment_id = _single_fragment_vocabulary_db(tmp_path)
+
+    tree = _compose_tree(
+        composition_seed="t-016-vocabulary",
+        vocabulary_db_path=db_path,
+        vocabulary_curiosity=1.0,
+    )
+
+    citations = tree.arrangement_plan["vocabulary_fragments"]
+    assert set(citations) == {section.scene_name for section in tree.sections}
+    assert all(citation["fragment_id"] == fragment_id for citation in citations.values())
+    assert all(citation["kind"] == "melodic_motif" for citation in citations.values())
+    assert all(citation["degree_pattern"] == [1, 2, 3, 5] for citation in citations.values())
+    assert tree.metadata["vocabulary_curiosity"] == "1.000"
+    assert tree.metadata["vocabulary_cited_scene_count"] == str(len(tree.sections))
+    assert tree.metadata["vocabulary_cited_rate"] == "1.000"

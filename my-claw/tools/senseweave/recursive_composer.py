@@ -3,7 +3,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
 from typing import Mapping
+
+from cypherclaw.composer_vocabulary_bridge import (
+    DEFAULT_CURIOSITY,
+    load_vocabulary_fragments,
+    plan_vocabulary_citations,
+)
+from cypherclaw.render.narrative_envelope import beat_from_directive, envelope_for_beat
 
 from .form_grammar import FormPlan, PlannedSection, phrase_family_slots
 from .hook_engine import build_hook_profile
@@ -18,7 +26,6 @@ from .score_tree import (
     ScoreTree,
     SectionNode,
 )
-from cypherclaw.render.narrative_envelope import beat_from_directive, envelope_for_beat
 
 
 _INTENT_BY_FUNCTION: dict[str, str] = {
@@ -120,6 +127,8 @@ def compose_score_tree(
     mood: Mapping[str, float],
     composition_seed: str | int | None = None,
     repertoire_hint: Mapping[str, object] | None = None,
+    vocabulary_db_path: str | Path | None = None,
+    vocabulary_curiosity: float = DEFAULT_CURIOSITY,
 ) -> ScoreTree:
     normalized_seed = str(composition_seed) if composition_seed is not None else None
     hook = build_hook_profile(
@@ -260,6 +269,39 @@ def compose_score_tree(
         metadata["arc_phase_contour"] = json.dumps(
             [production_arc[section.scene_name]["arc_phase"] for section in sections]
         )
+    arrangement_plan = {
+        "groove_identity": commission.groove_identity,
+        "sonic_world_count": commission.sonic_world_count,
+        "production_arc": production_arc,
+    }
+    if vocabulary_db_path is not None:
+        fragments = load_vocabulary_fragments(vocabulary_db_path)
+        citations = plan_vocabulary_citations(
+            tuple(section.scene_name for section in sections),
+            fragments,
+            curiosity=vocabulary_curiosity,
+            seed=normalized_seed or _seed_id(
+                family,
+                cadence_state,
+                progression_profile,
+                song_num,
+                hook.title,
+            ),
+        )
+        if citations:
+            cited_rate = len(citations) / max(1, len(sections))
+            metadata.update(
+                {
+                    "vocabulary_curiosity": f"{max(0.0, min(1.0, float(vocabulary_curiosity))):.3f}",
+                    "vocabulary_cited_scene_count": str(len(citations)),
+                    "vocabulary_scene_count": str(len(sections)),
+                    "vocabulary_cited_rate": f"{cited_rate:.3f}",
+                }
+            )
+            arrangement_plan["vocabulary_fragments"] = {
+                scene_name: citation.to_payload()
+                for scene_name, citation in citations.items()
+            }
 
     return ScoreTree(
         piece_id=_scoped_seed_id(
@@ -281,11 +323,7 @@ def compose_score_tree(
             "section_functions": section_functions,
             "section_cadences": section_cadences,
         },
-        arrangement_plan={
-            "groove_identity": commission.groove_identity,
-            "sonic_world_count": commission.sonic_world_count,
-            "production_arc": production_arc,
-        },
+        arrangement_plan=arrangement_plan,
         ending_family=commission.ending_family,
         narrative_map=narrative_map,
         metadata=metadata,

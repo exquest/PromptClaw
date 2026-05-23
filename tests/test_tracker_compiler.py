@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import json
 import os
 import sys
+from pathlib import Path
+from types import SimpleNamespace
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
 
+from cypherclaw import midi_vocabulary_store as store
+from cypherclaw.composer_vocabulary_bridge import scene_vocabulary_log_suffix
 from inner_life.world_model import WorldModel
 from senseweave.form_grammar import plan_form
 from senseweave.music_tracker_runtime import build_scene_events
@@ -18,8 +23,6 @@ from senseweave.tracker_compiler import (
     compile_score_tree_to_tracker,
     estimate_tracker_song_duration_s,
 )
-import json
-from types import SimpleNamespace
 
 
 def test_tracker_compiler_preserves_structure_and_targets_duration() -> None:
@@ -1152,3 +1155,90 @@ def test_production_course_metadata_survives_compose_compile_schedule() -> None:
         assert scene.metadata["production_transition_type"] in {
             "seamless", "modulation", "breath", "crossfade",
         }
+
+
+def _vocabulary_tree(tmp_path: Path) -> tuple[object, int]:
+    db_path = tmp_path / "midi_vocabulary.sqlite"
+    conn = store.connect(db_path)
+    try:
+        fragment_id = store.insert_fragment(
+            conn,
+            source_file="seed.mid",
+            kind="melodic_motif",
+            interval_pattern=[2, 2, 3],
+            duration_pattern=[1.0, 0.5, 0.5, 2.0],
+            source_key="C major",
+            source_tempo=120.0,
+            harmonic_context={"pitch_classes": [0, 2, 4, 7]},
+        )
+    finally:
+        conn.close()
+
+    commission = commission_piece(
+        cadence_state="occupied_day",
+        day_phase="day",
+        weekly_phase="weekend",
+        attention_score=0.72,
+        narrative_pressure=0.96,
+        occupancy_state="occupied_active",
+        song_num=31,
+        hour=17,
+    )
+    world = WorldModel(
+        observer_description="active room with a fragment vocabulary",
+        cadence_state="occupied_day",
+        day_phase="day",
+        time_of_day="evening",
+        occupancy_state="occupied_active",
+        attention_score=0.72,
+        experimentation_bias=0.96,
+    )
+    brief = build_piece_brief(
+        world=world,
+        commission=commission,
+        family="ember",
+        cadence_state="occupied_day",
+        progression_profile="lift",
+    )
+    form = plan_form(commission=commission, brief=brief, family="ember")
+    tree = compose_score_tree(
+        commission=commission,
+        brief=brief,
+        form=form,
+        family="ember",
+        cadence_state="occupied_day",
+        progression_profile="lift",
+        song_num=31,
+        mood={"energy": 0.74, "valence": 0.62, "arousal": 0.72},
+        composition_seed="t-016-compiler",
+        vocabulary_db_path=db_path,
+        vocabulary_curiosity=1.0,
+    )
+    return tree, fragment_id
+
+
+def test_compiled_scene_carries_vocabulary_fragment_citation(tmp_path: Path) -> None:
+    tree, fragment_id = _vocabulary_tree(tmp_path)
+
+    compiled = compile_score_tree_to_tracker(
+        tree,
+        mood={"energy": 0.74, "valence": 0.62, "arousal": 0.72},
+        family_name="ember",
+        patch_name="house_procession",
+        cadence_state="occupied_day",
+        progression_profile="lift",
+    )
+
+    scene = compiled.tracker_song.scenes[0]
+    assert scene.metadata["vocabulary_fragment_id"] == str(fragment_id)
+    assert scene.metadata["vocabulary_fragment_kind"] == "melodic_motif"
+    assert scene.metadata["vocabulary_fragment_source"] == "seed.mid"
+    assert f"vocabulary_fragment_id={fragment_id}" in scene_vocabulary_log_suffix(scene.metadata)
+
+    melody_lane = next(lane for lane in scene.pattern.lanes if lane.role == "melody")
+    assert melody_lane.metadata["vocabulary_fragment_id"] == str(fragment_id)
+    assert melody_lane.metadata["vocabulary_transform"] == "degree_seed"
+    assert any(
+        step.metadata.get("vocabulary_fragment_id") == str(fragment_id)
+        for step in melody_lane.steps
+    )
