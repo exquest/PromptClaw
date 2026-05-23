@@ -379,3 +379,41 @@ class TestTimbreMap:
                         "sw_gong", "sw_bell_warm", "sw_choir", "sw_breath"}
         for timbre, synth in TIMBRE_MAP.items():
             assert synth in valid_synths, f"Unknown synth {synth} for timbre {timbre}"
+
+
+class TestFxBusRouting:
+    """Voice spawn must carry the per-voice fx_bus_id from VoiceReverbProfile."""
+
+    def test_note_on_routes_each_voice_to_its_assigned_fx_bus_id(self) -> None:
+        from cypherclaw.space_reverb import VOICE_REVERB_PROFILES
+
+        for timbre, synth in TIMBRE_MAP.items():
+            normalized = synth[3:] if synth.startswith("sw_") else synth
+            profile = VOICE_REVERB_PROFILES.get(normalized)
+            if profile is None:
+                continue
+            osc = MagicMock()
+            voice = SenseweaveVoice(osc=osc, timbre=timbre)
+            voice.note_on(220.0)
+            sent_args = osc.send_message.call_args[0][1]
+            assert "fx_bus_id" in sent_args, (
+                f"voice {timbre}/{synth} missing fx_bus_id in /s_new args"
+            )
+            idx = sent_args.index("fx_bus_id")
+            assert sent_args[idx + 1] == profile.fx_bus_id
+
+    def test_note_on_skips_fx_bus_id_for_voices_without_a_profile(self) -> None:
+        from cypherclaw.space_reverb import VOICE_REVERB_PROFILES
+
+        for timbre, synth in TIMBRE_MAP.items():
+            normalized = synth[3:] if synth.startswith("sw_") else synth
+            if normalized in VOICE_REVERB_PROFILES:
+                continue
+            osc = MagicMock()
+            voice = SenseweaveVoice(osc=osc, timbre=timbre)
+            voice.note_on(220.0)
+            sent_args = osc.send_message.call_args[0][1]
+            assert "fx_bus_id" not in sent_args, (
+                f"voice {timbre}/{synth} should not carry fx_bus_id "
+                "without a VoiceReverbProfile"
+            )

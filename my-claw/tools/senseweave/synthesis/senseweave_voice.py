@@ -23,6 +23,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
+from cypherclaw.space_reverb import VOICE_REVERB_PROFILES
 from senseweave.affective_state_bus import (
     AFFECTIVE_STATE_BUS_INDEX,
     AFFECTIVE_STATE_BUS_MAX,
@@ -226,6 +227,11 @@ class SenseweaveVoice:
             "attack", envelope.attack,
             "release", release,
         ]
+        profile = VOICE_REVERB_PROFILES.get(
+            synth[3:] if synth.startswith("sw_") else synth
+        )
+        if profile is not None:
+            s_new_args.extend(["fx_bus_id", int(profile.fx_bus_id)])
         if modulator_depths:
             for name, depth in scale_modulator_depths(
                 modulator_depths,
