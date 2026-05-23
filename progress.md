@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~35m remaining (3 tasks, low confidence, calibrating)
-Expected completion: 12:38 AM today.
-Progress: [██████████████████████████████████████] 99%  434 / 437 tasks complete
-  completed: 434, pending: 0, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 34
+ETC: ~13h 9m remaining (76 tasks, low confidence, calibrating)
+Expected completion: 8:23 AM tomorrow.
+Progress: [████████████████████████████████░░░░░░] 85%  435 / 511 tasks complete
+  completed: 435, pending: 55, needs_split: 19, blocked: 0, needs_attn: 2, skipped: 34
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -478,3 +478,77 @@ Progress: [███████████████████████
 - **T-043@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-044@20260515T214233Z**: complete — Completed with verdict PASS.
 - **T-045@20260515T214233Z**: complete — Completed with verdict PASS.
+- **T-001**: complete — Completed with verdict PASS.
+- **T-002**: complete — Completed with verdict PASS.
+- **T-003**: needs_split — Timed out; run sdp-cli tasks split T-003 to break it down.
+- **T-004**: pending — Pending.
+- **T-005**: pending — Pending.
+- **T-006**: needs_split — Timed out; run sdp-cli tasks split T-006 to break it down.
+- **T-007**: pending — Pending.
+- **T-008**: pending — Pending.
+- **T-009**: pending — Pending.
+- **T-010**: pending — Pending.
+- **T-011**: pending — Pending.
+- **T-012**: needs_split — Timed out; run sdp-cli tasks split T-012 to break it down.
+- **T-013**: needs_split — Timed out; run sdp-cli tasks split T-013 to break it down.
+- **T-014**: pending — Pending.
+- **T-015**: pending — Pending.
+- **T-016**: pending — Pending.
+- **T-017**: needs_split — Timed out; run sdp-cli tasks split T-017 to break it down.
+- **T-018**: pending — Pending.
+- **T-019**: pending — Pending.
+- **T-020**: pending — Pending.
+- **T-021**: pending — Pending.
+- **T-022**: needs_split — Timed out; run sdp-cli tasks split T-022 to break it down.
+- **T-023**: pending — Pending.
+- **T-024**: pending — Pending.
+- **T-025**: pending — Pending.
+- **T-026**: pending — Pending.
+- **T-027**: pending — Pending.
+- **T-028**: needs_split — Timed out; run sdp-cli tasks split T-028 to break it down.
+- **T-029**: pending — Pending.
+- **T-030**: pending — Pending.
+- **T-031**: pending — Pending.
+- **T-032**: pending — Pending.
+- **T-033**: pending — Pending.
+- **T-034**: pending — Pending.
+- **T-035**: pending — Pending.
+- **T-036**: pending — Pending.
+- **T-037**: pending — Pending.
+- **T-038**: pending — Pending.
+- **T-039**: pending — Pending.
+- **T-040**: pending — Pending.
+- **T-041**: pending — Pending.
+- **T-042**: pending — Pending.
+- **T-043**: pending — Pending.
+- **T-044**: pending — Pending.
+- **T-045**: needs_split — Timed out; run sdp-cli tasks split T-045 to break it down.
+- **T-046**: pending — Pending.
+- **T-047**: needs_split — Timed out; run sdp-cli tasks split T-047 to break it down.
+- **T-048**: needs_split — Timed out; run sdp-cli tasks split T-048 to break it down.
+- **T-049**: pending — Pending.
+- **T-050**: pending — Pending.
+- **T-051**: pending — Pending.
+- **T-052**: pending — Pending.
+- **T-053**: needs_split — Timed out; run sdp-cli tasks split T-053 to break it down.
+- **T-054**: needs_split — Timed out; run sdp-cli tasks split T-054 to break it down.
+- **T-055**: needs_split — Timed out; run sdp-cli tasks split T-055 to break it down.
+- **T-056**: needs_split — Timed out; run sdp-cli tasks split T-056 to break it down.
+- **T-057**: needs_split — Timed out; run sdp-cli tasks split T-057 to break it down.
+- **T-058**: needs_split — Timed out; run sdp-cli tasks split T-058 to break it down.
+- **T-059**: needs_split — Timed out; run sdp-cli tasks split T-059 to break it down.
+- **T-060**: needs_split — Timed out; run sdp-cli tasks split T-060 to break it down.
+- **T-061**: pending — Pending.
+- **T-062**: pending — Pending.
+- **T-063**: pending — Pending.
+- **T-064**: pending — Pending.
+- **T-065**: pending — Pending.
+- **T-066**: pending — Pending.
+- **T-067**: pending — Pending.
+- **T-068**: pending — Pending.
+- **T-069**: pending — Pending.
+- **T-070**: pending — Pending.
+- **T-071**: pending — Pending.
+- **T-072**: pending — Pending.
+- **T-073**: pending — Pending.
+- **T-074**: pending — Pending.
