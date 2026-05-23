@@ -10,11 +10,13 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
 
 from expression.fatigue import (
+    CYPHERCLAW_V2_FATIGUE_ENV,
     FATIGUE_HALF_LIFE_SECONDS,
     FATIGUE_REDUCTION,
     FATIGUE_THRESHOLD,
     FatigueCounter,
     fatigue_decay_factor,
+    fatigue_enabled,
     fatigue_multiplier,
 )
 
@@ -239,6 +241,20 @@ def test_fatigue_feature_is_gated_by_env_flag() -> None:
     for truthy in ("1", "true", "yes", "on", "enabled"):
         env = {"CYPHERCLAW_V2_FATIGUE": truthy}
         assert fatigue_multiplier(1.0, env=env) == 0.5
+
+
+def test_fatigue_enabled_default_off_when_env_unset() -> None:
+    # T-010 / CC-083: default behavior matches OFF state when the env var is absent.
+    assert CYPHERCLAW_V2_FATIGUE_ENV == "CYPHERCLAW_V2_FATIGUE"
+    assert fatigue_enabled(env={}) is False
+
+
+def test_fatigue_enabled_reads_truthy_and_falsy_env_values() -> None:
+    # T-010 / CC-083: module reads the env var; falsy strings stay OFF, truthy strings flip ON.
+    for falsy in ("", "0", "false", "no", "off", "disabled", "  "):
+        assert fatigue_enabled(env={CYPHERCLAW_V2_FATIGUE_ENV: falsy}) is False, falsy
+    for truthy in ("1", "true", "yes", "on", "enabled", " TRUE ", "On"):
+        assert fatigue_enabled(env={CYPHERCLAW_V2_FATIGUE_ENV: truthy}) is True, truthy
 
 
 def test_fatigue_multiplier_respects_real_environment_by_default() -> None:
