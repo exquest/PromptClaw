@@ -107,3 +107,35 @@ SUPPORTED_TUNINGS: Mapping[str, type[TuningSystem]] = {
     JustIntonation5Limit().name: JustIntonation5Limit,
     GamelanSlendro().name: GamelanSlendro,
 }
+
+
+# Legacy scene metadata may use the historical "12-TET" label (and related
+# variants) for equal temperament. Map those to TwelveTET so old scenes keep
+# playing unchanged through the new pitch pipeline (T-037).
+_TUNING_ALIASES: Mapping[str, type[TuningSystem]] = {
+    "12_tet": TwelveTET,
+    "12tet": TwelveTET,
+    "twelve_tet": TwelveTET,
+    "equal_temperament": TwelveTET,
+    "just": JustIntonation5Limit,
+    "just_intonation": JustIntonation5Limit,
+    "just_intonation_5_limit": JustIntonation5Limit,
+    "5_limit_ji": JustIntonation5Limit,
+    "slendro": GamelanSlendro,
+    "gamelan_slendro": GamelanSlendro,
+}
+
+
+def tuning_for_name(name: str) -> TuningSystem:
+    """Resolve a tuning-system name (including legacy aliases) to an instance.
+
+    Accepts the canonical names in `SUPPORTED_TUNINGS` as well as legacy labels
+    such as ``"12-TET"`` carried in older scene metadata. Comparison is
+    case-insensitive and dashes/spaces are folded to underscores.
+    """
+
+    key = str(name).strip().lower().replace("-", "_").replace(" ", "_")
+    cls = _TUNING_ALIASES.get(key) or SUPPORTED_TUNINGS.get(key)
+    if cls is None:
+        raise ValueError(f"unknown tuning_system_name: {name!r}")
+    return cls()

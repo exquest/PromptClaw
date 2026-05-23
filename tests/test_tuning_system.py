@@ -11,6 +11,7 @@ from cypherclaw.tuning import (
     JustIntonation5Limit,
     TuningSystem,
     TwelveTET,
+    tuning_for_name,
 )
 
 
@@ -82,3 +83,24 @@ def test_pitch_table_scales_with_tonal_center(cls: type[TuningSystem]) -> None:
         assert b[degree] == pytest.approx(2.0 * hz_a)
     for hz in a.values():
         assert math.isfinite(hz)
+
+
+@pytest.mark.parametrize(
+    "legacy_name",
+    ["12-TET", "12-tet", "12 TET", "12tet", "Twelve_TET", "equal-temperament"],
+)
+def test_tuning_for_name_accepts_legacy_12_tet_aliases(legacy_name: str) -> None:
+    tuning = tuning_for_name(legacy_name)
+    assert isinstance(tuning, TwelveTET)
+    assert tuning.pitch_table(440.0) == TwelveTET().pitch_table(440.0)
+
+
+def test_tuning_for_name_resolves_canonical_names() -> None:
+    assert isinstance(tuning_for_name("twelve_tet"), TwelveTET)
+    assert isinstance(tuning_for_name("just_intonation_5_limit"), JustIntonation5Limit)
+    assert isinstance(tuning_for_name("gamelan_slendro"), GamelanSlendro)
+
+
+def test_tuning_for_name_rejects_unknown() -> None:
+    with pytest.raises(ValueError):
+        tuning_for_name("pythagorean")
