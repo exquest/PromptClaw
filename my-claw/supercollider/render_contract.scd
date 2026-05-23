@@ -6,7 +6,7 @@
 
 (
 // --- Known Pbind keys we act on ----------------------------------------
-~knownKeys = Set[\instrument, \midinote, \dur, \amp, \start, \timingOffset,
+~knownKeys = Set[\instrument, \midinote, \freq_hz, \dur, \amp, \start, \timingOffset,
 	\articulation, \tempoScale, \ampScale, \brightness,
 	\ruleStack, \seedPath, \intentTag,
 	\phraseStart, \phraseEnd, \cadential,
@@ -57,9 +57,11 @@
 	var ruleStack = pbind[\ruleStack];
 	var seedPath  = pbind[\seedPath];
 
-	// Play the note via the server
+	// Play the note via the server. When the composer supplies freq_hz
+	// directly (e.g. non-12-TET tunings), use it as-is. Otherwise fall
+	// back to midicps over midinote for backward-compatible 12-TET scenes.
 	Synth(synthName, [
-		\freq,       (pbind[\midinote] ? 60).midicps,
+		\freq,       pbind[\freq_hz] ?? { (pbind[\midinote] ? 60).midicps },
 		\dur,        pbind[\dur] ? 0.5,
 		\amp,        pbind[\amp] ? 0.5,
 		\brightness, pbind[\brightness] ? 0.0,

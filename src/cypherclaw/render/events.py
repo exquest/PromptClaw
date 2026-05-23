@@ -153,6 +153,7 @@ class Event:
     voice_id: str = ""
     role: str = ""
     pitch: int | float | None = None
+    freq_hz: float | None = None
     nominal_beat: float = 0.0
     nominal_dur_beats: float = 0.0
     harmonic_charge: float = 0.0

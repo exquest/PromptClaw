@@ -113,6 +113,31 @@ def test_event_json_and_osc_bundle_round_trip() -> None:
     assert osc_restored == event
 
 
+def test_event_carries_freq_hz_directly_through_osc() -> None:
+    # When the active tuning is not 12-TET, the composer emits Hz directly
+    # rather than relying on midinote -> midicps conversion downstream.
+    event = Event(
+        event_id="evt-2",
+        role="melody",
+        pitch=60,
+        freq_hz=261.625565 * (5.0 / 4.0),
+    )
+
+    payload = event.to_json_dict()
+    assert payload["freq_hz"] == pytest.approx(261.625565 * 5.0 / 4.0)
+
+    osc_restored = Event.from_osc_bundle(event.to_osc_bundle())
+    assert osc_restored.freq_hz == pytest.approx(261.625565 * 5.0 / 4.0)
+
+
+def test_event_freq_hz_defaults_to_none_for_legacy_12tet_scenes() -> None:
+    event = Event(event_id="evt-3", role="bass", pitch=48)
+
+    assert event.freq_hz is None
+    restored = Event.from_osc_bundle(event.to_osc_bundle())
+    assert restored.freq_hz is None
+
+
 class TestPerformanceIntent:
     def test_defaults_match_kth_k1_calibrated_values(self) -> None:
         intent = PerformanceIntent(phrase_id="p-1")
