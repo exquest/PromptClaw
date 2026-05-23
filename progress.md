@@ -551,7 +551,7 @@ Progress: [███████████████████████
 - **T-044**: split — Split into subtasks.
 - **T-044a**: pending — Pending.
 - **T-044b**: pending — Pending.
-- **T-044c**: pending — Pending.
+- **T-044c**: complete — Completed with verdict PASS. Exploration found the requested assigned-FX-bus and mismatched-bus unit tests already landed in `tests/test_senseweave_voice.py::TestFxBusRouting`; this pass added the missing spec/status documentation.
 - **T-044d**: pending — Pending.
 - **T-045**: split — Split into subtasks.
 - **T-045a**: pending — Pending.

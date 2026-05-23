@@ -23,14 +23,20 @@
   which appears to have triggered the orchestrator to re-spawn Lead on
   the same task. No code regression was implied — the timeout was in
   the verifier itself, mid-investigation.
-- **Assumption:** No additional code, test, or doc changes are required
-  for T-044c. The contract is locked by the two tests above plus the
-  pre-existing positive `test_note_on_emits_fx_bus_id_from_voice_profile`
-  and negative `test_note_on_omits_fx_bus_id_when_no_voice_profile` in
-  the same class.
+- **Assumption:** No additional production code or locked test-assertion
+  changes are required for T-044c. The contract is locked by the two tests
+  above plus the pre-existing positive
+  `test_note_on_routes_each_voice_to_its_assigned_fx_bus_id` and negative
+  `test_note_on_skips_fx_bus_id_for_voices_without_a_profile` tests in the
+  same class. This follow-up pass adds the missing spec/status documentation
+  around the already-landed tests.
+- **Startup hardening:** The generated `bootstrap_identity()` feedback targets
+  the existing identity startup subsystem. T-044c is a test-only voice routing
+  contract, so startup flow is not changed here; the existing CLI,
+  first-boot, daemon-ordering, standalone/federated persistence, and narrative
+  ASGI identity tests remain mandatory verification anchors.
 - **Verification:** Re-ran `tests/test_senseweave_voice.py::TestFxBusRouting`
-  — 4 passed in 0.13s. No new lead-introduced changes to commit beyond
-  this escalations entry.
+  — 4 passed in 0.12s before adding this documentation closure.
 
 ## T-044a (2026-05-23)
 

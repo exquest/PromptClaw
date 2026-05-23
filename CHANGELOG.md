@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Added T-044c SenseWeave voice FX-bus routing regressions:
+  `tests/test_senseweave_voice.py::TestFxBusRouting` now asserts profiled
+  timbres emit exactly one `fx_bus_id`, that the emitted bus belongs to the
+  selected voice rather than any foreign voice profile, and that
+  `set_timbre(...)` reroutes the next `/s_new` args without leaking a stale bus
+  id. This is test-only coverage on top of the T-044b runtime wiring and adds no
+  dependencies, migrations, provider secrets, or startup-flow changes.
+
 - Added T-043 per-voice CypherClaw space reverb tuning: `cypherclaw.space_reverb`
   now exposes typed, JSON-safe algorithmic profiles for `pluck`, `breath`,
   `choir`, `kotekan`, `pad`, `bowed`, and `tabla_tin`, preserving the existing
