@@ -7,6 +7,10 @@ from .crossfade import (
     SectionTiming,
     schedule_section_crossfades,
 )
+from .flags import (
+    CYPHERCLAW_V2_INSTRUMENT_MORPH_ENV,
+    instrument_morph_enabled,
+)
 from .curves import (
     MorphInterpolationCurve,
     MorphParameterFrame,
@@ -24,6 +28,7 @@ from .parameter_walk import (
 )
 
 __all__ = [
+    "CYPHERCLAW_V2_INSTRUMENT_MORPH_ENV",
     "MorphInterpolationCurve",
     "MorphParameterFrame",
     "ParameterWalkFrame",
@@ -32,6 +37,7 @@ __all__ = [
     "SectionTiming",
     "build_morph_parameter_frames",
     "generate_parameter_walk",
+    "instrument_morph_enabled",
     "interpolate_scalar",
     "interpolate_voice_parameters",
     "morph_curve_position",
