@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Added the T-028d SSE-driven CypherClaw visualizer hardening in the holdenu
+  Worker: the live page now normalizes flat `/tmp/glyph_audio_features.json`
+  payloads and future nested `audio`/`visual`/`scene`/`tuning` SSE envelopes
+  into stable `window.cypherclawLiveFeatures` state, tracks feed event and
+  render counts on the canvas, records last scene/tuning diagnostics, and maps
+  RMS, pitch, spectral centroid, onset/motion, brightness, texture, density, and
+  salience into the foreground canvas drawing. The public
+  `/api/cypherclaw/live-features` bootstrap event now includes the expanded
+  audio/visual vocabulary without listener, viewer, or analytics telemetry.
+  Added a dependency-free Node runtime test that evaluates the returned inline
+  page script with fake DOM, canvas, and `EventSource` objects to verify
+  end-to-end rendering from dispatched SSE events. Validation passed with Worker
+  `npm test` (`20 passed`), Worker `npm run check`, startup identity anchors
+  (`11 passed`), and full PromptClaw validation (`4997 passed, 11 skipped`,
+  Ruff clean, mypy clean).
+
 - Added the T-028c active CypherClaw canvas visualizer in the holdenu Worker:
   `#cypherclaw-visualizer` now carries diagnostic feed/draw state attributes,
   initializes a 2D canvas context, keeps its backing store aligned with the

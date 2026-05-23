@@ -532,7 +532,7 @@ Progress: [███████████████████████
 - **T-028a**: pending — Pending.
 - **T-028b**: pending — Pending.
 - **T-028c**: complete — Completed with verdict PASS.
-- **T-028d**: pending — Pending.
+- **T-028d**: complete — Completed with verdict PASS.
 - **T-029**: pending — Pending.
 - **T-030**: pending — Pending.
 - **T-031**: pending — Pending.
@@ -688,3 +688,70 @@ Progress: [███████████████████████
   `11 passed`; `git diff --check` passed in both PromptClaw and
   catalog-explorer; full PromptClaw validation passed with `4997 passed,
   11 skipped`, Ruff clean, and mypy clean.
+
+## T-028d ADP Notes
+
+### Phase 0 Explore
+
+- Read the CypherClaw v2 PRD, requirements register, task graph, and
+  implementation-plan entries for CC-024/T-028. The public page must play the
+  live stream, show a GlyphWeave backdrop, and run a canvas visualizer driven by
+  the live-features SSE feed; the broader Durable Object fanout remains backend
+  work outside this slice.
+- Read prior T-028a/T-028b/T-028c specs and current escalation notes. The
+  established pattern is to keep ADP artifacts in PromptClaw while implementing
+  the public page in `/Users/anthony/Programming/catalog-explorer/worker`.
+- Read the affected Worker route and tests:
+  `/Users/anthony/Programming/catalog-explorer/worker/src/index.ts`,
+  `tests/cypherclaw-landing.test.js`, `tests/cypherclaw-playlist.test.js`, and
+  `tests/cypherclaw-segment.test.js`. The current T-028c visualizer opens
+  EventSource, parses JSON messages, and draws from a flat feature object.
+- Read `my-claw/tools/self_listener.py` and the handoff docs for
+  `/tmp/glyph_audio_features.json`. The live feature contract includes flat
+  audio fields plus visual fields such as brightness, motion, texture, density,
+  salience, arc metadata, DSP blocks, and artistic identity.
+- Exploration finding: T-028d should add SSE event normalization and a runtime
+  canvas-rendering test, not new storage, routes, secrets, npm packages,
+  database migrations, or startup identity rewiring.
+
+### Phase 1 Specify
+
+- Wrote `specs/t-028d-spec.md` with the problem statement, technical approach,
+  edge cases, and VERIFY commands for SSE event normalization, canvas rendering,
+  Worker checks, startup identity anchors, bookkeeping, and full PromptClaw
+  validation.
+
+### Phase 2 Test Development
+
+- Added locked Worker runtime tests in
+  `/Users/anthony/Programming/catalog-explorer/worker/tests/cypherclaw-visualizer-runtime.test.js`
+  before production changes. The tests evaluate the actual inline page script
+  returned by the Worker with fake DOM, canvas, and EventSource objects.
+- Red phase was confirmed with
+  `npm test -- tests/cypherclaw-visualizer-runtime.test.js` failing the two new
+  T-028d assertions because the T-028c runtime did not normalize nested
+  `audio`/`visual`/`scene`/`tuning` SSE payloads or map flat
+  `spectral_centroid_hz` into the rendered state.
+
+### Phase 3 Implement
+
+- Updated the holdenu Worker inline visualizer runtime to normalize flat and
+  nested SSE feature payloads, preserve stable audio/visual/scene/tuning fields,
+  count feed events, carry last scene/tuning diagnostics, keep rendering after
+  invalid JSON, and map brightness, motion, texture, density, salience, onset
+  rate, RMS, pitch, and spectral centroid into the canvas draw loop.
+- Expanded the minimal `/api/cypherclaw/live-features` bootstrap event with the
+  same audio/visual feature vocabulary while keeping durable fanout and producer
+  ingestion out of scope.
+
+### Phase 4 Verify
+
+- Focused red/green Worker runtime command passed after implementation with
+  `20 passed`; full Worker `npm test` passed with `20 passed`; Worker
+  `npm run check` passed.
+- Mandatory startup identity hardening anchors passed with `11 passed`, covering
+  `bootstrap_identity()` persistence, standalone/federated reuse, and
+  bootstrap-before-`FirstBootAnnouncer` ordering.
+- Required PromptClaw validation
+  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`
+  passed with `4997 passed, 11 skipped`, Ruff clean, and mypy clean.
