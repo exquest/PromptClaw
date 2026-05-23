@@ -13,13 +13,24 @@ from __future__ import annotations
 
 import hashlib
 import math
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Sequence
 
 
 # ---------------------------------------------------------------------------
 # Core data model
 # ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ModulationEvent:
+    """A metric modulation event scheduled at a specific phrase position."""
+
+    ratio: str
+    """Modulation ratio label, e.g. ``3:2`` or ``5:4``."""
+
+    beat_index: int = 0
+    """Beat index within the phrase where the modulation takes effect."""
 
 
 @dataclass(frozen=True)
@@ -67,6 +78,9 @@ class GrooveProfile:
 
     metric_modulation: str = ""
     """Optional ratio label for metric modulation, e.g. ``3:2``."""
+
+    metric_modulations: list[ModulationEvent] = field(default_factory=list)
+    """Sequence of scheduled metric modulation events within a phrase."""
 
     tempo_dependent_swing: bool = False
     """When True, swing ratio is computed from tempo per Friberg/Sundström."""

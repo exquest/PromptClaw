@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "too
 from senseweave.groove_engine import (
     GROOVE_TYPES,
     GrooveProfile,
+    ModulationEvent,
     apply_groove_to_ioi,
     breath_points_for_phrase,
     entrainment_tempo_nudge,
@@ -56,6 +57,21 @@ class TestGrooveProfile:
         assert p.entrainment_bpm is None
         assert p.breath_points == ()
         assert p.section_identity == ""
+        assert p.metric_modulations == []
+
+    def test_metric_modulations_field(self):
+        events = [ModulationEvent(ratio="3:2", beat_index=4),
+                  ModulationEvent(ratio="5:4", beat_index=12)]
+        p = GrooveProfile(groove_type="straight", metric_modulations=events)
+        assert p.metric_modulations == events
+        assert p.metric_modulations[0].ratio == "3:2"
+        assert p.metric_modulations[0].beat_index == 4
+
+    def test_metric_modulations_default_isolated_per_instance(self):
+        a = GrooveProfile(groove_type="straight")
+        b = GrooveProfile(groove_type="swing")
+        a.metric_modulations.append(ModulationEvent(ratio="3:2"))
+        assert b.metric_modulations == []
 
 
 # ---------------------------------------------------------------------------
