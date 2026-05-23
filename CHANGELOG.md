@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Wired SenseWeave render-time coupling depth scaling (T-003c):
+  `senseweave.synthesis.senseweave_voice.scale_modulator_depths(...)` now
+  scales nominal modulator-depth args by the supplied coupling multiplier, and
+  `SenseweaveVoice.note_on(...)` appends those scaled depth args to the emitted
+  `/s_new` OSC payload when callers provide them. Unit coverage verifies
+  `depth_out = depth_in * multiplier` through the shared render path for every
+  `TIMBRE_MAP` timbre. Existing calls without modulator depths remain
+  unchanged. This adds no dependency, migration, provider secret, database
+  behavior, OSC read, SuperCollider compilation, runtime state directory, or
+  startup rewiring.
+
 - Added the SenseWeave coupling multiplier helper (T-003b):
   `senseweave.synthesis.senseweave_voice.coupling_multiplier_from_bus_value(...)`
   now exposes the PRD arithmetic `1.0 + coupling_strength * affective_state`

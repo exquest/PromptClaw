@@ -20,6 +20,7 @@ from senseweave.synthesis.senseweave_voice import (
     SenseweaveVoice,
     coupling_multiplier_from_bus_value,
     read_affective_state_bus,
+    scale_modulator_depths,
 )
 
 
@@ -88,6 +89,55 @@ class TestCouplingMultiplier:
             1.0,
             coupling_strength=2.0,
         ) == 2.0
+
+
+class TestRenderTimeModulatorDepthScaling:
+    def test_scales_depth_mapping_without_mutating_input(self) -> None:
+        nominal_depths = {
+            "vib_depth": 0.25,
+            "trem_depth": 0.5,
+            "spectral_granulation_amount": 0.125,
+        }
+
+        scaled = scale_modulator_depths(nominal_depths, multiplier=1.5)
+
+        assert scaled == {
+            "vib_depth": 0.375,
+            "trem_depth": 0.75,
+            "spectral_granulation_amount": 0.1875,
+        }
+        assert nominal_depths == {
+            "vib_depth": 0.25,
+            "trem_depth": 0.5,
+            "spectral_granulation_amount": 0.125,
+        }
+        assert scaled is not nominal_depths
+        assert scale_modulator_depths({}, multiplier=1.5) == {}
+        assert scale_modulator_depths({"vib_depth": 0.25}, multiplier=0.0) == {
+            "vib_depth": 0.0,
+        }
+
+    def test_note_on_applies_multiplier_to_depth_args_across_timbres(self) -> None:
+        nominal_depths = {
+            "vib_depth": 0.25,
+            "trem_depth": 0.5,
+        }
+
+        for timbre, synth in TIMBRE_MAP.items():
+            osc = MagicMock()
+            voice = SenseweaveVoice(osc=osc, timbre=timbre)
+
+            voice.note_on(
+                220.0,
+                modulator_depths=nominal_depths,
+                coupling_multiplier=1.5,
+            )
+
+            sent_args = osc.send_message.call_args[0][1]
+            rendered_params = dict(zip(sent_args[4::2], sent_args[5::2], strict=True))
+            assert sent_args[0] == synth
+            assert rendered_params["vib_depth"] == 0.375
+            assert rendered_params["trem_depth"] == 0.75
 
 
 class TestADSR:

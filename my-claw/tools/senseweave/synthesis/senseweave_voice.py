@@ -61,6 +61,15 @@ def coupling_multiplier_from_bus_value(
     return 1.0 + (strength * affective_state)
 
 
+def scale_modulator_depths(
+    depths: Mapping[str, float],
+    *,
+    multiplier: float,
+) -> dict[str, float]:
+    """Scale nominal modulator depths by a render-time coupling multiplier."""
+    return {name: float(depth) * float(multiplier) for name, depth in depths.items()}
+
+
 def read_affective_state_bus(
     reader: ControlBusReader,
     *,
@@ -184,7 +193,15 @@ class SenseweaveVoice:
         if timbre in TIMBRE_MAP:
             self.timbre = timbre
 
-    def note_on(self, freq: float, amp: float = 0.06, adsr: ADSR | None = None) -> int:
+    def note_on(
+        self,
+        freq: float,
+        amp: float = 0.06,
+        adsr: ADSR | None = None,
+        *,
+        modulator_depths: Mapping[str, float] | None = None,
+        coupling_multiplier: float = 1.0,
+    ) -> int:
         """Start a note. Returns node ID for later note_off.
 
         The freq must be in key — the composer is responsible for this.
@@ -202,14 +219,22 @@ class SenseweaveVoice:
         # Scale amplitude by sustain level
         effective_amp = amp * max(envelope.sustain, 0.3)
 
+        s_new_args: list[Any] = [
+            synth, nid, 0, 0,
+            "freq", freq,
+            "amp", effective_amp,
+            "attack", envelope.attack,
+            "release", release,
+        ]
+        if modulator_depths:
+            for name, depth in scale_modulator_depths(
+                modulator_depths,
+                multiplier=coupling_multiplier,
+            ).items():
+                s_new_args.extend([name, depth])
+
         if self.osc:
-            self.osc.send_message("/s_new", [
-                synth, nid, 0, 0,
-                "freq", freq,
-                "amp", effective_amp,
-                "attack", envelope.attack,
-                "release", release,
-            ])
+            self.osc.send_message("/s_new", s_new_args)
 
         note = ActiveNote(
             node_id=nid,
