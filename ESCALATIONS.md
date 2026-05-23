@@ -2466,3 +2466,21 @@ reasoning effor...
 
 - **Reason:** Max work retries exceeded
 - **Details:** Lead left uncommitted changes repeatedly across all available lead rotations (claude, codex, gemini). The "uncommitted changes" each tick are the SI-003 post-PASS FAIL appendage to `sdp/verification/t-054d-verify.md` (verifier writes `Verdict: PASS`, then the SI-003 rule appends a duplicate `Notes for Lead Agent` block plus `Verdict: FAIL`) plus the corresponding agent log files. No functional fix is possible at the task level — see `[[project-sdp-si003-false-positive]]`. Final state: 5+ independent PASSes across claude/codex/gemini verifier roles, zero outstanding code/test gaps, SI-003 is the only flag and it is a confirmed false positive. Recording pair-rotate exhaustion as the terminal escalation; awaiting SI-003 rule patch before any further pipeline action on T-054d.
+
+## T-054d (2026-05-23T23:22:00Z)
+
+- **Reason:** SI-003 rule patch applied after pair-rotate exhaustion.
+- **Details:** Patched the sibling `sdp-cli` checkout used by the managed runner
+  so `sdp.pipeline.migration_detection.spec_mentions_migration()` ignores
+  non-database Cloudflare Workers Durable Object / Wrangler schema-change config
+  references while still requiring table snapshots for actual SQLite/Postgres
+  schema work. Commit: `/Users/anthony/Programming/sdp-cli` `59bffc5`
+  (`fix(verifier): ignore non-db DO schema config for SI-003 [T-054d]`).
+  Regression evidence: `pytest tests/test_migration_detection.py
+  tests/test_migration_snapshot_wiring.py
+  tests/test_migration_snapshot_downgrade_integration.py -q` passed with
+  `38 passed`; `ruff check src/sdp/pipeline/migration_detection.py
+  tests/test_migration_detection.py` passed; `mypy
+  src/sdp/pipeline/migration_detection.py` passed. The patched classifier now
+  returns `False` for `specs/t-054d-spec.md` and still returns `True` for a real
+  migration spec (`specs/frac-0095-spec.md`).
