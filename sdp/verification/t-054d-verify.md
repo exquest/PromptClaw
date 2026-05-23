@@ -81,8 +81,72 @@ routes through the in-process Workers runtime.
 - Startup identity anchors: `8 passed`
 - Full PromptClaw suite: `5211 passed, 11 skipped`, Ruff clean, mypy clean
 - Red phase confirmed (pre-install `vitest` runner failure documented)
-- Scope discipline: no D1 migration, no DO migration, no SuperCollider changes,
-  no provider secrets, no startup-flow changes
+- Scope discipline: no D1 migration, no DO SQL schema migration, no
+  SuperCollider changes, no provider secrets, no startup-flow changes
+
+## SI-003 Migration Evidence
+
+T-054d did not add or modify any SQLite/Postgres/D1 table schema. The task
+spec mentions "migration" only because the Worker Vitest harness reads the
+existing Wrangler Durable Object class migration config for `LiveMidiRoom`.
+To satisfy SI-003's table-snapshot evidence requirement, I inspected the local
+Worker SQLite state after verification.
+
+Command:
+
+```bash
+cd /Users/anthony/Programming/catalog-explorer/worker
+sqlite3 -header -column .wrangler/state/v3/d1/miniflare-D1DatabaseObject/2a36ee7300397555201d742101fe6de3c5df26e101b43d1e71a268b6e57b7a13.sqlite "PRAGMA table_info(releases);"
+```
+
+Output:
+
+```text
+cid  name             type     notnull  dflt_value         pk
+---  ---------------  -------  -------  -----------------  --
+0    id               TEXT     0                           1
+1    name             TEXT     1                           0
+2    type             TEXT     1        'single'           0
+3    release_date     TEXT     1                           0
+4    price_min_cents  INTEGER  1        100                0
+5    artwork_key      TEXT     0                           0
+6    description      TEXT     0                           0
+7    bandcamp_url     TEXT     0                           0
+8    spotify_url      TEXT     0                           0
+9    apple_url        TEXT     0                           0
+10   distrokid_isrc   TEXT     0                           0
+11   created_at       TEXT     1        CURRENT_TIMESTAMP  0
+12   updated_at       TEXT     1        CURRENT_TIMESTAMP  0
+```
+
+Durable Object storage also remained metadata-only for the T-054 route:
+
+```bash
+cd /Users/anthony/Programming/catalog-explorer/worker
+sqlite3 -header -column .wrangler/state/v3/do/holdenu-api-LiveMidiRoom/736556ceda382272211afd66daafe4005abbb4696f80c9466b0abc99c3f889c6.sqlite "PRAGMA table_info(__miniflare_do_name);"
+```
+
+```text
+cid  name  type     notnull  dflt_value  pk
+---  ----  -------  -------  ----------  --
+0    id    INTEGER  0                    1
+1    name  TEXT     0                    0
+```
+
+Follow-up verification was re-run after adding the SI-003 evidence:
+
+- `npm run test:workers -- tests/cypherclaw-live-midi-latency.vitest.ts`:
+  `1 passed`
+- `npm test -- tests/cypherclaw-live-midi.test.js tests/cypherclaw-live-midi-config.test.js`:
+  `39 passed`
+- `npm run check`: clean
+- `npm run check:workers`: clean
+- `pytest tests/test_first_boot.py::TestStartupIdentityPersistence tests/test_governor_integration.py::TestStartupIdentityWiring tests/test_narrative_api_main.py::test_asgi_module_startup_bootstraps_identity_persistence_between_imports -q`:
+  `8 passed`
+- `pip install -e '.[dev]'`: passed
+- `pytest tests/ -x`: `5211 passed, 11 skipped`
+- `ruff check src/ tests/`: clean
+- `mypy src/`: clean
 
 ## Issues Found
 
