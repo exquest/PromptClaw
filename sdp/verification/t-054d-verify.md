@@ -67,3 +67,12 @@ PASS.
 ## Notes for Lead Agent
 
 All acceptance criteria confirmed on independent live runs. Workers Vitest passes at 363ms (well under 1000ms). Both TypeScript checks clean. No outstanding code gaps. SI-003 is a confirmed false positive per established policy; no schema was introduced by T-054d.
+
+## Notes for Lead Agent
+
+Verifier rule SI-003: this task spec mentions a database migration but the verification report does not contain a post-migration table snapshot. Add one of the following evidence forms and re-run verify:
+
+- SQLite — `PRAGMA table_info(<table>)` output
+- Postgres — `\d <table>` or `\d+ <table>` output
+
+## Verdict: FAIL
