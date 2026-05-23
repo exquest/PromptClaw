@@ -19,8 +19,12 @@ from senseweave.composition_gate import evaluate_score_tree
 from senseweave.form_grammar import PlannedSection, plan_form
 from senseweave.piece_brief import build_piece_brief
 from senseweave.piece_commission import commission_piece
-from senseweave.procedural_arc import directive_for_elapsed
-from senseweave.recursive_composer import compose_score_tree, plan_meter_trajectory
+from senseweave.procedural_arc import ArcDirective, ArcPhase, directive_for_elapsed
+from senseweave.recursive_composer import (
+    compose_score_tree,
+    plan_meter_trajectory,
+    plan_tuning_trajectory,
+)
 from senseweave.score_tree import ScoreTree
 from senseweave.tracker_compiler import compile_score_tree_to_tracker
 
@@ -72,6 +76,105 @@ def _compose_tree(
 
 def _score_tree_hash(tree: ScoreTree) -> str:
     return hashlib.sha256(tree.to_json().encode("utf-8")).hexdigest()
+
+
+def _directive_named(phase_name: str) -> ArcDirective:
+    phase = ArcPhase(
+        phase_name,
+        0.0,
+        1.0,
+        0.5,
+        0.3,
+        "test transition",
+        "mf",
+        "modal",
+        "pulse",
+        "warm",
+        "clear",
+        0.3,
+        0.5,
+        "fm",
+    )
+    return ArcDirective(
+        phase=phase,
+        density_target=phase.density,
+        mutation_rate=phase.mutation_rate,
+        max_active_roles=3,
+        recovery_bias=0.0,
+        dynamic_target=phase.dynamic,
+        harmonic_target=phase.harmonic,
+        rhythm_target=phase.rhythm,
+        timbre_target=phase.timbre,
+        spatial_target=phase.spatial,
+        compression_target=phase.compression,
+        senseweave_target=phase.senseweave,
+        synthesis_target=phase.synthesis,
+    )
+
+
+def test_plan_tuning_trajectory_applies_phase_rule_and_detects_morphs() -> None:
+    sections = (
+        PlannedSection("ListenScene", "invocation", 20.0, harmonic_role="tonic"),
+        PlannedSection("ConversationScene", "development", 20.0, harmonic_role="predominant"),
+        PlannedSection("DivinationScene", "turn", 20.0, harmonic_role="borrowed"),
+        PlannedSection("ProcessionScene", "recap", 20.0, harmonic_role="authentic"),
+    )
+    phase_by_scene = {
+        "ListenScene": "Listen",
+        "ConversationScene": "Conversation",
+        "DivinationScene": "Divination",
+        "ProcessionScene": "Procession",
+    }
+    directives = {
+        scene_name: _directive_named(phase_name)
+        for scene_name, phase_name in phase_by_scene.items()
+    }
+
+    trajectory = plan_tuning_trajectory(
+        sections,
+        directives,
+        cadence_state="occupied_day",
+        trajectory_seed="t-039-phase-rule",
+    )
+    repeated = plan_tuning_trajectory(
+        sections,
+        directives,
+        cadence_state="occupied_day",
+        trajectory_seed="t-039-phase-rule",
+    )
+
+    assert trajectory is not None
+    assert trajectory == repeated
+    assert trajectory.arc_plan == "cypherclaw_phase_tuning"
+    by_scene = {value.scene_name: value for value in trajectory.scene_values}
+    assert by_scene["ListenScene"].tuning_system_name == "just_intonation_5_limit"
+    assert by_scene["DivinationScene"].tuning_system_name == "just_intonation_5_limit"
+    assert by_scene["ConversationScene"].tuning_system_name == "gamelan_slendro"
+    assert by_scene["ProcessionScene"].tuning_system_name == "gamelan_slendro"
+    assert by_scene["ListenScene"].transition_kind == "steady"
+    assert by_scene["ConversationScene"].transition_kind == "stillness_to_motion"
+    assert by_scene["ConversationScene"].tuning_morph_source_name == "just_intonation_5_limit"
+    assert by_scene["ConversationScene"].tuning_morph_target_name == "gamelan_slendro"
+    assert by_scene["DivinationScene"].transition_kind == "motion_to_stillness"
+    assert by_scene["DivinationScene"].tuning_morph_source_name == "gamelan_slendro"
+    assert by_scene["DivinationScene"].tuning_morph_target_name == "just_intonation_5_limit"
+    assert by_scene["ProcessionScene"].transition_kind == "stillness_to_motion"
+
+    metadata = trajectory.metadata_for_scene("ConversationScene")
+    assert metadata["tuning_system_name"] == "gamelan_slendro"
+    assert metadata["tuning_morph_target_name"] == "gamelan_slendro"
+    assert metadata["tuning_morph_curve"] == "linear"
+    assert metadata["tuning_transition_kind"] == "stillness_to_motion"
+    assert metadata["tuning_morph_source_name"] == "just_intonation_5_limit"
+
+    log_lines = trajectory.composer_log_lines()
+    assert len(log_lines) == len(sections)
+    assert any(
+        "phase=Conversation" in line
+        and "tuning_system_name=gamelan_slendro" in line
+        and "transition=stillness_to_motion" in line
+        for line in log_lines
+    )
 
 
 def test_plan_meter_trajectory_uses_arc_phase_drift_table() -> None:
@@ -237,6 +340,81 @@ def test_recursive_composer_plans_meter_trajectory_for_full_arc() -> None:
         assert section.scene_metadata["meter_trajectory_scene"] == section.scene_name
         assert section.scene_metadata["meter_trajectory_meter"] == value.meter
         assert json.loads(section.scene_metadata["meter_trajectory_path"]) == meter_path
+
+
+def test_recursive_composer_records_tuning_selection_log_for_30_minute_arc() -> None:
+    tree = _compose_tree(composition_seed="t-039-30-minute-arc")
+
+    assert tree.tuning_trajectory is not None
+    payload = tree.arrangement_plan["tuning_trajectory"]
+    log_lines = payload["composer_log"]
+
+    assert len(log_lines) == len(tree.sections)
+    assert all("composer_tuning_selection" in line for line in log_lines)
+    assert all("tuning_system_name=" in line for line in log_lines)
+    assert any(
+        "phase=Divination" in line
+        and "tuning_system_name=just_intonation_5_limit" in line
+        for line in log_lines
+    )
+    assert any(
+        "phase=Conversation" in line
+        and "tuning_system_name=gamelan_slendro" in line
+        for line in log_lines
+    )
+    assert any("transition=stillness_to_motion" in line for line in log_lines)
+    assert any("transition=motion_to_stillness" in line for line in log_lines)
+
+    entries = payload["scene_entries"]
+    transition_entries = [
+        entry
+        for entry in entries
+        if entry["transition_kind"] in {"stillness_to_motion", "motion_to_stillness"}
+    ]
+    assert transition_entries
+    assert payload["tuning_path"] == [
+        value.tuning_system_name for value in tree.tuning_trajectory.scene_values
+    ]
+
+
+def test_composed_tuning_trajectory_survives_tracker_compile() -> None:
+    tree = _compose_tree(composition_seed="t-039-compile")
+
+    compiled = compile_score_tree_to_tracker(
+        tree,
+        mood={"energy": 0.58, "valence": 0.63, "arousal": 0.44},
+        family_name="bloom",
+        patch_name="house_garden",
+        cadence_state="occupied_day",
+        progression_profile="open_day",
+    )
+
+    assert tree.tuning_trajectory is not None
+    scene_by_name = {scene.name: scene for scene in compiled.tracker_song.scenes}
+    for section, value in zip(tree.sections, tree.tuning_trajectory.scene_values):
+        scene = scene_by_name[section.scene_name]
+        assert scene.metadata["tuning_trajectory_id"] == tree.tuning_trajectory.trajectory_id
+        assert scene.metadata["tuning_trajectory_scene"] == section.scene_name
+        assert scene.metadata["tuning_arc_phase"] == value.arc_phase
+        assert scene.metadata["tuning_system_name"] == value.tuning_system_name
+        assert scene.metadata["tuning_morph_curve"] == "linear"
+        assert "tuning_morph_target_name" in scene.metadata
+
+
+def test_composed_tuning_trajectory_scene_metadata_round_trips_through_json() -> None:
+    tree = _compose_tree(composition_seed="t-039-json-roundtrip")
+    restored = ScoreTree.from_dict(json.loads(tree.to_json()))
+
+    assert restored.tuning_trajectory == tree.tuning_trajectory
+    assert restored.tuning_trajectory is not None
+    for section, value in zip(restored.sections, restored.tuning_trajectory.scene_values):
+        expected_metadata = restored.tuning_trajectory.metadata_for_scene(section.scene_name)
+        assert section.scene_metadata["tuning_trajectory_id"] == expected_metadata["tuning_trajectory_id"]
+        assert section.scene_metadata["tuning_system_name"] == value.tuning_system_name
+        assert section.scene_metadata["tuning_morph_target_name"] == value.tuning_morph_target_name
+        assert json.loads(section.scene_metadata["tuning_trajectory_entry"]) == json.loads(
+            expected_metadata["tuning_trajectory_entry"]
+        )
 
 
 def test_recursive_composer_records_meter_trajectory_scene_entries() -> None:
