@@ -27,6 +27,14 @@ SPACES_DIR = (
 VOICES_DIR = (
     REPO_ROOT / "my-claw" / "tools" / "senseweave" / "synthesis" / "voices"
 )
+MASTER_SMOOTH_PATH = (
+    REPO_ROOT
+    / "my-claw"
+    / "tools"
+    / "senseweave"
+    / "synthesis"
+    / "master_smooth.scd"
+)
 
 EXPECTED_VOICE_ORDER = (
     "pluck",
@@ -88,6 +96,30 @@ def _assert_json_safe(value: Any) -> None:
     elif isinstance(value, list):
         for child in value:
             _assert_json_safe(child)
+
+
+def _master_smooth_arg_block(source: str) -> str:
+    match = re.search(
+        r"SynthDef\(\\sw_master_smooth,\s*\{\s*\|(?P<args>.*?)\|",
+        source,
+        flags=re.DOTALL,
+    )
+    assert match, "could not locate sw_master_smooth argument block"
+    return match.group("args")
+
+
+def _master_smooth_fx_bus_defaults(source: str) -> dict[str, int]:
+    block = _master_smooth_arg_block(source)
+    return {
+        voice: int(bus)
+        for voice, bus in re.findall(r"\bfx_bus_([a-z_]+)\s*=\s*(\d+)\b", block)
+    }
+
+
+def _master_smooth_fx_bus_reads(source: str) -> set[str]:
+    return set(
+        re.findall(r"\bIn\.ar\(\s*fx_bus_([a-z_]+)\s*,\s*2\s*\)", source)
+    )
 
 
 def test_profiles_cover_all_cypherclaw_space_voices_with_unique_buses() -> None:
@@ -309,6 +341,52 @@ def test_voice_synthdef_fx_bus_ids_are_pairwise_unique() -> None:
         )
         declared[bus] = voice
     assert set(declared.values()) == set(VOICE_REVERB_PROFILES)
+
+
+def test_master_smooth_fx_returns_match_voice_reverb_profiles() -> None:
+    """T-044d: master_smooth must collect every canonical voice FX bus.
+
+    Voice synthdefs and `build_voice_s_new_args(...)` now emit buses 16..22
+    from `VOICE_REVERB_PROFILES`. The master bus source must read the same
+    set exactly once, otherwise a smoke render can write to an uncollected bus
+    while stale legacy bus reads still make the graph look populated.
+    """
+    source = MASTER_SMOOTH_PATH.read_text(encoding="utf-8")
+    expected = {
+        voice: profile.fx_bus_id for voice, profile in VOICE_REVERB_PROFILES.items()
+    }
+
+    defaults = _master_smooth_fx_bus_defaults(source)
+    assert defaults == expected
+    assert _master_smooth_fx_bus_reads(source) == set(expected)
+
+
+def test_smoke_render_voice_fx_bus_ids_are_collected_by_master_smooth() -> None:
+    """T-044d smoke render: every emitted voice bus reaches master_smooth."""
+    source = MASTER_SMOOTH_PATH.read_text(encoding="utf-8")
+    master_bus_ids = set(_master_smooth_fx_bus_defaults(source).values())
+    emitted: dict[str, int] = {}
+
+    for voice, profile in VOICE_REVERB_PROFILES.items():
+        args = build_voice_s_new_args(
+            voice,
+            node_id=70000,
+            freq=220.0,
+            amp=0.1,
+            attack=0.02,
+            release=0.8,
+        )
+
+        assert args[0] == f"sw_{voice}"
+        assert args.count("fx_bus_id") == 1
+        emitted_bus = args[args.index("fx_bus_id") + 1]
+        assert emitted_bus == profile.fx_bus_id
+        emitted[voice] = int(emitted_bus)
+
+    assert emitted == {
+        voice: profile.fx_bus_id for voice, profile in VOICE_REVERB_PROFILES.items()
+    }
+    assert set(emitted.values()) == master_bus_ids
 
 
 def test_spaces_directory_contains_only_expected_algorithmic_sources() -> None:

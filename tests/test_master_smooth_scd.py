@@ -16,6 +16,8 @@ import re
 import sys
 from pathlib import Path
 
+from cypherclaw.space_reverb import VOICE_REVERB_PROFILES
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "tools", "senseweave"))
 
@@ -71,12 +73,12 @@ def test_boot_scripts_seed_master_via_master_bus_helper() -> None:
 
 
 def test_master_smooth_scd_provisions_seven_voice_fx_buses() -> None:
-    """T-042: seven dedicated FX return buses, one per Korsakov voice,
+    """T-042/T-044d: seven FX return buses, one per CypherClaw v2 voice,
     routed into the compressor input so per-voice effects ride the same
     glue compression and reverb tail as the dry mix.
     """
     text = SCD_PATH.read_text(encoding="utf-8")
-    voice_names = ("gong", "pluck", "bowed", "bell", "kotekan", "choir", "breath")
+    voice_names = tuple(VOICE_REVERB_PROFILES)
 
     defaults = _scd_declared_defaults(text)
     for voice in voice_names:
@@ -84,6 +86,9 @@ def test_master_smooth_scd_provisions_seven_voice_fx_buses() -> None:
         assert control in defaults, f"sw_master_smooth must declare '{control}' control"
 
     bus_indices = [int(defaults[f"fx_bus_{v}"]) for v in voice_names]
+    assert bus_indices == [
+        VOICE_REVERB_PROFILES[voice].fx_bus_id for voice in voice_names
+    ]
     assert len(set(bus_indices)) == len(voice_names), (
         f"each voice FX bus must be unique, got {dict(zip(voice_names, bus_indices))}"
     )

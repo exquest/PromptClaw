@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Fixed T-044d synthesis smoke-render routing: `master_smooth.scd` now collects
+  the same seven CypherClaw v2 FX return buses emitted by
+  `VOICE_REVERB_PROFILES` and `build_voice_s_new_args(...)`
+  (`pluck=16`, `breath=17`, `choir=18`, `kotekan=19`, `pad=20`, `bowed=21`,
+  `tabla_tin=22`) instead of the stale legacy `18/20/22/24/26/28/30` map.
+  Added locked smoke regression coverage proving every emitted `fx_bus_id`
+  reaches the master return map and that no unused master return bus remains.
+  No dependencies, migrations, provider secrets, runtime state directories, or
+  startup-flow changes were added.
+
 - Added T-044c SenseWeave voice FX-bus routing regressions:
   `tests/test_senseweave_voice.py::TestFxBusRouting` now asserts profiled
   timbres emit exactly one `fx_bus_id`, that the emitted bus belongs to the

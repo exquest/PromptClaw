@@ -552,7 +552,7 @@ Progress: [███████████████████████
 - **T-044a**: pending — Pending.
 - **T-044b**: pending — Pending.
 - **T-044c**: complete — Completed with verdict PASS. Exploration found the requested assigned-FX-bus and mismatched-bus unit tests already landed in `tests/test_senseweave_voice.py::TestFxBusRouting`; this pass added the missing spec/status documentation.
-- **T-044d**: pending — Pending.
+- **T-044d**: complete — Completed with verdict PASS. Fixed the synthesis smoke-render routing mismatch by aligning `master_smooth.scd` with the canonical CypherClaw v2 FX buses emitted by `VOICE_REVERB_PROFILES` (`pluck=16`, `breath=17`, `choir=18`, `kotekan=19`, `pad=20`, `bowed=21`, `tabla_tin=22`) and added smoke regression tests that prove emitted voice buses are collected by the master return map.
 - **T-045**: split — Split into subtasks.
 - **T-045a**: pending — Pending.
 - **T-045b**: pending — Pending.

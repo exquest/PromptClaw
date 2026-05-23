@@ -1,5 +1,46 @@
 # Escalations
 
+## T-044d (2026-05-23)
+
+- **Reason:** Synthesis smoke-render routing regression found during exploration.
+- **Details:** The focused synthesis test suite currently passes
+  (`tests/test_senseweave_voice.py`, `tests/test_space_reverb_profiles.py`,
+  `tests/test_sw_sampler.py`, and `tests/test_master_bus.py`), but a smoke
+  trace that compares emitted voice `fx_bus_id` values with
+  `master_smooth.scd` return-bus reads fails. `VOICE_REVERB_PROFILES` and
+  `build_voice_s_new_args(...)` emit the seven CypherClaw v2 buses
+  `pluck=16`, `breath=17`, `choir=18`, `kotekan=19`, `pad=20`, `bowed=21`,
+  `tabla_tin=22`; `master_smooth.scd` still reads the older
+  `gong/pluck/bowed/bell/kotekan/choir/breath` map on
+  `18/20/22/24/26/28/30`, leaving buses 16, 17, 19, and 21 uncollected and
+  reading unused buses 24, 26, 28, and 30.
+- **Assumption:** The in-scope fix is to align `master_smooth.scd`'s
+  documented return-bus controls and `In.ar(...)` reads with the canonical
+  CypherClaw v2 voice profile table rather than changing the already locked
+  voice profile bus assignments or T-044c test assertions. Compiled
+  `.scsyndef` binaries still require regeneration on a host with
+  SuperCollider installed; this repo change pins the source contract.
+- **Startup hardening:** The generated `bootstrap_identity()` feedback targets
+  the existing startup identity subsystem. Current CLI, first-boot,
+  midi-intake, daemon-ordering, standalone/federated persistence, and
+  narrative ASGI tests already cover `bootstrap_identity()` before
+  `FirstBootAnnouncer` and persistence between boots; T-044d will re-run those
+  anchors rather than broadening this audio-routing fix into startup rewiring.
+- **Dependencies and migrations:** No new dependencies, provider secrets,
+  database columns, migrations, runtime state directories, or HTTP routes are
+  required.
+- **Verification:** Red phase was confirmed with
+  `pytest tests/test_space_reverb_profiles.py::test_master_smooth_fx_returns_match_voice_reverb_profiles tests/test_space_reverb_profiles.py::test_smoke_render_voice_fx_bus_ids_are_collected_by_master_smooth -q`
+  failing on the stale master-return map. After aligning `master_smooth.scd`,
+  those locked tests passed with `2 passed`, the focused synthesis suite passed
+  with `96 passed`, the locked T-044c routing anchors passed with `5 passed`,
+  and startup identity hardening anchors passed with `13 passed`. The first
+  full validation run exposed one additional in-scope legacy assertion in
+  `tests/test_master_smooth_scd.py` that still expected the old `gong`/`bell`
+  return map; that test now derives the canonical voice set from
+  `VOICE_REVERB_PROFILES`. Final validation passed with `5088 passed,
+  11 skipped`, Ruff clean, and mypy clean.
+
 ## T-044c (2026-05-23)
 
 - **Reason:** Task is a no-op against the current tree — the unit tests
