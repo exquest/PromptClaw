@@ -21,13 +21,15 @@
 //     attack_sec / release_sec    Env.asr envelope shape
 //     gate                        sustained gate; gate=0 triggers release tail
 //     out_bus                     dry destination (defaults to master 0)
-//     fx_bus                      effects-bus destination (defaults to 16)
-//     fx_send                     level of the parallel send into fx_bus
+//     fx_bus_id                   effects-bus destination (defaults to 16)
+//     fx_send                     level of the parallel send into fx_bus_id
 //
 // Routing convention: the dry signal is written at full level to `out_bus`
 // (master, channels 0/1 in our graph) and a parallel copy scaled by
-// `fx_send` is written to `fx_bus` (16/17). `sw_sampler_fx` reads from 16
-// and writes the processed tail back to 0, so master receives dry + wet.
+// `fx_send` is written to `fx_bus_id` (16/17). `sw_sampler_fx` reads from
+// 16 and writes the processed tail back to 0, so master receives dry+wet.
+// `fx_bus_id` matches the per-voice routing contract used by the seven
+// `voices/*.scd` SynthDefs and `cypherclaw.space_reverb.build_voice_s_new_args`.
 //
 // `EnvGen.kr(Env.asr, gate, doneAction: 2)` self-frees the synth once the
 // release tail completes after the caller flips `gate` to 0.
@@ -48,7 +50,7 @@ SynthDef(\sw_sampler, {
       release_sec = 0.2,
       gate = 1.0,
       out_bus = 0,
-      fx_bus = 16,
+      fx_bus_id = 16,
       fx_send = 0.4 |
 
     var grainDur, dens, pos, posRate, transpose, jitter, atk, rel, fxAmt;
@@ -110,6 +112,6 @@ SynthDef(\sw_sampler, {
     fxOut = sig * fxAmt;
 
     Out.ar(out_bus, sig);
-    Out.ar(fx_bus, fxOut);
+    Out.ar(fx_bus_id, fxOut);
 }).writeDefFile("synthdefs/");
 )

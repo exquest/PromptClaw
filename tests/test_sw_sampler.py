@@ -224,20 +224,20 @@ class TestRoutingAndFxSend:
 
     def test_fx_send_writes_to_fx_bus(self, scd_source: str) -> None:
         # The send must route to the dedicated sw_sampler_fx bus. Either a
-        # named fx_bus arg or the literal default (16) is acceptable.
-        assert re.search(r"Out\.ar\(\s*fx_bus\s*,", scd_source) or re.search(
+        # named fx_bus_id arg or the literal default (16) is acceptable.
+        assert re.search(r"Out\.ar\(\s*fx_bus_id\s*,", scd_source) or re.search(
             r"Out\.ar\(\s*16\s*,", scd_source
         ), "fx send must write to the sampler effects bus (default 16)"
 
     def test_fx_bus_default_is_sampler_bus(self, scd_source: str) -> None:
         block = _arg_block(scd_source)
-        # If fx_bus is exposed as an arg, its default must match the global
-        # sampler-fx bus convention (channels 16/17). If absent, the literal
-        # 16 in Out.ar is checked above.
-        match = re.search(r"\bfx_bus\s*=\s*(\d+)", block)
+        # If fx_bus_id is exposed as an arg, its default must match the
+        # global sampler-fx bus convention (channels 16/17). If absent,
+        # the literal 16 in Out.ar is checked above.
+        match = re.search(r"\bfx_bus_id\s*=\s*(\d+)", block)
         if match is not None:
             assert int(match.group(1)) == 16, (
-                "fx_bus default must be 16 to match sw_sampler_fx's in_bus"
+                "fx_bus_id default must be 16 to match sw_sampler_fx's in_bus"
             )
 
     def test_fx_send_scales_send_only(self, scd_source: str) -> None:
@@ -341,7 +341,7 @@ class SwSamplerEndToEndTests:
                 "release_sec",
                 "gate",
                 "out_bus",
-                "fx_bus",
+                "fx_bus_id",
                 "fx_send",
             )
         }
@@ -363,7 +363,7 @@ class SwSamplerEndToEndTests:
                 r"[\s\S]*?doneAction\s*:\s*2",
             ),
             ("dry_out", r"\bOut\.ar\(\s*out_bus\s*,"),
-            ("fx_send_out", r"\bOut\.ar\(\s*(?:fx_bus|16)\s*,"),
+            ("fx_send_out", r"\bOut\.ar\(\s*(?:fx_bus_id|16)\s*,"),
         )
         stage_positions: list[dict[str, int | str]] = []
         for label, pattern in stage_patterns:
@@ -467,7 +467,7 @@ class SwSamplerEndToEndTests:
             "release_sec",
             "gate",
             "out_bus",
-            "fx_bus",
+            "fx_bus_id",
             "fx_send",
         }
         assert len(round_tripped["defaults"]) == 14

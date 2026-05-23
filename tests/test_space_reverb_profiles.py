@@ -24,6 +24,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SPACES_DIR = (
     REPO_ROOT / "my-claw" / "tools" / "senseweave" / "synthesis" / "spaces"
 )
+VOICES_DIR = (
+    REPO_ROOT / "my-claw" / "tools" / "senseweave" / "synthesis" / "voices"
+)
 
 EXPECTED_VOICE_ORDER = (
     "pluck",
@@ -247,6 +250,65 @@ def test_voice_routing_args_default_to_profile_pluck_for_unknown_voice() -> None
     )
     assert args[0] == "sw_pluck"
     assert args[args.index("fx_bus_id") + 1] == VOICE_REVERB_PROFILES["pluck"].fx_bus_id
+
+
+def test_voice_synthdefs_declare_fx_bus_id_routing_contract() -> None:
+    """T-044: each voice synthdef source declares `fx_bus_id` with the
+    matching default from its `VoiceReverbProfile` and routes a parallel
+    send into that bus via `Out.ar(fx_bus_id, ...)`.
+
+    The `.scd` source under `synthesis/voices/` is the per-voice routing
+    contract that `build_voice_s_new_args` writes via OSC. Without
+    `fx_bus_id` declared as a SynthDef control, the OSC `/s_new` arg has
+    no effect and the voice's signal never reaches its assigned FX
+    return bus. This pins the contract so that regression is caught at
+    test time rather than at scsynth runtime.
+    """
+    for voice, profile in VOICE_REVERB_PROFILES.items():
+        scd_path = VOICES_DIR / f"sw_{voice}.scd"
+        assert scd_path.is_file(), f"missing voice synthdef source: {scd_path}"
+        text = scd_path.read_text(encoding="utf-8")
+
+        assert f"SynthDef(\\sw_{voice}" in text, (
+            f"voice {voice!r} stub must declare SynthDef \\sw_{voice}"
+        )
+
+        # `fx_bus_id` is declared as a control with the profile's bus id.
+        pattern = rf"\bfx_bus_id\s*=\s*{profile.fx_bus_id}\b"
+        assert re.search(pattern, text), (
+            f"voice {voice!r} stub must declare fx_bus_id={profile.fx_bus_id} "
+            f"to match its VoiceReverbProfile"
+        )
+
+        # The signal must reach the FX bus via Out.ar / OffsetOut.ar.
+        send_pattern = r"\b(?:Out|OffsetOut)\.ar\(\s*fx_bus_id\s*,"
+        assert re.search(send_pattern, text), (
+            f"voice {voice!r} stub must route through Out.ar(fx_bus_id, ...)"
+        )
+
+        # And the dry signal must still reach the master via out_bus.
+        dry_pattern = r"\b(?:Out|OffsetOut)\.ar\(\s*out_bus\s*,"
+        assert re.search(dry_pattern, text), (
+            f"voice {voice!r} stub must keep a dry Out.ar(out_bus, ...) tap"
+        )
+
+
+def test_voice_synthdef_fx_bus_ids_are_pairwise_unique() -> None:
+    """Each voice .scd routes to a distinct FX bus — no two voices share
+    the same return path."""
+    declared: dict[int, str] = {}
+    for voice, profile in VOICE_REVERB_PROFILES.items():
+        scd_path = VOICES_DIR / f"sw_{voice}.scd"
+        text = scd_path.read_text(encoding="utf-8")
+        match = re.search(r"\bfx_bus_id\s*=\s*(\d+)\b", text)
+        assert match, f"voice {voice!r} stub missing fx_bus_id default"
+        bus = int(match.group(1))
+        assert bus == profile.fx_bus_id
+        assert bus not in declared, (
+            f"voices {voice!r} and {declared[bus]!r} share FX bus {bus}"
+        )
+        declared[bus] = voice
+    assert set(declared.values()) == set(VOICE_REVERB_PROFILES)
 
 
 def test_spaces_directory_contains_only_expected_algorithmic_sources() -> None:

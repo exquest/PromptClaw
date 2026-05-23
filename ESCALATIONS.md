@@ -1,5 +1,39 @@
 # Escalations
 
+## T-044 (2026-05-23)
+
+- **Reason:** SuperCollider `.scsyndef` binaries cannot be regenerated in
+  this environment; sclang/scsynth are not installed on this machine.
+- **Details:** The blocking finding on the first T-044 verify pass was that
+  the seven CypherClaw §4 voice synthdefs had no `fx_bus_id` control on
+  their binary, so `build_voice_s_new_args` was sending an OSC arg that
+  the server silently ignored. This task pins the per-voice routing
+  contract in source: each `synthesis/voices/sw_<voice>.scd` declares
+  `fx_bus_id` with the default that matches its `VoiceReverbProfile` and
+  writes a parallel send through `Out.ar(fx_bus_id, ...)`, in lockstep
+  with `sw_sampler.scd` (renamed `fx_bus` → `fx_bus_id` for consistency).
+  A new regression test in `tests/test_space_reverb_profiles.py` pins the
+  contract so a future drift is caught at test time.
+- **Assumption:** The existing
+  `my-claw/tools/senseweave/synthesis/synthdefs/sw_<voice>.scsyndef`
+  binaries must be regenerated from the new `voices/*.scd` sources on a
+  host with sclang installed (CypherClaw) before live routing takes
+  effect on scsynth. The .scd sources are the new source of truth; the
+  binary regeneration is a deploy step, not part of this task.
+- **Dependencies and migrations:** No new Python dependencies, database
+  columns, migrations, provider secrets, cost-bearing services, or
+  runtime state directories are required. New tree:
+  `my-claw/tools/senseweave/synthesis/voices/`.
+- **Startup hardening:** Per-voice synthdef contracts do not touch the
+  identity bootstrap flow that the auto-generated hardening bullets
+  target. Existing startup identity tests still cover that path; this
+  task re-runs them rather than altering them.
+- **Verification:** Locked T-044 test cases now include
+  `test_voice_synthdefs_declare_fx_bus_id_routing_contract` and
+  `test_voice_synthdef_fx_bus_ids_are_pairwise_unique`, alongside the
+  existing `test_each_voice_routes_only_to_its_assigned_fx_bus`. Sampler
+  rename verified through `tests/test_sw_sampler.py` updates.
+
 ## T-043 (2026-05-23)
 
 - **Reason:** Scope boundary between tuned space profiles and later live
