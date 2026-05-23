@@ -1,5 +1,40 @@
 # Escalations
 
+## T-017b (2026-05-23)
+
+- **Reason:** Faithful MIDI scene-mapping scope and startup-hardening assumptions
+- **Details:** Exploration found T-017b builds directly on T-017a's
+  `cypherclaw.midi_loader.load_faithful_midi_events(...)` and the existing
+  processed-manifest path in `src/cypherclaw/midi_intake_daemon.py`. The
+  downstream CypherClaw tracker scene shape uses patterns, lanes, steps, and
+  metadata, so this task assumes the in-scope faithful renderer should emit a
+  JSON-safe tracker-like scene dictionary in the intake manifest under
+  `faithful_scene`. The scene keeps exact imported MIDI pitches and source tick
+  durations while quantizing positive durations onto rows for scheduler
+  handoff. It intentionally does not call composer vocabulary fragment
+  selection or attach `vocabulary_fragment_id` metadata; later renderer tasks
+  own applying tuning, voice, space, and expression choices to that faithful
+  scene. The generated startup hardening bullets target the existing identity
+  startup subsystem; current CLI, first-boot, daemon-ordering, and narrative
+  ASGI tests already cover `bootstrap_identity()` before
+  `FirstBootAnnouncer()` plus standalone/federated persistence, so they remain
+  regression anchors rather than broadening this MIDI scene task into startup
+  rewiring. No new dependencies, migrations, provider secrets, database
+  columns, runtime state directories, HTTP routes, or agent command strings are
+  required.
+- **Reason:** Red phase and focused implementation results
+- **Details:** Red phase was confirmed with
+  `pytest tests/test_midi_scene.py -q` failing on missing
+  `cypherclaw.midi_scene` before production code changed. After implementing
+  the typed mapper and faithful-manifest wiring, the locked T-017b tests passed
+  with `4 passed`, adjacent T-017a/MIDI/composer vocabulary coverage passed
+  with `67 passed`, startup identity hardening anchors passed with `11 passed`,
+  focused Ruff passed for the touched source and test files, and focused mypy
+  passed for `src/cypherclaw/midi_scene.py` plus
+  `src/cypherclaw/midi_intake_daemon.py`. Full validation passed with
+  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
+  mypy src/`: `4960 passed, 11 skipped`, Ruff clean, and mypy clean.
+
 ## T-013c (2026-05-22)
 
 - **Reason:** MIDI sidecar naming, one-cycle scope, and startup-hardening assumptions

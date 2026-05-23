@@ -511,7 +511,10 @@ Progress: [███████████████████████
 - **T-016**: complete — Composer now reads populated `midi_vocabulary.sqlite` databases, plans deterministic curiosity-governed scene citations, applies cited fragments through score-tree/tracker handoff metadata, and logs `vocabulary_fragment_id` at scene start. Validation passed with `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` (`4951 passed, 11 skipped`, Ruff clean, mypy clean).
 - **T-017**: split — Split into subtasks.
 - **T-017a**: pending — Pending.
-- **T-017b**: pending — Pending.
+- **T-017b**: complete — Faithful-transmission MIDI now maps parsed source
+  events into `faithful_scene` manifest payloads that preserve imported pitch
+  sequence, source tick durations, normalized velocities, and cumulative rows
+  without invoking vocabulary fragment selection.
 - **T-017c**: pending — Pending.
 - **T-017d**: pending — Pending.
 - **T-018**: pending — Pending.
@@ -592,3 +595,28 @@ Progress: [███████████████████████
   validation passed with `pip install -e '.[dev]' && pytest tests/ -x && ruff
   check src/ tests/ && mypy src/`: `4956 passed, 11 skipped`, Ruff clean, and
   mypy clean. No new dependencies or migrations were introduced.
+
+## T-017b (2026-05-23)
+
+- **Exploration findings:** The active ADP workflow is the repository's
+  Explore -> Specify -> Test -> Implement -> Verify -> Document T2 template.
+  The relevant PRD requirement is CC-015 in
+  `sdp/prd-cypherclaw-v2-2026-05-22.md`: faithful-transmission mode bypasses
+  fragment extraction and renders imported MIDI as a scene preserving pitch
+  sequence and rhythm. T-017a already added the dependency-free faithful loader
+  and intake flag; T-017b should add a whole-file scene mapper and manifest
+  field without touching the vocabulary citation path in
+  `composer_vocabulary_bridge.py`. Existing tracker scenes use pattern/lane/step
+  JSON contracts, so the faithful scene should mirror that shape while carrying
+  exact MIDI pitches and source tick durations. Startup identity hardening is
+  already wired before `FirstBootAnnouncer()` and remains a regression anchor.
+- **Red/focused verification:** Red phase was confirmed with
+  `pytest tests/test_midi_scene.py -q` failing on missing
+  `cypherclaw.midi_scene`. The implementation adds a typed `midi_scene` mapper
+  and writes `faithful_scene` into faithful-mode manifests without invoking
+  fragment extraction or vocabulary selection. Focused checks passed:
+  `pytest tests/test_midi_scene.py -q` (`4 passed`), adjacent MIDI/composer
+  coverage (`67 passed`), startup identity anchors (`11 passed`), focused Ruff,
+  and focused mypy for touched CypherClaw modules. Full validation passed with
+  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
+  mypy src/`: `4960 passed, 11 skipped`, Ruff clean, and mypy clean.

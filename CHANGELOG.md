@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Added faithful MIDI scene mapping (T-017b):
+  `cypherclaw.midi_scene.build_faithful_midi_scene(...)` now maps parsed
+  faithful MIDI events into a JSON-safe CypherClaw scene with one melody lane,
+  ordered steps, exact source MIDI `pitch`, exact `duration_ticks`, normalized
+  velocities, cumulative scheduler rows, and `midi_whole_file_scene`
+  provenance. Faithful intake manifests now include `faithful_scene` alongside
+  `faithful_events` and empty `fragments`, while default intake remains
+  fragment-extraction-only. The faithful scene path does not invoke vocabulary
+  fragment selection or attach `vocabulary_fragment_id` metadata; startup
+  identity hardening anchors remain regression coverage. Validation passed with
+  `4960 passed, 11 skipped`, Ruff clean, and mypy clean.
+
 - Added faithful-transmission MIDI intake (T-017a):
   `cypherclaw.midi_loader.load_faithful_midi_events(...)` now returns ordered
   source-note events with `pitch`, source-tick `duration`, and `velocity`.
