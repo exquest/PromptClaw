@@ -504,7 +504,7 @@ Progress: [███████████████████████
 - **T-013a**: complete — Completed with verdict PASS.
 - **T-012c**: complete — Completed with verdict PASS.
 - **T-013b**: pending — Pending.
-- **T-013c**: pending — Pending.
+- **T-013c**: complete — Completed with verdict PASS. Added `process_intake_cycle(...)` so a single intake scan can move stable MIDI files through the shared processed/rejected pipeline; valid processed files now have one-cycle integration coverage asserting the moved MIDI and `<midi filename>.json` sidecar both exist with valid manifest JSON. Validation passed with `4936 passed, 11 skipped`, Ruff clean, and mypy clean. No new dependencies or migrations.
 - **T-012d**: pending — Pending.
 - **T-014**: pending — Pending.
 - **T-015**: pending — Pending.

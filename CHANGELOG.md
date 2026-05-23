@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Wired MIDI intake manifest sidecars into a one-cycle intake path (T-013c):
+  `cypherclaw.midi_intake_daemon.process_intake_cycle(...)` now scans an
+  intake directory once, skips unstable candidates, processes stable MIDI files
+  through the shared file-level pipeline, and returns the emitted event
+  records. Valid MIDI files moved to `processed/` write a `<midi
+  filename>.json` sidecar with JSON-safe filename, UTC timestamp, file size,
+  SHA-256, MThd header metadata, and track count. Rejected files still move to
+  `rejected/` without sidecars. This adds no dependency, migration, provider
+  secret, database behavior, runtime state directory, or startup rewiring.
+
 - Added SenseWeave affective-coupling integration coverage (T-003d):
   `SenseweaveVoice.note_on_with_affective_coupling(...)` now composes the
   existing flag-gated affective bus reader, coupling multiplier helper, and

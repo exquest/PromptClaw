@@ -619,6 +619,43 @@ def test_intake_cycle_produces_manifest_sidecar(tmp_path: Path) -> None:
     assert manifest["track_count"] == 1
     assert manifest["mthd_header"]["division"] == 96
 
+
+def test_process_intake_cycle_moves_valid_midi_and_writes_manifest_sidecar(
+    tmp_path: Path,
+) -> None:
+    inbox = tmp_path / "intake"
+    inbox.mkdir()
+    target = inbox / "take.mid"
+    contents = _write_valid_midi(target)
+
+    events = mod.process_intake_cycle(
+        inbox,
+        wait_for_stable=lambda _path: True,
+    )
+
+    moved = inbox / mod.PROCESSED_SUBDIR / "take.mid"
+    manifest_path = moved.with_suffix(moved.suffix + ".json")
+    assert len(events) == 1
+    assert events[0]["status"] == "processed"
+    assert events[0]["destination"] == str(moved)
+    assert events[0]["size"] == len(contents)
+    assert events[0]["sha256"] == hashlib.sha256(contents).hexdigest()
+    assert not target.exists()
+    assert moved.is_file()
+    assert manifest_path.is_file()
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["original_filename"] == "take.mid"
+    assert manifest["file_size"] == len(contents)
+    assert manifest["sha256"] == hashlib.sha256(contents).hexdigest()
+    assert manifest["mthd_header"] == {
+        "format": 0,
+        "track_count": 1,
+        "division": 96,
+    }
+    assert manifest["track_count"] == 1
+
+
 def test_process_midi_file_skips_manifest_for_rejected_files(tmp_path: Path) -> None:
     """Ensure rejected files do NOT get a JSON manifest sidecar."""
     inbox = tmp_path / "inbox"

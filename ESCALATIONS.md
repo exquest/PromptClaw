@@ -1,5 +1,33 @@
 # Escalations
 
+## T-013c (2026-05-22)
+
+- **Reason:** MIDI sidecar naming, one-cycle scope, and startup-hardening assumptions
+- **Details:** Exploration found the file-level sidecar writer already present
+  in `src/cypherclaw/midi_intake_daemon.py`: valid MIDI files move to
+  `processed/`, `build_manifest(...)` reads the moved file, and JSON is written
+  next to it. This task assumes `<basename>.json` means the moved MIDI
+  filename plus `.json` (`take.mid.json`), matching the existing cleanup and
+  direct-pipeline tests. The implementation adds only a typed
+  `process_intake_cycle(...)` helper so integration tests can drop a file into
+  an intake directory and run exactly one scan/process cycle without starting
+  the long-running watcher. The generated startup hardening bullets target the
+  existing identity subsystem; `main(...)` already invokes
+  `bootstrap_identity()` before `FirstBootAnnouncer`, and startup identity
+  persistence tests remain mandatory regression anchors rather than widening
+  MIDI sidecar scope into startup rewiring. No new dependencies, migrations,
+  provider secrets, database columns, runtime state directories, or agent
+  command strings are required.
+- **Reason:** Red phase and focused implementation results
+- **Details:** Red phase was confirmed with
+  `pytest tests/test_midi_intake_daemon.py::test_process_intake_cycle_moves_valid_midi_and_writes_manifest_sidecar -q`
+  failing on missing `process_intake_cycle(...)` before production code changed.
+  After adding the helper, the locked integration test passed and focused Ruff
+  passed for `src/cypherclaw/midi_intake_daemon.py` and
+  `tests/test_midi_intake_daemon.py`. Full validation passed with
+  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
+  mypy src/`: `4936 passed, 11 skipped`, Ruff clean, and mypy clean.
+
 ## T-003d (2026-05-23)
 
 - **Reason:** Affective-coupling integration scope and startup-hardening assumptions

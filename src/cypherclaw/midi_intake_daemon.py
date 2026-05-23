@@ -284,6 +284,23 @@ def process_midi_file(
     return event
 
 
+def process_intake_cycle(
+    watch_dir: Path | str,
+    *,
+    wait_for_stable: Callable[[Path], bool] = wait_for_stable_size,
+    dispatch: Callable[[Path], dict[str, object]] = process_midi_file,
+) -> list[dict[str, object]]:
+    """Scan ``watch_dir`` once and process each stable MIDI file found."""
+
+    events: list[dict[str, object]] = []
+    for path in scan_once(watch_dir):
+        if not wait_for_stable(path):
+            LOGGER.info("midi_skipped path=%s reason=unstable_or_missing", path)
+            continue
+        events.append(dispatch(path))
+    return events
+
+
 def _default_dispatch(path: Path) -> None:
     process_midi_file(path)
 
