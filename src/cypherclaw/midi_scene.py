@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+import math
 
 try:
     from cypherclaw.midi_loader import FaithfulMidiEvent
@@ -16,7 +17,187 @@ DEFAULT_KEY = "C"
 DEFAULT_TEMPO_BPM = 120.0
 DEFAULT_ROWS_PER_BEAT = 4
 DEFAULT_TICKS_PER_BEAT = 480
+DEFAULT_TONAL_CENTER_MIDI = 60
+DEFAULT_TONAL_CENTER_HZ = 261.625565
 FAITHFUL_SCENE_TRANSFORM = "midi_whole_file_scene"
+SPACE_PROFILE_SOURCE = "cypherclaw-v2-design-statement-2026-05-22.md#4"
+
+TUNING_12_TET = "twelve_tet"
+TUNING_JUST_5_LIMIT = "just_intonation_5_limit"
+TUNING_SLENDRO = "gamelan_slendro"
+
+_STILL_PHASES = frozenset({"listen", "divination"})
+_MOTION_PHASES = frozenset({"conversation", "procession"})
+
+_JI_5_LIMIT_RATIOS: tuple[float, ...] = (
+    1.0,
+    16.0 / 15.0,
+    9.0 / 8.0,
+    6.0 / 5.0,
+    5.0 / 4.0,
+    4.0 / 3.0,
+    45.0 / 32.0,
+    3.0 / 2.0,
+    8.0 / 5.0,
+    5.0 / 3.0,
+    9.0 / 5.0,
+    15.0 / 8.0,
+)
+
+_SLENDRO_CHROMATIC_CENTS: tuple[float, ...] = (
+    0.0,
+    0.0,
+    240.0,
+    240.0,
+    480.0,
+    480.0,
+    750.0,
+    750.0,
+    990.0,
+    990.0,
+    990.0,
+    990.0,
+)
+
+_VOICE_SYNTHS: Mapping[str, str] = {
+    "pluck": "sw_pluck",
+    "breath": "sw_breath",
+    "choir": "sw_choir",
+    "kotekan": "sw_kotekan",
+    "pad": "sw_pad",
+    "bowed": "sw_bowed",
+    "tabla_tin": "sw_tabla_tin",
+}
+
+
+@dataclass(frozen=True)
+class FaithfulVoiceSpace:
+    """Compact render-space settings for one CypherClaw voice."""
+
+    voice: str
+    space_id: str
+    fx_bus_id: int
+    reverb_profile: tuple[tuple[str, float], ...]
+    description: str
+
+    def to_dict(self) -> dict[str, object]:
+        """Return the JSON-safe space settings payload."""
+
+        return {
+            "voice": self.voice,
+            "space_id": self.space_id,
+            "fx_bus_id": self.fx_bus_id,
+            "reverb_profile": dict(self.reverb_profile),
+            "description": self.description,
+            "source": SPACE_PROFILE_SOURCE,
+        }
+
+
+VOICE_SPACES: Mapping[str, FaithfulVoiceSpace] = {
+    "pluck": FaithfulVoiceSpace(
+        voice="pluck",
+        space_id="small_wooden_room",
+        fx_bus_id=16,
+        reverb_profile=(
+            ("mix", 0.18),
+            ("room", 0.24),
+            ("damp", 0.42),
+            ("predelay_ms", 8.0),
+            ("decay_s", 0.7),
+        ),
+        description="small wooden room with hard floorboards",
+    ),
+    "breath": FaithfulVoiceSpace(
+        voice="breath",
+        space_id="glass_bell_jar",
+        fx_bus_id=17,
+        reverb_profile=(
+            ("mix", 0.22),
+            ("room", 0.18),
+            ("damp", 0.28),
+            ("predelay_ms", 4.0),
+            ("decay_s", 1.1),
+        ),
+        description="close glass bell jar with early reflections",
+    ),
+    "choir": FaithfulVoiceSpace(
+        voice="choir",
+        space_id="stone_cathedral",
+        fx_bus_id=18,
+        reverb_profile=(
+            ("mix", 0.46),
+            ("room", 0.92),
+            ("damp", 0.18),
+            ("predelay_ms", 38.0),
+            ("decay_s", 5.8),
+        ),
+        description="cool stone cathedral with high vaulted ceilings",
+    ),
+    "kotekan": FaithfulVoiceSpace(
+        voice="kotekan",
+        space_id="humid_forest_canopy",
+        fx_bus_id=19,
+        reverb_profile=(
+            ("mix", 0.32),
+            ("room", 0.68),
+            ("damp", 0.34),
+            ("predelay_ms", 18.0),
+            ("decay_s", 2.2),
+        ),
+        description="humid forest canopy with fluttering echoes",
+    ),
+    "pad": FaithfulVoiceSpace(
+        voice="pad",
+        space_id="marble_empty_hall",
+        fx_bus_id=20,
+        reverb_profile=(
+            ("mix", 0.42),
+            ("room", 0.86),
+            ("damp", 0.22),
+            ("predelay_ms", 30.0),
+            ("decay_s", 4.6),
+        ),
+        description="large empty marble hall with a cold tail",
+    ),
+    "bowed": FaithfulVoiceSpace(
+        voice="bowed",
+        space_id="damp_cave_wall",
+        fx_bus_id=21,
+        reverb_profile=(
+            ("mix", 0.36),
+            ("room", 0.74),
+            ("damp", 0.62),
+            ("predelay_ms", 24.0),
+            ("decay_s", 3.4),
+        ),
+        description="dark damp cave wall with low-frequency weight",
+    ),
+    "tabla_tin": FaithfulVoiceSpace(
+        voice="tabla_tin",
+        space_id="dusk_garden",
+        fx_bus_id=22,
+        reverb_profile=(
+            ("mix", 0.24),
+            ("room", 0.46),
+            ("damp", 0.36),
+            ("predelay_ms", 12.0),
+            ("decay_s", 1.4),
+        ),
+        description="warm outdoor garden at dusk",
+    ),
+}
+
+
+@dataclass(frozen=True)
+class FaithfulRenderSettings:
+    """CypherClaw render choices applied to a faithful-transmission scene."""
+
+    arc_phase: str = "Listen"
+    tonal_center_midi: int = DEFAULT_TONAL_CENTER_MIDI
+    tonal_center_hz: float = DEFAULT_TONAL_CENTER_HZ
+    voice_sequence: tuple[str, ...] = ("pluck",)
+    space_mode: str = "matched"
+    tuning_system_name: str | None = None
 
 
 @dataclass(frozen=True)
@@ -28,6 +209,10 @@ class FaithfulSceneStep:
     pitch: int
     duration_ticks: int
     velocity: float
+    render_pitch_hz: float = 0.0
+    render_voice: str = ""
+    render_synth: str = ""
+    render_space: Mapping[str, object] = field(default_factory=dict)
     metadata: Mapping[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, object]:
@@ -39,6 +224,10 @@ class FaithfulSceneStep:
             "pitch": self.pitch,
             "duration_ticks": self.duration_ticks,
             "velocity": self.velocity,
+            "render_pitch_hz": self.render_pitch_hz,
+            "render_voice": self.render_voice,
+            "render_synth": self.render_synth,
+            "render_space": dict(self.render_space),
             "metadata": dict(self.metadata),
         }
 
@@ -134,10 +323,17 @@ def build_faithful_midi_scene(
     tempo_bpm: float = DEFAULT_TEMPO_BPM,
     role: str = "melody",
     voice: str = "pluck",
+    render_settings: FaithfulRenderSettings | None = None,
 ) -> FaithfulMidiScene:
     """Map parsed faithful MIDI events to a CypherClaw scene structure."""
 
     safe_rows_per_beat = max(1, int(rows_per_beat))
+    settings = render_settings or FaithfulRenderSettings(voice_sequence=(voice,))
+    tuning_system_name = _tuning_system_name(settings)
+    tonal_center_midi = _safe_tonal_center_midi(settings.tonal_center_midi)
+    tonal_center_hz = _safe_tonal_center_hz(settings.tonal_center_hz)
+    voice_sequence = _normalized_voice_sequence(settings.voice_sequence, voice)
+    space_mode = _space_mode(settings.space_mode)
     row = 0
     total_duration_ticks = 0
     steps: list[FaithfulSceneStep] = []
@@ -152,6 +348,16 @@ def build_faithful_midi_scene(
             rows_per_beat=safe_rows_per_beat,
         )
         pitch = int(event.pitch)
+        requested_voice = voice_sequence[index % len(voice_sequence)]
+        render_voice = _normalize_render_voice(requested_voice)
+        render_synth = _VOICE_SYNTHS[render_voice]
+        render_space = _space_for_voice(render_voice, space_mode=space_mode).to_dict()
+        render_pitch_hz = render_pitch_hz_for_midi(
+            pitch,
+            tuning_system_name=tuning_system_name,
+            tonal_center_midi=tonal_center_midi,
+            tonal_center_hz=tonal_center_hz,
+        )
         steps.append(
             FaithfulSceneStep(
                 row=row,
@@ -159,12 +365,25 @@ def build_faithful_midi_scene(
                 pitch=pitch,
                 duration_ticks=duration_ticks,
                 velocity=velocity,
+                render_pitch_hz=render_pitch_hz,
+                render_voice=render_voice,
+                render_synth=render_synth,
+                render_space=render_space,
                 metadata={
                     "faithful_sequence_index": str(index),
                     "source_midi_pitch": str(pitch),
                     "source_velocity": str(_clamp_int(event.velocity, 0, 127)),
                     "source_duration_ticks": str(duration_ticks),
                     "source_transform": FAITHFUL_SCENE_TRANSFORM,
+                    "arc_phase": str(settings.arc_phase),
+                    "tuning_system_name": tuning_system_name,
+                    "render_pitch_hz": _format_float(render_pitch_hz),
+                    "requested_render_voice": str(requested_voice),
+                    "render_voice": render_voice,
+                    "render_synth": render_synth,
+                    "render_space_id": str(render_space["space_id"]),
+                    "render_fx_bus_id": str(render_space["fx_bus_id"]),
+                    "space_mode": space_mode,
                 },
             )
         )
@@ -186,6 +405,14 @@ def build_faithful_midi_scene(
         "source_name": str(source_name),
         "source_event_count": str(len(steps)),
         "source_duration_ticks": str(total_duration_ticks),
+        "arc_phase": str(settings.arc_phase),
+        "tuning_system_name": tuning_system_name,
+        "tuning_tonal_center_midi": str(tonal_center_midi),
+        "tuning_tonal_center_hz": _format_float(tonal_center_hz),
+        "voice_assignment_policy": "sequence",
+        "voice_sequence": ",".join(voice_sequence),
+        "space_mode": space_mode,
+        "space_profile_source": SPACE_PROFILE_SOURCE,
     }
     return FaithfulMidiScene(
         name=str(name),
@@ -210,9 +437,115 @@ def _duration_to_rows(
     return max(1, int(round((duration_ticks / denominator) * rows_per_beat)))
 
 
+def render_pitch_hz_for_midi(
+    midi_pitch: int,
+    *,
+    tuning_system_name: str,
+    tonal_center_midi: int = DEFAULT_TONAL_CENTER_MIDI,
+    tonal_center_hz: float = DEFAULT_TONAL_CENTER_HZ,
+) -> float:
+    """Return the CypherClaw render frequency for a preserved MIDI pitch."""
+
+    pitch = int(midi_pitch)
+    center_midi = _safe_tonal_center_midi(tonal_center_midi)
+    center_hz = _safe_tonal_center_hz(tonal_center_hz)
+    tuning = _normalize_tuning_system_name(tuning_system_name)
+    delta = pitch - center_midi
+    octave, pitch_class = divmod(delta, 12)
+    octave_multiplier = 2.0 ** octave
+
+    if tuning == TUNING_JUST_5_LIMIT:
+        return center_hz * octave_multiplier * _JI_5_LIMIT_RATIOS[pitch_class]
+    if tuning == TUNING_SLENDRO:
+        ratio = 2.0 ** (_SLENDRO_CHROMATIC_CENTS[pitch_class] / 1200.0)
+        return center_hz * octave_multiplier * ratio
+    return center_hz * (2.0 ** (delta / 12.0))
+
+
+def tuning_system_name_for_phase(arc_phase: str) -> str:
+    """Return CypherClaw's tuning system for an arc phase."""
+
+    phase = str(arc_phase).strip().lower()
+    if phase in _STILL_PHASES:
+        return TUNING_JUST_5_LIMIT
+    if phase in _MOTION_PHASES:
+        return TUNING_SLENDRO
+    return TUNING_12_TET
+
+
 def _normalize_velocity(value: int) -> float:
     return _clamp_int(value, 0, 127) / 127.0
 
 
 def _clamp_int(value: int, lower: int, upper: int) -> int:
     return max(lower, min(upper, int(value)))
+
+
+def _tuning_system_name(settings: FaithfulRenderSettings) -> str:
+    if settings.tuning_system_name is not None:
+        return _normalize_tuning_system_name(settings.tuning_system_name)
+    return tuning_system_name_for_phase(settings.arc_phase)
+
+
+def _normalize_tuning_system_name(value: str) -> str:
+    key = str(value).strip().lower().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "12tet": TUNING_12_TET,
+        "12_tet": TUNING_12_TET,
+        "twelve_tet": TUNING_12_TET,
+        "equal_temperament": TUNING_12_TET,
+        "just": TUNING_JUST_5_LIMIT,
+        "ji": TUNING_JUST_5_LIMIT,
+        "just_intonation": TUNING_JUST_5_LIMIT,
+        "just_intonation_5_limit": TUNING_JUST_5_LIMIT,
+        "5_limit_ji": TUNING_JUST_5_LIMIT,
+        "slendro": TUNING_SLENDRO,
+        "gamelan_slendro": TUNING_SLENDRO,
+    }
+    return aliases.get(key, TUNING_12_TET)
+
+
+def _safe_tonal_center_midi(value: int) -> int:
+    return int(value)
+
+
+def _safe_tonal_center_hz(value: float) -> float:
+    hz = float(value)
+    if not math.isfinite(hz) or hz <= 0.0:
+        return DEFAULT_TONAL_CENTER_HZ
+    return hz
+
+
+def _normalized_voice_sequence(
+    values: Sequence[str],
+    fallback_voice: str,
+) -> tuple[str, ...]:
+    requested = tuple(str(value).strip() for value in values if str(value).strip())
+    if requested:
+        return requested
+    return (str(fallback_voice).strip() or "pluck",)
+
+
+def _normalize_render_voice(value: str) -> str:
+    key = str(value).strip().lower()
+    if key.startswith("sw_"):
+        key = key[3:]
+    return key if key in _VOICE_SYNTHS else "pluck"
+
+
+def _space_mode(value: str) -> str:
+    key = str(value).strip().lower().replace("-", "_").replace(" ", "_")
+    if key == "matched":
+        return "matched"
+    return "matched"
+
+
+def _space_for_voice(voice: str, *, space_mode: str) -> FaithfulVoiceSpace:
+    if space_mode != "matched":
+        return VOICE_SPACES["pluck"]
+    return VOICE_SPACES.get(voice, VOICE_SPACES["pluck"])
+
+
+def _format_float(value: float) -> str:
+    formatted = f"{float(value):.6f}"
+    return formatted.rstrip("0").rstrip(".")

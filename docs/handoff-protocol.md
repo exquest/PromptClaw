@@ -349,6 +349,14 @@ lane, ordered steps, exact imported MIDI `pitch`, exact source
 `source_transform=midi_whole_file_scene` metadata. That payload intentionally
 omits `vocabulary_fragment_id` metadata so downstream renderers can preserve the
 imported pitch/rhythm sequence without treating it as selected vocabulary.
+That faithful render handoff now also carries CypherClaw's own render settings
+without rewriting the imported structure. Scene metadata exposes
+`tuning_system_name`, `arc_phase`, `voice_sequence`, and `space_mode`; each
+faithful step keeps the source MIDI `pitch` and `duration_ticks` while adding
+`render_pitch_hz`, `render_voice`, `render_synth`, and matched `render_space`
+settings. Still phases (`Listen`, `Divination`) select 5-limit just intonation,
+motion phases (`Conversation`, `Procession`) select Gamelan Slendro, unknown
+phases fall back to 12-TET, and unknown voices fall back to `pluck`.
 Rhythmic development is now part of that contract too. Compiled scenes and steps can carry `rhythm_development` and `rhythm_cell`, allowing sections to distinguish steady statements, forward pushes, arrival drives, syncopated fragments, half-time bridge displacements, recall grooves, and residual breath patterns instead of inheriting one incidental duration grid.
 When a later scene recalls earlier motif material, the recalled steps now inherit the current scene's rhythm/progression profile as well as its transition target. That prevents `Recap` from borrowing `Theme` notes while falsely reporting `Theme`'s old rhythm cell.
 Arrangement automation now rides through the tracker handoff too. Scenes publish an `arrangement_curve`, automation lanes carry row points rather than only defaults, tracker steps carry `arrangement_position` and velocity-scale provenance, and `/tmp/tracker_runtime_state.json` exposes current interpolated automation under `automation`. The scheduler uses low density to suppress optional support-lane events without dropping bass/melody continuity, and the live composer uses the same row state to refresh the master bus at musical intervals, so downstream diagnostics and the summed audio path agree about whether the section is rising, suspending, releasing, or fading.

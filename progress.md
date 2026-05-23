@@ -515,7 +515,7 @@ Progress: [███████████████████████
   events into `faithful_scene` manifest payloads that preserve imported pitch
   sequence, source tick durations, normalized velocities, and cumulative rows
   without invoking vocabulary fragment selection.
-- **T-017c**: pending — Pending.
+- **T-017c**: complete — Completed with local validation PASS.
 - **T-017d**: pending — Pending.
 - **T-018**: pending — Pending.
 - **T-019**: pending — Pending.
@@ -620,3 +620,31 @@ Progress: [███████████████████████
   and focused mypy for touched CypherClaw modules. Full validation passed with
   `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
   mypy src/`: `4960 passed, 11 skipped`, Ruff clean, and mypy clean.
+
+## T-017c (2026-05-23)
+
+- **Exploration findings:** The active ADP workflow is the task prompt's
+  Explore -> Specify -> Test -> Implement -> Verify -> Document template. The
+  relevant requirement is CC-015 in `sdp/prd-cypherclaw-v2-2026-05-22.md`:
+  faithful-transmission mode preserves imported pitch sequence and rhythm while
+  applying CypherClaw tunings, voices, and spaces. T-017a added
+  `load_faithful_midi_events(...)`; T-017b added the JSON-safe
+  `faithful_scene` manifest payload in `src/cypherclaw/midi_scene.py` and
+  `src/cypherclaw/midi_intake_daemon.py`. The design-statement authority for
+  this task is section 2's phase-to-tuning rule and section 4's seven
+  voice-space descriptions. This task should add render metadata to the
+  faithful scene without rewriting imported `pitch`, `duration_ticks`, row
+  order, or fragment-extraction behavior. Startup identity hardening is already
+  wired before `FirstBootAnnouncer()` and remains a regression anchor.
+- **Red/focused verification:** Red phase was confirmed with
+  `pytest tests/test_midi_scene.py -q` failing at collection on the missing
+  `FaithfulRenderSettings` import before production code changed. The
+  implementation adds additive `tuning_system_name`, `render_pitch_hz`,
+  `render_voice`, `render_synth`, and `render_space` metadata to faithful
+  scenes while preserving imported pitch/rhythm fields. Focused checks passed:
+  `pytest tests/test_midi_scene.py -q` (`8 passed`), adjacent MIDI/composer
+  coverage (`75 passed`), startup identity anchors (`11 passed`), focused Ruff,
+  and focused mypy for touched CypherClaw modules.
+- **Full validation:** `pip install -e '.[dev]' && pytest tests/ -x &&
+  ruff check src/ tests/ && mypy src/` passed with `4964 passed, 11 skipped`,
+  Ruff clean, and mypy clean.

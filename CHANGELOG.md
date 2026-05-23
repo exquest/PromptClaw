@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Added faithful MIDI render settings (T-017c):
+  `cypherclaw.midi_scene.FaithfulRenderSettings` now enriches
+  `faithful_scene` steps with CypherClaw render metadata while preserving the
+  imported MIDI `pitch`, `duration_ticks`, and row order. Faithful rendering
+  applies the design-statement phase rule for `tuning_system_name`
+  (`just_intonation_5_limit` for `Listen`/`Divination`,
+  `gamelan_slendro` for `Conversation`/`Procession`, and `twelve_tet`
+  fallback), emits per-step `render_pitch_hz`, applies deterministic
+  `render_voice`/`render_synth` assignment, and attaches matched
+  `render_space` settings with stable FX bus ids for CypherClaw's seven
+  canonical spaces. Faithful intake manifests include those render settings
+  without invoking vocabulary selection or changing default fragment-extraction
+  behavior. Validation passed with `4964 passed, 11 skipped`, Ruff clean, and
+  mypy clean.
+
 - Added faithful MIDI scene mapping (T-017b):
   `cypherclaw.midi_scene.build_faithful_midi_scene(...)` now maps parsed
   faithful MIDI events into a JSON-safe CypherClaw scene with one melody lane,
