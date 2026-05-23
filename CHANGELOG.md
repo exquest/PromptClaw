@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Added the T-045b space-selection resolver: matched mode keeps each voice in
+  its canonical space profile, expressive mode routes voices through a
+  deterministic no-self-match mismatch table, and house-bound mode forces every
+  voice into the active house's mapped space while preserving the sounding synth
+  voice in OSC `/s_new` args. Faithful MIDI scene metadata now records
+  `active_house` and each step's `render_space_voice`. No dependencies,
+  migrations, provider secrets, runtime state directories, HTTP routes,
+  startup-flow changes, or SuperCollider source changes were added.
+
 - Added the T-045a mood-mode scene schema: `cypherclaw.midi_scene.MoodMode`
   now defines `matched`, `expressive`, and `house-bound`, with `matched` as the
   default parser fallback and serialized scene default. Faithful MIDI scene

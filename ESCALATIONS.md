@@ -27,6 +27,13 @@
 - **Dependencies and migrations:** No new dependencies, provider secrets,
   database columns, migrations, runtime state directories, HTTP routes, or
   SuperCollider source changes are required.
+- **Verification:** Red phase was confirmed with the locked T-045b resolver and
+  faithful-scene tests failing at collection on the missing resolver export
+  before production code changed. After implementation, the locked T-045b tests
+  passed with `5 passed`, adjacent MIDI scene and reverb profile tests passed
+  with `36 passed`, and the startup identity hardening anchors passed with
+  `11 passed`. The required validation command passed with `5101 passed,
+  11 skipped`, Ruff clean, and mypy clean.
 
 ## T-045a (2026-05-23)
 
