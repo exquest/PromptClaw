@@ -1,5 +1,6 @@
 """CypherClaw tuning system package."""
 
+from .morph import MorphOperator
 from .system import (
     GamelanSlendro,
     JustIntonation5Limit,
@@ -10,6 +11,7 @@ from .system import (
 __all__ = [
     "GamelanSlendro",
     "JustIntonation5Limit",
+    "MorphOperator",
     "TuningSystem",
     "TwelveTET",
 ]
