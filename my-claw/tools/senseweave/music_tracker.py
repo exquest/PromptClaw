@@ -1741,6 +1741,23 @@ _ARC_METADATA_KEYS = (
     "arc_synthesis",
 )
 
+_METER_TRAJECTORY_METADATA_KEYS = (
+    "meter_trajectory_id",
+    "meter_trajectory_arc_plan",
+    "meter_trajectory_arc_phase",
+    "meter_trajectory_scene",
+    "meter_trajectory_index",
+    "meter_trajectory_scene_count",
+    "meter_trajectory_meter",
+    "meter_trajectory_subdivision",
+    "meter_trajectory_groove_timing",
+    "meter_trajectory_phrase_breath",
+    "meter_trajectory_metric_modulation",
+    "meter_trajectory_polymeter",
+    "meter_trajectory_path",
+    "meter_trajectory_rationale",
+)
+
 _PRODUCTION_COURSE_METADATA_KEYS = (
     "production_mode_scale",
     "production_harmonic_function",
@@ -2714,6 +2731,10 @@ def build_korsakov_tracker_song(
                 scene_metadata[key] = str(value)
         for key in _ARC_METADATA_KEYS:
             value = source_score.metadata.get(key, score.metadata.get(key))
+            if value:
+                scene_metadata[key] = str(value)
+        for key in _METER_TRAJECTORY_METADATA_KEYS:
+            value = source_score.metadata.get(key)
             if value:
                 scene_metadata[key] = str(value)
         for key in _PRODUCTION_COURSE_METADATA_KEYS:

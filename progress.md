@@ -524,7 +524,11 @@ Progress: [███████████████████████
 - **T-019**: pending — Pending.
 - **T-020**: pending — Pending.
 - **T-021**: pending — Pending.
-- **T-022**: needs_split — Timed out; run sdp-cli tasks split T-022 to break it down.
+- **T-022**: split — Split into subtasks.
+- **T-022a**: complete — Defined score-tree `MeterTrajectory` / `MeterSceneValue`, added `SectionNode.scene_metadata`, preserved both through JSON round-trip, and carried `meter_trajectory_*` scene metadata into compiled tracker scenes without changing row scheduling. Validation passed with `4983 passed, 11 skipped`, Ruff clean, and mypy clean.
+- **T-022b**: pending — Pending.
+- **T-022c**: pending — Pending.
+- **T-022d**: pending — Pending.
 - **T-023**: pending — Pending.
 - **T-024**: pending — Pending.
 - **T-025**: pending — Pending.

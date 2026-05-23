@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Added score-tree meter trajectory metadata (T-022a):
+  `senseweave.score_tree.MeterTrajectory` now models an arc-level meter plan
+  with ordered per-scene `MeterSceneValue` entries. `SectionNode.scene_metadata`
+  carries the JSON-safe trajectory keys through score-tree serialization and
+  tracker compilation into `TrackerScene.metadata`. This is metadata plumbing
+  only; tracker row timing and active groove-meter selection are unchanged, no
+  dependencies or migrations were added, and startup identity hardening remains
+  covered by existing regression anchors. Validation passed with `4983 passed,
+  11 skipped`, Ruff clean, and mypy clean.
+
 - Added row-based metric modulation timing (T-021):
   `senseweave.music_tracker.MetricModulation` now lets tracker scenes apply
   duration-ratio changes from a specific row onward. A `3:2` modulation at row

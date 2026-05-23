@@ -1,6 +1,7 @@
 """Canonical score-tree data model for CypherClaw composition."""
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field, fields as dataclass_fields
 import json
 from typing import Any, Mapping
@@ -41,6 +42,143 @@ _PERFORMANCE_INTENT_FIELDS: frozenset[str] = frozenset(
 _SECTION_ENVELOPE_FIELDS: frozenset[str] = frozenset(
     dataclass_field.name for dataclass_field in dataclass_fields(SectionEnvelope)
 )
+
+
+def _coerce_string_map(payload: object) -> dict[str, str]:
+    if not isinstance(payload, Mapping):
+        return {}
+    return {str(key): str(value) for key, value in payload.items()}
+
+
+def _coerce_polymeter(value: object) -> tuple[int, int] | None:
+    if value is None or value == "":
+        return None
+    raw = value
+    if isinstance(value, str):
+        try:
+            raw = json.loads(value)
+        except (TypeError, ValueError):
+            raw = value.replace(":", ",").split(",")
+    if not isinstance(raw, Sequence) or isinstance(raw, (str, bytes)):
+        return None
+    if len(raw) != 2:
+        return None
+    try:
+        return (int(raw[0]), int(raw[1]))
+    except (TypeError, ValueError):
+        return None
+
+
+@dataclass(frozen=True)
+class MeterSceneValue:
+    """One scene's planned meter value inside a larger trajectory."""
+
+    scene_name: str
+    meter: str
+    subdivision: str = "straight"
+    groove_timing: str = "grid"
+    phrase_breath: str = "regular"
+    metric_modulation: str = ""
+    polymeter: tuple[int, int] | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "scene_name", str(self.scene_name))
+        object.__setattr__(self, "meter", str(self.meter))
+        object.__setattr__(self, "subdivision", str(self.subdivision or "straight"))
+        object.__setattr__(self, "groove_timing", str(self.groove_timing or "grid"))
+        object.__setattr__(self, "phrase_breath", str(self.phrase_breath or "regular"))
+        object.__setattr__(self, "metric_modulation", str(self.metric_modulation or ""))
+        object.__setattr__(self, "polymeter", _coerce_polymeter(self.polymeter))
+
+
+@dataclass(frozen=True)
+class MeterTrajectory:
+    """Arc-level meter plan spanning multiple score-tree scenes."""
+
+    trajectory_id: str
+    arc_plan: str
+    scene_values: tuple[MeterSceneValue, ...]
+    arc_phase: str = ""
+    rationale: str = ""
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "trajectory_id", str(self.trajectory_id))
+        object.__setattr__(self, "arc_plan", str(self.arc_plan))
+        object.__setattr__(self, "arc_phase", str(self.arc_phase or ""))
+        object.__setattr__(self, "rationale", str(self.rationale or ""))
+        object.__setattr__(
+            self,
+            "scene_values",
+            tuple(_coerce_meter_scene_value(value) for value in self.scene_values),
+        )
+
+    def scene_value_for(self, scene_name: str) -> MeterSceneValue | None:
+        for value in self.scene_values:
+            if value.scene_name == scene_name:
+                return value
+        return None
+
+    def metadata_for_scene(self, scene_name: str) -> dict[str, str]:
+        for index, value in enumerate(self.scene_values):
+            if value.scene_name != scene_name:
+                continue
+            metadata = {
+                "meter_trajectory_id": self.trajectory_id,
+                "meter_trajectory_arc_plan": self.arc_plan,
+                "meter_trajectory_scene": value.scene_name,
+                "meter_trajectory_index": str(index),
+                "meter_trajectory_scene_count": str(len(self.scene_values)),
+                "meter_trajectory_meter": value.meter,
+                "meter_trajectory_subdivision": value.subdivision,
+                "meter_trajectory_groove_timing": value.groove_timing,
+                "meter_trajectory_phrase_breath": value.phrase_breath,
+                "meter_trajectory_path": json.dumps([item.meter for item in self.scene_values]),
+            }
+            if self.arc_phase:
+                metadata["meter_trajectory_arc_phase"] = self.arc_phase
+            if self.rationale:
+                metadata["meter_trajectory_rationale"] = self.rationale
+            if value.metric_modulation:
+                metadata["meter_trajectory_metric_modulation"] = value.metric_modulation
+            if value.polymeter is not None:
+                metadata["meter_trajectory_polymeter"] = json.dumps(list(value.polymeter))
+            return metadata
+        return {}
+
+
+def _coerce_meter_scene_value(payload: object) -> MeterSceneValue:
+    if isinstance(payload, MeterSceneValue):
+        return payload
+    if isinstance(payload, Mapping):
+        return MeterSceneValue(
+            scene_name=str(payload.get("scene_name", "")),
+            meter=str(payload.get("meter", "4/4") or "4/4"),
+            subdivision=str(payload.get("subdivision", "straight") or "straight"),
+            groove_timing=str(payload.get("groove_timing", "grid") or "grid"),
+            phrase_breath=str(payload.get("phrase_breath", "regular") or "regular"),
+            metric_modulation=str(payload.get("metric_modulation", "") or ""),
+            polymeter=_coerce_polymeter(payload.get("polymeter")),
+        )
+    raise TypeError(f"unsupported MeterSceneValue payload: {type(payload)!r}")
+
+
+def _coerce_meter_trajectory(payload: object) -> MeterTrajectory | None:
+    if payload is None:
+        return None
+    if isinstance(payload, MeterTrajectory):
+        return payload
+    if isinstance(payload, Mapping):
+        raw_values = payload.get("scene_values", ())
+        if not isinstance(raw_values, Sequence) or isinstance(raw_values, (str, bytes)):
+            raw_values = ()
+        return MeterTrajectory(
+            trajectory_id=str(payload.get("trajectory_id", "")),
+            arc_plan=str(payload.get("arc_plan", "")),
+            arc_phase=str(payload.get("arc_phase", "") or ""),
+            scene_values=tuple(_coerce_meter_scene_value(value) for value in raw_values),
+            rationale=str(payload.get("rationale", "") or ""),
+        )
+    raise TypeError(f"unsupported MeterTrajectory payload: {type(payload)!r}")
 
 
 def _coerce_performance_intent(
@@ -134,9 +272,11 @@ class SectionNode:
     harmonic_function: str = "tonic"
     transition_intent: str = "maintain"
     section_envelope: SectionEnvelope = field(default_factory=SectionEnvelope)
+    scene_metadata: dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         self.section_envelope = _coerce_section_envelope(self.section_envelope)
+        self.scene_metadata = _coerce_string_map(self.scene_metadata)
 
 
 @dataclass
@@ -153,6 +293,7 @@ class ScoreTree:
     ending_family: str
     narrative_map: dict[str, str]
     metadata: dict[str, str] = field(default_factory=dict)
+    meter_trajectory: MeterTrajectory | None = None
     planned_duration_s: float = 0.0
     primary_hook_text: str = ""
 
@@ -226,6 +367,7 @@ class ScoreTree:
                 harmonic_function=str(item.get("harmonic_function", "tonic")),
                 transition_intent=str(item.get("transition_intent", "maintain")),
                 section_envelope=item.get("section_envelope"),
+                scene_metadata=_coerce_string_map(item.get("scene_metadata", {})),
             )
             for item in data.get("sections", ())
         ]
@@ -242,6 +384,7 @@ class ScoreTree:
             ending_family=str(data.get("ending_family", commission.ending_family)),
             narrative_map={str(k): str(v) for k, v in dict(data.get("narrative_map", {})).items()},
             metadata={str(k): str(v) for k, v in dict(data.get("metadata", {})).items()},
+            meter_trajectory=_coerce_meter_trajectory(data.get("meter_trajectory")),
             planned_duration_s=float(data.get("planned_duration_s", 0.0) or 0.0),
             primary_hook_text=str(data.get("primary_hook_text", "")),
         )

@@ -17,7 +17,13 @@ from senseweave.music_tracker_runtime import build_scene_events
 from senseweave.piece_brief import build_piece_brief
 from senseweave.piece_commission import commission_piece
 from senseweave.recursive_composer import compose_score_tree
-from senseweave.score_tree import PRODUCTION_COURSE_KEYS, PhraseNode, SectionNode
+from senseweave.score_tree import (
+    PRODUCTION_COURSE_KEYS,
+    MeterSceneValue,
+    MeterTrajectory,
+    PhraseNode,
+    SectionNode,
+)
 from senseweave.tracker_compiler import (
     _transition_profile_for_section,
     compile_score_tree_to_tracker,
@@ -1073,6 +1079,86 @@ def test_tracker_compiler_executes_proxy_arc_production_targets() -> None:
         assert current.metadata["transition_hard_cut"] == "true" or json.loads(
             current.metadata["transition_continuity_elements"]
         )
+
+
+def test_tracker_compiler_carries_meter_trajectory_scene_metadata() -> None:
+    commission = commission_piece(
+        cadence_state="occupied_day",
+        day_phase="day",
+        weekly_phase="weekend",
+        attention_score=0.72,
+        narrative_pressure=0.96,
+        occupancy_state="occupied_active",
+        repertoire_entries=[object()] * 80,
+        song_num=30,
+        hour=22,
+        elapsed_minutes=0.0,
+        cycle_minutes=5.0,
+    )
+    world = WorldModel(
+        observer_description="active room with a full installation arc",
+        cadence_state="occupied_day",
+        day_phase="day",
+        time_of_day="evening",
+        occupancy_state="occupied_active",
+        attention_score=0.72,
+        experimentation_bias=0.96,
+    )
+    brief = build_piece_brief(
+        world=world,
+        commission=commission,
+        family="ember",
+        cadence_state="occupied_day",
+        progression_profile="lift",
+    )
+    form = plan_form(commission=commission, brief=brief, family="ember")
+    tree = compose_score_tree(
+        commission=commission,
+        brief=brief,
+        form=form,
+        family="ember",
+        cadence_state="occupied_day",
+        progression_profile="lift",
+        song_num=30,
+        mood={"energy": 0.74, "valence": 0.62, "arousal": 0.72},
+    )
+    trajectory = MeterTrajectory(
+        trajectory_id="meter-arc-compiler",
+        arc_plan="ascending_complexity",
+        arc_phase="Convergence",
+        scene_values=tuple(
+            MeterSceneValue(
+                scene_name=section.scene_name,
+                meter=("4/4", "15/16", "7/8")[index % 3],
+                subdivision="dotted" if index % 3 == 1 else "straight",
+                groove_timing="metric_modulation" if index % 3 else "grid",
+                metric_modulation="5:4" if index % 3 == 1 else "",
+            )
+            for index, section in enumerate(tree.sections)
+        ),
+        rationale="compiler metadata propagation fixture",
+    )
+    tree.meter_trajectory = trajectory
+    for section in tree.sections:
+        section.scene_metadata.update(trajectory.metadata_for_scene(section.scene_name))
+
+    compiled = compile_score_tree_to_tracker(
+        tree,
+        mood={"energy": 0.74, "valence": 0.62, "arousal": 0.72},
+        family_name="ember",
+        patch_name="house_procession",
+        cadence_state="occupied_day",
+        progression_profile="lift",
+    )
+
+    scene_by_name = {scene.name: scene for scene in compiled.tracker_song.scenes}
+    for section in tree.sections:
+        scene = scene_by_name[section.scene_name]
+        assert scene.metadata["meter_trajectory_id"] == "meter-arc-compiler"
+        assert scene.metadata["meter_trajectory_arc_plan"] == "ascending_complexity"
+        assert scene.metadata["meter_trajectory_scene"] == section.scene_name
+        assert scene.metadata["meter_trajectory_meter"] == section.scene_metadata["meter_trajectory_meter"]
+        assert json.loads(scene.metadata["meter_trajectory_path"])
 
 
 def test_production_course_metadata_survives_compose_compile_schedule() -> None:

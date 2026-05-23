@@ -1244,6 +1244,14 @@ def _production_arc_metadata_for_section(score_tree: ScoreTree, section: Section
     }
 
 
+def _scene_metadata_for_section(score_tree: ScoreTree, section: SectionNode) -> dict[str, str]:
+    metadata: dict[str, str] = {}
+    if score_tree.meter_trajectory is not None:
+        metadata.update(score_tree.meter_trajectory.metadata_for_scene(section.scene_name))
+    metadata.update(getattr(section, "scene_metadata", {}) or {})
+    return {str(key): str(value) for key, value in metadata.items() if str(value).strip()}
+
+
 def _arc_automation_defaults(
     defaults: Mapping[str, float],
     arc_metadata: Mapping[str, str],
@@ -1357,6 +1365,7 @@ def _section_score(
             "section_progression": json.dumps(list(section_progression)),
         }
     )
+    metadata.update(_scene_metadata_for_section(score_tree, section))
     if sample_gesture_metadata:
         metadata.update(sample_gesture_metadata)
     if arc_metadata:

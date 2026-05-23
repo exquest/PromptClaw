@@ -1,5 +1,27 @@
 # Escalations
 
+## T-022a (2026-05-23)
+
+- **Reason:** Meter-trajectory model scope and startup-hardening assumptions
+- **Details:** Exploration found T-022a is the first slice of CC-032, following
+  T-020/T-021 metric-modulation work. This task defines a score-tree-level
+  `MeterTrajectory` model, adds a per-section scene metadata carrier, and
+  preserves that metadata through the compile-to-tracker handoff. It does not
+  implement the later trajectory planner table, mutate tracker row timing, add
+  database columns, or add migrations. The generated startup hardening bullets
+  target the existing identity startup subsystem; current startup tests already
+  cover `bootstrap_identity()` persistence/order, so this task will re-run
+  those anchors rather than broadening meter metadata work into startup
+  rewiring. No new dependencies are required.
+- **Reason:** Red phase and verification
+- **Details:** Red phase was confirmed with the focused score-tree and tracker
+  compiler tests failing on missing `MeterSceneValue` / `MeterTrajectory`
+  imports before production code changed. After implementation, the focused
+  model and compiler tests passed, metric-modulation plus startup identity
+  anchors passed, and full validation passed with `pip install -e '.[dev]' &&
+  pytest tests/ -x && ruff check src/ tests/ && mypy src/`: `4983 passed, 11
+  skipped`, Ruff clean, and mypy clean.
+
 ## T-021 (2026-05-23)
 
 - **Reason:** Metric-modulation timing scope and startup-hardening assumptions
