@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~13h 54m remaining (52 tasks, low confidence, calibrating)
-Expected completion: 10:04 PM today.
-Progress: [██████████████████████████████████░░░░] 91%  497 / 549 tasks complete
-  completed: 497, pending: 43, needs_split: 7, blocked: 0, needs_attn: 2, skipped: 47
+ETC: ~10h 30m remaining (47 tasks, low confidence, calibrating)
+Expected completion: 11:06 PM today.
+Progress: [███████████████████████████████████░░░] 92%  514 / 561 tasks complete
+  completed: 514, pending: 42, needs_split: 3, blocked: 0, needs_attn: 2, skipped: 51
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -549,64 +549,27 @@ Progress: [███████████████████████
 - **T-042**: complete — Completed with verdict PASS.
 - **T-043**: complete — Completed with verdict PASS.
 - **T-044**: split — Split into subtasks.
-- **T-044a**: pending — Pending.
-- **T-044b**: pending — Pending.
-- **T-044c**: complete — Completed with verdict PASS. Exploration found the requested assigned-FX-bus and mismatched-bus unit tests already landed in `tests/test_senseweave_voice.py::TestFxBusRouting`; this pass added the missing spec/status documentation.
-- **T-044d**: complete — Completed with verdict PASS. Fixed the synthesis smoke-render routing mismatch by aligning `master_smooth.scd` with the canonical CypherClaw v2 FX buses emitted by `VOICE_REVERB_PROFILES` (`pluck=16`, `breath=17`, `choir=18`, `kotekan=19`, `pad=20`, `bowed=21`, `tabla_tin=22`) and added smoke regression tests that prove emitted voice buses are collected by the master return map.
+- **T-044a**: complete — Completed with verdict PASS.
+- **T-044b**: complete — Completed with verdict PASS.
+- **T-044c**: complete — Completed with verdict PASS.
+- **T-044d**: complete — Completed with verdict PASS.
 - **T-045**: split — Split into subtasks.
-- **T-045a**: complete — Added the schema-only mood-mode enum with `matched` default, `expressive`, and `house-bound`; faithful MIDI scene payloads now carry `mood_mode` at top level and per step, tracker `TrackerScene` metadata defaults/normalizes the same field, and validators reject unsupported serialized values. Red phase was confirmed in `tests/test_midi_scene.py` and `tests/test_music_tracker.py`; focused routing hardening anchors for `fx_bus_id` / `sw_sampler.scd` passed, and full validation passed with `5096 passed, 11 skipped`, Ruff clean, and mypy clean.
-- **T-045b**: complete — Implemented the space-selection resolver: matched uses canonical voice profiles, expressive applies the deterministic mismatch table, and house-bound maps the active house to a shared space for all voices while preserving sounding synth voices in OSC args.
-- **T-045c**: complete — Completed with verdict PASS. Scene playback now carries
-  resolver-selected space metadata through tracker events and live OSC note
-  routing: each voice keeps its sounding synth, while profiled voices receive
-  the `fx_bus_id` for the resolved scene space. House-bound playback resolves
-  house context from explicit `active_house`, then `patch_name`, then the
-  existing `house_chamber` default. No new dependencies, database migrations,
-  provider secrets, runtime state directories, HTTP routes, startup-flow
-  changes, or SuperCollider source changes were added. Red phase was confirmed
-  before implementation, focused hardening anchors passed with `94 passed`,
-  startup identity anchors passed with `11 passed`, and final validation passed
-  with `5106 passed, 11 skipped`, Ruff clean, and mypy clean.
-- **T-045d**: complete — Added T-045d mood-space unit coverage for the OSC `fx_bus_id` mode matrix: matched default, expressive mismatch, and house-bound uniform routing now cover every canonical voice, and house-bound mode with no active house is pinned to the documented `house_chamber` fallback. `summarize_voice_reverb_profiles()` now exposes that fallback for diagnostics. No new dependencies, No database migration, no provider secrets, no runtime state directories, no HTTP routes, no startup-flow changes, and no SuperCollider source changes were added. Red phase was confirmed before implementation, focused mood-space anchors passed with `38 passed`, startup identity hardening anchors passed with `13 passed`, and final validation passed with `5108 passed, 11 skipped`, Ruff clean, and mypy clean.
-- **T-046**: pending — Pending.
+- **T-045a**: complete — Completed with verdict PASS.
+- **T-045b**: complete — Completed with verdict PASS.
+- **T-045c**: complete — Completed with verdict PASS.
+- **T-045d**: complete — Completed with verdict PASS.
+- **T-046**: complete — Completed with verdict PASS.
 - **T-047**: split — Split into subtasks.
-- **T-047a**: pending — Pending.
-- **T-047b**: pending — Pending.
+- **T-047a**: complete — Completed with verdict PASS.
+- **T-047b**: complete — Completed with verdict PASS.
 - **T-048**: split — Split into subtasks.
-- **T-048a**: complete — Exploration found no existing composer HTTP API module; closest patterns are `src/cypherclaw/image_api` and `src/cypherclaw/narrative_api` FastAPI factories, while the composer-facing music surface lives under `my-claw/tools/senseweave`. Added `specs/t-048a-spec.md`, locked red tests in `tests/test_composer_api.py`, and implemented a packaged `cypherclaw.composer_api` validation-only route for morph phrase requests. The schema reuses `cypherclaw.space_reverb.VOICE_REVERB_PROFILES` as the canonical voice set, accepts normalized `sw_` voice aliases, rejects invalid/self-morph payloads at the endpoint, maps `linear`/`equal-power` to the `morph_voice` numeric curve values, and preserves existing `fx_bus_id` / `sw_sampler.scd` hardening anchors. No new dependencies, no database migration, no provider secrets, no runtime state directories, no startup-flow changes, and no SuperCollider source changes were added. Red phase was confirmed before implementation; focused T-048a and hardening anchors passed with `14 passed`; final validation passed with `5133 passed, 11 skipped`, Ruff clean, and mypy clean.
-- **T-048b**: complete — Completed with verdict PASS. Phase 0 Explore found
-  T-047 provides the `morph_voice` SynthDef and T-048a provides request
-  validation, but no composer-side interpolation helper existed for generating
-  `morph_x`/voice-parameter values across a phrase. Added
-  `cypherclaw.instrument_morph` with typed `linear`, `exponential`, and
-  `sigmoid` morph curve interpolation, scalar interpolation, numeric
-  source/target voice-parameter interpolation, and endpoint-inclusive parameter
-  frames. T-048a's `linear`/`equal-power` values remain SynthDef crossfade-law
-  selectors. No new dependencies, No database migration, no provider secrets,
-  no runtime state directories, no startup-flow changes, and no SuperCollider
-  source changes were added. Red phase was confirmed before implementation;
-  focused T-048b tests passed with `8 passed`, composer API compatibility
-  passed with `11 passed`, startup identity hardening anchors passed with
-  `8 passed`, and final validation passed with `5141 passed, 11 skipped`, Ruff
-  clean, and mypy clean.
-- **T-048c**: complete — Completed with verdict PASS. Phase 0 Explore found
-  T-048a already owns the validation-only composer API request/response
-  contract, T-048b owns composer-side `linear`/`exponential`/`sigmoid`
-  `morph_x` interpolation, and `morph_voice.scd` owns the `linear` /
-  `equal-power` SuperCollider gain-law selector. The request handler now
-  generates an endpoint-inclusive single-line morph phrase when callers provide
-  `phrase_curve`, while preserving the locked validation-only response when
-  `phrase_curve` is omitted. Red phase was confirmed before implementation,
-  focused composer and instrument-morph tests passed with `22 passed`, routing
-  hardening anchors passed with `3 passed`, and final validation passed with
-  `5144 passed, 11 skipped`, Ruff clean, and mypy clean. No new dependencies,
-  No database migration, provider secrets, runtime state directories,
-  startup-flow changes, or SuperCollider source changes were added; `fx_bus_id`
-  and `sw_sampler.scd` routing anchors remain green.
-- **T-048d**: complete — Completed with verdict PASS. Phase 0 Explore found the active ADP process in the task prompt and prior specs, with no separate standalone ADP document beyond existing SDP/PRD materials. Affected files were `src/cypherclaw/composer_api/{app.py,schemas.py,__init__.py}`, `src/cypherclaw/instrument_morph/{curves.py,__init__.py}`, and existing tests `tests/test_composer_api.py`, `tests/test_instrument_morph_curves.py`, plus startup identity hardening anchors. Added T-048d schema validation coverage for generation-only fields, every curve type across `phrase_curve` and `morph_curve_type`, and end-to-end morph phrase generation. The schema now rejects explicit `phrase_frame_count` without `phrase_curve`. No new dependencies, No database migration, provider secrets, runtime state directories, startup-flow rewiring, or SuperCollider source changes were added. Red phase was confirmed before implementation, focused composer/instrument tests passed with `28 passed`, startup identity anchors passed with `11 passed`, and final validation passed with `5150 passed, 11 skipped`, Ruff clean, and mypy clean.
-- **T-047c**: pending — Pending.
-- **T-047d**: pending — Pending.
-- **T-049**: pending — Pending.
+- **T-048a**: complete — Completed with verdict PASS.
+- **T-048b**: complete — Completed with verdict PASS.
+- **T-048c**: complete — Completed with verdict PASS.
+- **T-048d**: complete — Completed with verdict PASS.
+- **T-047c**: complete — Completed with verdict PASS.
+- **T-047d**: complete — Completed with verdict PASS.
+- **T-049**: complete — Completed with verdict PASS.
 - **T-050**: pending — Pending.
 - **T-051**: pending — Pending.
 - **T-052**: pending — Pending.
@@ -617,13 +580,29 @@ Progress: [███████████████████████
 - **T-054c**: pending — Pending.
 - **T-054d**: pending — Pending.
 - **T-053a**: pending — Pending.
-- **T-055**: needs_split — Timed out; run sdp-cli tasks split T-055 to break it down.
-- **T-056**: needs_split — Timed out; run sdp-cli tasks split T-056 to break it down.
+- **T-055**: split — Split into subtasks.
+- **T-055a**: pending — Pending.
+- **T-055b**: pending — Pending.
+- **T-055c**: pending — Pending.
+- **T-056**: split — Split into subtasks.
+- **T-056a**: pending — Pending.
+- **T-056b**: pending — Pending.
+- **T-056c**: pending — Pending.
+- **T-056d**: pending — Pending.
+- **T-055d**: pending — Pending.
 - **T-053b**: pending — Pending.
-- **T-057**: needs_split — Timed out; run sdp-cli tasks split T-057 to break it down.
+- **T-057**: split — Split into subtasks.
+- **T-057a**: pending — Pending.
+- **T-057b**: pending — Pending.
+- **T-057c**: pending — Pending.
+- **T-057d**: pending — Pending.
 - **T-053c**: pending — Pending.
-- **T-058**: needs_split — Timed out; run sdp-cli tasks split T-058 to break it down.
+- **T-058**: split — Split into subtasks.
+- **T-058a**: pending — Pending.
+- **T-058b**: pending — Pending.
+- **T-058c**: pending — Pending.
 - **T-059**: needs_split — Timed out; run sdp-cli tasks split T-059 to break it down.
+- **T-058d**: pending — Pending.
 - **T-053d**: pending — Pending.
 - **T-060**: needs_split — Timed out; run sdp-cli tasks split T-060 to break it down.
 - **T-061**: pending — Pending.
