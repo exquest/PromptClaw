@@ -45,6 +45,43 @@ _CHORD_SUFFIXES: dict[str, str] = {
     "unknown": "?",
 }
 
+_MAJOR_KEY_NAMES: tuple[str, ...] = (
+    "Cb",
+    "Gb",
+    "Db",
+    "Ab",
+    "Eb",
+    "Bb",
+    "F",
+    "C",
+    "G",
+    "D",
+    "A",
+    "E",
+    "B",
+    "F#",
+    "C#",
+)
+
+_MINOR_KEY_NAMES: tuple[str, ...] = (
+    "Ab",
+    "Eb",
+    "Bb",
+    "F",
+    "C",
+    "G",
+    "D",
+    "A",
+    "E",
+    "B",
+    "F#",
+    "C#",
+    "G#",
+    "D#",
+    "A#",
+)
+
+
 _DRUM_ROLES: dict[int, str] = {
     35: "kick",
     36: "kick",
@@ -86,10 +123,23 @@ class MidiNote:
 
 
 @dataclass(frozen=True)
+class MidiControlChange:
+    track: int
+    channel: int
+    controller: int
+    value: int
+    tick: int
+
+
+@dataclass(frozen=True)
 class ParsedMidi:
     division: int
     time_signature: tuple[int, int]
     notes: tuple[MidiNote, ...]
+    tempo_bpm: float | None = None
+    key_signature: str | None = None
+    track_count: int = 0
+    control_changes: tuple[MidiControlChange, ...] = ()
 
 
 def empty_midi_fragments() -> dict[str, object]:
@@ -136,7 +186,10 @@ def _parse_midi_file(path: Path) -> ParsedMidi | None:
     offset = header_end
     track_index = 0
     notes: list[MidiNote] = []
+    control_changes: list[MidiControlChange] = []
     time_signature = [4, 4]
+    tempo_holder: list[float | None] = [None]
+    key_holder: list[str | None] = [None]
 
     while offset + 8 <= len(data):
         chunk_type = data[offset : offset + 4]
@@ -150,7 +203,10 @@ def _parse_midi_file(path: Path) -> ParsedMidi | None:
                 data[chunk_start:chunk_end],
                 track_index=track_index,
                 notes=notes,
+                control_changes=control_changes,
                 time_signature=time_signature,
+                tempo_holder=tempo_holder,
+                key_holder=key_holder,
             )
             track_index += 1
         offset = chunk_end
@@ -159,6 +215,15 @@ def _parse_midi_file(path: Path) -> ParsedMidi | None:
         division=division,
         time_signature=(time_signature[0], time_signature[1]),
         notes=tuple(sorted(notes, key=lambda n: (n.start_tick, n.track, n.channel, n.note))),
+        tempo_bpm=tempo_holder[0],
+        key_signature=key_holder[0],
+        track_count=track_index,
+        control_changes=tuple(
+            sorted(
+                control_changes,
+                key=lambda c: (c.tick, c.track, c.channel, c.controller),
+            )
+        ),
     )
 
 
@@ -167,7 +232,10 @@ def _parse_track(
     *,
     track_index: int,
     notes: list[MidiNote],
+    control_changes: list[MidiControlChange],
     time_signature: list[int],
+    tempo_holder: list[float | None],
+    key_holder: list[str | None],
 ) -> None:
     offset = 0
     tick = 0
@@ -212,6 +280,18 @@ def _parse_track(
             if meta_type == 0x58 and length >= 2:
                 time_signature[0] = max(1, payload[0])
                 time_signature[1] = max(1, 2 ** payload[1])
+            elif meta_type == 0x51 and length >= 3 and tempo_holder[0] is None:
+                mpq = (payload[0] << 16) | (payload[1] << 8) | payload[2]
+                if mpq > 0:
+                    tempo_holder[0] = round(60_000_000 / mpq, 3)
+            elif meta_type == 0x59 and length >= 2 and key_holder[0] is None:
+                sf = payload[0] - 256 if payload[0] >= 128 else payload[0]
+                mi = payload[1]
+                if -7 <= sf <= 7 and mi in (0, 1):
+                    root = (
+                        _MINOR_KEY_NAMES[sf + 7] if mi == 1 else _MAJOR_KEY_NAMES[sf + 7]
+                    )
+                    key_holder[0] = f"{root} {'minor' if mi == 1 else 'major'}"
             continue
 
         if status in (0xF0, 0xF7):
@@ -232,6 +312,18 @@ def _parse_track(
         data1 = track_data[offset]
         data2 = track_data[offset + 1] if data_len == 2 else 0
         offset += data_len
+
+        if event_type == 0xB0:
+            control_changes.append(
+                MidiControlChange(
+                    track=track_index,
+                    channel=channel,
+                    controller=data1,
+                    value=data2,
+                    tick=tick,
+                )
+            )
+            continue
 
         if event_type == 0x90 and data2 > 0:
             active[(channel, data1)].append((tick, data2))
