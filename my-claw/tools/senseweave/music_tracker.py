@@ -1775,6 +1775,35 @@ _METER_TRAJECTORY_METADATA_KEYS = (
     "meter_trajectory_entry",
 )
 
+_TUNING_TRAJECTORY_METADATA_KEYS = (
+    "tuning_trajectory_id",
+    "tuning_trajectory_arc_plan",
+    "tuning_trajectory_arc_phase",
+    "tuning_trajectory_scene",
+    "tuning_trajectory_index",
+    "tuning_trajectory_scene_count",
+    "tuning_arc_phase",
+    "tuning_phase_category",
+    "tuning_system_name",
+    "tuning_morph_source_name",
+    "tuning_morph_target_name",
+    "tuning_morph_curve",
+    "tuning_transition_kind",
+    "tuning_trajectory_path",
+    "tuning_trajectory_rationale",
+    "tuning_trajectory_entry",
+)
+
+_PRESERVE_EMPTY_SCENE_METADATA_KEYS = frozenset({"tuning_morph_target_name"})
+
+
+def _scene_metadata_items(metadata: Mapping[str, object]) -> dict[str, str]:
+    return {
+        str(key): str(value)
+        for key, value in metadata.items()
+        if str(value).strip() or str(key) in _PRESERVE_EMPTY_SCENE_METADATA_KEYS
+    }
+
 
 def _sequence_items(value: object) -> list[object]:
     if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
@@ -2492,7 +2521,7 @@ def build_scene_from_score(
     metadata["length_multiplier"] = f"{length_multiplier:.2f}"
     metadata["repeat_count"] = str(max(1, int(repeat_count)))
     if scene_metadata:
-        metadata.update({str(key): str(value) for key, value in scene_metadata.items() if str(value).strip()})
+        metadata.update(_scene_metadata_items(scene_metadata))
     metadata.update(_ensemble_role_metadata(score.metadata, scene_metadata))
     arrangement_curve = _arrangement_curve_for_scene(name, metadata)
     metadata["arrangement_curve"] = arrangement_curve
@@ -2865,6 +2894,10 @@ def build_korsakov_tracker_song(
             value = source_score.metadata.get(key)
             if value:
                 scene_metadata[key] = str(value)
+        for key in _TUNING_TRAJECTORY_METADATA_KEYS:
+            value = source_score.metadata.get(key)
+            if value or key in _PRESERVE_EMPTY_SCENE_METADATA_KEYS:
+                scene_metadata[key] = str(value or "")
         for key in _PRODUCTION_COURSE_METADATA_KEYS:
             value = source_score.metadata.get(key)
             if value:

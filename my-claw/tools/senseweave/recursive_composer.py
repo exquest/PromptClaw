@@ -28,6 +28,8 @@ from .score_tree import (
     PhraseNode,
     ScoreTree,
     SectionNode,
+    TuningSceneValue,
+    TuningTrajectory,
 )
 
 
@@ -100,6 +102,27 @@ _DEFAULT_METER_DRIFT: tuple[_MeterDriftCell, ...] = (
 _ARC_PHASE_ORDER: dict[str, int] = {
     phase.name: index for index, phase in enumerate(ARC_PHASES)
 }
+
+_TUNING_12_TET = "twelve_tet"
+_TUNING_JUST_5_LIMIT = "just_intonation_5_limit"
+_TUNING_SLENDRO = "gamelan_slendro"
+_TUNING_MORPH_CURVE = "linear"
+
+_TUNING_STILLNESS_PHASES = frozenset(
+    {
+        "listen",
+        "divination",
+        "crystallization",
+    }
+)
+_TUNING_MOTION_PHASES = frozenset(
+    {
+        "conversation",
+        "procession",
+        "emergence",
+        "convergence",
+    }
+)
 
 
 def _arc_metadata(directive: ArcDirective) -> dict[str, str]:
@@ -218,6 +241,174 @@ def _meter_trajectory_payload(trajectory: MeterTrajectory) -> dict[str, object]:
         ],
         "rationale": trajectory.rationale,
     }
+
+
+def _tuning_phase_for_section(
+    section: PlannedSection,
+    directives: Mapping[str, ArcDirective],
+) -> str:
+    directive = directives.get(section.scene_name)
+    if directive is None:
+        directive = directives.get(section.function)
+    if directive is None:
+        return ""
+    return directive.phase.name
+
+
+def _normalized_phase_key(phase_name: str) -> str:
+    return str(phase_name).strip().lower().replace("-", "_").replace(" ", "_")
+
+
+def _tuning_category_for_phase(phase_name: str) -> str:
+    key = _normalized_phase_key(phase_name)
+    if key in _TUNING_STILLNESS_PHASES:
+        return "stillness"
+    if key in _TUNING_MOTION_PHASES:
+        return "motion"
+    return "legacy"
+
+
+def _tuning_system_name_for_category(category: str) -> str:
+    if category == "stillness":
+        return _TUNING_JUST_5_LIMIT
+    if category == "motion":
+        return _TUNING_SLENDRO
+    return _TUNING_12_TET
+
+
+def _tuning_transition_kind(
+    previous_category: str | None,
+    category: str,
+) -> str:
+    if previous_category == "stillness" and category == "motion":
+        return "stillness_to_motion"
+    if previous_category == "motion" and category == "stillness":
+        return "motion_to_stillness"
+    return "steady"
+
+
+def _tuning_scene_value(
+    section: PlannedSection,
+    *,
+    phase_name: str,
+    phase_category: str,
+    tuning_system_name: str,
+    previous_tuning_system_name: str | None,
+    transition_kind: str,
+) -> TuningSceneValue:
+    source_name = ""
+    target_name = ""
+    if transition_kind != "steady" and previous_tuning_system_name is not None:
+        source_name = previous_tuning_system_name
+        target_name = tuning_system_name
+    return TuningSceneValue(
+        scene_name=section.scene_name,
+        arc_phase=phase_name,
+        phase_category=phase_category,
+        tuning_system_name=tuning_system_name,
+        transition_kind=transition_kind,
+        tuning_morph_source_name=source_name,
+        tuning_morph_target_name=target_name,
+        tuning_morph_curve=_TUNING_MORPH_CURVE,
+    )
+
+
+def _tuning_trajectory_payload(trajectory: TuningTrajectory) -> dict[str, object]:
+    scene_count = len(trajectory.scene_values)
+    return {
+        "trajectory_id": trajectory.trajectory_id,
+        "arc_plan": trajectory.arc_plan,
+        "arc_phase": trajectory.arc_phase,
+        "scene_count": scene_count,
+        "scene_names": [value.scene_name for value in trajectory.scene_values],
+        "arc_phases": [value.arc_phase for value in trajectory.scene_values],
+        "phase_categories": [
+            value.phase_category for value in trajectory.scene_values
+        ],
+        "tuning_path": [
+            value.tuning_system_name for value in trajectory.scene_values
+        ],
+        "scene_entries": [
+            value.to_metadata_entry(index=index, scene_count=scene_count)
+            for index, value in enumerate(trajectory.scene_values)
+        ],
+        "transitions": [
+            value.to_metadata_entry(index=index, scene_count=scene_count)
+            for index, value in enumerate(trajectory.scene_values)
+            if value.transition_kind != "steady"
+        ],
+        "composer_log": list(trajectory.composer_log_lines()),
+        "rationale": trajectory.rationale,
+    }
+
+
+def _section_scene_metadata(
+    scene_name: str,
+    *,
+    meter_trajectory: MeterTrajectory | None,
+    tuning_trajectory: TuningTrajectory | None,
+) -> dict[str, str]:
+    metadata: dict[str, str] = {}
+    if meter_trajectory is not None:
+        metadata.update(meter_trajectory.metadata_for_scene(scene_name))
+    if tuning_trajectory is not None:
+        metadata.update(tuning_trajectory.metadata_for_scene(scene_name))
+    return metadata
+
+
+def plan_tuning_trajectory(
+    sections: Sequence[PlannedSection],
+    directives: Mapping[str, ArcDirective],
+    *,
+    cadence_state: str = "",
+    trajectory_seed: str | int | None = None,
+) -> TuningTrajectory | None:
+    """Plan ordered tuning selections and morph markers for composed sections."""
+
+    if not sections:
+        return None
+
+    phase_names: list[str] = []
+    scene_values: list[TuningSceneValue] = []
+    previous_category: str | None = None
+    previous_tuning_system_name: str | None = None
+    for section in sections:
+        phase_name = _tuning_phase_for_section(section, directives)
+        category = _tuning_category_for_phase(phase_name)
+        tuning_system_name = _tuning_system_name_for_category(category)
+        transition_kind = _tuning_transition_kind(previous_category, category)
+        phase_names.append(phase_name or "legacy")
+        scene_values.append(
+            _tuning_scene_value(
+                section,
+                phase_name=phase_name or "Legacy",
+                phase_category=category,
+                tuning_system_name=tuning_system_name,
+                previous_tuning_system_name=previous_tuning_system_name,
+                transition_kind=transition_kind,
+            )
+        )
+        previous_category = category
+        previous_tuning_system_name = tuning_system_name
+
+    phase_path = tuple(dict.fromkeys(phase_names))
+    trajectory_id = "tuning-" + _scoped_seed_id(
+        str(trajectory_seed) if trajectory_seed is not None else None,
+        "tuning-trajectory",
+        cadence_state,
+        ",".join(section.scene_name for section in sections),
+        ",".join(phase_names),
+    )
+    return TuningTrajectory(
+        trajectory_id=trajectory_id,
+        arc_plan="cypherclaw_phase_tuning",
+        arc_phase="->".join(phase_path),
+        scene_values=tuple(scene_values),
+        rationale=(
+            "CypherClaw phase tuning rule"
+            f" ({cadence_state or 'unknown_cadence'})"
+        ),
+    )
 
 
 def plan_meter_trajectory(
@@ -352,6 +543,13 @@ def compose_score_tree(
         trajectory_seed=normalized_seed
         or _seed_id(family, cadence_state, progression_profile, song_num, hook.title),
     )
+    tuning_trajectory = plan_tuning_trajectory(
+        form.sections,
+        section_directives,
+        cadence_state=cadence_state,
+        trajectory_seed=normalized_seed
+        or _seed_id(family, cadence_state, progression_profile, song_num, hook.title),
+    )
     for index, section in enumerate(form.sections):
         motif_refs = [primary_motif.motif_id]
         if contrast_motifs and section.function in {"development", "turn", "coda"}:
@@ -426,10 +624,10 @@ def compose_score_tree(
                         section.function,
                     )
                 ),
-                scene_metadata=(
-                    meter_trajectory.metadata_for_scene(section.scene_name)
-                    if meter_trajectory is not None
-                    else {}
+                scene_metadata=_section_scene_metadata(
+                    section.scene_name,
+                    meter_trajectory=meter_trajectory,
+                    tuning_trajectory=tuning_trajectory,
                 ),
             )
         )
@@ -458,6 +656,8 @@ def compose_score_tree(
     }
     if meter_trajectory is not None:
         arrangement_plan["meter_trajectory"] = _meter_trajectory_payload(meter_trajectory)
+    if tuning_trajectory is not None:
+        arrangement_plan["tuning_trajectory"] = _tuning_trajectory_payload(tuning_trajectory)
     if vocabulary_db_path is not None:
         fragments = load_vocabulary_fragments(vocabulary_db_path)
         citations = plan_vocabulary_citations(
@@ -512,6 +712,7 @@ def compose_score_tree(
         narrative_map=narrative_map,
         metadata=metadata,
         meter_trajectory=meter_trajectory,
+        tuning_trajectory=tuning_trajectory,
         planned_duration_s=planned_duration_s,
         primary_hook_text=hook.text_hook,
     )

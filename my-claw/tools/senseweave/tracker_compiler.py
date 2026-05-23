@@ -196,6 +196,8 @@ _DYNAMIC_MASTER_AMP = {
     "f": 0.76,
 }
 
+_PRESERVE_EMPTY_SCENE_METADATA_KEYS = frozenset({"tuning_morph_target_name"})
+
 
 def _base_scene_duration_s(score: Score) -> float:
     max_beats = max(
@@ -1248,8 +1250,14 @@ def _scene_metadata_for_section(score_tree: ScoreTree, section: SectionNode) -> 
     metadata: dict[str, str] = {}
     if score_tree.meter_trajectory is not None:
         metadata.update(score_tree.meter_trajectory.metadata_for_scene(section.scene_name))
+    if score_tree.tuning_trajectory is not None:
+        metadata.update(score_tree.tuning_trajectory.metadata_for_scene(section.scene_name))
     metadata.update(getattr(section, "scene_metadata", {}) or {})
-    return {str(key): str(value) for key, value in metadata.items() if str(value).strip()}
+    return {
+        str(key): str(value)
+        for key, value in metadata.items()
+        if str(value).strip() or str(key) in _PRESERVE_EMPTY_SCENE_METADATA_KEYS
+    }
 
 
 def _arc_automation_defaults(

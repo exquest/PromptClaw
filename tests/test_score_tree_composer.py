@@ -479,7 +479,7 @@ def test_composed_meter_trajectory_scene_metadata_round_trips_through_json_and_t
     scene_by_name = {scene.name: scene for scene in compiled.tracker_song.scenes}
     for section, value in zip(restored.sections, restored.meter_trajectory.scene_values):
         expected_metadata = restored.meter_trajectory.metadata_for_scene(section.scene_name)
-        assert section.scene_metadata == expected_metadata
+        assert expected_metadata.items() <= section.scene_metadata.items()
 
         scene = scene_by_name[section.scene_name]
         assert scene.metadata["meter_trajectory_id"] == restored.meter_trajectory.trajectory_id

@@ -168,6 +168,172 @@ class MeterTrajectory:
         return {}
 
 
+def _metadata_token(value: object) -> str:
+    token = str(value or "").strip()
+    if not token:
+        return "none"
+    return "_".join(token.split())
+
+
+@dataclass(frozen=True)
+class TuningSceneValue:
+    """One scene's planned tuning value inside a larger trajectory."""
+
+    scene_name: str
+    arc_phase: str
+    phase_category: str
+    tuning_system_name: str
+    transition_kind: str = "steady"
+    tuning_morph_source_name: str = ""
+    tuning_morph_target_name: str = ""
+    tuning_morph_curve: str = "linear"
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "scene_name", str(self.scene_name))
+        object.__setattr__(self, "arc_phase", str(self.arc_phase or ""))
+        object.__setattr__(self, "phase_category", str(self.phase_category or "legacy"))
+        object.__setattr__(self, "tuning_system_name", str(self.tuning_system_name or "twelve_tet"))
+        object.__setattr__(self, "transition_kind", str(self.transition_kind or "steady"))
+        object.__setattr__(self, "tuning_morph_source_name", str(self.tuning_morph_source_name or ""))
+        object.__setattr__(self, "tuning_morph_target_name", str(self.tuning_morph_target_name or ""))
+        object.__setattr__(self, "tuning_morph_curve", str(self.tuning_morph_curve or "linear"))
+
+    def to_metadata_entry(self, *, index: int, scene_count: int) -> dict[str, object]:
+        return {
+            "scene_name": self.scene_name,
+            "index": index,
+            "scene_count": scene_count,
+            "arc_phase": self.arc_phase,
+            "phase_category": self.phase_category,
+            "tuning_system_name": self.tuning_system_name,
+            "transition_kind": self.transition_kind,
+            "tuning_morph_source_name": self.tuning_morph_source_name,
+            "tuning_morph_target_name": self.tuning_morph_target_name,
+            "tuning_morph_curve": self.tuning_morph_curve,
+        }
+
+    def composer_log_line(self, *, index: int, scene_count: int) -> str:
+        """Return a deterministic operator log line for this tuning selection."""
+
+        return (
+            "composer_tuning_selection"
+            f" scene={_metadata_token(self.scene_name)}"
+            f" index={index + 1}/{scene_count}"
+            f" phase={_metadata_token(self.arc_phase)}"
+            f" category={_metadata_token(self.phase_category)}"
+            f" tuning_system_name={_metadata_token(self.tuning_system_name)}"
+            f" morph_source={_metadata_token(self.tuning_morph_source_name)}"
+            f" morph_target={_metadata_token(self.tuning_morph_target_name)}"
+            f" morph_curve={_metadata_token(self.tuning_morph_curve)}"
+            f" transition={_metadata_token(self.transition_kind)}"
+        )
+
+
+@dataclass(frozen=True)
+class TuningTrajectory:
+    """Arc-level tuning plan spanning multiple score-tree scenes."""
+
+    trajectory_id: str
+    arc_plan: str
+    scene_values: tuple[TuningSceneValue, ...]
+    arc_phase: str = ""
+    rationale: str = ""
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "trajectory_id", str(self.trajectory_id))
+        object.__setattr__(self, "arc_plan", str(self.arc_plan))
+        object.__setattr__(self, "arc_phase", str(self.arc_phase or ""))
+        object.__setattr__(self, "rationale", str(self.rationale or ""))
+        object.__setattr__(
+            self,
+            "scene_values",
+            tuple(_coerce_tuning_scene_value(value) for value in self.scene_values),
+        )
+
+    def scene_value_for(self, scene_name: str) -> TuningSceneValue | None:
+        for value in self.scene_values:
+            if value.scene_name == scene_name:
+                return value
+        return None
+
+    def composer_log_lines(self) -> tuple[str, ...]:
+        scene_count = len(self.scene_values)
+        return tuple(
+            value.composer_log_line(index=index, scene_count=scene_count)
+            for index, value in enumerate(self.scene_values)
+        )
+
+    def metadata_for_scene(self, scene_name: str) -> dict[str, str]:
+        for index, value in enumerate(self.scene_values):
+            if value.scene_name != scene_name:
+                continue
+            metadata = {
+                "tuning_trajectory_id": self.trajectory_id,
+                "tuning_trajectory_arc_plan": self.arc_plan,
+                "tuning_trajectory_scene": value.scene_name,
+                "tuning_trajectory_index": str(index),
+                "tuning_trajectory_scene_count": str(len(self.scene_values)),
+                "tuning_arc_phase": value.arc_phase,
+                "tuning_phase_category": value.phase_category,
+                "tuning_system_name": value.tuning_system_name,
+                "tuning_morph_source_name": value.tuning_morph_source_name,
+                "tuning_morph_target_name": value.tuning_morph_target_name,
+                "tuning_morph_curve": value.tuning_morph_curve,
+                "tuning_transition_kind": value.transition_kind,
+                "tuning_trajectory_path": json.dumps(
+                    [item.tuning_system_name for item in self.scene_values]
+                ),
+                "tuning_trajectory_entry": json.dumps(
+                    value.to_metadata_entry(
+                        index=index,
+                        scene_count=len(self.scene_values),
+                    )
+                ),
+            }
+            if self.arc_phase:
+                metadata["tuning_trajectory_arc_phase"] = self.arc_phase
+            if self.rationale:
+                metadata["tuning_trajectory_rationale"] = self.rationale
+            return metadata
+        return {}
+
+
+def _coerce_tuning_scene_value(payload: object) -> TuningSceneValue:
+    if isinstance(payload, TuningSceneValue):
+        return payload
+    if isinstance(payload, Mapping):
+        return TuningSceneValue(
+            scene_name=str(payload.get("scene_name", "")),
+            arc_phase=str(payload.get("arc_phase", "") or ""),
+            phase_category=str(payload.get("phase_category", "legacy") or "legacy"),
+            tuning_system_name=str(payload.get("tuning_system_name", "twelve_tet") or "twelve_tet"),
+            transition_kind=str(payload.get("transition_kind", "steady") or "steady"),
+            tuning_morph_source_name=str(payload.get("tuning_morph_source_name", "") or ""),
+            tuning_morph_target_name=str(payload.get("tuning_morph_target_name", "") or ""),
+            tuning_morph_curve=str(payload.get("tuning_morph_curve", "linear") or "linear"),
+        )
+    raise TypeError(f"unsupported TuningSceneValue payload: {type(payload)!r}")
+
+
+def _coerce_tuning_trajectory(payload: object) -> TuningTrajectory | None:
+    if payload is None:
+        return None
+    if isinstance(payload, TuningTrajectory):
+        return payload
+    if isinstance(payload, Mapping):
+        raw_values = payload.get("scene_values", ())
+        if not isinstance(raw_values, Sequence) or isinstance(raw_values, (str, bytes)):
+            raw_values = ()
+        return TuningTrajectory(
+            trajectory_id=str(payload.get("trajectory_id", "")),
+            arc_plan=str(payload.get("arc_plan", "")),
+            arc_phase=str(payload.get("arc_phase", "") or ""),
+            scene_values=tuple(_coerce_tuning_scene_value(value) for value in raw_values),
+            rationale=str(payload.get("rationale", "") or ""),
+        )
+    raise TypeError(f"unsupported TuningTrajectory payload: {type(payload)!r}")
+
+
 def _coerce_meter_scene_value(payload: object) -> MeterSceneValue:
     if isinstance(payload, MeterSceneValue):
         return payload
@@ -316,6 +482,7 @@ class ScoreTree:
     narrative_map: dict[str, str]
     metadata: dict[str, str] = field(default_factory=dict)
     meter_trajectory: MeterTrajectory | None = None
+    tuning_trajectory: TuningTrajectory | None = None
     planned_duration_s: float = 0.0
     primary_hook_text: str = ""
 
@@ -407,6 +574,7 @@ class ScoreTree:
             narrative_map={str(k): str(v) for k, v in dict(data.get("narrative_map", {})).items()},
             metadata={str(k): str(v) for k, v in dict(data.get("metadata", {})).items()},
             meter_trajectory=_coerce_meter_trajectory(data.get("meter_trajectory")),
+            tuning_trajectory=_coerce_tuning_trajectory(data.get("tuning_trajectory")),
             planned_duration_s=float(data.get("planned_duration_s", 0.0) or 0.0),
             primary_hook_text=str(data.get("primary_hook_text", "")),
         )
