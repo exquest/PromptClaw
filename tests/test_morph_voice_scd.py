@@ -138,3 +138,45 @@ def test_summed_to_output_bus(scd_source: str) -> None:
     assert re.search(r"Out\.ar\(\s*out_bus\s*,", scd_source), (
         "summed signal must be written to out_bus via Out.ar"
     )
+
+
+def test_declares_position_control(scd_source: str) -> None:
+    """`position` controls stereo placement; defaults to centred (0.0)."""
+    args = _arg_block(scd_source)
+    assert _arg_default(args, "position") == 0.0, (
+        "position must default to 0.0 (centred)"
+    )
+    assert re.search(
+        r"Pan2\.ar\(\s*sig\s*,\s*position\.clip\(\s*-1\.0\s*,\s*1\.0\s*\)\s*\)",
+        scd_source,
+    ), "Pan2.ar must place the signal using position.clip(-1.0, 1.0)"
+
+
+def test_declares_fx_bus_routing_controls(scd_source: str) -> None:
+    """Per the voice routing contract: declare fx_bus_id and fx_send.
+
+    fx_bus_id defaults to 22 (the morph voice's per-voice FX return bus);
+    fx_send defaults to 0.2 (a quiet baseline send level).
+    """
+    args = _arg_block(scd_source)
+    assert _arg_default(args, "fx_bus_id") == 22.0, (
+        "fx_bus_id must default to 22 (morph voice FX return bus)"
+    )
+    assert _arg_default(args, "fx_send") == 0.2, (
+        "fx_send must default to 0.2"
+    )
+
+
+def test_writes_parallel_fx_send_to_fx_bus(scd_source: str) -> None:
+    """A parallel send scaled by fx_send is written to fx_bus_id.
+
+    Matches the routing contract used by sw_pluck and the other voices:
+    `Out.ar(fx_bus_id, sig * fx_send.clip(0.0, 1.0))`.
+    """
+    assert re.search(
+        r"\bsig\s*\*\s*fx_send\.clip\(\s*0\.0\s*,\s*1\.0\s*\)",
+        scd_source,
+    ), "FX send must be sig * fx_send.clip(0.0, 1.0)"
+    assert re.search(r"Out\.ar\(\s*fx_bus_id\s*,", scd_source), (
+        "parallel send must be written to fx_bus_id via Out.ar"
+    )

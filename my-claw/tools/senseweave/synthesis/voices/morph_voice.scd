@@ -7,7 +7,12 @@
 // the crossfade law: 0 = linear (constant-sum gain), 1 = equal-power
 // (constant-power gain; the standard musical crossfade that avoids the
 // ~3 dB perceived dip in the middle of a linear fade). The two scaled
-// sources are summed and written to `out_bus`.
+// sources are summed and written to `out_bus`. A parallel send scaled
+// by `fx_send` is routed to `fx_bus_id` to feed the per-voice FX return,
+// matching the voice routing contract used by the other sw_* voices.
+//
+// Voice: morph
+// FX bus: 22
 //
 // Compile to synthesis/synthdefs/morph_voice.scsyndef via `.writeDefFile`.
 
@@ -20,9 +25,12 @@ SynthDef(\morph_voice, {
       morph_x = 0.0,
       morph_curve = 1,
       pulse_width = 0.5,
-      out_bus = 0 |
+      position = 0.0,
+      out_bus = 0,
+      fx_bus_id = 22,
+      fx_send = 0.2 |
 
-    var env, source_a, source_b, x, lin_a, lin_b, ep_a, ep_b, gain_a, gain_b, sig;
+    var env, source_a, source_b, x, lin_a, lin_b, ep_a, ep_b, gain_a, gain_b, sig, dry, send;
 
     env = EnvGen.kr(
         Env.asr(attack.clip(0.005, 4.0), 1.0, release.clip(0.05, 8.0)),
@@ -54,8 +62,12 @@ SynthDef(\morph_voice, {
     // Sum the two scaled sources to the output bus.
     sig = (source_a * gain_a) + (source_b * gain_b);
     sig = sig * env * amp;
-    sig = Pan2.ar(sig, 0.0);
+    sig = Pan2.ar(sig, position.clip(-1.0, 1.0));
 
-    Out.ar(out_bus, sig);
+    dry  = sig;
+    send = sig * fx_send.clip(0.0, 1.0);
+
+    Out.ar(out_bus, dry);
+    Out.ar(fx_bus_id, send);
 }).writeDefFile("../synthdefs/");
 )
