@@ -20,6 +20,30 @@ from dataclasses import dataclass
 # PRD §7.5.2 / CC-080: half-life of ~30 seconds for the exponential decay.
 FATIGUE_HALF_LIFE_SECONDS = 30.0
 
+# PRD §7.5.2 / CC-081: threshold above which a fatigue multiplier is applied to
+# subsequent expression-parameter magnitudes, plus the multiplier's maximum
+# reduction (defaults: 0.7 and 0.5 — see PRD "Open Questions / Tuning").
+FATIGUE_THRESHOLD = 0.7
+FATIGUE_REDUCTION = 0.5
+
+
+def fatigue_multiplier(
+    counter_value: float,
+    threshold: float = FATIGUE_THRESHOLD,
+    reduction: float = FATIGUE_REDUCTION,
+) -> float:
+    """Return the multiplier for expression parameters at ``counter_value``.
+
+    Below or at ``threshold`` the multiplier is ``1.0`` (no reduction). Above
+    the threshold it follows the PRD formula
+    ``1 - reduction * clamp(counter_value, 0.0, 1.0)``, so a fully-saturated
+    counter halves expression-parameter magnitudes at the default settings.
+    """
+    if counter_value <= threshold:
+        return 1.0
+    normalized = min(1.0, max(0.0, float(counter_value)))
+    return 1.0 - float(reduction) * normalized
+
 
 def fatigue_decay_factor(
     elapsed_seconds: float,

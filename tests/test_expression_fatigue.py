@@ -11,8 +11,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "too
 
 from expression.fatigue import (
     FATIGUE_HALF_LIFE_SECONDS,
+    FATIGUE_REDUCTION,
+    FATIGUE_THRESHOLD,
     FatigueCounter,
     fatigue_decay_factor,
+    fatigue_multiplier,
 )
 
 
@@ -154,3 +157,54 @@ def test_counter_rejects_non_positive_half_life() -> None:
         FatigueCounter(half_life_seconds=0.0)
     with pytest.raises(ValueError):
         FatigueCounter(half_life_seconds=-1.0)
+
+
+def test_threshold_and_reduction_defaults_match_prd() -> None:
+    # PRD §7.5.2 / CC-081: default threshold 0.7, default reduction 0.5.
+    assert FATIGUE_THRESHOLD == 0.7
+    assert FATIGUE_REDUCTION == 0.5
+
+
+def test_multiplier_is_one_below_threshold() -> None:
+    # Below 0.7 the voice is "fresh" — nominal expression magnitudes pass through.
+    assert fatigue_multiplier(0.0) == 1.0
+    assert fatigue_multiplier(0.5) == 1.0
+    assert fatigue_multiplier(FATIGUE_THRESHOLD) == 1.0
+
+
+def test_multiplier_reduces_above_threshold() -> None:
+    # Just above the threshold: 1 - 0.5 * 0.70001 ≈ 0.65 — already a reduction.
+    just_above = fatigue_multiplier(FATIGUE_THRESHOLD + 1e-6)
+    assert just_above < 1.0
+
+    # At a counter value of 1.0 the multiplier hits its floor of 0.5.
+    assert math.isclose(fatigue_multiplier(1.0), 0.5, rel_tol=1e-12)
+
+
+def test_multiplier_clamps_counter_at_one() -> None:
+    # A counter value above 1.0 saturates — the multiplier does not keep falling.
+    assert math.isclose(fatigue_multiplier(2.5), 0.5, rel_tol=1e-12)
+
+
+def test_multiplier_honors_custom_threshold_and_reduction() -> None:
+    # Custom threshold raises the cutoff; custom reduction changes the slope.
+    assert fatigue_multiplier(0.8, threshold=0.9) == 1.0
+    assert math.isclose(
+        fatigue_multiplier(1.0, threshold=0.5, reduction=0.25),
+        0.75,
+        rel_tol=1e-12,
+    )
+
+
+def test_multiplier_applied_to_counter_value_above_and_below_threshold() -> None:
+    # CC-081 acceptance: multiplier applied above threshold, not applied below.
+    counter = FatigueCounter()
+    counter.add_note("violin", 0.3, now=0.0)
+    below = counter.value("violin", now=0.0)
+    assert below < FATIGUE_THRESHOLD
+    assert fatigue_multiplier(below) == 1.0
+
+    counter.add_note("cello", 0.9, now=0.0)
+    above = counter.value("cello", now=0.0)
+    assert above > FATIGUE_THRESHOLD
+    assert fatigue_multiplier(above) < 1.0
