@@ -1501,6 +1501,28 @@ reasoning effor...
 - **Reason:** Red phase and validation results
 - **Details:** Red phase was confirmed with `pytest tests/test_midi_faithful_loader.py -q` failing at collection on missing `cypherclaw.midi_loader` before production code changed. After implementation, `pytest tests/test_midi_faithful_loader.py -q` passed with `5 passed`, adjacent MIDI/composer vocabulary tests passed with `62 passed`, and startup identity hardening anchors passed with `11 passed`. The required validation command `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/` passed with `4956 passed, 11 skipped`, Ruff clean, and mypy clean. No new dependencies or migrations were introduced.
 
+## T-024 (2026-05-23)
+
+- **Reason:** Audio streamer scope, assumptions, and startup-hardening anchors
+- **Details:** Exploration found no existing `audio_streamer.py`; the affected
+  runtime pattern is the CypherClaw tool-script surface under `my-claw/tools/`
+  with subprocess-backed JACK/PipeWire command builders and hardware-free tests.
+  This task assumes the JACK output bus is the existing SuperCollider stereo
+  pair `SuperCollider:out_1` and `SuperCollider:out_2`, connected into a new
+  ffmpeg JACK client named `cypherclaw-opus-stream`. The streamer will write
+  segmented Ogg/Opus `.opus` files under `/home/user/cypherclaw-data/streams`
+  by default, target 6-second segment windows with tolerance verified by
+  ffprobe, and target 96 kbps through `libopus -b:a 96k -vbr constrained`.
+  CPU acceptance is treated as a live runtime verification using the streamer's
+  pid and `ps`, while tests pin the command and CPU-check helper. The generated
+  startup hardening bullets target identity bootstrapping; the new streamer will
+  call `bootstrap_identity()` before spawning ffmpeg or connecting JACK ports,
+  and existing CLI/first-boot/daemon/narrative startup identity tests remain
+  regression anchors for standalone and federated persistence. No new
+  dependencies, migrations, provider secrets, database columns, runtime state
+  directories beyond the stream segment output directory, HTTP routes, auth
+  behavior, or agent command strings are required.
+
 ## T-013b (2026-05-22)
 
 - **Reason:** Task duplicates already-completed work from T-013a
