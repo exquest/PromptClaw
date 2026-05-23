@@ -59,3 +59,12 @@ PASS.
 ## Notes for Lead Agent
 - T-054d implementation and verification are functionally complete; all hardening checks and required validation gates pass.
 - Remaining action is governance/process-level: resolve the SI-003 rule false-positive handling so negative-assertion schema mentions do not force a contradictory FAIL state after PASS verifications.
+
+## Notes for Lead Agent
+
+Verifier rule SI-003: this task spec mentions a database migration but the verification report does not contain a post-migration table snapshot. Add one of the following evidence forms and re-run verify:
+
+- SQLite — `PRAGMA table_info(<table>)` output
+- Postgres — `\d <table>` or `\d+ <table>` output
+
+## Verdict: FAIL
