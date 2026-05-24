@@ -30,6 +30,18 @@ DEFAULT_MAX_RETRIES = 3
 DEFAULT_BACKOFF_BASE_SECONDS = 0.25
 DEFAULT_SOURCE = "cypherclaw-live-midi-emitter"
 
+MIDI_EVENT_SCHEMA_VERSION = "cypherclaw.live_midi_event.v1"
+MIDI_EVENT_NOTE_ON = "note_on"
+MIDI_EVENT_NOTE_OFF = "note_off"
+MIDI_EVENT_CONTROL_CHANGE = "control_change"
+MIDI_EVENT_PITCH_BEND = "pitch_bend"
+SUPPORTED_MIDI_EVENT_TYPES: tuple[str, ...] = (
+    MIDI_EVENT_NOTE_ON,
+    MIDI_EVENT_NOTE_OFF,
+    MIDI_EVENT_CONTROL_CHANGE,
+    MIDI_EVENT_PITCH_BEND,
+)
+
 LOGGER = logging.getLogger("cypherclaw.live_midi_emitter")
 
 
@@ -70,13 +82,36 @@ class LiveMidiEvent:
     metadata: Mapping[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if not self.event_type:
-            raise ValueError("event_type must be non-empty")
-        _validate_midi_byte("status", self.status)
-        _validate_midi_byte("data1", self.data1)
-        _validate_midi_byte("data2", self.data2)
+        _validate_event_type(self.event_type)
+        _validate_midi_status_byte("status", self.status)
+        _validate_midi_data_byte("data1", self.data1)
+        _validate_midi_data_byte("data2", self.data2)
+        _validate_event_status_shape(
+            self.event_type,
+            status=self.status,
+            data1=self.data1,
+            data2=self.data2,
+        )
         if not isinstance(self.ts, int | float) or not math.isfinite(float(self.ts)):
             raise ValueError("ts must be a finite number")
+        _validate_context_tag("voice", self.voice)
+        _validate_context_tag("scene", self.scene)
+        _validate_context_tag("tuning", self.tuning)
+        _validate_metadata(self.metadata)
+
+    @property
+    def channel(self) -> int:
+        """Return the MIDI channel encoded in the status byte."""
+
+        return self.status & 0x0F
+
+    @property
+    def pitch_bend_value(self) -> int | None:
+        """Return the 14-bit pitch-bend value for pitch-bend events."""
+
+        if self.event_type != MIDI_EVENT_PITCH_BEND:
+            return None
+        return (self.data2 << 7) | self.data1
 
     def to_dict(self) -> dict[str, object]:
         """Return the JSON-safe POST representation."""
@@ -90,7 +125,7 @@ class LiveMidiEvent:
             "voice": self.voice,
             "scene": self.scene,
             "tuning": self.tuning,
-            "metadata": dict(self.metadata),
+            "metadata": _json_safe_mapping(self.metadata),
         }
 
 
@@ -265,11 +300,167 @@ def build_batch_payload(
     """Return the JSON-safe POST payload for a MIDI event batch."""
 
     return {
+        "schema_version": MIDI_EVENT_SCHEMA_VERSION,
         "source": config.source,
         "batch_id": batch_id or str(uuid.uuid4()),
         "event_count": len(events),
         "events": [event.to_dict() for event in events],
     }
+
+
+def build_note_on_event(
+    *,
+    note: int,
+    velocity: int,
+    ts: float,
+    channel: int = 0,
+    voice: str = "",
+    scene: str = "",
+    tuning: str = "",
+    metadata: Mapping[str, object] | None = None,
+) -> LiveMidiEvent:
+    """Construct a validated live MIDI note-on event."""
+
+    _validate_midi_data_byte("note", note)
+    _validate_note_on_velocity(velocity)
+    return LiveMidiEvent(
+        event_type=MIDI_EVENT_NOTE_ON,
+        status=_status_for_channel(0x90, channel),
+        data1=note,
+        data2=velocity,
+        ts=ts,
+        voice=voice,
+        scene=scene,
+        tuning=tuning,
+        metadata=_metadata_or_empty(metadata),
+    )
+
+
+def build_note_off_event(
+    *,
+    note: int,
+    ts: float,
+    release_velocity: int = 0,
+    channel: int = 0,
+    voice: str = "",
+    scene: str = "",
+    tuning: str = "",
+    metadata: Mapping[str, object] | None = None,
+) -> LiveMidiEvent:
+    """Construct a validated live MIDI note-off event."""
+
+    _validate_midi_data_byte("note", note)
+    _validate_midi_data_byte("release_velocity", release_velocity)
+    return LiveMidiEvent(
+        event_type=MIDI_EVENT_NOTE_OFF,
+        status=_status_for_channel(0x80, channel),
+        data1=note,
+        data2=release_velocity,
+        ts=ts,
+        voice=voice,
+        scene=scene,
+        tuning=tuning,
+        metadata=_metadata_or_empty(metadata),
+    )
+
+
+def build_control_change_event(
+    *,
+    controller: int,
+    value: int,
+    ts: float,
+    channel: int = 0,
+    voice: str = "",
+    scene: str = "",
+    tuning: str = "",
+    metadata: Mapping[str, object] | None = None,
+) -> LiveMidiEvent:
+    """Construct a validated live MIDI control-change event."""
+
+    _validate_midi_data_byte("controller", controller)
+    _validate_midi_data_byte("value", value)
+    return LiveMidiEvent(
+        event_type=MIDI_EVENT_CONTROL_CHANGE,
+        status=_status_for_channel(0xB0, channel),
+        data1=controller,
+        data2=value,
+        ts=ts,
+        voice=voice,
+        scene=scene,
+        tuning=tuning,
+        metadata=_metadata_or_empty(metadata),
+    )
+
+
+def build_pitch_bend_event(
+    *,
+    value: int,
+    ts: float,
+    channel: int = 0,
+    voice: str = "",
+    scene: str = "",
+    tuning: str = "",
+    metadata: Mapping[str, object] | None = None,
+) -> LiveMidiEvent:
+    """Construct a validated live MIDI pitch-bend event from a 14-bit value."""
+
+    _validate_pitch_bend_value(value)
+    return LiveMidiEvent(
+        event_type=MIDI_EVENT_PITCH_BEND,
+        status=_status_for_channel(0xE0, channel),
+        data1=value & 0x7F,
+        data2=(value >> 7) & 0x7F,
+        ts=ts,
+        voice=voice,
+        scene=scene,
+        tuning=tuning,
+        metadata=_metadata_or_empty(metadata),
+    )
+
+
+def serialize_midi_event(event: LiveMidiEvent) -> dict[str, object]:
+    """Serialize a validated live MIDI event to the schema dictionary."""
+
+    return event.to_dict()
+
+
+def validate_live_midi_event_payload(payload: Mapping[str, object]) -> LiveMidiEvent:
+    """Validate a payload mapping and return the equivalent live MIDI event."""
+
+    if not isinstance(payload, Mapping):
+        raise ValueError("event payload must be a mapping")
+    for field_name in ("event_type", "status", "data1", "data2", "ts"):
+        if field_name not in payload:
+            raise ValueError(f"event payload missing required field: {field_name}")
+    schema_version = payload.get("schema_version")
+    if schema_version is not None and schema_version != MIDI_EVENT_SCHEMA_VERSION:
+        raise ValueError(
+            "schema_version must be "
+            f"{MIDI_EVENT_SCHEMA_VERSION!r}, got {schema_version!r}"
+        )
+
+    event_type = _payload_string(payload, "event_type")
+    status = _payload_int(payload, "status")
+    data1 = _payload_int(payload, "data1")
+    data2 = _payload_int(payload, "data2")
+    if "channel" in payload:
+        channel = _payload_int(payload, "channel")
+        if channel != (status & 0x0F):
+            raise ValueError("channel must match the status byte channel")
+    metadata = payload.get("metadata", {})
+    if not isinstance(metadata, Mapping):
+        raise ValueError("metadata must be a mapping")
+    return LiveMidiEvent(
+        event_type=event_type,
+        status=status,
+        data1=data1,
+        data2=data2,
+        ts=_payload_number(payload, "ts"),
+        voice=_payload_optional_string(payload, "voice"),
+        scene=_payload_optional_string(payload, "scene"),
+        tuning=_payload_optional_string(payload, "tuning"),
+        metadata=metadata,
+    )
 
 
 def post_midi_batch(
@@ -502,11 +693,165 @@ def _post_if_present(
     )
 
 
-def _validate_midi_byte(name: str, value: object) -> None:
+def _validate_event_type(value: object) -> None:
+    if value not in SUPPORTED_MIDI_EVENT_TYPES:
+        raise ValueError(
+            "event_type must be one of "
+            f"{SUPPORTED_MIDI_EVENT_TYPES!r}, got {value!r}"
+        )
+
+
+def _validate_midi_status_byte(name: str, value: object) -> None:
     if not isinstance(value, int) or isinstance(value, bool):
         raise ValueError(f"{name} must be an integer MIDI byte")
     if value < 0 or value > 255:
         raise ValueError(f"{name} must be between 0 and 255")
+
+
+def _validate_midi_data_byte(name: str, value: object) -> None:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{name} must be an integer MIDI data byte")
+    if value < 0 or value > 127:
+        raise ValueError(f"{name} must be between 0 and 127")
+
+
+def _validate_event_status_shape(
+    event_type: str,
+    *,
+    status: int,
+    data1: int,
+    data2: int,
+) -> None:
+    del data1
+    status_class = status & 0xF0
+    if event_type == MIDI_EVENT_NOTE_ON:
+        if status_class != 0x90:
+            raise ValueError("status must use 0x90 for note_on")
+        _validate_note_on_velocity(data2)
+        return
+    if event_type == MIDI_EVENT_NOTE_OFF:
+        if status_class == 0x80:
+            return
+        if status_class == 0x90 and data2 == 0:
+            return
+        raise ValueError("status must use 0x80 or 0x90 velocity zero for note_off")
+    if event_type == MIDI_EVENT_CONTROL_CHANGE:
+        if status_class != 0xB0:
+            raise ValueError("status must use 0xB0 for control_change")
+        return
+    if event_type == MIDI_EVENT_PITCH_BEND:
+        if status_class != 0xE0:
+            raise ValueError("status must use 0xE0 for pitch_bend")
+        return
+
+
+def _validate_note_on_velocity(value: object) -> None:
+    _validate_midi_data_byte("velocity", value)
+    if value == 0:
+        raise ValueError("velocity must be between 1 and 127 for note_on")
+
+
+def _validate_channel(value: object) -> None:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError("channel must be an integer")
+    if value < 0 or value > 15:
+        raise ValueError("channel must be between 0 and 15")
+
+
+def _validate_pitch_bend_value(value: object) -> None:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError("bend value must be an integer")
+    if value < 0 or value > 16383:
+        raise ValueError("bend value must be between 0 and 16383")
+
+
+def _validate_context_tag(name: str, value: object) -> None:
+    if not isinstance(value, str):
+        raise ValueError(f"{name} must be a string context tag")
+
+
+def _validate_metadata(metadata: object) -> None:
+    if not isinstance(metadata, Mapping):
+        raise ValueError("metadata must be a mapping")
+    _ensure_json_safe("metadata", metadata)
+
+
+def _ensure_json_safe(label: str, value: object) -> None:
+    if value is None or isinstance(value, str | bool):
+        return
+    if isinstance(value, int | float) and not isinstance(value, bool):
+        if not math.isfinite(float(value)):
+            raise ValueError(f"{label} must be JSON-safe")
+        return
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise ValueError(f"{label} keys must be strings")
+            _ensure_json_safe(f"{label}.{key}", item)
+        return
+    if isinstance(value, Sequence) and not isinstance(value, str | bytes | bytearray):
+        for index, item in enumerate(value):
+            _ensure_json_safe(f"{label}[{index}]", item)
+        return
+    raise ValueError(f"{label} must be JSON-safe")
+
+
+def _json_safe_value(value: object) -> object:
+    if value is None or isinstance(value, str | bool):
+        return value
+    if isinstance(value, int | float) and not isinstance(value, bool):
+        return value
+    if isinstance(value, Mapping):
+        return {str(key): _json_safe_value(item) for key, item in value.items()}
+    if isinstance(value, Sequence) and not isinstance(value, str | bytes | bytearray):
+        return [_json_safe_value(item) for item in value]
+    return value
+
+
+def _json_safe_mapping(metadata: Mapping[str, object]) -> dict[str, object]:
+    return {key: _json_safe_value(value) for key, value in metadata.items()}
+
+
+def _status_for_channel(status_class: int, channel: int) -> int:
+    _validate_channel(channel)
+    return status_class | channel
+
+
+def _metadata_or_empty(
+    metadata: Mapping[str, object] | None,
+) -> Mapping[str, object]:
+    return {} if metadata is None else metadata
+
+
+def _payload_string(payload: Mapping[str, object], field_name: str) -> str:
+    value = payload[field_name]
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a string")
+    return value
+
+
+def _payload_optional_string(payload: Mapping[str, object], field_name: str) -> str:
+    value = payload.get(field_name, "")
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a string")
+    return value
+
+
+def _payload_int(payload: Mapping[str, object], field_name: str) -> int:
+    value = payload[field_name]
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer")
+    return value
+
+
+def _payload_number(payload: Mapping[str, object], field_name: str) -> float:
+    value = payload[field_name]
+    if not isinstance(value, int | float) or isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a finite number")
+    result = float(value)
+    if not math.isfinite(result):
+        raise ValueError(f"{field_name} must be a finite number")
+    return result
 
 
 def _int_env(env: Mapping[str, str], key: str, default: int) -> int:
