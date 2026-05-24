@@ -22,25 +22,33 @@
   uploads to `cypherclaw/archive/checkpoints/` via the Worker, not to this
   on-box filesystem path. Producing the artifact requires execution on the
   CypherClaw box itself.
-- **Block 3 — No capture tool:** Repo grep for `reference-renders` finds
-  only PRD references (CC-100..CC-105, sprint-template wording). There is no
-  implemented capture-and-checksum helper. The PRD example uses
-  `sprint-NNN-{date}.opus`; T-058b reuses the `feature-N-{slug}-{timestamp}`
-  naming from CC-102's checkpoint convention, but the on-box filesystem
-  variant has never been wired.
+- **Resolved code-side gap — Capture tool added:** T-058b now includes
+  `my-claw/tools/live_reference_capture.py`, an on-box helper that preflights
+  the HLS playlist, refuses cold playlists and overwrite collisions, invokes
+  ffmpeg for a single 60-second Opus capture, and appends SHA-256 checksum
+  records to `checksums.jsonl` beside the artifact. The default output path is
+  `/home/user/cypherclaw/var/reference-renders/feature-3-stream-{timestamp}.opus`.
 - **Assumption (non-blocking):** "feature-3-stream" corresponds to the live
   HLS streaming feature whose prerequisites (CC-020, CC-022, CC-024) were
   verified by T-058a, not to any CC-100-series aesthetic-verification
   checkpoint (which uploads through `session_archiver.py` instead).
-- **Requested resolution:** Either (a) run the producer on cypherclaw so
-  segments populate, plus provide an on-box capture script (ffmpeg pulling
-  the HLS playlist for 60s and transcoding to Opus, then sha256), or
-  (b) re-scope T-058b to use `session_archiver.py` to the
-  `cypherclaw/archive/checkpoints/feature-3-stream-{timestamp}/` Worker path
-  consistent with CC-100..CC-105, or (c) split T-058b into a producer-bring-up
-  slice plus a capture slice.
-- **No code changes made for T-058b.** No new dependencies. No artifact
-  fabricated.
+- **Remaining resolution:** Run the producer on CypherClaw so HLS segments
+  populate, then execute
+  `python my-claw/tools/live_reference_capture.py --duration-seconds 60`
+  on the CypherClaw Linux host. A local Darwin run must not fabricate the
+  `/home/user/cypherclaw/var/reference-renders/` artifact.
+- **Current live check:** `curl -fsS --max-time 10 https://cypherclaw.holdenu.com/api/cypherclaw/live.m3u8`
+  at `2026-05-24T03:31:52Z` still returned only the HLS header and no
+  `#EXTINF`/segment entries.
+- **No new Python dependencies.** The helper uses stdlib plus the existing
+  on-box ffmpeg runtime dependency. No artifact fabricated from this Darwin
+  checkout.
+- **Verification:** Red phase was confirmed with
+  `pytest tests/test_live_reference_capture.py -q` failing on missing
+  `live_reference_capture`. After implementation, focused capture tests passed
+  with `4 passed`, hardening anchors passed with `2 passed`, dry-run acceptance
+  printed the planned default capture path, and the required validation command
+  passed with `5235 passed, 11 skipped`, Ruff clean, and mypy clean.
 
 ## T-053d (2026-05-24)
 

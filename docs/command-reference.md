@@ -58,8 +58,15 @@ For CypherClaw live deployments, the repo also ships runtime safety tools that s
 - `python my-claw/tools/maintenance_mode.py --project-root PROJECT_ROOT status`
 - `bash my-claw/tools/safe_reboot.sh prepare --actor operator --dry-run`
 - `bash my-claw/tools/safe_reboot.sh resume --checkpoint PATH --actor operator --dry-run`
+- `python my-claw/tools/live_reference_capture.py --duration-seconds 60`
 
 If `PROJECT_ROOT` looks like a live CypherClaw runtime, `promptclaw doctor PROJECT_ROOT` now runs the same preflight automatically and reports it as a separate doctor check.
+
+Run `live_reference_capture.py` on the CypherClaw Linux host for the CC-102
+streaming checkpoint. It saves
+`/home/user/cypherclaw/var/reference-renders/feature-3-stream-{timestamp}.opus`
+and appends a SHA-256 record to `checksums.jsonl`. Use `--dry-run` first to
+inspect the planned HLS URL, output path, checksum log, and ffmpeg command.
 
 ## `promptclaw bootstrap`
 

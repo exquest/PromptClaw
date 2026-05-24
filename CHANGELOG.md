@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Added T-058b live stream reference capture tooling:
+  `my-claw/tools/live_reference_capture.py` now provides an on-box helper for
+  the CC-102 checkpoint path, defaulting to
+  `/home/user/cypherclaw/var/reference-renders/feature-3-stream-{timestamp}.opus`.
+  It preflights the HLS playlist before invoking ffmpeg, rejects cold playlists
+  and overwrite collisions, captures a single 60-second Ogg Opus artifact, and
+  appends a SHA-256 JSONL checksum record beside the output. The CLI supports
+  `--dry-run` for operator verification without writing artifacts. No new
+  Python dependencies, provider secrets, database changes, migrations, Worker
+  routes, runtime state schemas, startup-flow rewiring, or SuperCollider source
+  changes were added; the live producer still must be running on the
+  CypherClaw Linux host for the real artifact to be created. Red phase was
+  confirmed before implementation; focused capture tests, SuperCollider
+  hardening anchors, dry-run acceptance, and full PromptClaw validation (`5235
+  passed, 11 skipped`, Ruff clean, mypy clean) all passed.
+
 - Added T-053d composer/emitter mock Worker E2E coverage: a new local
   `tests/test_live_midi_e2e.py` drives `duet_composer.play_voice(...)` through
   a real `LiveMidiPublisher`, `BatchingMidiQueue`, and `post_midi_batch(...)`

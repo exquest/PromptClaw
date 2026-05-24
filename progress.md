@@ -599,7 +599,7 @@ Progress: [███████████████████████
 - **T-053c**: complete — Completed with verdict PASS.
 - **T-058**: split — Split into subtasks.
 - **T-058a**: complete — Completed with verdict PASS.
-- **T-058b**: pending — Pending.
+- **T-058b**: pending — Exploration found the stream/checkpoint surface is split across `my-claw/tools/audio_streamer.py` (JACK to Opus segment producer), `my-claw/tools/session_archiver.py` (Worker/R2 archive windows), and the CC-102 requirement for an on-box `/home/user/cypherclaw/var/reference-renders/feature-3-stream-{timestamp}.opus` backup. Added `my-claw/tools/live_reference_capture.py` and locked tests for HLS preflight, ffmpeg command construction, checksum JSONL logging, dry-run output, and overwrite refusal. Required validation passed with `5235 passed, 11 skipped`, Ruff clean, and mypy clean. Remaining blockers are external: the live playlist is still cold and the final artifact must be produced on the CypherClaw Linux host.
 - **T-058c**: pending — Pending.
 - **T-059**: split — Split into subtasks.
 - **T-059a**: pending — Pending.
