@@ -1,5 +1,47 @@
 # Escalations
 
+## T-058b (2026-05-23) — BLOCKING
+
+- **Task:** Render and capture a 60-second reference sample from the live
+  stream, saving to
+  `/home/user/cypherclaw/var/reference-renders/feature-3-stream-{timestamp}.opus`
+  with checksum logged.
+- **Block 1 — Stream is cold:** `GET https://cypherclaw.holdenu.com/api/cypherclaw/live.m3u8`
+  returns a valid HLS playlist header (`#EXTM3U`, `#EXT-X-VERSION:3`,
+  `#EXT-X-TARGETDURATION:6`, `#EXT-X-MEDIA-SEQUENCE:0`, 73 bytes total) but
+  exposes zero `#EXTINF`/segment entries. The verifier on T-058a flagged the
+  same cold-pipeline condition. With no segments, there is no audio to
+  capture for 60 seconds — a producer (`audio_streamer.py` or composer
+  daemon) on the CypherClaw box must be running and pushing segments to the
+  Worker before this task can produce a meaningful reference render.
+- **Block 2 — Wrong host:** The destination path
+  `/home/user/cypherclaw/var/reference-renders/` is on the CypherClaw box
+  (Linux), not this lead agent's working host (`darwin`, `/Users/anthony/`).
+  No SSH affordance, deploy script, or remote-capture tool is available in
+  this repo for `cypherclaw.holdenu.com`; existing `session_archiver.py`
+  uploads to `cypherclaw/archive/checkpoints/` via the Worker, not to this
+  on-box filesystem path. Producing the artifact requires execution on the
+  CypherClaw box itself.
+- **Block 3 — No capture tool:** Repo grep for `reference-renders` finds
+  only PRD references (CC-100..CC-105, sprint-template wording). There is no
+  implemented capture-and-checksum helper. The PRD example uses
+  `sprint-NNN-{date}.opus`; T-058b reuses the `feature-N-{slug}-{timestamp}`
+  naming from CC-102's checkpoint convention, but the on-box filesystem
+  variant has never been wired.
+- **Assumption (non-blocking):** "feature-3-stream" corresponds to the live
+  HLS streaming feature whose prerequisites (CC-020, CC-022, CC-024) were
+  verified by T-058a, not to any CC-100-series aesthetic-verification
+  checkpoint (which uploads through `session_archiver.py` instead).
+- **Requested resolution:** Either (a) run the producer on cypherclaw so
+  segments populate, plus provide an on-box capture script (ffmpeg pulling
+  the HLS playlist for 60s and transcoding to Opus, then sha256), or
+  (b) re-scope T-058b to use `session_archiver.py` to the
+  `cypherclaw/archive/checkpoints/feature-3-stream-{timestamp}/` Worker path
+  consistent with CC-100..CC-105, or (c) split T-058b into a producer-bring-up
+  slice plus a capture slice.
+- **No code changes made for T-058b.** No new dependencies. No artifact
+  fabricated.
+
 ## T-053d (2026-05-24)
 
 - **Reason:** Local mock Worker scope for CC-090 producer-side E2E.
