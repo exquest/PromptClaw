@@ -1,43 +1,69 @@
 # Verification Report — T-057b
 
-**Verify Agent:** Gemini CLI
-**Date:** 2026-05-24
+**Verify Agent:** Claude (claude-sonnet-4-6)
+**Date:** 2026-05-23
 **Artifacts Reviewed:**
 - `my-claw/tools/live_reference_capture.py`
+- `src/cypherclaw/midi_vocabulary_store.py`
+- `src/cypherclaw/midi_intake_daemon.py`
+- `src/cypherclaw/first_boot.py`
 - `tests/test_live_reference_capture.py`
+- `tests/test_midi_intake_daemon.py`
 - `ESCALATIONS.md`
 - `progress.md`
+- Full test suite: 5283 passed, 11 skipped
 
 ## Correctness
-The logic in `live_reference_capture.py` is correct. It correctly parses HLS playlists, detects cold streams (header-only, zero segments), and builds a valid `ffmpeg` command for Opus capture. The tool now correctly invokes `_bootstrap_identity()` on startup, satisfying the mandatory hardening mandate.
+
+The primary deliverable — a rendered 60-second `.opus` reference sample with seed MIDI active — was **not produced**. This is an environmental block, not a code defect: the HLS stream at `https://cypherclaw.holdenu.com/api/cypherclaw/live.m3u8` returns a header-only playlist (zero `#EXTINF` segments), and the MIDI ingest pipeline is not deployed on CypherClaw. The capture tool's cold-stream detection path is correct and surfaces the block cleanly rather than producing a silent or corrupt file.
+
+The code changes made during this task are correct:
+- `live_reference_capture.run()` now calls `_bootstrap_identity()` immediately on entry, before any config or work.
+- `midi_vocabulary_store.apply_migrations()` uses `INSERT OR IGNORE` to prevent unique-constraint failures under concurrent access.
 
 ## Completeness
-The primary goal—rendering a 60-second reference sample—is **NOT COMPLETED**. The task is blocked by the following environmental factors:
-- The HLS stream at `https://cypherclaw.holdenu.com/api/cypherclaw/live.m3u8` is cold (header-only, zero `#EXTINF` segments), as verified by `curl` probes.
-- The on-box MIDI ingest pipeline (CC-010..CC-017) is not deployed, meaning no seed MIDI can be processed to influence the composition.
-- The target output path is on the remote CypherClaw Linux host, which is unreachable from this Darwin agent.
+
+**Task deliverable (render file):** INCOMPLETE — blocked by environment, not code.
+
+**Mandatory hardening checklist:**
+
+| Item | Status |
+|---|---|
+| `bootstrap_identity()` invoked on startup in capture tool | ✅ Done — `live_reference_capture.run()` L324 |
+| Invoked before `FirstBootAnnouncer` in daemon startup | ✅ Confirmed — `midi_intake_daemon.py` L587 before L590 |
+| Both standalone and federated modes covered | ✅ `--identity-mode {standalone,federated}` passed through to `_bootstrap_identity()` |
+| Integration test: startup + identity persistence between boots | ✅ `tests/test_midi_intake_daemon.py::test_identity_persistence_between_boots` (L129) — calls `bootstrap_identity` twice with same path, asserts `instance_id` stable |
+| Unit test: `bootstrap_identity` called during `run()` | ✅ `tests/test_live_reference_capture.py::test_run_invokes_bootstrap_identity` |
+| `pip install -e '.[dev]' && pytest tests/ -x` clean | ✅ 5283 passed, 11 skipped |
 
 ## Consistency
-The tool implementation is consistent with repository standards. It uses the standard `argparse` pattern, follows the `_bootstrap_identity` defensive import/call convention, and includes comprehensive `pytest` coverage with mocks.
+
+All changes follow established patterns: defensive dual-path import for `bootstrap_identity`, standard `argparse` additions, `INSERT OR IGNORE` consistent with SQLite idioms used elsewhere in the store. The identity bootstrap ordering (`bootstrap_identity` → `FirstBootAnnouncer`) matches the contract documented in `midi_intake_daemon.py` and the narrative ASGI entry points.
 
 ## Security
-No security vulnerabilities were found. Subprocess calls use argument lists to avoid shell injection. Timeouts are applied to both network requests and `ffmpeg` execution.
+
+No issues found. `ffmpeg` is invoked via argument list (no shell expansion). Network requests use explicit timeouts. No credentials or secrets appear in new code or tests.
 
 ## Quality
-The code quality is high. The tool is modular, import-safe, and includes a functional dry-run mode. Tests cover success, failure (cold stream), overwrite prevention, and identity bootstrapping.
+
+Code changes are minimal and targeted. The capture tool now has a clean startup contract. The `INSERT OR IGNORE` fix is a one-line surgical correction. Tests are well-scoped and do not over-mock. Pillow deprecation warnings in unrelated tests are pre-existing noise and not introduced by this task.
 
 ## Issues Found
-- [x] [Task blocked by cold HLS stream — severity: blocking]
-- [x] [Task blocked by undeployed MIDI pipeline — severity: blocking]
-- [x] [Capture tool missing mandatory bootstrap_identity() call — severity: resolved (fixed in this turn)]
+
+- [ ] 60-second render not produced — severity: **blocking** (environmental, not code)
+  - HLS stream cold: header-only playlist, zero segments
+  - MIDI ingest pipeline not deployed on CypherClaw
+  - Target output path (`/home/user/cypherclaw/var/reference-renders/`) on remote Linux host, unreachable from this Darwin agent
 
 ## Verdict: FAIL (BLOCKED)
 
-## Notes for Lead Agent
-The lead agent's escalation is accurate; the environment is not ready for the reference render. I have applied the mandatory `bootstrap_identity()` hardening to `my-claw/tools/live_reference_capture.py` and added a regression test in `tests/test_live_reference_capture.py`. 
+The task cannot be completed until the CypherClaw audio pipeline is live. All mandatory hardening items are resolved and the test suite is green. The block is entirely environmental.
 
-**Action for Operator:**
-1. Deploy the MIDI ingest pipeline to the CypherClaw box.
-2. Stage a seed MIDI file in `/home/user/cypherclaw/midi-inbox/`.
-3. Restart the composer and audio streamer to warm up the HLS stream.
-4. Once the stream is warm, run the capture on the box or from an unblocked host.
+## Notes for Lead Agent
+
+No further code changes needed on this iteration. Operator actions required before this task can advance:
+
+1. Deploy the MIDI ingest pipeline to CypherClaw and stage a seed MIDI file in `/home/user/cypherclaw/midi-inbox/`.
+2. Restart the composer and audio streamer daemons to warm up the HLS stream.
+3. Confirm `curl https://cypherclaw.holdenu.com/api/cypherclaw/live.m3u8` returns at least one `#EXTINF` segment.
+4. Re-run `live_reference_capture.py --duration 60` on a host with access to CypherClaw's filesystem (or directly on the box).
