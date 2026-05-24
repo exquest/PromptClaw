@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import logging
 import threading
 from collections.abc import Sequence
 from typing import Any
@@ -451,6 +452,62 @@ def test_live_midi_publisher_uses_batching_queue_for_producer_events() -> None:
     clock.advance(0.01)
     assert publisher.flush_due() == (third,)
     assert publisher.pending_count == 0
+
+
+def test_live_midi_publisher_logs_flush_telemetry(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    clock = _Clock(now=300.0)
+    queue = mod.BatchingMidiQueue(
+        max_size=2,
+        flush_interval_seconds=0.5,
+        clock=clock.now,
+    )
+    config = mod.LiveMidiEmitterConfig(
+        endpoint_url="https://worker.example/api/cypherclaw/midi-event",
+        admin_token="secret-token",
+        source="pytest-telemetry",
+    )
+    posted: list[tuple[mod.LiveMidiEvent, ...]] = []
+
+    def fake_post(batch: Sequence[mod.LiveMidiEvent]) -> mod.MidiPostResult:
+        posted.append(tuple(batch))
+        return mod.MidiPostResult(
+            ok=True,
+            status_code=202,
+            attempts=1,
+            event_count=len(batch),
+            response_body="{}",
+        )
+
+    publisher = mod.LiveMidiPublisher(
+        queue=queue,
+        config=config,
+        post_batch=fake_post,
+    )
+    first = _event(data1=60, voice="pluck", scene="Theme")
+    second = _event(
+        data1=64,
+        voice="bowed",
+        scene="Bridge",
+        tuning="gamelan_slendro",
+    )
+
+    with caplog.at_level(logging.INFO, logger=mod.LOGGER.name):
+        assert publisher.publish(first) == ()
+        assert publisher.publish(second) == (first, second)
+
+    assert posted == [(first, second)]
+    log_text = "\n".join(record.getMessage() for record in caplog.records)
+    assert "live_midi_publisher_batch_flushed" in log_text
+    assert "trigger=size" in log_text
+    assert "events=2" in log_text
+    assert "source=pytest-telemetry" in log_text
+    assert "endpoint=https://worker.example/api/cypherclaw/midi-event" in log_text
+    assert "first_event=note_on:pluck:Theme:just_intonation_5_limit" in log_text
+    assert "last_event=note_on:bowed:Bridge:gamelan_slendro" in log_text
+    assert "secret-token" not in log_text
+    assert "authorization" not in log_text.lower()
 
 
 def test_http_client_posts_json_payload_with_auth_header() -> None:
