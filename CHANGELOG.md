@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Added T-055c MIDI/audio compositing to the `cypherclaw.holdenu.com` canvas
+  visualizer in the holdenu Cloudflare Worker: the inline runtime now exposes
+  the layer contract on `#cypherclaw-visualizer`, draws continuous
+  audio-feature reactions first, draws MIDI note shapes second as a foreground
+  layer in the same display coordinate space, uses `lighter` blending only for
+  the MIDI pass, and restores `source-over` before the next frame so existing
+  audio-feature visuals keep rendering normally. No new dependencies, No D1
+  database migration, No Durable Object migration, provider secrets, R2 layout
+  changes, runtime state directories, startup-flow rewiring, agent commands, or
+  SuperCollider source changes were added; generated startup identity hardening
+  stayed as a regression anchor. Red phase was confirmed before implementation;
+  Worker `npm test` (`44 passed`), Worker `npm run check`, Worker
+  `npm run check:workers`, Workers-runtime live MIDI latency test, startup
+  identity anchors (`11 passed`), and full PromptClaw validation (`5219 passed,
+  11 skipped`, Ruff clean, mypy clean) all passed.
+
 - Added T-055b MIDI note shapes to the `cypherclaw.holdenu.com` canvas
   visualizer in the holdenu Cloudflare Worker: live note-on events now create
   bounded diagnostic shapes with pitch-to-position mapping on the Y axis,

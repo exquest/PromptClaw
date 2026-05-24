@@ -1,5 +1,44 @@
 # Escalations
 
+## T-055c (2026-05-24)
+
+- **Reason:** Cross-repository Worker location and MIDI/audio visualizer
+  compositing scope.
+- **Details:** PromptClaw remains the ADP source of truth, but the
+  `cypherclaw.holdenu.com` canvas visualizer is implemented in the sibling
+  `/Users/anthony/Programming/catalog-explorer/worker` Cloudflare Worker.
+  T-055c therefore keeps the spec, progress, changelog, and hardening anchors
+  in PromptClaw while changing Worker HTML/JS tests and inline browser runtime
+  in `catalog-explorer`.
+- **Assumption:** T-055a already provides the browser-side live MIDI event
+  queue and T-055b already provides bounded MIDI shape creation/decay. T-055c
+  should make the existing canvas compositing contract explicit instead of
+  changing the live MIDI Durable Object protocol or the SSE live-feature feed.
+- **Scope decision:** Continuous audio-feature visuals draw first, MIDI note
+  shapes draw second as the foreground layer in the same display coordinate
+  space, and MIDI-specific blending must be restored to normal canvas
+  compositing before future frames.
+- **No new dependencies:** T-055c adds no npm packages, Python packages,
+  provider secrets, database columns, D1 database migration, Durable Object
+  migration, R2 layout change, runtime state directory, startup-flow rewiring,
+  agent command, or SuperCollider source change.
+- **Startup identity hardening:** The generated startup identity bullets target
+  existing PromptClaw startup paths; current CLI, first-boot, daemon ordering,
+  standalone/federated persistence, and narrative ASGI tests cover
+  `bootstrap_identity()` persistence and bootstrap-before-`FirstBootAnnouncer`
+  ordering. T-055c re-runs those anchors rather than broadening this Worker
+  visualizer task into identity subsystem changes.
+- **Verification:** Red phase was confirmed with Worker tests failing on
+  missing MIDI/audio compositing diagnostics, missing explicit audio-feature
+  layer function, missing MIDI blend-mode bracketing, and missing shared
+  display coordinate-space assertions before implementation. After
+  implementation, Worker `npm test` passed with `44 passed`, Worker
+  `npm run check` passed, Worker `npm run check:workers` passed,
+  `npm run test:workers -- tests/cypherclaw-live-midi-latency.vitest.ts`
+  passed, startup identity hardening anchors passed with `11 passed`, and the
+  required final validation command passed with `5219 passed, 11 skipped`, Ruff
+  clean, and mypy clean.
+
 ## T-055b (2026-05-24)
 
 - **Reason:** Cross-repository Worker location and MIDI shape-rendering scope
