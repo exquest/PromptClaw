@@ -2863,3 +2863,12 @@ reasoning effor...
   - `curl https://cypherclaw.holdenu.com/api/cypherclaw/live.m3u8` → HLS header only (`#EXTM3U`, `#EXT-X-VERSION:3`, `#EXT-X-TARGETDURATION:6`, `#EXT-X-MEDIA-SEQUENCE:0`), zero `#EXTINF` segments. Stream still cold; T-058b artifact still does not exist.
 - **No code change made.** Mining chat history for the bot token remains off-limits (called out in the 2026-05-24T03:50 escalation).
 - **Standing request to operator / loop controller:** halt T-058c dispatch until creds are in the runner env and T-058b produces a real capture artifact, or explicitly mark T-058c skipped. Continued auto-dispatch is wasting lead/verify rotations.
+
+## T-058c (2026-05-24T04:45:00+00:00) — re-attempt #4
+
+- **Reason:** Hard block continues. Still no operator intervention on credentials or T-058b artifact.
+- **Details:** 
+  - Code implementation for `notify_delivery.py` was successfully completed in the previous rotation. 
+  - However, no functional delivery can occur without credentials.
+  - Test suite passes.
+  - Please use `sdp-cli tasks bulk-set-status T-058c --to skipped` to stop these looping escalations if no notification is desired.
