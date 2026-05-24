@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (3172 chars)
+---
+
+T-058b remains blocked by the same three infrastructure issues. I re-probed the stream just now and it's still cold (73-byte playlist, zero `#EXTINF` segments), the destination is still on the remote CypherClaw box (unreachable from this darwin host), and no on-box capture tool exists.
+
+The escalation already stands in `ESCALATIONS.md` (commit `fe1761a`) and has been acknowledged FAIL by two consecutive verify passes. Re-running the lead from the same Darwin host with the same cold-stream condition will produce the same result — this needs human resolution at one of:
+
+- **(a)** Bring up the producer on cypherclaw so HLS segments populate, then run an on-box capture script (ffmpeg → opus → sha256).
+- **(b)** Re-scope T-058b to use the existing `session_archiver.py` path → `cypherclaw/archive/checkpoints/feature-3-stream-{timestamp}/`, consistent with CC-100..CC-105.
+- **(c)** Split T-058b into a producer-bring-up slice + a capture slice.
+
+No code changes made; no artifacts fabricated; pre-existing uncommitted workspace files (other tasks' logs) left untouched per template rules.
+
+Recommendation: pick (b) — it's the smallest re-scope and the Worker upload path already exists. I can implement that if you confirm the scope change.
