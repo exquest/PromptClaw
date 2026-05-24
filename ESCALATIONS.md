@@ -1,5 +1,55 @@
 # Escalations
 
+## T-055d (2026-05-24)
+
+- **Reason:** Live deployment verification scope and stale production Worker
+  state.
+- **Details:** PromptClaw remains the ADP source of truth, but the deployed
+  `cypherclaw.holdenu.com` surface is implemented by the sibling
+  `/Users/anthony/Programming/catalog-explorer/worker` Cloudflare Worker. Live
+  exploration found production behind local `main`: the root page still showed
+  the prepared-address fallback, while `/api/cypherclaw/live-midi` and
+  `/api/cypherclaw/live-features` returned 404. T-055d therefore adds a gated
+  live E2E test in the Worker project and uses deployment verification as the
+  implementation step.
+- **Assumption:** Playing MIDI through the live feed for this slice means
+  sending scripted note-on JSON through the existing public live MIDI WebSocket
+  and confirming fan-out plus deployed browser-runtime visual mapping. The
+  separate `/api/cypherclaw/midi-event` POST ingest path remains outside this
+  T-055 visualizer verification slice.
+- **Scope decision:** The local Worker renderer from T-055a/T-055b/T-055c is
+  already the intended implementation. T-055d should not alter MIDI shape
+  mapping, audio-feature drawing, the Durable Object protocol, R2/D1 schema,
+  HLS ingestion, or SuperCollider source; it should add a live verification
+  harness and update the live deployment.
+- **No new dependencies:** T-055d adds no npm packages, Python packages,
+  provider secrets, database columns, D1 database migration, Durable Object
+  migration, R2 layout change, runtime state directory, startup-flow rewiring,
+  agent command, or SuperCollider source change.
+- **Candidate hardening:** The recurring SuperCollider failures are out of
+  scope for this live Worker visualizer verification slice, but remain
+  mandatory anchors: profiled voice SynthDefs must expose `fx_bus_id`, and
+  `sw_sampler.scd` must route through `fx_bus_id` rather than `fx_bus`.
+- **Deployment prerequisite:** Wrangler deploy failed with Cloudflare API code
+  10063 until the account-level Workers subdomain was initialized. T-055d set
+  the account Workers subdomain to `anthony-holdenu` through Cloudflare's
+  official Workers Subdomain API, then deployed Worker version
+  `e71aaf43-b04a-4676-bd34-19e803711463` to `explorer.holdenu.com/api/*` and
+  the `cypherclaw.holdenu.com` custom domain. The Worker config now also pins
+  `workers_dev = false` so the script is not exposed on a default workers.dev
+  route.
+- **Verification:** Red phase was confirmed with the gated live E2E test
+  failing on the stale prepared-address production page and failed live MIDI
+  WebSocket open, plus a config red phase for missing `workers_dev = false`.
+  After deployment, `CYPHERCLAW_RUN_LIVE_E2E=1 npm test --
+  tests/cypherclaw-live-e2e.test.js` passed with `47 passed`, proving the live
+  root, SSE feed, WebSocket fan-out, deployed pitch/velocity shape mapping, and
+  same-frame audio-feature drawing. Worker `npm test` passed with `45 passed, 2
+  skipped`, Worker `npm run check` passed, Worker `npm run check:workers`
+  passed, Workers-runtime live MIDI latency passed, SuperCollider hardening
+  anchors passed with `3 passed`, and final PromptClaw validation passed with
+  `5219 passed, 11 skipped`, Ruff clean, and mypy clean.
+
 ## T-055c (2026-05-24)
 
 - **Reason:** Cross-repository Worker location and MIDI/audio visualizer

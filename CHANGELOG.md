@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+- Added T-055d live MIDI visualizer end-to-end verification for
+  `cypherclaw.holdenu.com`: a new gated Worker test
+  (`CYPHERCLAW_RUN_LIVE_E2E=1`) fetches the deployed root page and live-feature
+  SSE feed, opens two real live MIDI WebSocket clients, sends scripted note-on
+  JSON through the live feed, verifies exact fan-out, and executes the deployed
+  inline runtime in the VM canvas harness to prove pitch-to-position,
+  velocity-to-size, and same-frame audio-feature/MIDI drawing. The red phase
+  caught the stale live deployment where production still served the
+  prepared-address page and returned 404 for live MIDI/features; after
+  initializing the account Workers subdomain prerequisite (`anthony-holdenu`)
+  and deploying Worker version `e71aaf43-b04a-4676-bd34-19e803711463`, the live
+  E2E passed with `47 passed`. Worker config now sets `workers_dev = false` so
+  the custom-domain deploy path does not expose the script on a default
+  workers.dev route. No new dependencies, No D1 database migration, No Durable
+  Object migration, provider secrets, R2 layout changes, runtime state
+  directories, startup-flow rewiring, agent commands, or SuperCollider source
+  changes were added; existing `fx_bus_id` and `sw_sampler.scd` hardening
+  anchors passed (`3 passed`). Worker `npm test` (`45 passed, 2 skipped`),
+  Worker `npm run check`, Worker `npm run check:workers`, Workers-runtime live
+  MIDI latency, and full PromptClaw validation (`5219 passed, 11 skipped`, Ruff
+  clean, mypy clean) all passed.
+
 - Added T-055c MIDI/audio compositing to the `cypherclaw.holdenu.com` canvas
   visualizer in the holdenu Cloudflare Worker: the inline runtime now exposes
   the layer contract on `#cypherclaw-visualizer`, draws continuous
