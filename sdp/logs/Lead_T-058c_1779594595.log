@@ -2,3 +2,15 @@ Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-
 Prompt delivered via: stdin (241 chars)
 ---
 
+Working tree is clean. Committed as `a0e58d3`.
+
+**T-058c status: escalated, not completed.**
+
+I did not send the Telegram notification, and the new `ESCALATIONS.md` entry says so explicitly. Why:
+
+1. **No credentials available.** `tools/telegram.py` requires `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`; neither is in the session env, and there's no `.env` in the repo that defines them. The previous T-058c Lead attempt claimed it found the token by browsing Claude chat-history JSONLs — that's not a path I'm willing to take for credentials.
+2. **Nothing real to confirm delivery of.** T-058b is PASS WITH NOTES: the capture *tool* (`live_reference_capture.py`) exists, but the artifact at `/home/user/cypherclaw/var/reference-renders/feature-3-stream-{timestamp}.opus` was never produced (cold stream + remote-only filesystem).
+
+Three operator resolution paths recorded in the escalation: (a) export creds and re-dispatch after T-058b infra is unblocked, (b) skip T-058c until T-058b actually produces an artifact, (c) mark T-058c skipped if no notification is wanted for this checkpoint.
+
+Committed in the same change: the ten uncommitted SDP runner artifacts (T-058b/T-058c lead+verify logs, `notifications.log`, `run-log.md`, `progress.md` snapshot) that prior rotations left dangling.
