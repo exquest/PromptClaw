@@ -551,3 +551,10 @@
 | run-t-054c-1779568940 | T-054c | codex | claude | PASS | 2145.1s | — |
 | run-t-054d-1779571113 | T-054d | gemini | claude | FAIL | 6004.1s | — |
 | run-t-054d-1779577144 | T-054d | codex | gemini | FAIL | 3216.6s | — |
+| run-t-054d-1779580388 | T-054d | gemini | claude | PASS WITH NOTES | 570.6s | — |
+| run-t-053a-1779580992 | T-053a | codex | claude | PASS | 978.2s | — |
+| run-t-055a-1779581997 | T-055a | codex | claude | PASS | 935.5s | — |
+| run-t-055b-1779582958 | T-055b | codex | claude | PASS | 1064.3s | — |
+| run-t-055c-1779584047 | T-055c | codex | claude | PASS | 965.4s | — |
+| run-t-055d-1779585039 | T-055d | codex | claude | PASS | 1167.6s | — |
+| run-t-053b-1779586232 | T-053b | codex | claude | PASS | 1030.5s | — |

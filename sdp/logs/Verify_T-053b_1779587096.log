@@ -1,0 +1,16 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2222 chars)
+---
+
+**Verdict: PASS**
+
+All checks clean:
+
+- **12/12** `test_live_midi_emitter.py` tests pass (4 new schema tests + 8 existing)
+- **5223 passed, 11 skipped** full suite
+- **Ruff + mypy**: no issues
+- **11/11** startup identity hardening anchors pass
+
+The schema implementation is correct and complete — all four event types with proper status-class enforcement, note-off MIDI convention (0x90 velocity=0), pitch-bend LSB/MSB encoding, recursive JSON-safety validation, and schema version in batch payloads.
+
+Both hardening bullets were checked: `sw_sampler.scd` already uses `fx_bus_id` correctly, and all profiled voice SynthDefs expose the `fx_bus_id` parameter. No regression from this task.

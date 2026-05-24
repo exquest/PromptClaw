@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~12h 24m remaining (44 tasks, low confidence, calibrating)
-Expected completion: 5:47 AM tomorrow.
-Progress: [███████████████████████████████████░░░] 92%  523 / 567 tasks complete
-  completed: 523, in-progress: 1, pending: 40, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 53
+ETC: ~7h 9m remaining (39 tasks, low confidence, calibrating)
+Expected completion: 1:56 AM tomorrow.
+Progress: [███████████████████████████████████░░░] 93%  528 / 567 tasks complete
+  completed: 528, pending: 36, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 53
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -581,16 +581,16 @@ Progress: [███████████████████████
 - **T-054d**: complete — Completed with verdict PASS WITH NOTES.
 - **T-053a**: complete — Completed with verdict PASS.
 - **T-055**: split — Split into subtasks.
-- **T-055a**: running — Phase 0 Explore: read the active ADP workflow in the task prompt, prior T-028c/T-028d canvas visualizer specs, T-053a live MIDI emitter spec, T-054a/T-054b/T-054c/T-054d live MIDI Worker specs, the sibling `catalog-explorer/worker` source/tests/config, and existing startup identity hardening anchors. Implemented the `cypherclaw.holdenu.com` inline canvas visualizer live MIDI WebSocket client with a bounded in-memory MIDI event queue for normalized note-on/note-off events. Red phase failed as expected before implementation; Worker tests/checks, Workers-runtime live MIDI latency, startup identity anchors, and full validation passed. No new dependencies, No D1 database migration, No Durable Object migration, provider secrets, R2 layout changes, runtime state directories, startup-flow rewiring, agent commands, or SuperCollider changes.
-- **T-055b**: complete — Phase 0 Explore: read the active ADP workflow from the task prompt, prior T-028d/T-055a visualizer specs and verification notes, the sibling `catalog-explorer/worker` inline canvas runtime, landing/runtime/live-MIDI tests, Worker scripts, and the SuperCollider `fx_bus_id` hardening anchors. Implemented MIDI note shapes in `catalog-explorer`: note-on events spawn bounded canvas shapes, pitch-to-position maps notes to vertical position, velocity-to-size maps velocity to radius, note-off events do not spawn shapes, and stale shapes decay out of browser state without changing the live MIDI protocol, SSE feed, audio playback, D1/Durable Object config, R2 layout, dependencies, startup flow, or `.scd` files. Red phase failed as expected before implementation; Worker tests/checks, Workers-runtime live MIDI latency, SuperCollider hardening anchors, and full PromptClaw validation passed.
-- **T-055c**: complete — Phase 0 Explore: read the active ADP workflow in the task prompt and T2 lead template, CC-092 in the CypherClaw v2 requirements/register/task graph/PRD, prior T-028d/T-055a/T-055b visualizer specs, T-055a/T-055b verification/changelog/escalation patterns, and the sibling `catalog-explorer/worker` source/tests/config. Implemented MIDI/audio compositing in `catalog-explorer`: the same canvas now exposes the audio-feature/MIDI layer contract, draws continuous audio-feature reactions first, draws MIDI note shapes as the foreground layer in a shared coordinate space, uses `lighter` only for the MIDI pass, and restores `source-over` so audio-feature visuals are not broken. Red phase failed as expected before implementation; Worker tests/checks, Workers-runtime live MIDI latency, startup identity anchors, and full PromptClaw validation passed. No new dependencies, migrations, provider secrets, D1/Durable Object changes, R2 layout changes, runtime state directories, startup-flow rewiring, agent commands, or SuperCollider changes were added.
+- **T-055a**: complete — Completed with verdict PASS.
+- **T-055b**: complete — Completed with verdict PASS.
+- **T-055c**: complete — Completed with verdict PASS.
 - **T-056**: split — Split into subtasks.
 - **T-056a**: pending — Pending.
 - **T-056b**: pending — Pending.
 - **T-056c**: pending — Pending.
 - **T-056d**: pending — Pending.
-- **T-055d**: complete — Phase 0 Explore: read the active ADP workflow, CC-092 in the CypherClaw v2 PRD/register/task graph, T-053a/T-054a/T-054b/T-054c/T-054d/T-055a/T-055b/T-055c specs and verification notes, the sibling `catalog-explorer/worker` single-file Worker source, landing/runtime/live-MIDI tests, Worker scripts/config, and live `cypherclaw.holdenu.com` responses. Found a stale live deployment: the root page served the prepared-address fallback, `/api/cypherclaw/live-midi` returned 404, and `/api/cypherclaw/live-features` returned 404, while local Worker `main` already contained the MIDI/audio canvas visualizer. Added a gated live MIDI E2E test in `catalog-explorer`, verified red against the stale live deployment, added a config guard for `workers_dev = false`, initialized the account Workers subdomain prerequisite as `anthony-holdenu`, and deployed Worker version `e71aaf43-b04a-4676-bd34-19e803711463` to `cypherclaw.holdenu.com`. Green verification confirmed scripted live MIDI WebSocket fan-out, pitch-to-position and velocity-to-size mapping, same-frame audio-feature reactions, Worker checks, Workers-runtime latency, SuperCollider `fx_bus_id` / `sw_sampler.scd` anchors, and full PromptClaw validation (`5219 passed, 11 skipped`, Ruff clean, mypy clean). No new dependencies, No D1 database migration, No Durable Object migration, provider secrets, R2 layout changes, runtime state directories, startup-flow rewiring, agent commands, or SuperCollider source changes were added.
-- **T-053b**: complete — Phase 0 Explore: read the active ADP workflow from the task prompt, root `AGENTS.md`, T-053a live MIDI emitter spec, adjacent T-054/T-055 live MIDI specs, `src/cypherclaw/live_midi_emitter.py`, existing emitter tests, MIDI loader/scene/fragment modules, and startup identity hardening anchors. Implemented a stdlib-only live MIDI event schema in the emitter with closed event types, helper constructors for note_on/note_off/control_change/pitch_bend, strict status/data-byte/timestamp/context/metadata validation, payload round-trip validation, and batch schema versioning while preserving voice/scene/tuning tags. Red phase failed as expected before implementation; focused emitter tests, adjacent MIDI tests, startup identity anchors, Ruff, mypy, and full validation passed (`5223 passed, 11 skipped`). No new dependencies, database changes, migrations, composer integration, Worker changes, startup rewiring, or SuperCollider changes were added.
+- **T-055d**: complete — Completed with verdict PASS.
+- **T-053b**: complete — Completed with verdict PASS.
 - **T-057**: split — Split into subtasks.
 - **T-057a**: pending — Pending.
 - **T-057b**: pending — Pending.
