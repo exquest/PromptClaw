@@ -49,6 +49,8 @@ def test_session_archiver_run_bootstraps_identity() -> None:
             mock_args.identity_release = "2.0.0"
             mock_args.identity_parent_id = None
             mock_args.dry_run = True  # Exit early after bootstrap
+            mock_args.checkpoint_source = None
+            mock_args.checkpoint_slug = None
             mock_parse.return_value = mock_args
 
             with patch("session_archiver._config_from_args"):

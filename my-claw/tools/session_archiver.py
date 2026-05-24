@@ -35,6 +35,8 @@ IdentityMode = Literal["standalone", "federated"]
 DEFAULT_SEGMENT_DIR = Path("/home/user/cypherclaw-data/streams")
 DEFAULT_STATE_PATH = DEFAULT_SEGMENT_DIR / "session_archiver_state.json"
 DEFAULT_ARCHIVE_PREFIX = "cypherclaw/archive"
+DEFAULT_CHECKPOINT_ARCHIVE_PREFIX = "cypherclaw/archive/checkpoints"
+DEFAULT_PUBLIC_ARCHIVE_BASE_URL = "https://cypherclaw.holdenu.com"
 DEFAULT_SESSION_SECONDS = 8 * 60
 DEFAULT_SEGMENT_SECONDS = 6.0
 DEFAULT_MAX_GAP_SECONDS = 120.0
@@ -235,6 +237,154 @@ class S3CompatibleR2Client:
         except HTTPError as exc:  # pragma: no cover - live R2 failure path
             detail = exc.read().decode(errors="replace")
             raise RuntimeError(f"R2 upload failed for {key}: {exc.code} {detail}") from exc
+
+
+@dataclass(frozen=True)
+class CheckpointUpload:
+    """Result of uploading a single checkpoint artifact to R2."""
+
+    slug: str
+    timestamp: str
+    source_path: Path
+    audio_key: str
+    metadata_key: str
+    audio_url: str
+    metadata_url: str
+    sha256: str
+    size_bytes: int
+    content_type: str
+
+    def to_log_record(self) -> dict[str, object]:
+        return {
+            "slug": self.slug,
+            "timestamp": self.timestamp,
+            "source_path": str(self.source_path),
+            "audio_key": self.audio_key,
+            "metadata_key": self.metadata_key,
+            "audio_url": self.audio_url,
+            "metadata_url": self.metadata_url,
+            "sha256": self.sha256,
+            "size_bytes": self.size_bytes,
+            "content_type": self.content_type,
+        }
+
+
+def _checkpoint_keys(
+    prefix: str, slug: str, timestamp: str, filename: str
+) -> tuple[str, str]:
+    base = prefix.strip("/")
+    folder = f"{base}/{slug}-{timestamp}"
+    return f"{folder}/{filename}", f"{folder}/metadata.json"
+
+
+def _checkpoint_url(base_url: str, key: str) -> str:
+    return f"{base_url.rstrip('/')}/{_quote_key(key)}"
+
+
+def plan_checkpoint_upload(
+    *,
+    source_path: Path,
+    slug: str,
+    timestamp: str | None = None,
+    checkpoint_prefix: str = DEFAULT_CHECKPOINT_ARCHIVE_PREFIX,
+    public_base_url: str = DEFAULT_PUBLIC_ARCHIVE_BASE_URL,
+    content_type: str = DEFAULT_CONTENT_TYPE,
+    now: datetime | None = None,
+) -> dict[str, object]:
+    """Describe the keys and URLs a checkpoint upload will produce."""
+
+    slug_clean = slug.strip().strip("/")
+    if not slug_clean:
+        raise ValueError("checkpoint slug must be non-empty")
+    captured_at = now or datetime.now(tz=UTC)
+    timestamp_str = timestamp or captured_at.strftime("%Y%m%dT%H%M%SZ")
+    audio_key, metadata_key = _checkpoint_keys(
+        checkpoint_prefix, slug_clean, timestamp_str, source_path.name
+    )
+    return {
+        "slug": slug_clean,
+        "timestamp": timestamp_str,
+        "source_path": str(source_path),
+        "source_exists": source_path.exists(),
+        "audio_key": audio_key,
+        "metadata_key": metadata_key,
+        "audio_url": _checkpoint_url(public_base_url, audio_key),
+        "metadata_url": _checkpoint_url(public_base_url, metadata_key),
+        "content_type": content_type,
+        "checkpoint_prefix": checkpoint_prefix.strip("/"),
+        "public_base_url": public_base_url.rstrip("/"),
+    }
+
+
+def upload_checkpoint(
+    *,
+    source_path: Path,
+    slug: str,
+    client: R2ArchiveClient,
+    timestamp: str | None = None,
+    checkpoint_prefix: str = DEFAULT_CHECKPOINT_ARCHIVE_PREFIX,
+    public_base_url: str = DEFAULT_PUBLIC_ARCHIVE_BASE_URL,
+    content_type: str = DEFAULT_CONTENT_TYPE,
+    now: datetime | None = None,
+) -> CheckpointUpload:
+    """Upload a single checkpoint artifact under ``cypherclaw/archive/checkpoints/``."""
+
+    slug_clean = slug.strip().strip("/")
+    if not slug_clean:
+        raise ValueError("checkpoint slug must be non-empty")
+    if not source_path.exists():
+        raise FileNotFoundError(f"checkpoint source not found: {source_path}")
+    captured_at = now or datetime.now(tz=UTC)
+    timestamp_str = timestamp or captured_at.strftime("%Y%m%dT%H%M%SZ")
+
+    body = source_path.read_bytes()
+    audio_key, metadata_key = _checkpoint_keys(
+        checkpoint_prefix, slug_clean, timestamp_str, source_path.name
+    )
+    sha256 = _sha256_hex(body)
+    audio_url = _checkpoint_url(public_base_url, audio_key)
+    metadata_url = _checkpoint_url(public_base_url, metadata_key)
+    base_metadata = {
+        "checkpoint_slug": slug_clean,
+        "timestamp": timestamp_str,
+        "source_filename": source_path.name,
+        "sha256": sha256,
+        "size_bytes": str(len(body)),
+        "content_type": content_type,
+    }
+    client.put_object(
+        key=audio_key,
+        body=body,
+        content_type=content_type,
+        metadata=base_metadata,
+    )
+    metadata_payload = {
+        **base_metadata,
+        "audio_key": audio_key,
+        "metadata_key": metadata_key,
+        "audio_url": audio_url,
+        "metadata_url": metadata_url,
+        "uploaded_at": _format_datetime(captured_at),
+    }
+    metadata_body = json.dumps(metadata_payload, indent=2, sort_keys=True).encode()
+    client.put_object(
+        key=metadata_key,
+        body=metadata_body,
+        content_type=METADATA_CONTENT_TYPE,
+        metadata={**base_metadata, "audio_key": audio_key},
+    )
+    return CheckpointUpload(
+        slug=slug_clean,
+        timestamp=timestamp_str,
+        source_path=source_path,
+        audio_key=audio_key,
+        metadata_key=metadata_key,
+        audio_url=audio_url,
+        metadata_url=metadata_url,
+        sha256=sha256,
+        size_bytes=len(body),
+        content_type=content_type,
+    )
 
 
 def _format_datetime(value: datetime) -> str:
@@ -713,6 +863,36 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--loop", action="store_true")
     parser.add_argument("--poll-seconds", type=float, default=DEFAULT_POLL_SECONDS)
+    parser.add_argument(
+        "--checkpoint-source",
+        type=Path,
+        help=(
+            "Path to a single rendered artifact to upload as a checkpoint instead "
+            "of running session windowing. Pairs with --checkpoint-slug."
+        ),
+    )
+    parser.add_argument(
+        "--checkpoint-slug",
+        help=(
+            "Slug appended to the checkpoint key (e.g. 'feature-1-reverb-spaces'). "
+            "Combined with the timestamp to form "
+            "'cypherclaw/archive/checkpoints/{slug}-{timestamp}/'."
+        ),
+    )
+    parser.add_argument(
+        "--checkpoint-timestamp",
+        help=(
+            "Override the timestamp suffix for the checkpoint folder "
+            "(YYYYMMDDTHHMMSSZ). Defaults to now."
+        ),
+    )
+    parser.add_argument(
+        "--checkpoint-prefix", default=DEFAULT_CHECKPOINT_ARCHIVE_PREFIX
+    )
+    parser.add_argument(
+        "--public-base-url", default=DEFAULT_PUBLIC_ARCHIVE_BASE_URL
+    )
+    parser.add_argument("--checkpoint-content-type", default=DEFAULT_CONTENT_TYPE)
     return parser.parse_args(argv)
 
 
@@ -753,6 +933,42 @@ def _dry_run(config: ArchiveConfig) -> int:
     return 0
 
 
+def _checkpoint_dry_run(args: argparse.Namespace) -> int:
+    try:
+        plan = plan_checkpoint_upload(
+            source_path=args.checkpoint_source,
+            slug=args.checkpoint_slug,
+            timestamp=args.checkpoint_timestamp,
+            checkpoint_prefix=args.checkpoint_prefix,
+            public_base_url=args.public_base_url,
+            content_type=args.checkpoint_content_type,
+        )
+    except ValueError as exc:
+        _print_json({"ok": False, "error": str(exc)})
+        return 2
+    _print_json({"ok": True, "dry_run": True, "checkpoint": plan})
+    return 0
+
+
+def _checkpoint_upload(args: argparse.Namespace) -> int:
+    client = S3CompatibleR2Client.from_env()
+    try:
+        result = upload_checkpoint(
+            source_path=args.checkpoint_source,
+            slug=args.checkpoint_slug,
+            client=client,
+            timestamp=args.checkpoint_timestamp,
+            checkpoint_prefix=args.checkpoint_prefix,
+            public_base_url=args.public_base_url,
+            content_type=args.checkpoint_content_type,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        _print_json({"ok": False, "error": str(exc)})
+        return 2
+    _print_json({"ok": True, "checkpoint": result.to_log_record()})
+    return 0
+
+
 def run(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
 
@@ -762,6 +978,21 @@ def run(argv: list[str] | None = None) -> int:
         release=args.identity_release,
         parent_id=args.identity_parent_id,
     )
+
+    if args.checkpoint_source is not None or args.checkpoint_slug is not None:
+        if args.checkpoint_source is None or args.checkpoint_slug is None:
+            _print_json(
+                {
+                    "ok": False,
+                    "error": (
+                        "--checkpoint-source and --checkpoint-slug must be set together"
+                    ),
+                }
+            )
+            return 2
+        if args.dry_run:
+            return _checkpoint_dry_run(args)
+        return _checkpoint_upload(args)
 
     config = _config_from_args(args)
     if args.dry_run:

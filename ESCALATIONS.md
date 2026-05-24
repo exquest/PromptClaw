@@ -1,5 +1,59 @@
 # Escalations
 
+## T-056b (2026-05-23) — BLOCKING (code complete, upload deferred)
+
+- **Task:** Upload the rendered sample via `session_archiver.py` to
+  `cypherclaw/archive/checkpoints/feature-1-reverb-spaces-{timestamp}/` and
+  capture the resulting archive URL on `cypherclaw.holdenu.com`.
+- **Code-side gap closed:** `my-claw/tools/session_archiver.py` now exposes a
+  checkpoint upload mode (`upload_checkpoint`, `plan_checkpoint_upload`, and
+  the new `--checkpoint-source` / `--checkpoint-slug` / `--checkpoint-timestamp`
+  / `--checkpoint-prefix` / `--public-base-url` CLI flags). It uploads the
+  artifact plus a `metadata.json` (sha256, size, source filename, content type,
+  upload timestamp, audio/metadata URLs) under
+  `cypherclaw/archive/checkpoints/{slug}-{timestamp}/` and emits the
+  constructed public URL on stdout as the captured "archive URL".
+- **Same dual-blocker as T-056a:**
+  - The T-056a rendered sample still does not exist — the producer + audio
+    streamer on CypherClaw stayed cold, so
+    `feature-1-reverb-spaces-{timestamp}.opus` was never written to
+    `/home/user/cypherclaw/var/reference-renders/checkpoints/feature-1-reverb-spaces/`.
+    Without that file there is nothing to upload.
+  - Even with a source file, R2 credentials
+    (`CYPHERCLAW_R2_ACCOUNT_ID`, `CYPHERCLAW_R2_BUCKET`,
+    `CYPHERCLAW_R2_ACCESS_KEY_ID`, `CYPHERCLAW_R2_SECRET_ACCESS_KEY`) are not
+    available in this Darwin lead host's environment, and the upload helper is
+    expected to run on the CypherClaw Linux box that owns the staging path.
+- **Public archive URL assumption (non-blocking):** The constructed URL is
+  `https://cypherclaw.holdenu.com/{key}`, mirroring object keys at the public
+  origin. If the deployed Cloudflare Worker rewrites archive routes under a
+  namespaced path (e.g. `/api/cypherclaw/archive/...`), the operator should
+  pass `--public-base-url` to override. The audio/metadata URLs land in both
+  the JSON stdout payload and the uploaded `metadata.json` for cross-check.
+- **Resolution paths (require operator on CypherClaw):**
+  a. Bring the composer + audio_streamer producer up (T-056a path a), let
+     `reverb_reference_render.py` write the staged Opus, then run on the box:
+     ```
+     python my-claw/tools/session_archiver.py \
+       --checkpoint-source /home/user/cypherclaw/var/reference-renders/checkpoints/feature-1-reverb-spaces/feature-1-reverb-spaces-{timestamp}.opus \
+       --checkpoint-slug feature-1-reverb-spaces \
+       --checkpoint-timestamp {timestamp}
+     ```
+     Capture the `archive_url` from the JSON stdout and record it in the
+     checkpoint log.
+  b. If the public URL path differs from the assumed key-mirroring scheme,
+     supply `--public-base-url` (and `--checkpoint-prefix` if the bucket layout
+     diverges) so the recorded URL matches the Worker route.
+  c. Worker-side checkpoint upload variant (mirrors T-056 resolution path b
+     for T-056a): if rendering on the box stays blocked, an operator may
+     re-source the checkpoint from existing Worker segments and reuse the
+     same `--checkpoint-source` flow against a stitched local file.
+- **Validation:** focused tests `tests/test_session_archiver.py`
+  (`13 passed`, 9 new for the checkpoint mode); required validation `pip
+  install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy
+  src/` -> `5253 passed, 11 skipped`, Ruff clean, mypy clean. No artifact
+  fabricated from this Darwin checkout and no live upload attempted.
+
 ## T-056a (2026-05-23) — BLOCKING (code complete, artifact deferred)
 
 - **Task:** Render the 60-second reference sample of CypherClaw composing with
