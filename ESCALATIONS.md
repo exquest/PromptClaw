@@ -2997,3 +2997,27 @@ reasoning effor...
   the HLS playlist serves media segments. T-057c and T-057d depend on the same
   preconditions; consider blocking the whole T-057 group rather than burning
   rotations on each subtask.
+
+## T-057b (2026-05-23T17:55:00-07:00) — re-attempt #2
+
+- **Reason:** Same hard block confirmed by the prior verifier ("The escalation
+  is appropriate. The operational blocks prevent the 60-second reference
+  render from being generated. Retrying with different lead agents will not
+  resolve this until the environment is prepared.").
+- **Verification this run:**
+  - `curl https://cypherclaw.holdenu.com/api/cypherclaw/live.m3u8` → HTTP 200,
+    73 bytes, header-only (`#EXTM3U` / `#EXT-X-VERSION:3` /
+    `#EXT-X-TARGETDURATION:6` / `#EXT-X-MEDIA-SEQUENCE:0`); zero `#EXTINF`
+    segments. Cold stream block per T-057a/T-058b/T-058c is unchanged.
+  - On-box MIDI ingest pipeline (CC-010..CC-017) still undeployed per the
+    T-057a verification artifact already on disk; seed MIDI absent.
+- **No code change made.** Capture tool `live_reference_capture.py` is
+  implemented and tested; the block is entirely operational and identical to
+  the standing T-057a/T-057b/T-058b block.
+- **Standing request to operator / loop controller:** halt T-057b (and
+  T-057c/T-057d, which share the same preconditions) dispatch until the
+  CypherClaw box has the MIDI pipeline deployed, a seed MIDI staged in
+  `/home/user/cypherclaw/midi-inbox/`, the composer restarted with v2
+  fragment-citation vocabulary active, and the HLS playlist serving media
+  segments. Continued auto-dispatch is burning lead/verify rotations on an
+  environmental block this agent cannot resolve.
