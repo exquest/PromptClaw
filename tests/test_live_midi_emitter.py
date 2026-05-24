@@ -428,6 +428,31 @@ def test_batching_queue_flushes_by_size_and_time() -> None:
     assert queue.pending_count == 0
 
 
+def test_live_midi_publisher_uses_batching_queue_for_producer_events() -> None:
+    clock = _Clock(now=200.0)
+    queue = mod.BatchingMidiQueue(
+        max_size=2,
+        flush_interval_seconds=0.5,
+        clock=clock.now,
+    )
+    publisher = mod.LiveMidiPublisher(queue=queue)
+    first = _event(data1=60)
+    second = _event(data1=64)
+    third = _event(data1=67)
+
+    assert publisher.publish(first) == ()
+    assert publisher.pending_count == 1
+    assert publisher.publish(second) == (first, second)
+    assert publisher.pending_count == 0
+
+    assert publisher.publish(third) == ()
+    clock.advance(0.49)
+    assert publisher.flush_due() == ()
+    clock.advance(0.01)
+    assert publisher.flush_due() == (third,)
+    assert publisher.pending_count == 0
+
+
 def test_http_client_posts_json_payload_with_auth_header() -> None:
     config = mod.LiveMidiEmitterConfig(
         endpoint_url="https://worker.example/api/cypherclaw/midi-event",

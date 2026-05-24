@@ -596,7 +596,7 @@ Progress: [███████████████████████
 - **T-057b**: pending — Pending.
 - **T-057c**: pending — Pending.
 - **T-057d**: pending — Pending.
-- **T-053c**: pending — Pending.
+- **T-053c**: complete — Phase 0 Explore: read the active ADP workflow from the task prompt and T2 template, CC-090 in the CypherClaw v2 PRD/requirements/task graph, prior T-053a/T-053b live MIDI specs, `src/cypherclaw/live_midi_emitter.py`, `tests/test_live_midi_emitter.py`, `my-claw/tools/duet_composer.py`, `my-claw/tools/senseweave/music_tracker_runtime.py`, tracker/composer routing tests, MIDI scene tuning metadata tests, and SuperCollider `fx_bus_id` / `sw_sampler.scd` hardening anchors. Implemented queue-first composer publishing through `LiveMidiPublisher`: `play_voice(...)` emits note-on/note-off events with voice, scene, tuning, and metadata context; tracker row automation emits control-change events for density, master amp, and reverb send; live MIDI publishing fails closed without interrupting OSC playback. Red phase failed as expected before implementation; focused composer/emitter tests, adjacent composer routing tests, hardening anchors, and full PromptClaw validation passed (`5227 passed, 11 skipped`, Ruff clean, mypy clean). No new dependencies, database changes, migrations, provider secrets, Worker routes, runtime state directories, startup-flow rewiring, agent commands, or SuperCollider source changes were added.
 - **T-058**: split — Split into subtasks.
 - **T-058a**: pending — Pending.
 - **T-058b**: pending — Pending.

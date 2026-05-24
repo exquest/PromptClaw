@@ -2717,3 +2717,30 @@ reasoning effor...
   `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
   mypy src/` passed with `5223 passed, 11 skipped`, Ruff clean, and mypy clean.
   No new dependencies or migrations were introduced.
+
+## T-053c (2026-05-24)
+
+- **Reason:** Live MIDI composer queue publishing assumptions and hardening scope
+- **Details:** Exploration found the affected surface is the existing emitter
+  schema/queue in `src/cypherclaw/live_midi_emitter.py`, composer note
+  generation in `my-claw/tools/duet_composer.py::play_voice`, tracker scene
+  scheduling in `my-claw/tools/senseweave/music_tracker_runtime.py`, and
+  tracker row automation callbacks inside `tracker_solo_song`. T-053c assumes
+  composer integration should enqueue validated live MIDI events through the
+  emitter queue abstraction at note/control generation points while keeping
+  HTTP POST/retry transport in the emitter module. Publishing must fail closed
+  so an unavailable live MIDI publisher cannot interrupt OSC playback. No new
+  dependencies, database columns, migrations, provider secrets, Worker routes,
+  runtime state directories, startup-flow rewiring, agent commands, or
+  SuperCollider source changes are required. The recurring hardening checks for
+  `fx_bus_id` on profiled voice SynthDefs and `sw_sampler.scd` routing through
+  `fx_bus_id` remain explicit verification anchors rather than expanding this
+  composer queue task into synthesis changes.
+- **Verification:** Red phase was confirmed before implementation with focused
+  emitter/composer tests failing on the missing `LiveMidiPublisher` and missing
+  composer context publishing hooks. After implementation, focused
+  composer/emitter tests passed, adjacent composer routing tests passed,
+  SuperCollider `fx_bus_id` / `sw_sampler.scd` hardening anchors passed with
+  `3 passed`, and the required final validation command
+  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
+  mypy src/` passed with `5227 passed, 11 skipped`, Ruff clean, and mypy clean.

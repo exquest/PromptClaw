@@ -257,6 +257,55 @@ class BatchingMidiQueue:
         return batch
 
 
+class LiveMidiPublisher:
+    """Producer-facing wrapper for the emitter batching queue."""
+
+    def __init__(
+        self,
+        *,
+        queue: BatchingMidiQueue | None = None,
+        config: LiveMidiEmitterConfig | None = None,
+        post_batch: PostBatchFn | None = None,
+        clock: ClockFn = time.monotonic,
+    ) -> None:
+        if queue is None:
+            active_config = config or load_config()
+            queue = BatchingMidiQueue(
+                max_size=active_config.batch_size,
+                flush_interval_seconds=active_config.flush_interval_seconds,
+                clock=clock,
+            )
+        self._queue = queue
+        self._post_batch = post_batch
+
+    @property
+    def pending_count(self) -> int:
+        return self._queue.pending_count
+
+    def publish(self, event: LiveMidiEvent) -> tuple[LiveMidiEvent, ...]:
+        """Queue one event and return a batch if the size trigger fires."""
+
+        return self._post_if_configured(self._queue.add(event))
+
+    def flush_due(self) -> tuple[LiveMidiEvent, ...]:
+        """Return a batch when the queue's time trigger has elapsed."""
+
+        return self._post_if_configured(self._queue.flush_due())
+
+    def flush_all(self) -> tuple[LiveMidiEvent, ...]:
+        """Flush all pending producer events."""
+
+        return self._post_if_configured(self._queue.flush_all())
+
+    def _post_if_configured(
+        self,
+        batch: tuple[LiveMidiEvent, ...],
+    ) -> tuple[LiveMidiEvent, ...]:
+        if batch and self._post_batch is not None:
+            self._post_batch(batch)
+        return batch
+
+
 def load_config(
     environ: Mapping[str, str] | None = None,
 ) -> LiveMidiEmitterConfig:

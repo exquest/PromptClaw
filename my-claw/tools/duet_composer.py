@@ -28,6 +28,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "senseweave"))
 
 from pythonosc import udp_client
 
+from cypherclaw import live_midi_emitter
 from cypherclaw.composer_vocabulary_bridge import scene_vocabulary_log_suffix
 from cypherclaw.space_reverb import (
     VOICE_REVERB_PROFILES,
@@ -171,6 +172,17 @@ _DEFAULT_GENERATION_QUEUE_DB = Path("/home/user/cypherclaw-data/generation_queue
 _MIDI_VOCABULARY_DB_ENV = "CYPHERCLAW_MIDI_VOCABULARY_DB"
 _VOCABULARY_CURIOSITY_ENV = "CYPHERCLAW_VOCABULARY_CURIOSITY"
 _DEFAULT_MIDI_VOCABULARY_DB = Path("/home/user/cypherclaw-data/state/midi_vocabulary.sqlite")
+_LIVE_MIDI_ENABLED_ENV = "CYPHERCLAW_LIVE_MIDI_ENABLED"
+_LIVE_MIDI_CONTROL_NUMBERS: dict[str, int] = {
+    "density": 20,
+    "master_amp": 7,
+    "reverb_send": 91,
+}
+_live_midi_publisher: live_midi_emitter.LiveMidiPublisher | None = None
+_live_midi_context: dict[str, str] = {
+    "scene": "",
+    "tuning": "twelve_tet",
+}
 
 
 def _generation_enabled() -> bool:
@@ -369,6 +381,220 @@ def _generation_clap_centroid(learning: dict, mood: dict[str, float]) -> object:
     ]
 
 
+def _live_midi_enabled(environ: Mapping[str, str] | None = None) -> bool:
+    env = os.environ if environ is None else environ
+    return env.get(_LIVE_MIDI_ENABLED_ENV, "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
+def _get_live_midi_publisher() -> live_midi_emitter.LiveMidiPublisher | None:
+    global _live_midi_publisher
+
+    if _live_midi_publisher is not None:
+        return _live_midi_publisher
+    if not _live_midi_enabled():
+        return None
+    try:
+        config = live_midi_emitter.load_config()
+        _live_midi_publisher = live_midi_emitter.LiveMidiPublisher(
+            config=config,
+            post_batch=lambda batch: live_midi_emitter.post_midi_batch(
+                batch,
+                config,
+            ),
+        )
+    except Exception as exc:
+        print(f"  Live MIDI publisher unavailable: {exc}", file=sys.stderr, flush=True)
+        return None
+    return _live_midi_publisher
+
+
+def _publish_live_midi_event(event: live_midi_emitter.LiveMidiEvent) -> None:
+    publisher = _get_live_midi_publisher()
+    if publisher is None:
+        return
+    try:
+        publisher.publish(event)
+        flush_due = getattr(publisher, "flush_due", None)
+        if callable(flush_due):
+            flush_due()
+    except Exception as exc:
+        print(f"  Live MIDI publish skipped: {exc}", file=sys.stderr, flush=True)
+
+
+def _set_live_midi_context(scene: object, tuning: object | None = None) -> None:
+    _live_midi_context["scene"] = str(scene or "")
+    _live_midi_context["tuning"] = str(tuning or "twelve_tet")
+
+
+def _tuning_context_from_mapping(mapping: Mapping[str, object] | None) -> str:
+    if mapping is None:
+        return "twelve_tet"
+    for key in ("tuning_system_name", "active_tuning", "tuning"):
+        value = mapping.get(key)
+        if value:
+            return str(value)
+    return "twelve_tet"
+
+
+def _tuning_context_from_scene_metadata(
+    scene_metadata: Mapping[str, object] | None,
+) -> str:
+    return _tuning_context_from_mapping(scene_metadata)
+
+
+def _live_midi_json_value(value: object) -> object:
+    if value is None or isinstance(value, str | bool):
+        return value
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    if isinstance(value, float) and _math.isfinite(value):
+        return value
+    return str(value)
+
+
+def _live_midi_metadata(
+    *,
+    role: str,
+    frequency_hz: float,
+    duration_seconds: float | None,
+    extra: Mapping[str, object] | None,
+) -> dict[str, object]:
+    metadata: dict[str, object] = {
+        "duration_seconds": round(float(duration_seconds or 0.0), 4),
+        "frequency_hz": round(float(frequency_hz), 3),
+        "role": role,
+    }
+    if extra:
+        for key, value in extra.items():
+            metadata[str(key)] = _live_midi_json_value(value)
+    return metadata
+
+
+def _frequency_to_midi_note(frequency_hz: object) -> int | None:
+    try:
+        frequency = float(frequency_hz)
+    except (TypeError, ValueError):
+        return None
+    if not _math.isfinite(frequency) or frequency <= 0.0:
+        return None
+    midi_note = int(round(69 + 12 * _math.log2(frequency / 440.0)))
+    return max(0, min(127, midi_note))
+
+
+def _amplitude_to_midi_velocity(amplitude: object) -> int | None:
+    try:
+        amp = float(amplitude)
+    except (TypeError, ValueError):
+        return None
+    if not _math.isfinite(amp) or amp <= 0.0:
+        return None
+    velocity = int(round((amp / 0.24) * 127))
+    return max(1, min(127, velocity))
+
+
+def _voice_context_tag(voice_name: object) -> str:
+    voice = resolve_runtime_voice_name(str(voice_name or ""))
+    return voice[3:] if voice.startswith("sw_") else voice
+
+
+def _publish_live_midi_note(
+    *,
+    voice_name: str,
+    frequency_hz: float,
+    amplitude: float,
+    duration_seconds: float | None,
+    role: str,
+    scene: str = "",
+    tuning: str = "",
+    metadata: Mapping[str, object] | None = None,
+) -> None:
+    note = _frequency_to_midi_note(frequency_hz)
+    velocity = _amplitude_to_midi_velocity(amplitude)
+    if note is None or velocity is None:
+        return
+    scene_context = scene or _live_midi_context.get("scene", "")
+    tuning_context = tuning or _live_midi_context.get("tuning", "twelve_tet")
+    now = time.time()
+    event_metadata = _live_midi_metadata(
+        role=role,
+        frequency_hz=frequency_hz,
+        duration_seconds=duration_seconds,
+        extra=metadata,
+    )
+    voice = _voice_context_tag(voice_name)
+    _publish_live_midi_event(
+        live_midi_emitter.build_note_on_event(
+            note=note,
+            velocity=velocity,
+            ts=now,
+            voice=voice,
+            scene=scene_context,
+            tuning=tuning_context,
+            metadata=event_metadata,
+        )
+    )
+    if duration_seconds is None or duration_seconds <= 0.0:
+        return
+    _publish_live_midi_event(
+        live_midi_emitter.build_note_off_event(
+            note=note,
+            ts=now + float(duration_seconds),
+            voice=voice,
+            scene=scene_context,
+            tuning=tuning_context,
+            metadata=event_metadata,
+        )
+    )
+
+
+def _control_value_to_midi(value: object) -> int:
+    try:
+        raw = float(value)
+    except (TypeError, ValueError):
+        raw = 0.0
+    if not _math.isfinite(raw):
+        raw = 0.0
+    return max(0, min(127, int(round(max(0.0, min(1.0, raw)) * 127))))
+
+
+def _publish_live_midi_controls_for_tracker_row(
+    scene: object,
+    row: int,
+    state: Mapping[str, object],
+) -> None:
+    automation = state.get("automation", {})
+    if not isinstance(automation, Mapping):
+        return
+    scene_name = str(getattr(scene, "name", "") or "")
+    scene_metadata = getattr(scene, "metadata", {}) or {}
+    tuning = _tuning_context_from_scene_metadata(scene_metadata)
+    for control_name, controller in _LIVE_MIDI_CONTROL_NUMBERS.items():
+        if control_name not in automation:
+            continue
+        raw_value = automation[control_name]
+        _publish_live_midi_event(
+            live_midi_emitter.build_control_change_event(
+                controller=controller,
+                value=_control_value_to_midi(raw_value),
+                ts=time.time(),
+                voice="master",
+                scene=scene_name,
+                tuning=tuning,
+                metadata={
+                    "control_name": control_name,
+                    "control_scope": "scene_automation",
+                    "raw_value": _live_midi_json_value(raw_value),
+                    "row": int(row),
+                },
+            )
+        )
+
+
 THERAMINI_STATE = Path("/tmp/theramini_state.json")
 
 
@@ -463,6 +689,9 @@ def play_voice(
     role: str = "",
     mood_mode: object = "matched",
     active_house: object | None = None,
+    scene: str = "",
+    tuning: str = "",
+    live_midi_metadata: Mapping[str, object] | None = None,
 ) -> None:
     """Play a note on a named voice.
 
@@ -477,6 +706,16 @@ def play_voice(
             amp,
             mood_mode=mood_mode,
             active_house=active_house,
+        )
+        _publish_live_midi_note(
+            voice_name=voice_name,
+            frequency_hz=freq,
+            amplitude=amp,
+            duration_seconds=release,
+            role=role,
+            scene=scene,
+            tuning=tuning,
+            metadata=live_midi_metadata,
         )
     else:
         # Fire and forget — natural decay
@@ -496,12 +735,21 @@ def play_voice(
             context=_active_emsd_context,
             theramini_active=_active_theramini_playing,
         )
+        playback_amp = round(
+            amp * shape.amp_multiplier * performance.amp_multiplier,
+            4,
+        )
+        playback_release = (
+            (release or defaults["release"])
+            * shape.release_multiplier
+            * performance.release_multiplier
+        )
         import random as _rnd
         args = [
             synth, next_nid(), 0, 0,
-            "freq", playback_freq, "amp", round(amp * shape.amp_multiplier * performance.amp_multiplier, 4),
+            "freq", playback_freq, "amp", playback_amp,
             "attack", defaults["attack"],
-            "release", (release or defaults["release"]) * shape.release_multiplier * performance.release_multiplier,
+            "release", playback_release,
         ]
         # Per-voice space — verb and delay from defaults
         args.extend([
@@ -538,6 +786,16 @@ def play_voice(
             ])
         elif performance.detune_add > 0.0:
             args.extend(["detune", round(performance.detune_add, 4)])
+        _publish_live_midi_note(
+            voice_name=resolved_voice,
+            frequency_hz=playback_freq,
+            amplitude=playback_amp,
+            duration_seconds=playback_release,
+            role=role,
+            scene=scene,
+            tuning=tuning,
+            metadata=live_midi_metadata,
+        )
         c.send_message("/s_new", args)
 
 
@@ -757,6 +1015,7 @@ def write_composer_state(
     *,
     extras: dict[str, object] | None = None,
 ) -> None:
+    _set_live_midi_context(movement, _tuning_context_from_mapping(extras))
     try:
         state = {"key": key, "mode": mode, "movement": movement, "song": song,
                  "theramini_note": theramini_note, "updated": time.time()}
@@ -1294,6 +1553,13 @@ def tracker_solo_song(initial_key: str, song_num: int) -> str:
             role=event.role,
             mood_mode=event.scene_metadata.get("mood_mode", "matched"),
             active_house=_active_house_from_scene_metadata(event.scene_metadata),
+            scene=event.scene_name,
+            tuning=_tuning_context_from_scene_metadata(event.scene_metadata),
+            live_midi_metadata={
+                "lane_name": event.lane_name,
+                "row": event.row,
+                "song_title": event.song_title,
+            },
         )
         beat_duration = 60.0 / max(score.tempo_bpm, 1.0)
         _learner.record_note(
@@ -1384,6 +1650,7 @@ def tracker_solo_song(initial_key: str, song_num: int) -> str:
             song_num,
             extras=row_extras,
         )
+        _publish_live_midi_controls_for_tracker_row(scene, row, state)
 
     result = schedule_song(
         tracker_song,

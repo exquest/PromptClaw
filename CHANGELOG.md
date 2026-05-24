@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Added T-053c composer live MIDI queue publishing: `duet_composer.play_voice`
+  now publishes validated note-on/note-off events into the emitter batching
+  queue at note generation points, tracker row automation publishes live MIDI
+  control-change events, and each event carries current voice, scene, tuning,
+  and small JSON-safe context metadata. A `LiveMidiPublisher` wrapper now gives
+  producers a queue-first API while reusing the existing emitter batch schema
+  and HTTP transport. Publishing fails closed so live MIDI availability cannot
+  interrupt OSC playback. No new dependencies, database changes, migrations,
+  provider secrets, Worker routes, runtime state directories, startup-flow
+  rewiring, agent commands, or SuperCollider source changes were added; the
+  `fx_bus_id` and `sw_sampler.scd` hardening anchors passed. Red phase was
+  confirmed before implementation; focused composer/emitter tests, adjacent
+  composer routing tests, hardening anchors, and full PromptClaw validation
+  (`5227 passed, 11 skipped`, Ruff clean, mypy clean) all passed.
+
 - Added T-053b live MIDI event schema validation in
   `cypherclaw.live_midi_emitter`: the emitter now defines the
   `cypherclaw.live_midi_event.v1` batch schema version, closes supported event
