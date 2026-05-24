@@ -2844,3 +2844,12 @@ reasoning effor...
     a. Export `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` into the SDP runner environment and re-dispatch T-058c after T-058b infra is unblocked.
     b. Skip T-058c until T-058b actually produces a capture artifact on CypherClaw (currently blocked on cold stream + on-box execution).
     c. Mark T-058c skipped if the operator confirms no Telegram notification is needed for this checkpoint.
+
+## T-058c (2026-05-24T04:25:00+00:00) — re-attempt
+
+- **Reason:** Same hard block persists; no operator change since 2026-05-24T03:50.
+- **Details:**
+  - Re-verified env on this Darwin host: `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` still unset; no `.env*` files present in repo.
+  - T-058b capture artifact still does not exist (live stream cold, target path is on remote CypherClaw box).
+  - No code path is viable from this host without operator-provided credentials AND an unblocked T-058b. Retrying with rotated lead agents will produce the same FAIL.
+  - **Request:** stop dispatching T-058c on the SDP loop until (a) credentials are exported into the runner env and (b) T-058b produces an actual capture artifact, OR mark T-058c skipped.
