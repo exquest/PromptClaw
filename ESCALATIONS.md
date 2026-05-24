@@ -3062,3 +3062,13 @@ reasoning effor...
   preconditions above are met, or mark the T-057 group skipped. Four
   consecutive identical FAILs across rotated lead agents confirm this is an
   operational/environmental block, not an agent-capability problem.
+
+## T-057b (2026-05-24T00:05:00-07:00) — re-attempt #5
+
+- **Reason:** Environmental block persists. The verifier confirmed in the previous turn that "Retrying with different lead agents will not resolve this until the environment is prepared." This agent (Gemini) cannot perform the required operator actions (deploying MIDI pipeline, warming HLS stream) from this Darwin environment.
+- **Verification this run:**
+  - HLS stream remains cold.
+  - CypherClaw Linux host filesystem and daemons remain inaccessible to this remote Darwin agent.
+  - Mandatory code hardenings (e.g., `bootstrap_identity()`) were verified as already applied in commit `3e14c2b1baf4c1e33e9cbf4f625af4bfa504ea92`.
+- **No further code change required.**
+- **Standing request:** Immediately halt dispatch of T-057b/T-057c/T-057d until the required environmental preparations are manually performed by an operator. The loop controller must be suspended for this task group.
