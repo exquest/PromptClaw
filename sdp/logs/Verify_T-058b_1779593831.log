@@ -1,0 +1,24 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2749 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+The code-side deliverable for T-058b is complete. Summary of findings:
+
+**What changed since the last FAIL:** Commit `b91138d` added `my-claw/tools/live_reference_capture.py` — the missing capture tool that was the only code-side blocker. It resolves AC1–AC5 from the spec.
+
+**All acceptance criteria met:**
+- 4 capture tests pass (ffmpeg command shape, cold-playlist rejection, overwrite guard, dry-run)
+- 2 SuperCollider hardening anchors pass (`fx_bus_id` routing)
+- Full suite: 5235 passed, 11 skipped
+
+**Hardening anchors (auto-generated):**
+- `bootstrap_identity` is already wired in startup flow (both `main.py` and `__main__.py`) with integration tests passing — no code changes needed
+- `fx_bus_id` anchors remain clean
+
+**Two remaining infrastructure blockers (not code gaps):**
+1. HLS stream is still cold — audio producer must run on CypherClaw
+2. Actual capture requires execution on the CypherClaw Linux host — cannot be done from this Darwin checkout
+
+The spec explicitly declares this slice as Darwin-side only. To close the task operationally, an operator needs to start the producer on CypherClaw and run the tool on that box.

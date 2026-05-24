@@ -2,3 +2,18 @@ Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-
 Prompt delivered via: stdin (2125 chars)
 ---
 
+Verification complete. Report committed at `7d46455`.
+
+---
+
+**Verdict: FAIL** — same three blocking infrastructure conditions persist after the full pair-rotate cycle history:
+
+1. **Stream is cold** — `live.m3u8` returns zero HLS segments; producer not running on CypherClaw.
+2. **Wrong host/path** — target filesystem is on the remote Linux box, unreachable from this Darwin agent.
+3. **Missing capture tool** — no HLS→Opus capture+checksum script exists in the repo.
+
+**Hardening anchors:** both PASS — all 8 voice synthdefs expose `fx_bus_id` (blocking check), and `sw_sampler.scd` routes via `fx_bus_id` (minor check).
+
+**Test suite:** 5231 passed, 11 skipped — no regression.
+
+The most recent lead runs behaved correctly: the pair-rotate gemini run read `ESCALATIONS.md` and halted without retrying; the cleanup run committed leftover logs. No further agent cycles should be dispatched without operator sign-off on one of the three resolution paths (a/b/c in `ESCALATIONS.md`).

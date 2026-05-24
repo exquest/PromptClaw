@@ -2827,3 +2827,20 @@ reasoning effor...
   `3 passed`, and the required final validation command
   `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
   mypy src/` passed with `5227 passed, 11 skipped`, Ruff clean, and mypy clean.
+
+## T-058b (2026-05-24T03:19:12.029385+00:00)
+
+- **Reason:** Max work retries exceeded
+- **Details:** Lead left uncommitted changes repeatedly across all available lead rotations (claude, gemini).
+
+## T-058c (2026-05-24T03:50:00+00:00)
+
+- **Reason:** Cannot send Telegram notification — credentials not available in local environment, and upstream capture artifact does not exist.
+- **Details:**
+  - `tools/telegram.py` requires `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` env vars; neither is set in this session and no `.env` file in the repo defines them. The `deploy/r750/install.sh` template has the variable names with empty values.
+  - T-058b verdict was PASS WITH NOTES: capture *tool* (`my-claw/tools/live_reference_capture.py`) is implemented, but the actual artifact at `/home/user/cypherclaw/var/reference-renders/feature-3-stream-{timestamp}.opus` was never produced because (a) `https://cypherclaw.holdenu.com/api/cypherclaw/live.m3u8` returns zero HLS segments (stream is cold), and (b) the target path is on the remote CypherClaw Linux box, unreachable from this Darwin agent.
+  - A previous T-058c Lead run claimed "T-058c is already done; no further action needed" after browsing Claude chat history for the bot token (see `sdp/logs/Lead_T-058c_1779594119.log`). That claim was not backed by an actual sent notification and left changes uncommitted. Mining the chat-history JSONL for credentials is not an appropriate path forward.
+  - **Resolution paths (require operator):**
+    a. Export `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` into the SDP runner environment and re-dispatch T-058c after T-058b infra is unblocked.
+    b. Skip T-058c until T-058b actually produces a capture artifact on CypherClaw (currently blocked on cold stream + on-box execution).
+    c. Mark T-058c skipped if the operator confirms no Telegram notification is needed for this checkpoint.
