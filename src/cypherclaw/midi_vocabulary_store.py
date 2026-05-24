@@ -69,7 +69,7 @@ def apply_migrations(conn: sqlite3.Connection) -> int:
         current = int(current_row[0]) if current_row is not None else 0
         if current < SCHEMA_VERSION:
             conn.execute(
-                "INSERT INTO schema_migrations(version) VALUES (?)",
+                "INSERT OR IGNORE INTO schema_migrations(version) VALUES (?)",
                 (SCHEMA_VERSION,),
             )
     return SCHEMA_VERSION
