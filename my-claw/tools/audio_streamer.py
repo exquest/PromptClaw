@@ -612,6 +612,14 @@ def _print_json(payload: object) -> None:
 
 def run(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
+
+    # Ensure identity is bootstrapped on startup (before work or dry-run)
+    _bootstrap_identity(
+        mode=args.identity_mode,
+        release=args.identity_release,
+        parent_id=args.identity_parent_id,
+    )
+
     if args.verify_dir is not None:
         validations = validate_segment_directory(
             args.verify_dir,

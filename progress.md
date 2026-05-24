@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~7h 9m remaining (39 tasks, low confidence, calibrating)
-Expected completion: 1:56 AM tomorrow.
-Progress: [███████████████████████████████████░░░] 93%  528 / 567 tasks complete
-  completed: 528, pending: 36, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 53
+ETC: ~6h 40m remaining (37 tasks, low confidence, calibrating)
+Expected completion: 2:19 AM tomorrow.
+Progress: [████████████████████████████████████░░] 93%  530 / 567 tasks complete
+  completed: 530, pending: 34, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 53
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -596,9 +596,9 @@ Progress: [███████████████████████
 - **T-057b**: pending — Pending.
 - **T-057c**: pending — Pending.
 - **T-057d**: pending — Pending.
-- **T-053c**: complete — Phase 0 Explore: read the active ADP workflow from the task prompt and T2 template, CC-090 in the CypherClaw v2 PRD/requirements/task graph, prior T-053a/T-053b live MIDI specs, `src/cypherclaw/live_midi_emitter.py`, `tests/test_live_midi_emitter.py`, `my-claw/tools/duet_composer.py`, `my-claw/tools/senseweave/music_tracker_runtime.py`, tracker/composer routing tests, MIDI scene tuning metadata tests, and SuperCollider `fx_bus_id` / `sw_sampler.scd` hardening anchors. Implemented queue-first composer publishing through `LiveMidiPublisher`: `play_voice(...)` emits note-on/note-off events with voice, scene, tuning, and metadata context; tracker row automation emits control-change events for density, master amp, and reverb send; live MIDI publishing fails closed without interrupting OSC playback. Red phase failed as expected before implementation; focused composer/emitter tests, adjacent composer routing tests, hardening anchors, and full PromptClaw validation passed (`5227 passed, 11 skipped`, Ruff clean, mypy clean). No new dependencies, database changes, migrations, provider secrets, Worker routes, runtime state directories, startup-flow rewiring, agent commands, or SuperCollider source changes were added.
+- **T-053c**: complete — Completed with verdict PASS.
 - **T-058**: split — Split into subtasks.
-- **T-058a**: pending — Pending.
+- **T-058a**: complete — Prerequisites CC-020/022/024 verified; pipeline reachable.
 - **T-058b**: pending — Pending.
 - **T-058c**: pending — Pending.
 - **T-059**: split — Split into subtasks.
@@ -607,7 +607,7 @@ Progress: [███████████████████████
 - **T-059c**: pending — Pending.
 - **T-059d**: pending — Pending.
 - **T-058d**: pending — Pending.
-- **T-053d**: complete — Phase 0 Explore: read the ADP/T2 workflow instructions, PromptClaw architecture and handoff docs, CC-090 in the CypherClaw v2 PRD, prior T-053a/T-053b/T-053c specs, `src/cypherclaw/live_midi_emitter.py`, `tests/test_live_midi_emitter.py`, `tests/test_live_midi_composer_integration.py`, and the affected live MIDI sections of `my-claw/tools/duet_composer.py`. Implemented a local mock Worker E2E that drives `duet_composer.play_voice(...)` through a real `LiveMidiPublisher`, `BatchingMidiQueue`, and `post_midi_batch(...)`, asserting the Worker receives one ordered `cypherclaw.live_midi_event.v1` batch with correct source, batch ID, voice/scene/tuning tags, note values, velocities, timestamps, and metadata. Added producer flush and HTTP POST telemetry log lines with batch ID, endpoint, counts, attempts/status, and first/last event context, and kept the logger observable after daemon tests disable parent logger propagation. Red phase failed as expected before implementation; focused T-053 tests, adjacent composer routing/no-viewer-count tests, startup identity anchors, `fx_bus_id` / `sw_sampler.scd` hardening anchors, and full PromptClaw validation passed (`5229 passed, 11 skipped`, Ruff clean, mypy clean). No new dependencies, database changes, migrations, provider secrets, Worker route changes, runtime state directories, startup-flow rewiring, agent commands, or SuperCollider source changes were added.
+- **T-053d**: complete — Completed with verdict PASS.
 - **T-060**: split — Split into subtasks.
 - **T-060a**: pending — Pending.
 - **T-060b**: pending — Pending.

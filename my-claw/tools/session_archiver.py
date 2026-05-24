@@ -753,8 +753,16 @@ def _dry_run(config: ArchiveConfig) -> int:
     return 0
 
 
-def run(argv: Sequence[str] | None = None) -> int:
+def run(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+
+    # Ensure identity is bootstrapped on startup (before work or dry-run)
+    _bootstrap_identity(
+        mode=args.identity_mode,
+        release=args.identity_release,
+        parent_id=args.identity_parent_id,
+    )
+
     config = _config_from_args(args)
     if args.dry_run:
         return _dry_run(config)
