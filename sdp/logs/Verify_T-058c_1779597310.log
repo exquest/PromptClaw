@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2054 chars)
+---
+
+**Verdict: FAIL**
+
+Verification report committed at `sdp/verification/t-058c-verify.md` (commit `d66f01e`).
+
+**Summary of findings:**
+
+- **Code quality:** `notify_delivery.py` is correct and well-tested (2/2 tests pass, verified live this rotation)
+- **Blocking issue 1:** `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` not in runner environment — notification cannot be sent
+- **Blocking issue 2:** T-058b capture artifact still missing (HLS stream cold, remote CypherClaw host unreachable from this runner)
+- **Hardening checks:** `fx_bus_id` confirmed in `sw_sampler.scd` (lines 53, 115) and all voice synthdefs — no legacy `fx_bus` parameter found
+- **Process note:** This is rotation 5 with identical blockers; recommend halting dispatch via `sdp-cli tasks bulk-set-status T-058c --to skipped` unless operator can supply credentials

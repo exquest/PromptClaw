@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2054 chars)
+---
+
+Verification report written and committed. **Verdict: FAIL**
+
+Summary of findings for T-058c rotation 6:
+
+- **Two blocking infrastructure issues** remain unchanged across all six rotations: `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` not in env, and T-058b capture artifact never produced (HLS stream cold, remote box unreachable).
+- **Code is correct**: `notify_delivery.py` is structurally sound, 2/2 tests pass.
+- **SuperCollider hardening**: PASS — `sw_sampler.scd` and all voice synthdefs use `fx_bus_id`; no legacy `fx_bus` bare parameter found anywhere.
+- **Loop dispatch**: Task is now correctly set to `blocked` (commit 75a41e5), which should halt further auto-dispatch.
+- **No operator action** on credentials or T-058b between any of the six escalation entries.
+
+No further Lead re-attempts should be dispatched until the operator provides credentials or unblocks T-058b.
