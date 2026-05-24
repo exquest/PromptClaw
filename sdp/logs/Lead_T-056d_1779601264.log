@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1244 chars)
+---
+
+T-056d shipped as `adb6a35`.
+
+**What it does:** `checkpoint_approve.py` reads the `.sdp/CHECKPOINT_PAUSE` flag written by T-056c, appends an `APPROVE`/`REWORK`/`REJECT` record to `.sdp/CHECKPOINT_DECISIONS.jsonl`, removes the pause flag (which is what resumes sdp-cli task pickup per the T-056c design), and sends a capped Telegram acknowledgement.
+
+**End-to-end verification:** `test_end_to_end_pause_then_resume` drives `checkpoint_notify.run([...])` → confirms the flag exists → drives `checkpoint_approve.run(["APPROVE", ...])` → confirms the flag is gone. Plus 14 more tests for each decision, invalid/missing flag handling, and Telegram failure leaving the queue resumed anyway.
+
+**Validation:** 5282 pytest passed, ruff clean, mypy clean (`src/` 56 files). Pre-existing dirty files (progress.md, sdp logs) left untouched per task rules.

@@ -1,0 +1,19 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1302 chars)
+---
+
+T-056b committed as `fa52ca6`.
+
+## Summary
+
+Closed the code-side gap for T-056b: `session_archiver.py` now has a checkpoint upload mode (`upload_checkpoint`, `plan_checkpoint_upload`, and `--checkpoint-source` / `--checkpoint-slug` / `--checkpoint-timestamp` / `--checkpoint-prefix` / `--public-base-url` / `--checkpoint-content-type` CLI flags). It uploads a single artifact under `cypherclaw/archive/checkpoints/{slug}-{timestamp}/` alongside a `metadata.json` (sha256, size, source filename, upload timestamp, audio/metadata URLs) and prints the constructed `https://cypherclaw.holdenu.com/...` archive URL on stdout.
+
+The live upload itself remains deferred — same dual-blocker as T-056a:
+1. The T-056a Opus artifact was never produced (producer cold).
+2. R2 credentials aren't in this Darwin lead host's env.
+
+Both are documented in `ESCALATIONS.md` (T-056b) with an exact CLI invocation an operator can run on the CypherClaw box once the producer is up, plus a `--public-base-url` knob if the Worker routes archive objects under a namespaced path.
+
+Validation: `pytest tests/ -x` → 5253 passed, 11 skipped (9 new checkpoint tests in `tests/test_session_archiver.py`); ruff and mypy clean. The pre-existing T-058a hardening test was nudged to set the new checkpoint flags to `None` so its `MagicMock`-built args still flow through the original dry-run branch.
+
+Pre-existing workspace changes (`progress.md`, `sdp/notifications.log`, `sdp/run-log.md`, T-058d/T-056 runner logs) left untouched per task rules.

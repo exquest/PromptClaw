@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1232 chars)
+---
+
+T-056c committed as `e1014f4`. 
+
+Two fixes to the in-progress implementation found and made:
+- `compose_message`: trimming was eating the URL; now trims the slug instead so the archive URL is always preserved.
+- `send_checkpoint_notification`: resolved `telegram.send_message` at call time so test monkeypatches (and any future runtime swap) take effect.
+
+All 14 tests in `tests/test_checkpoint_notify.py` pass; ruff clean. Unrelated pre-existing workspace changes (progress.md, sdp/logs, etc.) left untouched per task rules.

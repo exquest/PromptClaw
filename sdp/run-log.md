@@ -564,4 +564,7 @@
 | run-t-058b-1779591032 | T-058b | gemini | claude | FAIL | 1720.0s | — |
 | run-t-058b-1779592778 | T-058b | codex | claude | PASS WITH NOTES | 1267.4s | — |
 | run-t-058c-1779594072 | T-058c | codex | gemini | PASS WITH NOTES | 4078.7s | — |
-| run-t-058d-1779598230 | T-058d | claude | — | PAUSED-CHECKPOINT | 0.0s | awaiting Anthony APPROVE/REWORK/REJECT |
+| run-t-058d-1779598181 | T-058d | claude | gemini | PASS WITH NOTES | 403.8s | — |
+| run-t-056a-1779598611 | T-056a | claude | gemini | PASS WITH NOTES | 978.6s | — |
+| run-t-056b-1779599617 | T-056b | claude | gemini | PASS WITH NOTES | 642.8s | — |
+| run-t-056c-1779600285 | T-056c | claude | gemini | PASS WITH NOTES | 901.0s | — |

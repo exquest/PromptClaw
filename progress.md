@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~8h 35m remaining (34 tasks, low confidence, calibrating)
-Expected completion: 6:25 AM tomorrow.
-Progress: [████████████████████████████████████░░] 94%  533 / 567 tasks complete
-  completed: 533, pending: 31, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 53
+ETC: ~7h 37m remaining (30 tasks, low confidence, calibrating)
+Expected completion: 6:17 AM tomorrow.
+Progress: [████████████████████████████████████░░] 95%  537 / 567 tasks complete
+  completed: 537, pending: 27, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 53
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -585,9 +585,9 @@ Progress: [███████████████████████
 - **T-055b**: complete — Completed with verdict PASS.
 - **T-055c**: complete — Completed with verdict PASS.
 - **T-056**: split — Split into subtasks.
-- **T-056a**: pending — Pending.
-- **T-056b**: pending — Pending.
-- **T-056c**: pending — Pending.
+- **T-056a**: complete — Completed with verdict PASS WITH NOTES.
+- **T-056b**: complete — Completed with verdict PASS WITH NOTES.
+- **T-056c**: complete — Completed with verdict PASS WITH NOTES.
 - **T-056d**: pending — Pending.
 - **T-055d**: complete — Completed with verdict PASS.
 - **T-053b**: complete — Completed with verdict PASS.
@@ -606,7 +606,7 @@ Progress: [███████████████████████
 - **T-059b**: pending — Pending.
 - **T-059c**: pending — Pending.
 - **T-059d**: pending — Pending.
-- **T-058d**: pending — Pending.
+- **T-058d**: complete — Completed with verdict PASS WITH NOTES.
 - **T-053d**: complete — Completed with verdict PASS.
 - **T-060**: split — Split into subtasks.
 - **T-060a**: pending — Pending.
