@@ -607,7 +607,7 @@ Progress: [███████████████████████
 - **T-059c**: pending — Pending.
 - **T-059d**: pending — Pending.
 - **T-058d**: pending — Pending.
-- **T-053d**: pending — Pending.
+- **T-053d**: pending — Phase 0 Explore: read the ADP/T2 workflow instructions, PromptClaw architecture and handoff docs, CC-090 in the CypherClaw v2 PRD, prior T-053a/T-053b/T-053c specs, `src/cypherclaw/live_midi_emitter.py`, `tests/test_live_midi_emitter.py`, `tests/test_live_midi_composer_integration.py`, and the affected live MIDI sections of `my-claw/tools/duet_composer.py`. Existing patterns show stdlib-only emitter transport, dataclass schema validation, queue-first `LiveMidiPublisher`, fake OSC imports for composer tests, and fail-closed composer publishing. T-053d will add a local mock Worker E2E that drives `duet_composer.play_voice(...)` through the real emitter POST path and asserts CC-090 batch tags and ordering, plus basic telemetry/log lines. No new dependencies, database changes, migrations, Worker route changes, provider secrets, runtime state directories, startup-flow rewiring, agent commands, or SuperCollider source changes are expected; startup identity and `fx_bus_id` / `sw_sampler.scd` hardening remain verification anchors.
 - **T-060**: split — Split into subtasks.
 - **T-060a**: pending — Pending.
 - **T-060b**: pending — Pending.

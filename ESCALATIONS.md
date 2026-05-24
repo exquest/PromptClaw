@@ -1,5 +1,30 @@
 # Escalations
 
+## T-053d (2026-05-24)
+
+- **Reason:** Local mock Worker scope for CC-090 producer-side E2E.
+- **Assumption:** T-053d should prove the Python composer plus emitter path
+  against a local Worker-shaped HTTP endpoint, not the deployed Cloudflare
+  Worker. Live deployment and WebSocket fan-out are covered by T-054/T-055
+  slices.
+- **Assumption:** "Correct tags and ordering" means the POST batch preserves
+  composer emission order and carries voice, scene, tuning, and JSON-safe
+  metadata for each event in the existing `cypherclaw.live_midi_event.v1`
+  schema.
+- **No new dependencies:** T-053d adds no Python packages, npm packages,
+  provider secrets, database columns, migrations, Worker routes, runtime state
+  directories, startup-flow rewiring, agent commands, or SuperCollider source
+  changes.
+- **Candidate hardening:** The generated startup identity bullets target
+  existing PromptClaw startup paths. Current CLI, first-boot, daemon ordering,
+  standalone/federated persistence, and narrative ASGI tests cover
+  `bootstrap_identity()` persistence and bootstrap-before-`FirstBootAnnouncer`
+  ordering. T-053d re-runs those anchors rather than broadening this local live
+  MIDI E2E into startup subsystem changes.
+- **SuperCollider hardening:** The recurring `fx_bus_id` and `sw_sampler.scd`
+  failures are out of scope for this Python producer/transport test, but remain
+  mandatory verification anchors.
+
 ## T-055d (2026-05-24)
 
 - **Reason:** Live deployment verification scope and stale production Worker
