@@ -1,8 +1,8 @@
-"""Live MIDI emitter daemon scaffold.
+"""Live MIDI emitter daemon and producer-side transport.
 
-This module owns the T-053a plumbing only: typed live MIDI event payloads,
-environment-backed config, size/time batching, a retrying stdlib HTTP POST
-client, and graceful shutdown. Composer integration is intentionally deferred.
+This module owns typed live MIDI event payloads, environment-backed config,
+size/time batching, a retrying stdlib HTTP POST client, producer publishing,
+and graceful shutdown for the CypherClaw live MIDI path.
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ SUPPORTED_MIDI_EVENT_TYPES: tuple[str, ...] = (
     MIDI_EVENT_PITCH_BEND,
 )
 
-LOGGER = logging.getLogger("cypherclaw.live_midi_emitter")
+LOGGER = logging.getLogger("cypherclaw_live_midi.emitter")
 
 
 class HttpResponse(Protocol):
@@ -268,6 +268,7 @@ class LiveMidiPublisher:
         post_batch: PostBatchFn | None = None,
         clock: ClockFn = time.monotonic,
     ) -> None:
+        active_config = config
         if queue is None:
             active_config = config or load_config()
             queue = BatchingMidiQueue(
@@ -276,6 +277,7 @@ class LiveMidiPublisher:
                 clock=clock,
             )
         self._queue = queue
+        self._config = active_config
         self._post_batch = post_batch
 
     @property
@@ -285,23 +287,37 @@ class LiveMidiPublisher:
     def publish(self, event: LiveMidiEvent) -> tuple[LiveMidiEvent, ...]:
         """Queue one event and return a batch if the size trigger fires."""
 
-        return self._post_if_configured(self._queue.add(event))
+        return self._post_if_configured(self._queue.add(event), trigger="size")
 
     def flush_due(self) -> tuple[LiveMidiEvent, ...]:
         """Return a batch when the queue's time trigger has elapsed."""
 
-        return self._post_if_configured(self._queue.flush_due())
+        return self._post_if_configured(self._queue.flush_due(), trigger="time")
 
     def flush_all(self) -> tuple[LiveMidiEvent, ...]:
         """Flush all pending producer events."""
 
-        return self._post_if_configured(self._queue.flush_all())
+        return self._post_if_configured(self._queue.flush_all(), trigger="flush_all")
 
     def _post_if_configured(
         self,
         batch: tuple[LiveMidiEvent, ...],
+        *,
+        trigger: str,
     ) -> tuple[LiveMidiEvent, ...]:
-        if batch and self._post_batch is not None:
+        if not batch:
+            return batch
+        LOGGER.info(
+            "live_midi_publisher_batch_flushed "
+            "trigger=%s events=%d source=%s endpoint=%s first_event=%s last_event=%s",
+            trigger,
+            len(batch),
+            _config_source(self._config),
+            _config_endpoint(self._config),
+            _event_log_context(batch[0]),
+            _event_log_context(batch[-1]),
+        )
+        if self._post_batch is not None:
             self._post_batch(batch)
         return batch
 
@@ -532,7 +548,8 @@ def post_midi_batch(
             response_body="",
         )
 
-    request = build_post_request(batch, config, batch_id=batch_id)
+    effective_batch_id = batch_id or str(uuid.uuid4())
+    request = build_post_request(batch, config, batch_id=effective_batch_id)
     max_attempts = config.max_retries + 1
     last_error: BaseException | None = None
     for attempt in range(1, max_attempts + 1):
@@ -541,6 +558,18 @@ def post_midi_batch(
                 body = _decode_body(response.read())
                 status_code = _response_status(response)
             if 200 <= status_code < 300:
+                LOGGER.info(
+                    "live_midi_http_post_succeeded "
+                    "batch_id=%s endpoint=%s events=%d attempts=%d status=%d "
+                    "first_event=%s last_event=%s",
+                    effective_batch_id,
+                    config.endpoint_url,
+                    len(batch),
+                    attempt,
+                    status_code,
+                    _event_log_context(batch[0]),
+                    _event_log_context(batch[-1]),
+                )
                 return MidiPostResult(
                     ok=True,
                     status_code=status_code,
@@ -549,6 +578,14 @@ def post_midi_batch(
                     response_body=body,
                 )
             if not _should_retry_status(status_code) or attempt > config.max_retries:
+                _log_http_post_failed(
+                    batch=batch,
+                    config=config,
+                    batch_id=effective_batch_id,
+                    attempts=attempt,
+                    status_code=status_code,
+                    error=f"Worker returned HTTP {status_code}",
+                )
                 raise MidiPostError(
                     f"Worker returned HTTP {status_code}",
                     status_code=status_code,
@@ -558,6 +595,14 @@ def post_midi_batch(
             status_code = int(exc.code)
             last_error = exc
             if not _should_retry_status(status_code) or attempt > config.max_retries:
+                _log_http_post_failed(
+                    batch=batch,
+                    config=config,
+                    batch_id=effective_batch_id,
+                    attempts=attempt,
+                    status_code=status_code,
+                    error=f"Worker returned HTTP {status_code}",
+                )
                 raise MidiPostError(
                     f"Worker returned HTTP {status_code}",
                     status_code=status_code,
@@ -566,6 +611,14 @@ def post_midi_batch(
         except URLError as exc:
             last_error = exc
             if attempt > config.max_retries:
+                _log_http_post_failed(
+                    batch=batch,
+                    config=config,
+                    batch_id=effective_batch_id,
+                    attempts=attempt,
+                    status_code=None,
+                    error=f"Worker POST failed: {exc.reason}",
+                )
                 raise MidiPostError(
                     f"Worker POST failed: {exc.reason}",
                     status_code=None,
@@ -582,6 +635,14 @@ def post_midi_batch(
         )
         sleep_fn(delay)
 
+    _log_http_post_failed(
+        batch=batch,
+        config=config,
+        batch_id=effective_batch_id,
+        attempts=max_attempts,
+        status_code=None,
+        error="Worker POST failed after retries",
+    )
     raise MidiPostError(
         "Worker POST failed after retries",
         status_code=None,
@@ -739,6 +800,42 @@ def _post_if_present(
         result.event_count,
         result.attempts,
         result.status_code,
+    )
+
+
+def _config_source(config: LiveMidiEmitterConfig | None) -> str:
+    return config.source if config is not None else ""
+
+
+def _config_endpoint(config: LiveMidiEmitterConfig | None) -> str:
+    return config.endpoint_url if config is not None else ""
+
+
+def _event_log_context(event: LiveMidiEvent) -> str:
+    return f"{event.event_type}:{event.voice}:{event.scene}:{event.tuning}"
+
+
+def _log_http_post_failed(
+    *,
+    batch: Sequence[LiveMidiEvent],
+    config: LiveMidiEmitterConfig,
+    batch_id: str,
+    attempts: int,
+    status_code: int | None,
+    error: str,
+) -> None:
+    LOGGER.warning(
+        "live_midi_http_post_failed "
+        "batch_id=%s endpoint=%s events=%d attempts=%d status=%s error=%s "
+        "first_event=%s last_event=%s",
+        batch_id,
+        config.endpoint_url,
+        len(batch),
+        attempts,
+        status_code,
+        error,
+        _event_log_context(batch[0]),
+        _event_log_context(batch[-1]),
     )
 
 
