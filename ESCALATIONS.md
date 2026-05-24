@@ -3072,3 +3072,12 @@ reasoning effor...
   - Mandatory code hardenings (e.g., `bootstrap_identity()`) were verified as already applied in commit `3e14c2b1baf4c1e33e9cbf4f625af4bfa504ea92`.
 - **No further code change required.**
 - **Standing request:** Immediately halt dispatch of T-057b/T-057c/T-057d until the required environmental preparations are manually performed by an operator. The loop controller must be suspended for this task group.
+
+## T-057b (2026-05-24T07:07:47Z) — re-attempt #6
+
+- **Reason:** Environmental block persists. Verification retries are exhausted. "The operational blocks prevent the 60-second reference render from being generated." This agent is on Darwin and has no SSH/deploy access to the remote CypherClaw Linux host.
+- **Verification this run:**
+  - `curl https://cypherclaw.holdenu.com/api/cypherclaw/live.m3u8` returns a header-only response. The stream is still cold.
+  - The necessary on-box operator actions (deploying MIDI pipeline, staging seed MIDI, warming HLS stream) have not been performed.
+- **No code change made.** All code-side requirements (such as `live_reference_capture.py` and `bootstrap_identity()`) are already completed.
+- **Standing request:** Immediately halt dispatch of T-057b/T-057c/T-057d until the required environmental preparations are manually performed by an operator. Please mark this task group as blocked/skipped.
