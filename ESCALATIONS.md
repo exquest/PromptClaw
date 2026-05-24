@@ -1,5 +1,40 @@
 # Escalations
 
+## T-055b (2026-05-24)
+
+- **Reason:** Cross-repository Worker location and MIDI shape-rendering scope
+- **Details:** PromptClaw remains the ADP source of truth, but the
+  `cypherclaw.holdenu.com` canvas visualizer is implemented in the sibling
+  `/Users/anthony/Programming/catalog-explorer/worker` Cloudflare Worker.
+  T-055b therefore keeps the spec, progress, changelog, and hardening anchors
+  in PromptClaw while changing Worker HTML/JS tests and inline browser runtime
+  in `catalog-explorer`.
+- **Assumption:** T-055a already provides a valid browser-side MIDI event queue
+  populated from the existing `{status,data1,data2,ts}` WebSocket shape. T-055b
+  should layer visual shape creation and drawing on top of that queue rather
+  than changing the live MIDI Durable Object protocol.
+- **Scope decision:** Only normalized `note_on` events spawn shapes. Pitch maps
+  to a Y-axis canvas position, velocity maps to radius, and each shape decays
+  over a fixed browser-side lifetime. Note-off events remain queued diagnostics
+  and do not create new shapes.
+- **No new dependencies:** T-055b adds no npm packages, Python packages,
+  provider secrets, database columns, D1 database migration, Durable Object
+  migration, R2 layout change, runtime state directory, startup-flow rewiring,
+  agent command, or SuperCollider source change.
+- **Candidate hardening:** The recurring SuperCollider failures are out of
+  scope for this Worker visualizer slice, but remain mandatory verification
+  anchors: profiled voice SynthDefs must expose `fx_bus_id`, and
+  `sw_sampler.scd` must route through `fx_bus_id` rather than `fx_bus`.
+- **Verification:** Red phase was confirmed with Worker runtime tests failing
+  on missing MIDI shape diagnostics, mapper/draw functions, and
+  `window.cypherclawLiveMidiShapes` before implementation. After implementation,
+  Worker `npm test` passed with `43 passed`, Worker `npm run check` passed,
+  Worker `npm run check:workers` passed,
+  `npm run test:workers -- tests/cypherclaw-live-midi-latency.vitest.ts`
+  passed, SuperCollider `fx_bus_id` / `sw_sampler.scd` hardening anchors passed
+  with `3 passed`, and the required final validation command passed with `5219
+  passed, 11 skipped`, Ruff clean, and mypy clean.
+
 ## T-055a (2026-05-23)
 
 - **Reason:** Cross-repository Worker location and live MIDI visualizer scope

@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- Added T-055b MIDI note shapes to the `cypherclaw.holdenu.com` canvas
+  visualizer in the holdenu Cloudflare Worker: live note-on events now create
+  bounded diagnostic shapes with pitch-to-position mapping on the Y axis,
+  velocity-to-size radius mapping, deterministic X/hue variation, and a 1800 ms
+  lifetime with decay/pruning. Note-off events remain queued diagnostics
+  without spawning shapes, and the page exposes `data-midi-shapes`,
+  `data-midi-last-note`, and `window.cypherclawLiveMidiShapes` for runtime
+  inspection. No new dependencies, No D1 database migration, No Durable Object
+  migration, provider secrets, R2 layout changes, runtime state directories,
+  startup-flow rewiring, agent commands, or SuperCollider source changes were
+  added; existing `fx_bus_id` and `sw_sampler.scd` routing hardening stayed as
+  verification anchors. Red phase was confirmed before implementation; Worker
+  `npm test` (`43 passed`), Worker `npm run check`, Worker
+  `npm run check:workers`, Workers-runtime live MIDI latency test, SuperCollider
+  routing hardening anchors (`3 passed`), and full PromptClaw validation (`5219
+  passed, 11 skipped`, Ruff clean, mypy clean) all passed.
+
 - Added T-055a live MIDI WebSocket subscription to the
   `cypherclaw.holdenu.com` canvas visualizer in the holdenu Cloudflare Worker:
   the page now gives `#cypherclaw-visualizer` a `data-live-midi-url`, opens a
