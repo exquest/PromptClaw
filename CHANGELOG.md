@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Added T-056a feature-1 reverb-spaces reference render orchestrator:
+  `my-claw/tools/reverb_reference_render.py` wraps `live_reference_capture`
+  with the `feature-1-reverb-spaces` prefix, defaults its staging directory to
+  `/home/user/cypherclaw/var/reference-renders/checkpoints/feature-1-reverb-spaces/`,
+  and asserts that every required CypherClaw voice
+  (`pluck`, `breath`, `choir`, `kotekan`, `pad`, `bowed`, `tabla_tin`) has a
+  populated `VOICE_REVERB_PROFILES` entry before invoking ffmpeg. Refuses to
+  overwrite an existing checkpoint Opus file, supports `--dry-run`, and reuses
+  the existing SHA-256 JSONL checksum log. Focused tests in
+  `tests/test_reverb_reference_render.py` (`7 passed`) plus full PromptClaw
+  validation (`5244 passed, 11 skipped`, Ruff clean, mypy clean) all passed.
+  Actual artifact generation still requires a hot CypherClaw HLS stream on the
+  Linux host; see `ESCALATIONS.md`.
+
 - Added T-058b live stream reference capture tooling:
   `my-claw/tools/live_reference_capture.py` now provides an on-box helper for
   the CC-102 checkpoint path, defaulting to

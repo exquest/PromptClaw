@@ -1,5 +1,39 @@
 # Escalations
 
+## T-056a (2026-05-23) — BLOCKING (code complete, artifact deferred)
+
+- **Task:** Render the 60-second reference sample of CypherClaw composing with
+  per-voice reverb spaces active and save it locally to a staging path for the
+  checkpoint.
+- **Code-side gap closed:** `my-claw/tools/reverb_reference_render.py` added.
+  Asserts every required voice (`pluck`, `breath`, `choir`, `kotekan`, `pad`,
+  `bowed`, `tabla_tin`) has a populated `VOICE_REVERB_PROFILES` entry, then
+  wraps `live_reference_capture` to write
+  `feature-1-reverb-spaces-{timestamp}.opus` into
+  `/home/user/cypherclaw/var/reference-renders/checkpoints/feature-1-reverb-spaces/`
+  (the staging path T-056b will upload from). Refuses overwrite, supports
+  `--dry-run`, reuses the SHA-256 JSONL checksum log.
+- **Same infra blockers as T-058b apply:**
+  - Stream still cold: `https://cypherclaw.holdenu.com/api/cypherclaw/live.m3u8`
+    returns the HLS header with zero `#EXTINF` segments, so there is no audio
+    to capture for 60 seconds with per-voice reverb spaces engaged.
+  - Wrong host: the staging path is on the CypherClaw Linux box and the
+    Darwin lead host has no SSH/deploy affordance for it.
+- **Resolution paths (require operator):**
+  a. Bring the composer + audio_streamer producer up on CypherClaw with the
+     v2 per-voice reverb buses active, then run
+     `python my-claw/tools/reverb_reference_render.py` on the box to produce
+     the staged Opus artifact.
+  b. Re-scope T-056 to the Worker-side `session_archiver.py` checkpoint path
+     (mirrors T-058 discussion) — staging happens server-side from existing
+     segments rather than via on-box render.
+  c. Split T-056a into a producer-bring-up slice and a capture slice if the
+     producer cannot be brought up immediately.
+- **Validation:** focused tests `tests/test_reverb_reference_render.py`
+  (`7 passed`); full required validation `pip install -e '.[dev]' && pytest
+  tests/ -x && ruff check src/ tests/ && mypy src/` -> `5244 passed, 11
+  skipped`, Ruff clean, mypy clean.
+
 ## T-058b (2026-05-23) — BLOCKING
 
 - **Task:** Render and capture a 60-second reference sample from the live
