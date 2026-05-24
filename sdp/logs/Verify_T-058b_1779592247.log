@@ -1,0 +1,13 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2125 chars)
+---
+
+Verification complete. **Verdict: FAIL** — same three blocking infrastructure conditions persist:
+
+1. **Stream is cold** — HLS playlist has zero segments; producer not running on CypherClaw.
+2. **Wrong host/path** — target filesystem is on the remote Linux box, unreachable from this Darwin host.
+3. **Missing capture tool** — no HLS→Opus capture+checksum script exists in the repo.
+
+**Hardening anchors confirmed clean:** all 8 voice synthdefs expose `fx_bus_id` (blocking check PASS), and `sw_sampler.scd` routes via `fx_bus_id` (minor check PASS). Test suite green at 5231 passed.
+
+Report committed to `sdp/verification/t-058b-verify.md` at `902ba1c`. No further pair-rotate cycles should be attempted without operator sign-off on a resolution path (options a/b/c in `ESCALATIONS.md`).
