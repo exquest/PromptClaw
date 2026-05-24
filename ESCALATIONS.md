@@ -2960,3 +2960,40 @@ reasoning effor...
   - However, no functional delivery can occur without credentials.
   - Test suite passes.
   - Please use `sdp-cli tasks bulk-set-status T-058c --to skipped` to stop these looping escalations if no notification is desired.
+
+## T-057b (2026-05-23T17:30:00-07:00)
+
+- **Reason:** Cannot render a 60-second reference sample of CypherClaw composing
+  with the seed MIDI active — same hard block as T-057a/T-058b/T-058c.
+- **Verification this run:**
+  - `curl https://cypherclaw.holdenu.com/api/cypherclaw/live.m3u8` → HTTP 200,
+    73 bytes, header-only (`#EXTM3U`, `#EXT-X-VERSION:3`,
+    `#EXT-X-TARGETDURATION:6`, `#EXT-X-MEDIA-SEQUENCE:0`); zero `#EXTINF`
+    segments. `playlist_has_media_segments()` in
+    `my-claw/tools/live_reference_capture.py` would reject this with
+    `RuntimeError("playlist ... has no media segments; start the CypherClaw
+    audio producer before capture")`.
+  - `curl https://cypherclaw.holdenu.com/api/cypherclaw/status` → HTTP 404
+    (`{"error":"not found: GET /api/cypherclaw/status"}`); no composer state
+    endpoint to confirm seed-MIDI vocabulary is active even if the stream were
+    warm.
+  - Per T-057a verification (`sdp/verification/t-057a-verify.md`,
+    2026-05-24), the on-box MIDI ingest pipeline (CC-010..CC-017) has not been
+    deployed: `/home/user/cypherclaw/midi-inbox/` is absent, no seed MIDI is
+    staged, the composer is not running with v2 fragment-citation vocabulary
+    fragments active, and CC-102 HLS remains cold.
+  - Target output path `/home/user/cypherclaw/var/reference-renders/...` is on
+    the remote CypherClaw Linux box; this Darwin agent has no shell access and
+    `ffmpeg` against the local cold playlist would produce an empty/0-byte
+    file rather than 60 s of CypherClaw composing with seed MIDI active.
+- **No code change made.** Repository-side capture tool
+  `live_reference_capture.py` is implemented and tested (T-058b PASS WITH NOTES);
+  the block is entirely operational and identical to the standing T-057a/T-058b
+  block. Retrying with rotated lead agents will produce the same FAIL.
+- **Standing request to operator / loop controller:** halt T-057b dispatch
+  until (a) the MIDI ingest pipeline is deployed on the CypherClaw box, (b) a
+  known seed MIDI is placed in `/home/user/cypherclaw/midi-inbox/`, (c) the
+  composer is restarted with v2 fragment-citation vocabulary active, and (d)
+  the HLS playlist serves media segments. T-057c and T-057d depend on the same
+  preconditions; consider blocking the whole T-057 group rather than burning
+  rotations on each subtask.
