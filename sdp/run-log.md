@@ -560,4 +560,4 @@
 | run-t-053b-1779586232 | T-053b | codex | claude | PASS | 1030.5s | — |
 | run-t-053c-1779587293 | T-053c | codex | claude | PASS | 1904.8s | — |
 | run-t-053d-1779589226 | T-053d | codex | claude | PASS | 1104.0s | — |
-| run-t-058a-1779590652 | T-058a | claude | gemini | PASS | 1200.0s | — |
+| run-t-058a-1779590356 | T-058a | claude | gemini | PASS | 648.7s | — |

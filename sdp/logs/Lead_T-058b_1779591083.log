@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1291 chars)
+---
+
+**T-058b: ESCALATED (blocking)** — committed `fe1761a`.
+
+Two hard blockers prevent producing the artifact:
+
+1. **Cold stream** — `https://cypherclaw.holdenu.com/api/cypherclaw/live.m3u8` returns only a 73-byte header with zero `#EXTINF` segments. T-058a's verifier observed the same. Nothing to capture for 60 seconds.
+2. **Wrong host** — destination `/home/user/cypherclaw/var/reference-renders/` is on the remote CypherClaw box, not this Mac, and there is no SSH/deploy/capture tooling in the repo for that path. Existing `session_archiver.py` uploads to `cypherclaw/archive/checkpoints/` via the Worker, not to that on-box filesystem path.
+
+ESCALATIONS.md entry proposes three resolutions (bring producer up + add capture script, re-scope through `session_archiver.py` to the Worker checkpoint path, or split T-058b). No artifact fabricated, no source changes. Pre-existing workspace changes (progress.md, run-log.md, untracked logs) left untouched per task rules.
