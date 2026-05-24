@@ -3040,3 +3040,25 @@ reasoning effor...
   preconditions above are met, or mark the T-057 group skipped. Three
   consecutive identical FAILs on this task confirm rotated leads cannot
   resolve it.
+
+## T-057b (2026-05-23T23:48:00-07:00) — re-attempt #4
+
+- **Reason:** Same hard block. Verifier on re-attempt #3 again confirmed the
+  escalation is appropriate and that "Retrying with different lead agents will
+  not resolve this until the environment is prepared." No operator change
+  observed; auto-dispatch is still firing this task.
+- **Verification this run:**
+  - `curl https://cypherclaw.holdenu.com/api/cypherclaw/live.m3u8` at
+    2026-05-24T06:48:29Z → HTTP 200, 73 bytes, header-only (`#EXTM3U` /
+    `#EXT-X-VERSION:3` / `#EXT-X-TARGETDURATION:6` /
+    `#EXT-X-MEDIA-SEQUENCE:0`); zero `#EXTINF` segments. Cold stream unchanged
+    across 4 consecutive attempts spanning ~6 hours.
+  - On-box MIDI ingest pipeline (CC-010..CC-017) still undeployed per the
+    T-057a verification artifact already on disk; seed MIDI still absent.
+- **No code change made.** `live_reference_capture.py` remains implemented
+  and tested; block is entirely operational and outside this agent's reach
+  (Darwin host, no shell access to CypherClaw Linux box).
+- **Standing request:** halt T-057b/T-057c/T-057d dispatch until the four
+  preconditions above are met, or mark the T-057 group skipped. Four
+  consecutive identical FAILs across rotated lead agents confirm this is an
+  operational/environmental block, not an agent-capability problem.
