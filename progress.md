@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~13h 11m remaining (43 tasks, low confidence, calibrating)
-Expected completion: 6:03 AM tomorrow.
-Progress: [███████████████████████████████████░░░] 92%  521 / 564 tasks complete
-  completed: 521, pending: 38, needs_split: 2, blocked: 1, needs_attn: 2, skipped: 52
+ETC: ~12h 24m remaining (44 tasks, low confidence, calibrating)
+Expected completion: 5:47 AM tomorrow.
+Progress: [███████████████████████████████████░░░] 92%  523 / 567 tasks complete
+  completed: 523, in-progress: 1, pending: 40, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 53
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -578,10 +578,10 @@ Progress: [███████████████████████
 - **T-054a**: complete — Completed with verdict PASS.
 - **T-054b**: complete — Completed with verdict PASS.
 - **T-054c**: complete — Completed with verdict PASS.
-- **T-054d**: complete — Phase 0 Explore findings: vitest-pool-workers chosen for sub-second fan-out testing in catalog-explorer. Completed with verdict PASS.
-- **T-053a**: complete — Phase 0 Explore: read ADP workflow, CC-090 in the CypherClaw v2 PRD/register, existing `midi_intake_daemon.py`, `audio_streamer.py` Worker POST pattern, T-054 live MIDI Worker specs/tests, and SuperCollider `fx_bus_id` hardening anchors. Implemented stdlib-only `live_midi_emitter.py` daemon scaffold for `/api/cypherclaw/midi-event` config loading, size/time batching, retry/backoff POSTs, and shutdown flushing; no composer integration.
+- **T-054d**: complete — Completed with verdict PASS WITH NOTES.
+- **T-053a**: complete — Completed with verdict PASS.
 - **T-055**: split — Split into subtasks.
-- **T-055a**: pending — Pending.
+- **T-055a**: running — Phase 0 Explore: read the active ADP workflow in the task prompt, prior T-028c/T-028d canvas visualizer specs, T-053a live MIDI emitter spec, T-054a/T-054b/T-054c/T-054d live MIDI Worker specs, the sibling `catalog-explorer/worker` source/tests/config, and existing startup identity hardening anchors. Implemented the `cypherclaw.holdenu.com` inline canvas visualizer live MIDI WebSocket client with a bounded in-memory MIDI event queue for normalized note-on/note-off events. Red phase failed as expected before implementation; Worker tests/checks, Workers-runtime live MIDI latency, startup identity anchors, and full validation passed. No new dependencies, No D1 database migration, No Durable Object migration, provider secrets, R2 layout changes, runtime state directories, startup-flow rewiring, agent commands, or SuperCollider changes.
 - **T-055b**: pending — Pending.
 - **T-055c**: pending — Pending.
 - **T-056**: split — Split into subtasks.
@@ -608,7 +608,11 @@ Progress: [███████████████████████
 - **T-059d**: pending — Pending.
 - **T-058d**: pending — Pending.
 - **T-053d**: pending — Pending.
-- **T-060**: needs_split — Timed out; run sdp-cli tasks split T-060 to break it down.
+- **T-060**: split — Split into subtasks.
+- **T-060a**: pending — Pending.
+- **T-060b**: pending — Pending.
+- **T-060c**: pending — Pending.
+- **T-060d**: pending — Pending.
 - **T-061**: pending — Pending.
 - **T-062**: pending — Pending.
 - **T-063**: pending — Pending.

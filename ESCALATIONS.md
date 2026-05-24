@@ -1,5 +1,43 @@
 # Escalations
 
+## T-055a (2026-05-23)
+
+- **Reason:** Cross-repository Worker location and live MIDI visualizer scope
+- **Details:** PromptClaw remains the ADP source of truth, but the
+  `cypherclaw.holdenu.com` canvas visualizer is implemented in the sibling
+  `/Users/anthony/Programming/catalog-explorer/worker` Cloudflare Worker. T-055a
+  therefore keeps the spec, progress, changelog, and startup-hardening anchors
+  in PromptClaw while changing Worker HTML/JS tests and inline browser runtime
+  in `catalog-explorer`.
+- **Assumption:** T-054a through T-054d already provide the public
+  `/api/cypherclaw/live-midi` WebSocket route, strict JSON MIDI event validation,
+  fan-out, Wrangler Durable Object config, and Workers-runtime latency coverage.
+  T-055a should only add the browser subscriber and note event queue on the
+  canvas visualizer page.
+- **Scope decision:** The in-memory browser queue is capped at 128 normalized
+  note events and accepts only note-on/note-off events from the existing
+  `{status,data1,data2,ts}` WebSocket shape. It does not alter the Durable
+  Object protocol, composer behavior, SSE live-features feed, R2/D1 storage, or
+  audio playback path.
+- **No new dependencies:** T-055a adds no npm packages, Python packages,
+  provider secrets, database columns, D1 database migration, Durable Object
+  migration, R2 layout change, runtime state directory, startup-flow rewiring,
+  agent command, or SuperCollider source change.
+- **Startup identity hardening:** The generated startup identity bullets target
+  existing startup paths; current CLI, first-boot, daemon ordering,
+  standalone/federated persistence, and narrative ASGI tests cover
+  `bootstrap_identity()` persistence and bootstrap-before-`FirstBootAnnouncer`
+  ordering. T-055a re-runs those anchors rather than broadening this Worker
+  visualizer task into identity subsystem changes.
+- **Verification:** Red phase was confirmed with Worker tests failing on the
+  missing `data-live-midi-url`, browser WebSocket subscription, and MIDI event
+  queue before implementation. After implementation, `npm test` passed with
+  `42 passed`, `npm run check` passed, `npm run check:workers` passed,
+  `npm run test:workers -- tests/cypherclaw-live-midi-latency.vitest.ts`
+  passed, startup identity anchors passed with `11 passed`, and the required
+  final validation command passed with `5219 passed, 11 skipped`, Ruff clean,
+  and mypy clean.
+
 ## T-053a (2026-05-23)
 
 - **Reason:** Live MIDI emitter scaffold route contract and generated hardening

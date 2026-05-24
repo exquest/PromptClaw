@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- Added T-055a live MIDI WebSocket subscription to the
+  `cypherclaw.holdenu.com` canvas visualizer in the holdenu Cloudflare Worker:
+  the page now gives `#cypherclaw-visualizer` a `data-live-midi-url`, opens a
+  browser `WebSocket` to `/api/cypherclaw/live-midi`, normalizes JSON MIDI
+  note-on and note-off messages into a bounded 128-entry in-memory MIDI event
+  queue, treats note-on velocity zero as note-off, ignores malformed and
+  non-note messages without dropping the existing queue, and exposes diagnostics
+  through `data-midi-state`, `data-midi-events`,
+  `window.cypherclawLiveMidiSocket`, and `window.cypherclawLiveMidiEvents`.
+  No new dependencies, No D1 database migration, No Durable Object migration,
+  provider secrets, R2 layout changes, runtime state directories,
+  startup-flow rewiring, agent commands, or SuperCollider source changes were
+  added. Red phase was confirmed before implementation; Worker `npm test`
+  (`42 passed`), Worker `npm run check`, Worker `npm run check:workers`,
+  Workers-runtime live MIDI latency test, startup identity anchors (`11
+  passed`), and full PromptClaw validation (`5219 passed, 11 skipped`, Ruff
+  clean, mypy clean) all passed.
+
 - Added T-053a live MIDI emitter scaffold:
   `cypherclaw.live_midi_emitter` now provides typed live MIDI event payloads,
   environment-backed config loading, a size/time batching queue, a stdlib
