@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- Added T-053d composer/emitter mock Worker E2E coverage: a new local
+  `tests/test_live_midi_e2e.py` drives `duet_composer.play_voice(...)` through
+  a real `LiveMidiPublisher`, `BatchingMidiQueue`, and `post_midi_batch(...)`
+  into a stdlib localhost mock Worker endpoint, asserting one ordered batch
+  with the expected `cypherclaw.live_midi_event.v1` schema, source, batch ID,
+  note-on/note-off ordering, voice/scene/tuning tags, timestamps, velocities,
+  and composer metadata. Live MIDI telemetry now logs producer flushes plus
+  HTTP POST success/terminal failure with batch ID, endpoint, event count,
+  attempts, status, and first/last event context while avoiding bearer-token
+  output and staying observable even after daemon tests disable propagation on
+  the parent `cypherclaw` logger. No new dependencies, database changes,
+  migrations, provider secrets, Worker route changes, runtime state
+  directories, startup-flow rewiring, agent commands, or SuperCollider source
+  changes were added; startup identity and `fx_bus_id` / `sw_sampler.scd`
+  hardening anchors passed. Red phase was confirmed before implementation;
+  focused T-053 tests, adjacent composer routing tests, hardening anchors, and
+  full PromptClaw validation (`5229 passed, 11 skipped`, Ruff clean, mypy
+  clean) all passed.
+
 - Added T-053c composer live MIDI queue publishing: `duet_composer.play_voice`
   now publishes validated note-on/note-off events into the emitter batching
   queue at note generation points, tracker row automation publishes live MIDI

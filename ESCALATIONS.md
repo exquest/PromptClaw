@@ -24,6 +24,14 @@
 - **SuperCollider hardening:** The recurring `fx_bus_id` and `sw_sampler.scd`
   failures are out of scope for this Python producer/transport test, but remain
   mandatory verification anchors.
+- **Verification:** Red phase was confirmed with the new mock Worker E2E and
+  publisher telemetry tests failing on missing telemetry while the Worker
+  payload path was otherwise exercised. Implementation passed focused T-053
+  tests (`18 passed`), adjacent composer routing/no-viewer-count tests (`4
+  passed`), startup identity hardening anchors (`11 passed`), SuperCollider
+  hardening anchors (`3 passed`), the daemon-import-order logging reproducer
+  (`16 passed`), `pip install -e '.[dev]'`, full `pytest tests/ -x` (`5229
+  passed, 11 skipped`), `ruff check src/ tests/`, and `mypy src/`.
 
 ## T-055d (2026-05-24)
 
