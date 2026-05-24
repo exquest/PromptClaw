@@ -174,3 +174,38 @@ def test_run_dry_run_prints_planned_capture_without_writing(
     assert payload["checksum_log"].endswith("checksums.jsonl")
     assert payload["ffmpeg_command"][-1] == payload["output_path"]
     assert not Path(payload["output_path"]).exists()
+
+
+def test_run_invokes_bootstrap_identity(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    bootstrapped: list[dict[str, Any]] = []
+
+    def fake_bootstrap(**kwargs: Any) -> None:
+        bootstrapped.append(kwargs)
+
+    monkeypatch.setattr("live_reference_capture._bootstrap_identity", fake_bootstrap)
+
+    exit_code = run(
+        [
+            "--dry-run",
+            "--identity-mode",
+            "federated",
+            "--identity-release",
+            "v1.2.3",
+            "--identity-parent-id",
+            "parent-456",
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+
+    assert exit_code == 0
+    assert len(bootstrapped) == 1
+    assert bootstrapped[0] == {
+        "mode": "federated",
+        "release": "v1.2.3",
+        "parent_id": "parent-456",
+    }

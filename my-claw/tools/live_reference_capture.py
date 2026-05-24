@@ -14,6 +14,16 @@ from pathlib import Path
 from typing import Protocol, TextIO
 from urllib.request import Request, urlopen
 
+try:
+    from cypherclaw.first_boot import bootstrap_identity as _bootstrap_identity
+except ImportError:  # pragma: no cover
+    try:
+        from first_boot import bootstrap_identity as _bootstrap_identity
+    except ImportError:  # pragma: no cover
+
+        def _bootstrap_identity(**_kwargs: object) -> object:
+            return None
+
 
 DEFAULT_PLAYLIST_URL = "https://cypherclaw.holdenu.com/api/cypherclaw/live.m3u8"
 DEFAULT_OUTPUT_DIR = Path("/home/user/cypherclaw/var/reference-renders")
@@ -271,6 +281,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         type=float,
         default=DEFAULT_PLAYLIST_TIMEOUT_SECONDS,
     )
+    parser.add_argument(
+        "--identity-mode",
+        choices=("standalone", "federated"),
+        default="standalone",
+    )
+    parser.add_argument("--identity-release", default="")
+    parser.add_argument("--identity-parent-id")
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args(argv)
 
@@ -307,6 +324,14 @@ def _dry_run_payload(config: CaptureConfig) -> dict[str, object]:
 
 def run(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
+
+    # Ensure identity is bootstrapped on startup (before work or dry-run)
+    _bootstrap_identity(
+        mode=args.identity_mode,
+        release=args.identity_release,
+        parent_id=args.identity_parent_id,
+    )
+
     config = _config_from_args(args)
 
     if args.dry_run:
