@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Added T-053b live MIDI event schema validation in
+  `cypherclaw.live_midi_emitter`: the emitter now defines the
+  `cypherclaw.live_midi_event.v1` batch schema version, closes supported event
+  types to `note_on`, `note_off`, `control_change`, and `pitch_bend`, validates
+  event-specific status/data-byte shapes, requires JSON-safe metadata, and adds
+  helper constructors plus payload serialization/validation helpers while
+  preserving voice/scene/tuning context tags. Mixed-event batches now carry the
+  schema version alongside `source`, `batch_id`, `event_count`, and serialized
+  events. No new dependencies, no database changes, no migrations, no provider
+  secrets, no runtime state directories, no Worker changes, no startup-flow
+  rewiring, no composer integration, and no SuperCollider changes were added.
+  Red phase was confirmed before implementation; emitter tests, adjacent MIDI
+  tests, startup identity hardening anchors, and full PromptClaw validation
+  (`5223 passed, 11 skipped`, Ruff clean, mypy clean) all passed.
+
 - Added T-055d live MIDI visualizer end-to-end verification for
   `cypherclaw.holdenu.com`: a new gated Worker test
   (`CYPHERCLAW_RUN_LIVE_E2E=1`) fetches the deployed root page and live-feature
