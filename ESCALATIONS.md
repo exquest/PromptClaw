@@ -1,5 +1,39 @@
 # Escalations
 
+## T-053a (2026-05-23)
+
+- **Reason:** Live MIDI emitter scaffold route contract and generated hardening
+  scope.
+- **Details:** Exploration found CC-090 in the CypherClaw v2 PRD/register:
+  `live_midi_emitter.py` should publish live MIDI events to the holdenu
+  Cloudflare Worker `/api/cypherclaw/midi-event` endpoint. T-054a through
+  T-054d already cover the sibling Worker's `/api/cypherclaw/live-midi`
+  WebSocket room and fan-out behavior, but this PromptClaw slice owns only the
+  Python emitter scaffold. Composer integration remains out of T-053a scope.
+- **Assumption:** Until the Worker POST route is implemented, the emitter will
+  send a JSON batch payload with `source`, `batch_id`, `event_count`, and
+  enriched `events`. Each event carries the canonical MIDI bytes
+  (`status`, `data1`, `data2`, `ts`) plus optional context tags
+  (`event_type`, `voice`, `scene`, `tuning`, `metadata`) for later Worker-side
+  normalization.
+- **Assumption:** Authentication, when configured, is a bearer token supplied
+  through `CYPHERCLAW_LIVE_MIDI_TOKEN`; no provider secret or command string is
+  hardcoded in source.
+- **Candidate hardening:** The recurring SuperCollider feedback is unrelated
+  to the Python emitter scaffold, but existing `fx_bus_id` voice SynthDef tests
+  and `sw_sampler.scd` routing tests remain mandatory verification anchors.
+- **Dependencies and database changes:** No new dependencies, provider secrets,
+  database changes, runtime state directories, startup-flow rewiring,
+  Cloudflare Worker source changes, or composer integration are expected.
+- **Verification:** Red phase was confirmed with
+  `pytest tests/test_live_midi_emitter.py -q` failing on missing
+  `cypherclaw.live_midi_emitter` before implementation. After implementation,
+  the focused emitter suite passed with `8 passed`, touched Ruff passed,
+  touched mypy passed, the no-composer-integration check passed, and the
+  mandatory `fx_bus_id` / `sw_sampler.scd` hardening anchors passed with
+  `3 passed`. Required final validation passed with `5219 passed, 11 skipped`,
+  Ruff clean, and mypy clean.
+
 ## T-054d (2026-05-23)
 
 - **Reason:** Cross-repository Worker implementation and new Workers Vitest

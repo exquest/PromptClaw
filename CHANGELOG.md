@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Added T-053a live MIDI emitter scaffold:
+  `cypherclaw.live_midi_emitter` now provides typed live MIDI event payloads,
+  environment-backed config loading, a size/time batching queue, a stdlib
+  `urllib` JSON POST client for
+  `/api/cypherclaw/midi-event` with transient retry/backoff, and a graceful
+  shutdown daemon loop that flushes queued events. The new
+  `cypherclaw-live-midi-emitter` console script exposes the scaffold without
+  reading composer state or wiring live playback paths. Tests mock all HTTP
+  calls and pin config overrides, event validation, batch-size and time flush,
+  auth headers, retry behavior, non-retryable client errors, and shutdown
+  flushing. No new dependencies, no database changes, no provider secrets, no
+  Cloudflare Worker source changes, and no composer integration were added;
+  existing `fx_bus_id` and `sw_sampler.scd` routing hardening anchors remain
+  green. Final validation passed with `5219 passed, 11 skipped`, Ruff clean,
+  and mypy clean.
+
 - Added T-054d Workers-runtime live MIDI latency coverage to the holdenu
   Cloudflare Worker: a new `@cloudflare/vitest-pool-workers` Vitest test
   connects two WebSocket clients to `/api/cypherclaw/live-midi` through
