@@ -1,0 +1,24 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1363 chars)
+---
+
+## Readiness Report — T-057a: **BLOCKED**
+
+The lead work and verification artifact for T-057a were already committed as `6eff56a`. Re-probed the CypherClaw box now (2026-05-24 06:20 UTC) — state confirmed unchanged:
+
+**Code-side (PromptClaw repo): PASS**
+- CC-010..CC-017 (T-012..T-019, with subtask splits) all PASS per `progress.md`.
+- CC-102 (T-058a..d) PASS / PASS WITH NOTES per `sdp/run-log.md`.
+- Source + tests present: `src/cypherclaw/midi_intake_daemon.py`, `src/cypherclaw/midi_vocabulary_store.py`, and full pytest suite.
+
+**On-box (CypherClaw Linux): BLOCKED**
+- `/home/user/cypherclaw/midi-inbox/` — **missing**
+- `midi_intake_daemon.py` / `midi_vocabulary_store.py` — **not deployed** under `/home/user/cypherclaw/src/cypherclaw/`
+- No `midi_vocabulary.sqlite` anywhere on box
+- `midi_intake_daemon` systemd unit — **not present**
+- `cypherclaw.holdenu.com` returns 200 (composer reachable), but `cypherclaw-narrative-api.service` shows `inactive` on this probe (degraded from prior "running"); regardless, composer is running **without** MIDI-influenced vocabulary fragments because the SQLite store doesn't exist.
+- Seed MIDI cannot be staged — inbox dir absent.
+
+**Resolution path** (operator-only, already captured in `sdp/verification/t-057a-verify.md` and `ESCALATIONS.md`): deploy MIDI pipeline + systemd unit to box, seed known MIDI, bring composer up with v2 fragment-citation path engaged. T-057b inherits the same on-box producer-bring-up gap previously documented for T-056a / T-058b.
+
+No new uncommitted changes — verdict and artifact for T-057a stand as committed in `6eff56a`.
