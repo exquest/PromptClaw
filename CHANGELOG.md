@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Added T-021 Deniable Asset Bus image render entrypoint:
+  `tools/asset_render_image.py` now accepts the documented box-side argv
+  contract (`--prompt`, `--size WIDTHxHEIGHT`, optional `--seed`, optional
+  `--count`, and `--output-dir`), resolves it into typed render parameters,
+  and writes counted PNG outputs as `image-0.png`, `image-1.png`, etc. The
+  DreamShaper/Diffusers pipeline import stays lazy behind the default renderer
+  so smoke tests can run without a live CypherClaw box, CUDA, model weights, or
+  provider credentials. No new dependencies, provider secrets, database
+  columns, migrations, runtime state directories, startup-flow wiring, or
+  agent commands were added; the `fx_bus_id` and `sw_sampler.scd` hardening
+  anchors passed. Full validation passed with `5512 passed, 11 skipped`, Ruff
+  clean, and mypy clean.
+
 - Added T-015 Deniable Asset Bus continuous producer run mode:
   `run_asset_bus_producer(...)` now performs repeated
   `process_pending_requests_once(...)` passes on a configurable poll interval,

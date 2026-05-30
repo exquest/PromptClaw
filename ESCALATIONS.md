@@ -3213,3 +3213,21 @@ reasoning effor...
   now includes explicit `PRAGMA table_info(tasks)` and
   `PRAGMA table_info(task_runs)` snapshots to satisfy the SI-003 evidence form
   while preserving the PASS verdict.
+
+## T-021@20260530T002730Z (2026-05-30T00:27:30Z) — assumptions
+
+- **No questions asked per task rule.** Assumed the box-side image entrypoint
+  should use a minimal argv surface compatible with the existing asset-bus
+  `build_render_argv(...)` convention: `--prompt`, `--size`, `--seed`,
+  `--count`, and `--output-dir`.
+- **No new dependencies.** The default renderer wraps the existing
+  DreamShaper/Diffusers helper (`my-claw/tools/diffusion_art.py`) and imports
+  optional GPU libraries only through that existing pipeline.
+- **No database migration.** This task adds a standalone renderer CLI and tests;
+  it does not add or modify database columns.
+- **No live box/GPU execution in tests.** Smoke tests use an injected renderer
+  so CI does not require a CypherClaw box, CUDA, DreamShaper weights, or
+  provider credentials.
+- **Mandatory hardening anchors.** The recurring `fx_bus_id` and
+  `sw_sampler.scd` failure modes are handled by running the existing
+  SuperCollider routing contract tests during verification.

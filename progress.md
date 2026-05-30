@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~8h 46m remaining (38 tasks, low confidence, calibrating)
+ETC: ~8h 46m remaining (37 tasks, low confidence, calibrating)
 Expected completion: 6:14 AM tomorrow.
-Progress: [████████████████████████████████████░░] 93%  557 / 595 tasks complete
-  completed: 557, pending: 35, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 55
+Progress: [████████████████████████████████████░░] 93%  558 / 595 tasks complete
+  completed: 558, pending: 34, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 55
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -654,7 +654,7 @@ Progress: [███████████████████████
 - **T-018@20260530T002730Z**: pending — Pending.
 - **T-019@20260530T002730Z**: pending — Pending.
 - **T-020@20260530T002730Z**: pending — Pending.
-- **T-021@20260530T002730Z**: pending — Pending.
+- **T-021@20260530T002730Z**: complete — Completed with verdict PASS.
 - **T-022@20260530T002730Z**: pending — Pending.
 - **T-023@20260530T002730Z**: pending — Pending.
 
@@ -720,3 +720,71 @@ Progress: [███████████████████████
   `docs/command-reference.md`, `docs/startup-wizard.md`, `CHANGELOG.md`, and
   `ESCALATIONS.md` for the continuous producer run mode, poll interval
   behavior, no new dependencies, no database migration, and hardening anchors.
+
+## T-021@20260530T002730Z Phase 0 Explore
+
+- Reviewed the ADP task flow and the Deniable Asset Bus PRD/requester spec.
+  DAB-060 asks for `tools/asset_render_image.py` as a box render entrypoint:
+  args in, PNG(s) out, with a smoke test over documented argv parsing.
+- Read the asset-bus producer area: `render_args.py`, `runner.py`,
+  `remote_exec.py`, `producer.py`, `store.py`, `paths.py`, `limits.py`,
+  `capabilities.py`, `dispatch.py`, `renderers.py`, and `schema.py`. The
+  established pattern is an argv-list boundary with `--output-dir` appended by
+  the remote helper and no shell interpolation of request fields.
+- Reviewed related tests for render argv construction, fake/SSH runners,
+  producer polling, and Gemini image helper behavior. The new image tool should
+  expose parseable parameters without importing GPU libraries during tests.
+- Read the existing image generation area: `my-claw/tools/diffusion_art.py`,
+  `my-claw/tools/senseweave/pareidolia_diffusion.py`, and
+  `my-claw/tools/gemini_image.py`. The DreamShaper helper already exposes a
+  `generate(prompt, width, height, ...)` path suitable for a thin wrapper.
+- Confirmed root `tools/asset_render_image.py` is absent, so this task creates
+  it rather than modifying an existing entrypoint. No live box, GPU, new
+  dependency, provider secret, database migration, or startup-flow change is
+  needed.
+
+### Phase 1 Specify
+
+- Wrote `specs/t-021@20260530t002730z-spec.md` with problem statement,
+  technical approach, edge cases, and VERIFY commands for every acceptance
+  criterion.
+- Documented assumptions in `ESCALATIONS.md`, including no new dependencies,
+  no database migration, no live GPU requirement in tests, and mandatory
+  `fx_bus_id` / `sw_sampler.scd` hardening verification.
+
+### Phase 2 Test Development
+
+- Added locked smoke tests in `tests/test_asset_render_image.py` for documented
+  argv parsing, counted PNG writes through an injected renderer, and invalid
+  size/count parser failures.
+- Red phase confirmed:
+  `pytest tests/test_asset_render_image.py -q` failed with `FileNotFoundError`
+  for the absent `tools/asset_render_image.py` before implementation.
+
+### Phase 3 Implement
+
+- Added executable `tools/asset_render_image.py` with typed
+  `ImageRenderParams`, `parse_render_params(...)`, `render_images(...)`, and
+  `main(...)`.
+- The CLI accepts `--prompt`, `--size WIDTHxHEIGHT`, optional `--seed`,
+  optional `--count`, and required `--output-dir`; it writes stable
+  `image-<index>.png` files and keeps the DreamShaper import lazy behind the
+  default renderer.
+- Focused smoke tests now pass:
+  `pytest tests/test_asset_render_image.py -q` -> `7 passed`.
+
+### Phase 4 Verify & Document
+
+- Acceptance checks passed:
+  `pytest tests/test_asset_render_image.py -q` -> `7 passed`;
+  `python - <<'PY' ...` confirmed the wrapper references `diffusion_art` and
+  does not inline a `from_pretrained` pipeline.
+- Candidate hardening anchors passed:
+  `pytest tests/test_space_reverb_profiles.py::test_voice_synthdefs_declare_fx_bus_id_routing_contract tests/test_sw_sampler.py::TestRoutingAndFxSend -q`
+  -> `5 passed`.
+- Required validation passed:
+  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`
+  -> `5512 passed, 11 skipped`, Ruff clean, mypy clean.
+- Updated `CHANGELOG.md` and `ESCALATIONS.md` with the new
+  `asset_render_image.py` entrypoint, no new dependencies, no database
+  migration, no live GPU requirement for tests, and hardening-anchor evidence.
