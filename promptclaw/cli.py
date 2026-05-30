@@ -5,14 +5,18 @@ import json
 import sys
 from dataclasses import asdict
 from pathlib import Path
+from typing import Any
 
 from .asset_bus import (
+    CAPABILITIES,
+    ENV_VAR as ASSET_BUS_ENV_VAR,
     RendererMatrixError,
     RendererRegistry,
     SchemaError,
     load_renderer_matrix,
     process_pending_requests_once,
     resolve_bus_root,
+    run_asset_bus_producer,
     validate_request,
 )
 from .bootstrap import bootstrap_project, init_project
@@ -368,6 +372,58 @@ def build_parser() -> argparse.ArgumentParser:
         "--matrix",
         type=Path,
         help="Path to the renderer matrix JSON; defaults to an empty matrix",
+    )
+
+    asset_bus_run_parser = asset_bus_sub.add_parser(
+        "run",
+        help="Run the continuous producer loop, polling for new requests",
+    )
+    asset_bus_run_parser.add_argument(
+        "--bus-root",
+        type=Path,
+        help="Override the bus root; defaults to $DENIABLE_ASSET_BUS",
+    )
+    asset_bus_run_parser.add_argument(
+        "--matrix",
+        type=Path,
+        help="Path to the renderer matrix JSON; defaults to an empty matrix",
+    )
+    asset_bus_run_parser.add_argument(
+        "--poll-interval-s",
+        type=float,
+        default=5.0,
+        help="Seconds between polls of the requests directory (default: 5.0)",
+    )
+    asset_bus_run_parser.add_argument(
+        "--max-polls",
+        type=int,
+        default=None,
+        help="Stop after this many polls; defaults to unbounded (Ctrl-C to stop)",
+    )
+    asset_bus_run_parser.add_argument(
+        "--runner",
+        default="fake",
+        help="Name of the configured box runner (advisory; default: fake)",
+    )
+
+    asset_bus_doctor_parser = asset_bus_sub.add_parser(
+        "doctor",
+        help="Report bus paths, configured runner, and capability matrix; no work performed",
+    )
+    asset_bus_doctor_parser.add_argument(
+        "--bus-root",
+        type=Path,
+        help="Override the bus root; defaults to $DENIABLE_ASSET_BUS",
+    )
+    asset_bus_doctor_parser.add_argument(
+        "--matrix",
+        type=Path,
+        help="Path to the renderer matrix JSON; reported when supplied",
+    )
+    asset_bus_doctor_parser.add_argument(
+        "--runner",
+        default="fake",
+        help="Name of the configured box runner to report (default: fake)",
     )
 
     # --- coherence subcommand group ---
@@ -1345,11 +1401,100 @@ def cmd_asset_bus_once(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_asset_bus_run(args: argparse.Namespace) -> int:
+    from .asset_bus import RendererMatrix
+
+    bus_root: Path = (
+        args.bus_root.expanduser().absolute()
+        if args.bus_root is not None
+        else resolve_bus_root()
+    )
+    if args.matrix is not None:
+        try:
+            matrix = load_renderer_matrix(args.matrix)
+        except RendererMatrixError as exc:
+            print(f"asset-bus run: invalid matrix: {exc}", file=sys.stderr)
+            return 2
+    else:
+        matrix = RendererMatrix({})
+    registry = RendererRegistry()
+    try:
+        result = run_asset_bus_producer(
+            bus_root,
+            matrix=matrix,
+            registry=registry,
+            poll_interval_s=args.poll_interval_s,
+            max_polls=args.max_polls,
+        )
+    except ValueError as exc:
+        print(f"asset-bus run: {exc}", file=sys.stderr)
+        return 2
+    print(
+        json.dumps(
+            {
+                "polls": result.polls,
+                "processed": list(result.processed),
+                "failed": list(result.failed),
+                "partial": list(result.partial),
+                "skipped": list(result.skipped),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
+def cmd_asset_bus_doctor(args: argparse.Namespace) -> int:
+    bus_root: Path = (
+        args.bus_root.expanduser().absolute()
+        if args.bus_root is not None
+        else resolve_bus_root()
+    )
+    requests_dir = bus_root / "requests"
+    deliverables_dir = bus_root / "deliverables"
+
+    matrix_path: Path | None = args.matrix
+    matrix_entries: dict[str, str] | None = None
+    matrix_error: str | None = None
+    if matrix_path is not None:
+        try:
+            loaded = load_renderer_matrix(matrix_path)
+            matrix_entries = dict(loaded)
+        except RendererMatrixError as exc:
+            matrix_error = str(exc)
+
+    report: dict[str, Any] = {
+        "bus_paths": {
+            "bus_root": str(bus_root),
+            "requests_dir": str(requests_dir),
+            "deliverables_dir": str(deliverables_dir),
+            "bus_root_exists": bus_root.is_dir(),
+            "requests_dir_exists": requests_dir.is_dir(),
+            "deliverables_dir_exists": deliverables_dir.is_dir(),
+            "env_var": ASSET_BUS_ENV_VAR,
+        },
+        "runner": args.runner,
+        "capabilities": dict(CAPABILITIES),
+        "renderer_matrix": {
+            "path": str(matrix_path) if matrix_path is not None else None,
+            "entries": matrix_entries,
+            "error": matrix_error,
+        },
+    }
+    print(json.dumps(report, indent=2, sort_keys=True))
+    return 0
+
+
 def _dispatch_asset_bus(args: argparse.Namespace) -> int:
     if args.asset_bus_command == "validate":
         return cmd_asset_bus_validate(args)
     if args.asset_bus_command == "once":
         return cmd_asset_bus_once(args)
+    if args.asset_bus_command == "run":
+        return cmd_asset_bus_run(args)
+    if args.asset_bus_command == "doctor":
+        return cmd_asset_bus_doctor(args)
     return 2
 
 
