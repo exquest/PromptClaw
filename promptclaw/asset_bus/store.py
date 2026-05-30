@@ -16,18 +16,24 @@ loop needs: :func:`resolve_bus_root` and :func:`list_pending_requests`.
 
 from __future__ import annotations
 
+import hashlib
 import os
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 from .paths import UnsafePathError, sanitize_request_id
 
 __all__ = [
     "DEFAULT_BUS_ROOT",
     "ENV_VAR",
+    "asset_manifest_entry",
     "list_pending_requests",
     "resolve_bus_root",
 ]
+
+
+_HASH_CHUNK_BYTES: int = 1024 * 1024
 
 
 ENV_VAR: str = "DENIABLE_ASSET_BUS"
@@ -88,3 +94,50 @@ def list_pending_requests(bus_root: Path | str | None = None) -> list[str]:
 
     pending.sort()
     return pending
+
+
+def asset_manifest_entry(
+    asset_path: Path | str,
+    bus_root: Path | str,
+    *,
+    asset_type: str,
+    meta: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Return a manifest entry describing a produced asset.
+
+    The entry's ``path`` is the asset's location expressed as a POSIX-style
+    string relative to ``bus_root`` — manifests are portable across machines,
+    so absolute paths must not leak in. ``bytes`` is the file size and
+    ``sha256`` is a hex digest of its contents, both read from disk so the
+    manifest cannot disagree with what was actually written. ``meta`` is
+    passed through unchanged; callers own its shape.
+
+    Raises :class:`UnsafePathError` if ``asset_path`` is not located under
+    ``bus_root``.
+    """
+    root = Path(bus_root).expanduser().resolve()
+    asset = Path(asset_path).expanduser().resolve()
+    try:
+        relative = asset.relative_to(root)
+    except ValueError as exc:
+        raise UnsafePathError(
+            f"asset path {asset_path!r} is not under bus root {bus_root!r}"
+        ) from exc
+
+    size = asset.stat().st_size
+    digest = hashlib.sha256()
+    with open(asset, "rb") as handle:
+        while True:
+            chunk = handle.read(_HASH_CHUNK_BYTES)
+            if not chunk:
+                break
+            digest.update(chunk)
+
+    entry: dict[str, Any] = {
+        "path": relative.as_posix(),
+        "type": asset_type,
+        "bytes": size,
+        "sha256": digest.hexdigest(),
+        "meta": dict(meta) if meta is not None else {},
+    }
+    return entry

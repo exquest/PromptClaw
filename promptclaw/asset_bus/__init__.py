@@ -28,6 +28,7 @@ from .render_args import (
 from .store import (
     DEFAULT_BUS_ROOT,
     ENV_VAR,
+    asset_manifest_entry,
     list_pending_requests,
     resolve_bus_root,
 )
@@ -42,6 +43,7 @@ __all__ = [
     "CeilingExceededError",
     "RenderArgError",
     "UnsafePathError",
+    "asset_manifest_entry",
     "atomic_write_bytes",
     "atomic_write_text",
     "build_render_argv",
