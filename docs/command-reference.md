@@ -143,6 +143,20 @@ promptclaw show-config PROJECT_ROOT
 The resolved config still comes from `promptclaw.json`; the model summary path
 is an internal diagnostic projection and does not replace the source file.
 
+## Deniable Asset Bus Runner
+
+The asset-bus producer code uses `promptclaw.asset_bus.BoxRunner` rather than a
+shell command string. Unit tests use `FakeBoxRunner`; production can use
+`SSHBoxRunner(host=..., remote_output_root=...)` to invoke deployed CypherClaw
+renderers over SSH and pull output files back with `rsync`.
+
+`SSHBoxRunner.run(argv, output_dir=...)` expects a renderer argv list, sends
+that argv as JSON stdin to the fixed remote
+`promptclaw.asset_bus.remote_exec` helper, and calls both local `ssh` and
+`rsync` through argv-list `subprocess.run(..., shell=False)` invocations. The
+request prompt, scene, mood, and other request-derived strings do not appear in
+the SSH or transfer command line.
+
 ## `promptclaw pal`
 
 Call a configured PAL 2026 router from local tools.

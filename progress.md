@@ -627,3 +627,4 @@ Progress: [███████████████████████
 - **T-072**: pending — Pending.
 - **T-073**: pending — Pending.
 - **T-074**: pending — Pending.
+- **T-009@20260530T002730Z**: complete — Added `SSHBoxRunner` with argv-list `ssh`/`rsync`, JSON stdin for request argv, and locked tests asserting injection fixtures remain verbatim instead of shell-interpolated. Full validation passed with `5367 passed, 11 skipped`, Ruff clean, and mypy clean.

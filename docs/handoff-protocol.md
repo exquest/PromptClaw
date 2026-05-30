@@ -233,6 +233,14 @@ state, and the Vast connector boundary. The payload and route metadata record
 write `outputs/action-results.json` and does not expose a Phase 2 execution
 action for approval.
 
+The Deniable Asset Bus uses the same file-first handoff principle, but its
+transport is the bus directory rather than `.promptclaw/runs/`: request JSON is
+read from `requests/`, assets and manifests are written under `deliverables/`,
+and renderer execution is isolated behind `BoxRunner`. `SSHBoxRunner` preserves
+the handoff boundary by sending request argv as JSON stdin to the fixed remote
+`promptclaw.asset_bus.remote_exec` helper; neither the local `ssh` argv list nor
+the `rsync` transfer argv includes request-derived shell fragments.
+
 ## Benefits
 
 - deterministic transfer point

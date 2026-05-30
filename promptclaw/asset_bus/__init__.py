@@ -29,6 +29,7 @@ from .runner import (
     BoxRunner,
     BoxRunResult,
     FakeBoxRunner,
+    SSHBoxRunner,
 )
 from .store import (
     DEFAULT_BUS_ROOT,
@@ -52,6 +53,7 @@ __all__ = [
     "CeilingExceededError",
     "FakeBoxRunner",
     "RenderArgError",
+    "SSHBoxRunner",
     "UnsafePathError",
     "asset_manifest_entry",
     "atomic_write_bytes",

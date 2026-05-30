@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Added T-009 Deniable Asset Bus `SSHBoxRunner`: production renderer dispatch
+  can now invoke the fixed `promptclaw.asset_bus.remote_exec` helper over SSH,
+  serialize request-derived renderer argv as JSON stdin, execute the remote
+  renderer with `shell=False`, pull output files back with an argv-list `rsync`
+  transfer, and return local artifact paths in `BoxRunResult`. Tests lock the
+  injection fixture as one verbatim argv element and assert request text never
+  appears in the SSH or transfer command line. No new Python dependencies,
+  provider secrets, database changes, migrations, or startup-flow rewiring were
+  added. Full validation passed with `5367 passed, 11 skipped`, Ruff clean, and
+  mypy clean.
+
 - Added T-056a feature-1 reverb-spaces reference render orchestrator:
   `my-claw/tools/reverb_reference_render.py` wraps `live_reference_capture`
   with the `feature-1-reverb-spaces` prefix, defaults its staging directory to

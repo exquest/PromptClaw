@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import socket
+import subprocess
 from pathlib import Path
+from collections.abc import Sequence
 from typing import Any
 
 import pytest
@@ -12,6 +15,7 @@ from promptclaw.asset_bus import (
     BoxRunner,
     BoxRunResult,
     FakeBoxRunner,
+    SSHBoxRunner,
 )
 
 
@@ -97,3 +101,108 @@ def test_fake_box_runner_passes_stdout_and_stderr_through(tmp_path: Path) -> Non
 
     assert result.stdout == "rendered 1 image"
     assert result.stderr == "warning: clipped"
+
+
+def test_ssh_box_runner_invokes_ssh_and_rsync_as_argv_lists(tmp_path: Path) -> None:
+    output_dir = tmp_path / "deliverables"
+    calls: list[tuple[Sequence[str] | str, dict[str, Any]]] = []
+
+    def fake_run(
+        args: Sequence[str] | str,
+        **kwargs: Any,
+    ) -> subprocess.CompletedProcess[str]:
+        calls.append((args, kwargs))
+        assert isinstance(args, list)
+        assert kwargs.get("shell") is False
+        if args[0] == "rsync":
+            destination = Path(args[-1])
+            destination.mkdir(parents=True, exist_ok=True)
+            (destination / "image-0.png").write_bytes(b"fake-png")
+        return subprocess.CompletedProcess(args, 0, stdout="transport ok", stderr="")
+
+    runner = SSHBoxRunner(
+        host="cypherclaw",
+        remote_output_root="/tmp/deniable-asset-bus",
+        run_id_factory=lambda: "run-abc123",
+        subprocess_run=fake_run,
+    )
+
+    result = runner.run(["asset_render_image", "--prompt", "plain"], output_dir=output_dir)
+
+    assert calls[0][0] == [
+        "ssh",
+        "-o",
+        "BatchMode=yes",
+        "cypherclaw",
+        "python3",
+        "-m",
+        "promptclaw.asset_bus.remote_exec",
+        "--output-dir",
+        "/tmp/deniable-asset-bus/run-abc123",
+    ]
+    assert calls[1][0] == [
+        "rsync",
+        "-a",
+        "--",
+        "cypherclaw:/tmp/deniable-asset-bus/run-abc123/",
+        f"{output_dir}/",
+    ]
+    assert result.exit_status == 0
+    assert result.artifacts == (output_dir / "image-0.png",)
+
+
+def test_ssh_box_runner_serializes_injection_fixture_as_verbatim_argv_element(
+    tmp_path: Path,
+) -> None:
+    calls: list[tuple[Sequence[str] | str, dict[str, Any]]] = []
+
+    def fake_run(
+        args: Sequence[str] | str,
+        **kwargs: Any,
+    ) -> subprocess.CompletedProcess[str]:
+        calls.append((args, kwargs))
+        assert isinstance(args, list)
+        assert kwargs.get("shell") is False
+        return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+    argv = ["asset_render_music", "--scene", INJECTION_FIXTURE, "--duration", "30"]
+    runner = SSHBoxRunner(
+        host="cypherclaw",
+        remote_output_root="/tmp/deniable-asset-bus",
+        run_id_factory=lambda: "run-injection",
+        subprocess_run=fake_run,
+    )
+
+    runner.run(argv, output_dir=tmp_path / "deliverables")
+
+    ssh_args, ssh_kwargs = calls[0]
+    rsync_args, _ = calls[1]
+    assert isinstance(ssh_args, list)
+    assert isinstance(rsync_args, list)
+    assert all(INJECTION_FIXTURE not in arg for arg in ssh_args)
+    assert all(INJECTION_FIXTURE not in arg for arg in rsync_args)
+    payload = json.loads(ssh_kwargs["input"])
+    assert payload["argv"] == argv
+    assert payload["argv"].count(INJECTION_FIXTURE) == 1
+
+
+def test_ssh_box_runner_rejects_invalid_argv_before_subprocess(tmp_path: Path) -> None:
+    calls: list[tuple[Sequence[str] | str, dict[str, Any]]] = []
+
+    def fake_run(
+        args: Sequence[str] | str,
+        **kwargs: Any,
+    ) -> subprocess.CompletedProcess[str]:
+        calls.append((args, kwargs))
+        return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+    runner = SSHBoxRunner(
+        host="cypherclaw",
+        remote_output_root="/tmp/deniable-asset-bus",
+        subprocess_run=fake_run,
+    )
+
+    with pytest.raises(ValueError, match="NUL"):
+        runner.run(["asset_render_image", "bad\x00value"], output_dir=tmp_path)
+
+    assert calls == []

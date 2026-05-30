@@ -1,5 +1,21 @@
 # Escalations
 
+## T-009@20260530T002730Z (2026-05-30)
+
+- **Reason:** Production deployment assumption for the new Deniable Asset Bus
+  SSH transport.
+- **Assumption:** `SSHBoxRunner` uses only stdlib Python plus existing system
+  `ssh` and `rsync` binaries. The remote CypherClaw environment must have the
+  PromptClaw package revision containing `promptclaw.asset_bus.remote_exec`
+  installed or available on `PYTHONPATH` before live asset-bus SSH rendering is
+  enabled.
+- **No new dependencies:** No Python package, provider secret, database column,
+  migration, startup-flow wiring, or agent command was added for this task.
+- **Candidate hardening:** The generated startup identity bullets are unrelated
+  to the asset-bus transport implementation. This task treats the existing CLI,
+  daemon-ordering, standalone/federated persistence, and narrative ASGI startup
+  identity tests as mandatory verification anchors.
+
 ## T-056b (2026-05-23) — BLOCKING (code complete, upload deferred)
 
 - **Task:** Upload the rendered sample via `session_archiver.py` to
