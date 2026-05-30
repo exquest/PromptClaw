@@ -160,6 +160,68 @@ When done (or failed), producer writes `deliverables/<request_id>.result.json` (
 - **CypherClaw (producer):** pick up requests, route image→DreamShaper, music→synthesis render,
   fulfill, write assets + manifest atomically. Transport to/from the box is the producer's concern.
 
+## Producer (CypherClaw side)
+
+The producer is implemented in `promptclaw.asset_bus` and driven through the
+`promptclaw asset-bus` CLI. The requester never calls these — they're documented
+here so operators on the CypherClaw box know what to run and so future renderers
+plug into a known surface.
+
+### CLI surface
+
+```
+promptclaw asset-bus validate <request.json>   # lint a request against v0.1
+promptclaw asset-bus once                      # one pass over pending requests
+promptclaw asset-bus run                       # poll loop (default 5s interval)
+promptclaw asset-bus doctor                    # check bus root, renderers, perms
+```
+
+`once` and `run` share the same engine: snapshot pending request ids, process
+each independently, and write a manifest. `run` adds a poll interval and an
+optional bound (`--max-polls`) for smoke runs.
+
+### Processing model
+
+1. Snapshot `requests/*.json` into a list of pending ids.
+2. For each id: read the request, dispatch on `asset_type` through the
+   capability matrix to the registered renderer, write asset files into
+   `deliverables/<request_id>/`, then atomically write
+   `deliverables/<request_id>.result.json`.
+3. Per-request errors never abort the batch. A renderer exception is converted
+   into a v0.1 `error` manifest so the requester still gets a verdict on that
+   `request_id`, and the loop continues.
+4. Idempotency is enforced by the presence of `<request_id>.result.json` — a
+   second pass over the same id is a no-op.
+
+### Renderer registry and capability matrix
+
+- The **capability matrix** (`RendererMatrix`) is the source of truth for which
+  `asset_type` values are currently producible. It mirrors the table above and
+  is what `doctor` reports against.
+- The **renderer registry** maps an `asset_type` to a callable that produces the
+  asset files and returns a manifest fragment (`assets`, `status`, `notes`,
+  `error`). Today: `image` → DreamShaper 8 render, `music` → ambient synthesis
+  render. `sfx` is experimental; `voiceover` returns `deferred`.
+- Adding a new renderer is a registry entry plus a matrix update. Nothing in
+  the request/manifest schema changes.
+
+### Manifest guarantees
+
+- Always written atomically (`*.tmp` then rename) so the requester never sees a
+  partial JSON file.
+- `schema` is always `deniable-asset-bus/v0.1`.
+- `producer` is always `cypherclaw`.
+- `status` is one of `done | partial | error | deferred`; `partial` carries
+  whatever assets did land plus a `notes`/`error` explanation.
+
+### Transport
+
+Today the bus root lives on the CypherClaw box; the requester's laptop reaches
+it via the producer's chosen path (ssh/rsync, mounted share, or eventual
+federation `task_delegate` hop). The CLI does not care which — it operates on
+whatever `DENIABLE_ASSET_BUS` resolves to locally. Swapping the transport never
+touches this spec.
+
 ## Versioning
 
 `schema: "deniable-asset-bus/v0.1"`. Additive changes bump the minor; breaking changes bump the
