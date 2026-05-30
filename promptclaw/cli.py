@@ -6,7 +6,15 @@ import sys
 from dataclasses import asdict
 from pathlib import Path
 
-from .asset_bus import SchemaError, validate_request
+from .asset_bus import (
+    RendererMatrixError,
+    RendererRegistry,
+    SchemaError,
+    load_renderer_matrix,
+    process_pending_requests_once,
+    resolve_bus_root,
+    validate_request,
+)
 from .bootstrap import bootstrap_project, init_project
 from .config import load_config
 from .diagnostics import diagnose, format_diagnosis
@@ -345,6 +353,21 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         type=Path,
         help="Path to a requests/<request_id>.json file",
+    )
+
+    asset_bus_once_parser = asset_bus_sub.add_parser(
+        "once",
+        help="Process every pending request in one pass and write its manifest",
+    )
+    asset_bus_once_parser.add_argument(
+        "--bus-root",
+        type=Path,
+        help="Override the bus root; defaults to $DENIABLE_ASSET_BUS",
+    )
+    asset_bus_once_parser.add_argument(
+        "--matrix",
+        type=Path,
+        help="Path to the renderer matrix JSON; defaults to an empty matrix",
     )
 
     # --- coherence subcommand group ---
@@ -1287,9 +1310,46 @@ def cmd_asset_bus_validate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_asset_bus_once(args: argparse.Namespace) -> int:
+    from .asset_bus import RendererMatrix
+
+    bus_root: Path = (
+        args.bus_root.expanduser().absolute()
+        if args.bus_root is not None
+        else resolve_bus_root()
+    )
+    if args.matrix is not None:
+        try:
+            matrix = load_renderer_matrix(args.matrix)
+        except RendererMatrixError as exc:
+            print(f"asset-bus once: invalid matrix: {exc}", file=sys.stderr)
+            return 2
+    else:
+        matrix = RendererMatrix({})
+    registry = RendererRegistry()
+    result = process_pending_requests_once(
+        bus_root, matrix=matrix, registry=registry
+    )
+    print(
+        json.dumps(
+            {
+                "processed": list(result.processed),
+                "failed": list(result.failed),
+                "partial": list(result.partial),
+                "skipped": list(result.skipped),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
 def _dispatch_asset_bus(args: argparse.Namespace) -> int:
     if args.asset_bus_command == "validate":
         return cmd_asset_bus_validate(args)
+    if args.asset_bus_command == "once":
+        return cmd_asset_bus_once(args)
     return 2
 
 
