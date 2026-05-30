@@ -8,7 +8,9 @@ from .atomic import (
 from .capabilities import (
     CAPABILITIES,
     CapabilityStatus,
+    build_deferred_manifest,
     capability_for,
+    is_deferred,
 )
 from .limits import (
     MAX_IMAGES_PER_REQUEST,
@@ -65,11 +67,13 @@ __all__ = [
     "asset_manifest_entry",
     "atomic_write_bytes",
     "atomic_write_text",
+    "build_deferred_manifest",
     "build_render_argv",
     "capability_for",
     "check_request_within_ceilings",
     "deliverable_dir",
     "error_manifest_for_ceiling",
+    "is_deferred",
     "list_pending_requests",
     "process_request_if_pending",
     "resolve_bus_root",
