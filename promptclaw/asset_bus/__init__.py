@@ -25,6 +25,11 @@ from .render_args import (
     build_render_argv,
     to_render_arg,
 )
+from .runner import (
+    BoxRunner,
+    BoxRunResult,
+    FakeBoxRunner,
+)
 from .store import (
     DEFAULT_BUS_ROOT,
     ENV_VAR,
@@ -42,7 +47,10 @@ __all__ = [
     "MAX_MUSIC_DURATION_SECONDS",
     "MAX_TOTAL_OUTPUT_BYTES",
     "TMP_SUFFIX",
+    "BoxRunResult",
+    "BoxRunner",
     "CeilingExceededError",
+    "FakeBoxRunner",
     "RenderArgError",
     "UnsafePathError",
     "asset_manifest_entry",
