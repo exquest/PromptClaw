@@ -1,6 +1,34 @@
 # Escalations
 
-## T-015@20260530T002730Z (2026-05-30)
+## T-015@20260530T002730Z (2026-05-30) — HALT REQUEST (pair-rotate retries exhausted)
+
+- **Status:** Implementation and verification complete. Three independent
+  PASS verifications committed (`928ab61`, `aabc0da`, `3ebcf89`). Pair-rotate
+  was invoked a fourth time with "retries exhausted" despite no remaining
+  blocking issues from any prior verifier.
+- **Root cause of the retry loop:** two known verifier false positives, not
+  code defects.
+  1. **SI-003 migration-evidence rule** keeps firing because the spec
+     (line 80) contains the negative assertion *"no database migration"*.
+     The rule scans for the token "migration" without distinguishing
+     positive declarations from negations. T-015 adds zero database
+     columns and zero migrations — no `PRAGMA table_info` / `\d <table>`
+     evidence can exist because no schema changed. Documented previously
+     under memory `project_sdp_si003_false_positive`.
+  2. **Candidate hardening bullets** about SuperCollider `fx_bus_id` /
+     `sw_sampler.scd` are auto-generated from cross-project failure
+     patterns and are entirely outside T-015's surface (asset-bus
+     Python producer run mode). The hardening anchors test suite still
+     passes (`5 passed`), but these bullets should not gate this task.
+  3. **`bootstrap_identity` startup wiring bullets** — three verifiers
+     in a row have confirmed this is already correctly wired via
+     `cli.py:main()` and is unrelated to T-015's scope.
+- **Standing request:** halt T-015 dispatch. Accept the third-pass
+  verifier's PASS as final. If the verifier-rule false positives keep
+  surfacing on adjacent asset-bus tasks (T-016+), file a focused task
+  to update the SI-003 rule to ignore negative-assertion contexts.
+
+### Original assumptions (preserved for record)
 
 - **Reason:** No-questions task assumptions for DAB-042 continuous producer
   run mode.
