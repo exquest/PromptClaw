@@ -161,6 +161,15 @@ can supply a `RendererMatrix` and `RendererRegistry` so the function reads the
 request file, uses matrix/registry dispatch, and atomically writes the returned
 result manifest.
 
+The programmatic continuous run mode is
+`promptclaw.asset_bus.run_asset_bus_producer(...)`. It performs one immediate
+batch pass, sleeps for the configured poll interval, and then polls again so
+newly arrived requests are processed without restarting the producer. Tests and
+smoke harnesses can pass `max_polls` plus an injected clock; production callers
+leave `max_polls` unset and stop the loop through process control or a supplied
+stop predicate. The future `promptclaw asset-bus run` CLI is a separate command
+slice.
+
 `SSHBoxRunner.run(argv, output_dir=...)` expects a renderer argv list, sends
 that argv as JSON stdin to the fixed remote
 `promptclaw.asset_bus.remote_exec` helper, and calls both local `ssh` and

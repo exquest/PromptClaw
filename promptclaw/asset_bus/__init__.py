@@ -29,9 +29,13 @@ from .limits import (
 )
 from .producer import (
     BatchProcessResult,
+    ProducerClock,
+    ProducerRunResult,
+    SystemProducerClock,
     build_error_manifest,
     build_partial_manifest,
     process_pending_requests_once,
+    run_asset_bus_producer,
 )
 from .paths import (
     UnsafePathError,
@@ -80,12 +84,15 @@ __all__ = [
     "CapabilityStatus",
     "CeilingExceededError",
     "FakeBoxRunner",
+    "ProducerClock",
+    "ProducerRunResult",
     "RenderArgError",
     "Renderer",
     "RendererMatrix",
     "RendererMatrixError",
     "RendererRegistry",
     "SSHBoxRunner",
+    "SystemProducerClock",
     "UnknownAssetTypeError",
     "UnknownRendererError",
     "UnsafePathError",
@@ -108,6 +115,7 @@ __all__ = [
     "process_request_if_pending",
     "resolve_bus_root",
     "result_manifest_path",
+    "run_asset_bus_producer",
     "safe_deliverable_path",
     "sanitize_request_id",
     "sanitize_target_path",

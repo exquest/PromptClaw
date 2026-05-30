@@ -11,10 +11,11 @@ converted into a v0.1 ``error`` manifest so the requester still gets a verdict.
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+import time
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Protocol
 
 from .atomic import atomic_write_text
 from .capabilities import RendererMatrix
@@ -30,9 +31,13 @@ from .store import (
 
 __all__ = [
     "BatchProcessResult",
+    "ProducerClock",
+    "ProducerRunResult",
+    "SystemProducerClock",
     "build_error_manifest",
     "build_partial_manifest",
     "process_pending_requests_once",
+    "run_asset_bus_producer",
 ]
 
 
@@ -50,6 +55,44 @@ class BatchProcessResult:
     failed: tuple[str, ...] = ()
     skipped: tuple[str, ...] = ()
     partial: tuple[str, ...] = field(default=())
+
+
+class ProducerClock(Protocol):
+    """Clock boundary used by the continuous producer loop."""
+
+    def sleep(self, seconds: float) -> None: ...
+
+
+@dataclass(frozen=True)
+class SystemProducerClock:
+    """Real clock implementation for production producer runs."""
+
+    def sleep(self, seconds: float) -> None:
+        time.sleep(seconds)
+
+
+@dataclass(frozen=True)
+class ProducerRunResult:
+    """Summary of a bounded producer run."""
+
+    polls: int = 0
+    batches: tuple[BatchProcessResult, ...] = ()
+
+    @property
+    def processed(self) -> tuple[str, ...]:
+        return tuple(request_id for batch in self.batches for request_id in batch.processed)
+
+    @property
+    def failed(self) -> tuple[str, ...]:
+        return tuple(request_id for batch in self.batches for request_id in batch.failed)
+
+    @property
+    def skipped(self) -> tuple[str, ...]:
+        return tuple(request_id for batch in self.batches for request_id in batch.skipped)
+
+    @property
+    def partial(self) -> tuple[str, ...]:
+        return tuple(request_id for batch in self.batches for request_id in batch.partial)
 
 
 def build_error_manifest(
@@ -194,3 +237,48 @@ def process_pending_requests_once(
         skipped=tuple(skipped),
         partial=tuple(partial),
     )
+
+
+def run_asset_bus_producer(
+    bus_root: Path | str | None = None,
+    *,
+    matrix: RendererMatrix,
+    registry: RendererRegistry,
+    poll_interval_s: float = 5.0,
+    clock: ProducerClock | None = None,
+    max_polls: int | None = None,
+    stop: Callable[[], bool] | None = None,
+) -> ProducerRunResult:
+    """Poll the bus continuously and process newly arrived requests.
+
+    The loop performs one immediate poll, sleeps ``poll_interval_s`` between
+    polls through ``clock``, and delegates all request work to
+    :func:`process_pending_requests_once`. ``max_polls`` bounds the loop for
+    tests and smoke invocations; ``None`` runs until interrupted or until
+    ``stop`` returns ``True``.
+    """
+    if poll_interval_s <= 0:
+        raise ValueError("poll_interval_s must be positive")
+    if max_polls is not None and max_polls <= 0:
+        raise ValueError("max_polls must be positive when supplied")
+
+    root = resolve_bus_root() if bus_root is None else Path(bus_root).expanduser().absolute()
+    active_clock: ProducerClock = clock if clock is not None else SystemProducerClock()
+    batches: list[BatchProcessResult] = []
+
+    while max_polls is None or len(batches) < max_polls:
+        if stop is not None and stop():
+            break
+
+        batches.append(
+            process_pending_requests_once(root, matrix=matrix, registry=registry)
+        )
+
+        if max_polls is not None and len(batches) >= max_polls:
+            break
+        if stop is not None and stop():
+            break
+
+        active_clock.sleep(poll_interval_s)
+
+    return ProducerRunResult(polls=len(batches), batches=tuple(batches))

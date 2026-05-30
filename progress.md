@@ -660,7 +660,7 @@ Progress: [███████████████████████
 - **T-013@20260530T002730Z**: in_progress — Producer batch pass implemented;
   focused TDD coverage and full validation passed; ready for verifier.
 - **T-014@20260530T002730Z**: pending — Pending.
-- **T-015@20260530T002730Z**: pending — Pending.
+- **T-015@20260530T002730Z**: in_progress — Continuous producer run mode implemented; focused tests and full validation passed; ready for verifier.
 - **T-016@20260530T002730Z**: pending — Pending.
 - **T-017@20260530T002730Z**: split — Split into subtasks.
 - **T-017@20260530T002730Za**: pending — Pending.
@@ -740,3 +740,61 @@ Progress: [███████████████████████
 - Updated `docs/architecture.md`, `docs/handoff-protocol.md`,
   `docs/command-reference.md`, `docs/startup-wizard.md`, and `CHANGELOG.md`
   for the request-processing matrix/registry dispatch boundary.
+
+## T-015@20260530T002730Z Phase 0 Explore
+
+- Reviewed the active ADP pattern in prior specs: the task prompt's Explore ->
+  Specify -> Test -> Implement -> Verify -> Document workflow is the source of
+  truth for this slice.
+- Read the Deniable Asset Bus requester spec, producer PRD, requirements
+  register, and implementation plan. DAB-042 is the continuous producer run
+  mode; DAB-052 / T-020 owns the later `promptclaw asset-bus run` CLI.
+- Read the Deniable Asset Bus docs and producer code. The established boundary
+  is `process_pending_requests_once(...)` above
+  `process_request_if_pending(...)`, with request enumeration, dispatch,
+  idempotency, and error/partial manifest handling already covered.
+- Reviewed asset-bus tests for store enumeration, idempotency, dispatch,
+  producer batch behavior, runner transport, and status classification. The new
+  continuous producer run mode should exercise a newly arrived request through
+  the existing batch path using an injected clock instead of real sleeping.
+
+### Phase 1 Specify
+
+- Wrote `specs/t-015@20260530t002730z-spec.md` with problem statement,
+  technical approach, edge cases, and VERIFY commands for each acceptance
+  criterion.
+- Documented no-questions assumptions in `ESCALATIONS.md`: no new dependencies,
+  no database migration, no CLI command in this slice, and `fx_bus_id` /
+  `sw_sampler.scd` are mandatory hardening anchors.
+
+### Phase 2 Test Development
+
+- Added locked coverage in `tests/test_asset_bus_producer_run.py` for the
+  continuous producer run mode.
+- Red phase confirmed:
+  `pytest tests/test_asset_bus_producer_run.py::test_run_asset_bus_producer_processes_request_added_after_interval -q`
+  failed on the missing `run_asset_bus_producer` export before implementation.
+
+### Phase 3 Implement
+
+- Added `run_asset_bus_producer(...)`, `ProducerClock`,
+  `SystemProducerClock`, and `ProducerRunResult`.
+- The run mode performs one immediate batch pass, sleeps on the configured poll
+  interval through the injected clock, and polls again so newly arrived
+  requests are processed by `process_pending_requests_once(...)`.
+
+### Phase 4 Verify & Document
+
+- Focused producer run and adjacent producer tests passed:
+  `pytest tests/test_asset_bus_producer.py tests/test_asset_bus_producer_status.py tests/test_asset_bus_process_dispatch.py tests/test_asset_bus_producer_run.py -q`
+  -> `12 passed`.
+- Candidate hardening anchors passed:
+  `pytest tests/test_space_reverb_profiles.py::test_voice_synthdefs_declare_fx_bus_id_routing_contract tests/test_sw_sampler.py::TestRoutingAndFxSend -q`
+  -> `5 passed`.
+- Required validation passed:
+  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`
+  -> `5424 passed, 11 skipped`, Ruff clean, mypy clean.
+- Updated `docs/architecture.md`, `docs/handoff-protocol.md`,
+  `docs/command-reference.md`, `docs/startup-wizard.md`, `CHANGELOG.md`, and
+  `ESCALATIONS.md` for the continuous producer run mode, poll interval
+  behavior, no new dependencies, no database migration, and hardening anchors.

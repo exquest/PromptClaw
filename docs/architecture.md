@@ -118,6 +118,13 @@ when dispatch mode is used, and invokes matrix/registry dispatch through
 `RendererMatrix`, `RendererRegistry`, and `dispatch_request(...)` before writing
 the returned manifest atomically.
 
+`run_asset_bus_producer(...)` is the continuous producer run mode. It performs
+one immediate batch pass, sleeps for the configured poll interval through a
+small clock boundary, and repeats until interrupted, a stop predicate fires, or
+an optional poll limit is reached. Requests that arrive during the sleep are
+therefore picked up by the next pass while the batch logic and manifest
+classification stay centralized in `process_pending_requests_once(...)`.
+
 `SSHBoxRunner` keeps request-derived strings out of shell command lines. The
 local `ssh` invocation is an argv list that calls the fixed
 `promptclaw.asset_bus.remote_exec` helper; the renderer argv is JSON stdin, and

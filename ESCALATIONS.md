@@ -1,5 +1,31 @@
 # Escalations
 
+## T-015@20260530T002730Z (2026-05-30)
+
+- **Reason:** No-questions task assumptions for DAB-042 continuous producer
+  run mode.
+- **Assumption:** This slice implements the producer run mode as a programmatic
+  `run_asset_bus_producer(...)` loop above `process_pending_requests_once(...)`.
+  The PRD lists CLI wiring (`promptclaw asset-bus run` and `doctor`) as the
+  later DAB-052 / T-020 requirement, so no CLI command is added here.
+- **Assumption:** "Injected clock" means a small sleep boundary that tests can
+  replace to advance one poll interval and add a request without real sleeping.
+- **No new dependencies:** No Python package, provider secret, database column,
+  database migration, runtime state directory, startup-flow wiring, or agent
+  command is added for this task.
+- **Candidate hardening:** The recurring SuperCollider `fx_bus_id` synthdef
+  parameter and `sw_sampler.scd` `fx_bus_id` routing failures are outside this
+  asset-bus Python implementation surface but remain mandatory verification
+  anchors.
+- **Validation:** Red phase was confirmed with
+  `pytest tests/test_asset_bus_producer_run.py::test_run_asset_bus_producer_processes_request_added_after_interval -q`
+  failing on the missing `run_asset_bus_producer` export before
+  implementation. Focused producer run and adjacent producer tests passed with
+  `12 passed`, hardening anchors passed with `5 passed`, and the required
+  validation command
+  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`
+  passed with `5424 passed, 11 skipped`, Ruff clean, and mypy clean.
+
 ## T-013@20260530T002730Z (2026-05-30)
 
 - **Reason:** No-questions task assumptions for DAB-040 producer batch

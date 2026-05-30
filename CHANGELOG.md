@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Added T-015 Deniable Asset Bus continuous producer run mode:
+  `run_asset_bus_producer(...)` now performs repeated
+  `process_pending_requests_once(...)` passes on a configurable poll interval,
+  uses an injectable clock for deterministic tests, and returns a typed
+  `ProducerRunResult` summary for bounded runs. New locked coverage starts with
+  an empty poll, writes a request during the injected interval, and verifies the
+  next poll processes the newly arrived request through the existing batch
+  path. No new dependencies, provider secrets, database columns, database
+  migrations, runtime state directories, startup-flow wiring, or agent commands
+  were added; the `fx_bus_id` and `sw_sampler.scd` hardening anchors passed.
+  Full validation passed with `5424 passed, 11 skipped`, Ruff clean, and mypy
+  clean.
+
 - Added T-013 Deniable Asset Bus producer batch processing:
   `process_pending_requests_once(...)` now snapshots all pending requests for
   one pass, delegates each request id through the existing idempotent

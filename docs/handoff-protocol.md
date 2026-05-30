@@ -249,6 +249,10 @@ per-request failure, and continues with the rest of the batch. The
 single-request helper still owns the first request-processing hop after the
 idempotency check: it can read `requests/<request_id>.json`, route it through
 matrix/registry dispatch, and atomically publish the returned result manifest.
+The continuous producer run mode,
+`promptclaw.asset_bus.run_asset_bus_producer(...)`, wraps that batch primitive
+with an interval sleep so requests that arrive after one snapshot are picked up
+on the next poll without changing the filesystem handoff contract.
 
 ## Benefits
 
