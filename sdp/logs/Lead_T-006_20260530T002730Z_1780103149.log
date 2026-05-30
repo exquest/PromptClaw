@@ -1,0 +1,11 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1380 chars)
+---
+
+T-006 committed as `5ee3ea1`.
+
+- `promptclaw/asset_bus/store.py`: added `asset_manifest_entry(asset_path, bus_root, *, asset_type, meta=None)` — streams the file in 1 MiB chunks, returns `{path, type, bytes, sha256, meta}` with `path` as a POSIX-style bus-root-relative string. Rejects assets outside the bus root with `UnsafePathError`.
+- `promptclaw/asset_bus/__init__.py`: exports the new function.
+- `tests/test_asset_bus_manifest_entry.py`: 9 tests covering fixture-byte sha256/size, relative path shape, nested paths, string-path inputs, meta passthrough + defensive copy, empty file, outside-root rejection, and chunked hashing of >1 MiB payloads.
+
+All 65 asset-bus tests pass; ruff and mypy clean.

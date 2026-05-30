@@ -569,3 +569,17 @@
 | run-t-056b-1779599617 | T-056b | claude | gemini | PASS WITH NOTES | 642.8s | — |
 | run-t-056c-1779600285 | T-056c | claude | gemini | PASS WITH NOTES | 901.0s | — |
 | run-t-056d-1779601215 | T-056d | claude | gemini | PASS | 1223.5s | — |
+| run-t-057a-1779602469 | T-057a | claude | gemini | UNPARSEABLE | 1488.6s | — |
+| run-t-057b-1779603988 | T-057b | codex | gemini | — | 0.0s | — |
+| run-t-001@20260530t002730z-1780101233 | T-001@20260530T002730Z | claude | gemini | PASS | 266.9s | — |
+| run-t-002@20260530t002730z-1780101530 | T-002@20260530T002730Z | claude | gemini | PASS | 362.0s | — |
+| run-t-003@20260530t002730z-1780101917 | T-003@20260530T002730Z | claude | gemini | PASS | 463.0s | — |
+| run-t-004@20260530t002730z-1780102405 | T-004@20260530T002730Z | claude | gemini | PASS | 333.8s | — |
+| run-t-005@20260530t002730z-1780102766 | T-005@20260530T002730Z | claude | gemini | PASS | 299.7s | — |
+| run-t-006@20260530t002730z-1780103100 | T-006@20260530T002730Z | claude | gemini | PASS | 314.8s | — |
+| run-t-007@20260530t002730z-1780103439 | T-007@20260530T002730Z | claude | gemini | PASS | 268.1s | — |
+| run-t-008@20260530t002730z-1780103732 | T-008@20260530T002730Z | claude | gemini | PASS | 273.5s | — |
+| run-t-009@20260530t002730z-1780104030 | T-009@20260530T002730Z | codex | claude | PASS | 1086.0s | — |
+| run-t-010@20260530t002730z-1780105144 | T-010@20260530T002730Z | claude | gemini | PASS | 352.1s | — |
+| run-t-011@20260530t002730z-1780105528 | T-011@20260530T002730Z | claude | gemini | PASS | 490.2s | — |
+| run-t-012@20260530t002730za-1780106055 | T-012@20260530T002730Za | claude | gemini | PASS | 322.4s | — |

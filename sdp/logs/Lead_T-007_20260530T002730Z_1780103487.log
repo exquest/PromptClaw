@@ -1,0 +1,10 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1334 chars)
+---
+
+T-007 done. Added two functions to `promptclaw/asset_bus/store.py`:
+
+- `result_manifest_path(bus_root, request_id)` — canonicalizes `<bus_root>/deliverables/<request_id>.result.json` with request-id sanitization.
+- `process_request_if_pending(bus_root, request_id, render)` — runs `render` and atomically writes its returned manifest, but only if no result manifest exists. Returns `True` if rendered, `False` if skipped.
+
+Regression coverage in `tests/test_asset_bus_idempotency.py` includes the headline AC (second pass invokes no render, leaves manifest bytes + mtime unchanged), plus path safety and renderer-error propagation. Validation: 72 asset-bus tests pass, ruff clean, mypy clean.

@@ -1,415 +1,269 @@
-# PRD Snapshot - PAL 2026 Agentic Operations Platform PRD
-**Source:** `sdp/prd-pal-2026-agentic-ops-platform.md`
-**SHA-256:** `052b6771b0089e7dcff49c213fed78926f368fd218e4c1572b81eafc6f337bbc`
-**Captured:** 2026-05-15T21:42:33.420199+00:00
+# PRD Snapshot - Deniable Asset Bus — Producer Side PRD
+**Source:** `sdp/prd-deniable-asset-bus-2026-05-29.md`
+**SHA-256:** `758dc43a4c0a330cab2791b9ba86f6ff99f71f44847928e9c40b9b830f2af8a7`
+**Captured:** 2026-05-30T00:28:46.954960+00:00
 
 ---
-# PAL 2026 Agentic Operations Platform PRD
+# Deniable Asset Bus — Producer Side PRD
 
-**Project:** PromptClaw / PAL 2026
+**Project:** PromptClaw / Deniable Asset Bus
 **Version:** 1.0
-**Date:** 2026-05-15
+**Date:** 2026-05-29
 **SDP Protocol:** v1.0
 **Primary repo:** `/Users/anthony/Programming/PromptClaw`
-**PAL project root:** `pal-2026/`
-**Live PAL target:** Vast.ai A6000 node `pal-cloud-a6000` over Tailscale
-**Current model substrate:** Ollama `llama3.3:70b-instruct-q4_K_M` plus `nomic-embed-text`
+**Deploy target:** cypherclaw box at `/home/user/cypherclaw/` (reachable via Tailscale SSH) — render workers only
+**Requester contract (frozen):** `docs/deniable-asset-bus-spec.md` (`schema: deniable-asset-bus/v0.1`)
 
 ---
 
 ## Overview
 
-PAL 2026 Phase 1 is already online as a basic inference and operations target:
+A sibling agent is building a game, **Deniable**, that needs generated assets — images,
+music, voiceover, sfx — produced by CypherClaw. The **requester** contract is already
+specified and frozen in `docs/deniable-asset-bus-spec.md`: the Deniable agent writes a JSON
+request file to `requests/<request_id>.json` and polls for `deliverables/<request_id>.result.json`.
 
-- A Vast.ai A6000 host is reachable over Tailscale as `pal-cloud-a6000`.
-- The FastAPI router is reachable at `http://pal-cloud-a6000:8000`.
-- PromptClaw has PAL client commands for health, query, smoke tests, baseline summaries, triage, and approval-gated actions.
-- Live smoke and triage runs have produced normal PromptClaw artifacts under `pal-2026/.promptclaw/runs/`.
+This PRD covers only the **producer side**: the CypherClaw-side machinery that picks up
+requests, generates assets, and writes deliverables + manifests back. The producer must honor
+the v0.1 contract exactly, hide its own internals from the requester, and degrade honestly when
+a capability is missing (notably voiceover, for which there is no TTS today).
 
-The current implementation is a useful foundation but is not yet the full "minimal operator involvement" PAL system. This PRD defines the end-to-end build needed to let SDP frontier models implement, verify, and deploy a complete PAL 2026 agentic operations platform.
-
-The intended outcome is not that PAL becomes an unrestricted shell agent. The intended outcome is that PAL can:
-
-1. Maintain a project knowledge base from PAL docs, runbooks, smoke reports, deployment state, and run artifacts.
-2. Plan operational workflows using that context.
-3. Execute only typed, allow-listed tools and playbooks.
-4. Require explicit approval for mutating or cost-bearing actions.
-5. Resume saved approvals from a specific artifacted plan.
-6. Verify its own work through tests, live health checks, smoke runs, and deployment probes.
-7. Produce useful operator handoffs with minimal back-and-forth.
-
-This PRD should be loaded into SDP after validation. The SDP frontier models should build this, not the current PAL model.
+The design keeps a **single canonical bus on the laptop** (where both the Deniable agent and
+this orchestrator live). The producer runs as a laptop-side loop that dispatches the actual
+GPU/synthesis render to the cypherclaw box over an **injectable runner** (SSH in production, a
+fake runner in tests). This mirrors the PAL "fake SSH runner" pattern so the whole producer can
+be built and tested in-repo without a live box.
 
 ---
 
 ## Current State Snapshot
 
-PromptClaw already contains:
-
-- `promptclaw/pal_client.py`: stdlib client for PAL router `/health` and `/query`.
-- `promptclaw/pal_smoke.py`: fixed PAL smoke suite and smoke baseline summaries.
-- `promptclaw/pal_agent.py`: bounded PAL ops triage and approval-gated actions.
-- CLI commands:
-  - `promptclaw pal health PROJECT_ROOT`
-  - `promptclaw pal query PROJECT_ROOT --prompt "..."`
-  - `promptclaw pal smoke PROJECT_ROOT`
-  - `promptclaw pal baseline PROJECT_ROOT`
-  - `promptclaw pal agent triage PROJECT_ROOT`
-  - `promptclaw pal agent actions PROJECT_ROOT [--approve ACTION_ID]`
-- PAL project config in `pal-2026/promptclaw.json` with `pal.enabled=true`.
-
-The live PAL host is currently host-managed, not Docker-managed:
-
-- `/opt/pal/scripts/start_all.sh`
-- `/opt/pal/scripts/start_ollama.sh`
-- `/opt/pal/scripts/start_router.sh`
-- `/opt/pal/logs/router.log`
-- `/opt/pal/logs/ollama.log`
-- `/opt/pal/logs/shutdown.log`
-- `ollama serve` process
-- `uvicorn app:app --host 0.0.0.0 --port 8000` process
-- `tailscaled` userspace process
-- cron-driven auto-shutdown script
-
-The SDP implementation must preserve compatibility with this current deployed shape while still allowing later Docker/systemd variants.
+- **Requester contract:** `docs/deniable-asset-bus-spec.md` defines the bus layout
+  (`$DENIABLE_ASSET_BUS` default `~/deniable-asset-bus`, with `requests/`, `deliverables/`,
+  `status/`), the request JSON (`request_id`, `schema`, `asset_type`, `title`, `format`,
+  `target_path`, `priority`, `acceptance`, type-specific `spec`), and the manifest JSON
+  (`status` ∈ done|error|partial|deferred, `assets[]` with `path`/`bytes`/`sha256`/`meta`).
+- **Package layout:** new code belongs in a `promptclaw/asset_bus/` subpackage (mirrors the
+  existing `promptclaw/federation/` and `promptclaw/coherence/` subpackages). The CLI is wired
+  in `promptclaw/cli.py` (mirror how `pal` is added). Tests are flat `tests/test_asset_bus_*.py`.
+- **Box render capabilities (integration targets, NOT to be reimplemented):**
+  - Images: DreamShaper 8 fp32 diffusion via `senseweave/pareidolia_diffusion.py` / `art_engine.py`
+    (txt2img + img2img). PNG output. Native ~512–768 px.
+  - Music: SuperCollider synthesis engine (`tools/duet_composer.py` + `senseweave/synthesis/*`).
+    Generative-ambient strength; renders fixed-length WAV.
+  - Voiceover: **none.** No TTS stack exists on the box today.
+- **Transport:** Tailscale SSH from laptop to box already works. No two-way file sync exists.
 
 ---
 
 ## Goals
 
-1. Build PAL into a complete agentic operations layer for the current Phase 1 deployment.
-2. Keep Anthony's involvement low: he should mainly approve cost-bearing, credential, restart, shutdown, and destructive actions.
-3. Make every PAL decision reproducible through PromptClaw artifacts.
-4. Let SDP agents implement and verify this end to end with unit tests, CLI integration tests, and live PAL probes.
-5. Add deployment automation that can safely update the live PAL host and verify it after deploy.
-6. Keep a clear upgrade path toward Phase 2 multi-GPU / larger-model work, without executing Phase 2 in this PRD.
-
----
+1. A working producer that fulfills `image` and `music` requests end-to-end against the v0.1 contract.
+2. Honest capability handling: `voiceover` returns `deferred`; `sfx` is best-effort/experimental.
+3. Fully testable in-repo with no live box and no GPU (fake runner at the boundary).
+4. Idempotent and crash-safe: re-processing a request with an existing result is a no-op; all
+   writes are atomic.
+5. Safe: request fields are untrusted input; no shell injection, no path traversal, bounded work.
+6. Operable: a single `promptclaw asset-bus` CLI to run the loop, process once, validate, and self-check.
 
 ## Non-Goals
 
-- No Phase 2 hardware upgrade.
-- No H100 rental, Qwen3-235B deployment, or persistent Vast volume migration.
-- No HIPAA production claims.
-- No PHI ingestion.
-- No unrestricted remote shell.
-- No fully autonomous spending, instance destruction, key rotation, firewall mutation, or shutdown override.
-- No replacement of `sdp-cli` as the implementation engine.
+- No requester-side code (that is the Deniable agent's job, per the frozen spec).
+- No federation, no signed messages, no daemon-inbox integration (possible later; out of scope).
+- No new TTS stack. Voiceover stays `deferred` until a separate decision.
+- No GUI, no web service, no continuous two-way mirror beyond the per-request SSH dispatch.
+- No changes to the v0.1 wire contract. Producer adapts to the spec, not vice versa.
 
----
+## Operator Involvement Contract
 
-## Minimal Operator Involvement Contract
-
-PAL should proceed without asking Anthony for routine implementation details, test runs, docs edits, health checks, smoke runs, read-only SSH inspections, and artifact generation.
-
-PAL must stop for explicit approval before:
-
-- Starting, stopping, destroying, or renting cloud instances.
-- Any action that changes Vast.ai spend.
-- Restarting live PAL services.
-- Changing shutdown behavior.
-- Writing or deleting remote config files.
-- Rotating, creating, or exposing credentials.
-- Opening public network ports.
-- Loading Phase 2 hardware/model work.
-- Any action that could disrupt active inference.
-
-The UI/CLI must make the approval boundary concrete. A proposed action should be stored in an artifacted plan, and approval should execute that exact saved action, not a fresh model plan.
+- Anthony retains engineering authority (paths, deploy, timelines).
+- The producer must never auto-deploy to the box; box render CLIs are deployed by the operator.
+- The producer must run only against an explicitly configured `$DENIABLE_ASSET_BUS` root.
 
 ---
 
 ## Proposed Architecture
 
-### Local Control Plane
+New subpackage `promptclaw/asset_bus/`:
 
-PromptClaw remains the control plane. PAL router inference is treated as a reasoning service, not an executor.
+- **`schema.py`** — typed models for request and manifest; a `parse_request()` /
+  `validate_request()` that enforces `schema == deniable-asset-bus/v0.1`, required fields, and
+  `asset_type` ∈ {image, music, voiceover, sfx}. Rejects unknown/missing fields with a clear error.
+- **`store.py`** — bus directory resolution from `$DENIABLE_ASSET_BUS`, listing of pending
+  requests, atomic write (`*.tmp` + `os.replace`), `sha256` + byte size of produced files,
+  result-manifest read/write, and idempotency check (result already present for a `request_id`).
+- **`capabilities.py`** — the capability matrix: image=supported, music=supported(style-constrained),
+  sfx=experimental, voiceover=deferred. Single source of truth for routing/deferral decisions.
+- **`runner.py`** — a `BoxRunner` protocol with `run(argv, *, files_out) -> RunResult`. Production
+  impl `SSHBoxRunner` invokes deployed box CLIs over Tailscale SSH and pulls output files back
+  (scp/rsync). `FakeBoxRunner` returns canned artifacts for tests. Arguments are passed as an argv
+  list (never a shell string) to prevent injection.
+- **`routers.py`** — one renderer per asset type behind a common interface; maps a validated
+  request to a `BoxRunner` invocation (image → image render CLI; music → music render CLI;
+  sfx → music render CLI in sfx mode; voiceover → immediate `deferred`).
+- **`producer.py`** — the orchestration loop: scan `requests/`, skip already-fulfilled, validate,
+  route, write produced files into `deliverables/<request_id>/`, write the manifest atomically,
+  optionally update `status/`. Catches per-request errors and writes an `error` manifest rather
+  than crashing the loop.
+- **`cli.py`** — `promptclaw asset-bus {run|once|validate|doctor}` wired into `promptclaw/cli.py`.
 
-### PAL Router
+Box-side render entrypoints (thin wrappers, deployed to `/home/user/cypherclaw/tools/`):
 
-The remote PAL router remains a FastAPI service in front of Ollama. This PRD may add endpoints only when needed for safe operations, such as structured status or metrics. The existing `/health` and `/query` endpoints must remain backward compatible.
-
-### PAL Knowledge Base
-
-The local PromptClaw repo should maintain a PAL knowledge index built from:
-
-- `pal-2026/docs/`
-- `pal-2026/ops/`
-- `docs/architecture.md`
-- `docs/command-reference.md`
-- `docs/handoff-protocol.md`
-- `sdp/prd-pal-2026-agentic-ops-platform.md`
-- PAL smoke reports under `pal-2026/.promptclaw/pal-smoke/`
-- PAL agent run summaries under `pal-2026/.promptclaw/runs/`
-- Remote deployment info from `/opt/pal/DEPLOYMENT_INFO.md` when available
-
-Use a simple, inspectable local index first. SQLite FTS5 or a JSON-lines inverted index is acceptable. Do not introduce a heavyweight vector DB unless there is a measured need.
-
-### Workflow Engine
-
-Add a typed PAL workflow layer. Each workflow should:
-
-- Have a stable workflow id.
-- Declare its read-only tools.
-- Declare its approval-gated actions.
-- Declare expected artifacts.
-- Declare verification commands.
-- Return a JSON-safe run summary.
-
-Initial workflows:
-
-- `ops_triage`: current health/baseline/Tailscale/SSH triage.
-- `approve_saved_action`: execute an action from a previously saved plan.
-- `slow_inference_diagnosis`: diagnose high latency or poor token rate.
-- `restart_validation`: validate service health after restart or instance boot.
-- `shutdown_audit`: audit auto-shutdown config, cron, override flag, and recent logs.
-- `phase2_readiness_report`: report whether Phase 2 prerequisites are met; no Phase 2 execution.
-
-### Approval Model
-
-The approval model must be artifact-based:
-
-1. PAL proposes actions into `outputs/action-results.json`.
-2. The operator runs an approve command with `--run-id` and `--action`.
-3. PromptClaw loads that saved plan.
-4. PromptClaw validates that the action id was proposed and is allow-listed.
-5. PromptClaw executes only that saved action.
-6. PromptClaw writes a new approval execution artifact.
-
-### Deployment Model
-
-Deployment should support the current host-managed PAL setup:
-
-- Copy or sync repo-managed PAL scripts/router files to `/opt/pal`.
-- Restart only approved services.
-- Verify local and Tailscale health.
-- Run smoke tests.
-- Roll back when possible, or produce an escalation artifact when not.
-
-Do not assume Docker is running on the PAL host. Docker support can remain as a fallback, but host-managed scripts are the current authority.
+- **`asset_render_image.py`** — args in, one PNG out; wraps the existing DreamShaper pipeline.
+- **`asset_render_music.py`** — args in, one WAV out of a given duration/mood/scene; wraps the
+  existing synthesis render. These are tested in-repo only via the `FakeBoxRunner` contract; the
+  real wrappers are operator-deployed.
 
 ---
 
 ## Requirements
 
+Format: markdown table per SDP analyzer conventions. Tier T1 = small (~3 hrs); T2 = medium (~6 hrs).
+
+### Schema & Validation
+
 | ID | Requirement | Priority | Tier | Acceptance Criteria |
 |---|---|---|---|---|
-| PAL-001 | Document the current PAL product surface. | MUST | T1 | Docs list PAL commands, modules, artifacts, and host-managed `/opt/pal` layout. |
-| PAL-002 | Add JSON export for PAL action metadata. | MUST | T1 | Test reads every action id with mutating and approval fields. |
-| PAL-003 | Add `promptclaw pal agent approve` parser wiring. | MUST | T1 | CLI help shows `approve PROJECT_ROOT --run-id --action`. |
-| PAL-004 | Load saved PAL action plans by run id. | MUST | T1 | Test loads `outputs/action-results.json` from a fixture run. |
-| PAL-005 | Reject approvals for actions absent from the saved plan. | MUST | T1 | CLI returns nonzero and writes no execution artifact. |
-| PAL-006 | Reject approvals for unknown action ids. | MUST | T1 | Test proves unknown ids never reach the action runner. |
-| PAL-007 | Execute an approved saved action without a model call. | MUST | T1 | Fake PAL client records zero `query()` calls during replay. |
-| PAL-008 | Write approval execution artifacts. | MUST | T1 | Artifact contains action id, status, timestamp, and redacted command output. |
-| PAL-009 | Link approval execution artifacts to the source plan. | MUST | T1 | Artifact stores source run id and source action-plan path. |
-| PAL-010 | Harden `restart_router` for host-managed PAL. | MUST | T1 | Unit test verifies `/opt/pal/scripts/start_router.sh` is preferred. |
-| PAL-011 | Keep Docker restart as fallback only. | MUST | T1 | Unit test verifies Docker is selected only when host script is absent. |
-| PAL-012 | Add fake SSH runner support for PAL tests. | MUST | T1 | Tests run remote-action code without a real SSH connection. |
-| PAL-013 | Create PAL source discovery function. | MUST | T2 | Test returns configured sample files. |
-| PAL-014 | Add deterministic PAL knowledge chunking. | MUST | T2 | Test proves stable chunk ids for unchanged input files. |
-| PAL-015 | Add PAL knowledge index writer. | MUST | T2 | `pal kb build` creates `.promptclaw/pal-kb/index.jsonl` or SQLite equivalent. |
-| PAL-016 | Add PAL knowledge query command. | MUST | T2 | Query returns ranked snippets with source paths. |
-| PAL-017 | Inject PAL knowledge into workflow prompts. | MUST | T2 | Prompt artifact includes a bounded `Knowledge Context` section. |
-| PAL-018 | Add slow-inference context collection. | MUST | T2 | Workflow captures health, baseline token/s, GPU hints, and logs when available. |
-| PAL-019 | Add slow-inference diagnosis CLI. | MUST | T2 | Command writes a diagnosis run artifact and performs no mutation. |
-| PAL-020 | Add restart-validation workflow. | MUST | T2 | Command runs health, direct query, smoke, Tailscale, and process checks. |
-| PAL-021 | Add shutdown-audit workflow. | MUST | T2 | Summary states shutdown enabled state, override state, and next shutdown window. |
-| PAL-022 | Add Phase 2 readiness workflow. | MUST | T2 | Report scores each prerequisite and exposes no Phase 2 execution action. |
-| PAL-023 | Standardize PAL workflow `run-summary.json`. | MUST | T1 | Every workflow writes required workflow/status/tool/action keys. |
-| PAL-024 | Add PAL workflow artifact verifier. | MUST | T1 | Test fails a run missing required artifacts. |
-| PAL-025 | Add PAL secret redaction verifier. | MUST | T1 | Test fails artifacts containing `PAL_SSH_KEY` or token-like values. |
-| PAL-026 | Add PAL escalation artifact helper. | MUST | T1 | Missing SSH env and pending approval write `summary/escalation.md`. |
-| PAL-027 | Create repo-managed PAL deployment manifest. | MUST | T2 | Manifest lists intended `/opt/pal` files and contains no secrets. |
-| PAL-028 | Implement deploy diff model. | MUST | T2 | Fake remote test reports diff sets. |
-| PAL-029 | Implement deploy-plan CLI. | MUST | T2 | Command prints plan with no remote writes. |
-| PAL-030 | Implement deploy backup primitive. | SHOULD | T2 | Fake remote test stores changed files. |
-| PAL-031 | Implement approved deploy-apply CLI. | SHOULD | T2 | Fake remote test requires approval flag. |
-| PAL-032 | Implement rollback primitive. | SHOULD | T2 | Fake remote test restores backed-up files. |
-| PAL-033 | Add `promptclaw pal deploy rollback --approve-rollback`. | SHOULD | T2 | Command refuses rollback without approval flag. |
-| PAL-034 | Add PAL deployment metadata model. | SHOULD | T1 | Metadata stores hourly rate, runtime estimate, and optional Vast instance id. |
-| PAL-035 | Add `promptclaw pal cost`. | SHOULD | T1 | Command prints hourly, daily, and monthly burn estimates. |
-| PAL-036 | Add Vast connector stub boundary. | MUST | T2 | No rent/destroy/start/stop action is callable by default. |
-| PAL-037 | Add Vast secret redaction tests. | MUST | T1 | Tests reject persisted Vast API key values. |
-| PAL-038 | Update architecture documentation. | MUST | T1 | Docs include a PAL platform section. |
-| PAL-039 | Update command reference documentation. | MUST | T1 | Docs list all new `promptclaw pal` commands. |
-| PAL-040 | Update PAL project guide. | MUST | T1 | `pal-2026/docs/PROJECT_GUIDE.md` names the new operator loop. |
-| PAL-041 | Add fake-client CLI tests for PAL workflows. | MUST | T2 | Tests cover kb, approve, workflow, and deploy-plan commands. |
-| PAL-042 | Add opt-in live PAL verification marker or script. | MUST | T1 | Default test run skips live checks. |
-| PAL-043 | Document live PAL verification commands. | MUST | T1 | Handoff lists health, smoke, triage, proposal-only, and read-only action checks. |
-| PAL-044 | Create SDP handoff page. | MUST | T1 | Page lists analyze and run-loop commands. |
-| PAL-045 | Update changelog for PAL agentic ops. | MUST | T1 | Changelog entry names approval replay, KB, workflows, and deploy plan. |
+| DAB-001 | `promptclaw/asset_bus/schema.py` defines request and manifest models matching `docs/deniable-asset-bus-spec.md` v0.1. | MUST | T1 | Models round-trip a fixture request and manifest; field set matches the spec. |
+| DAB-002 | `validate_request()` accepts conforming requests and rejects malformed ones with specific errors; unknown extra fields are ignored. | MUST | T1 | Unit tests: a valid request passes; missing `request_id`/`asset_type`/`spec`, wrong `schema`, and unknown `asset_type` each raise a distinct error; an extra field is tolerated. |
+
+### Store & Idempotency
+
+| ID | Requirement | Priority | Tier | Acceptance Criteria |
+|---|---|---|---|---|
+| DAB-010 | `store.py` resolves the bus root from `$DENIABLE_ASSET_BUS` (default `~/deniable-asset-bus`) and lists pending requests (those with no result manifest). | MUST | T1 | Unit test over a temp bus lists exactly the unfulfilled request ids. |
+| DAB-011 | All manifest and produced-file writes are atomic (`*.tmp` then `os.replace`). | MUST | T1 | Test asserts writes go through a temp path and `os.replace`; no partial file is observable. |
+| DAB-012 | `store.py` computes `sha256` and byte size per produced asset and records bus-root-relative paths in the manifest. | MUST | T1 | Test compares recorded `sha256`/`bytes` against known fixture bytes; recorded paths are relative. |
+| DAB-013 | Re-processing a `request_id` that already has a result manifest is a no-op. | MUST | T1 | Idempotency test: a second pass performs no render work and does not rewrite the manifest. |
+
+### Capability Matrix & Routing
+
+| ID | Requirement | Priority | Tier | Acceptance Criteria |
+|---|---|---|---|---|
+| DAB-020 | `capabilities.py` is the single source of truth: image=supported, music=supported, sfx=experimental, voiceover=deferred. | MUST | T1 | Unit test asserts each matrix value. |
+| DAB-021 | A `voiceover` request yields a `deferred` manifest with explanatory `notes` and no renderer call; the same `request_id` can be fulfilled later. | MUST | T1 | Test: a voiceover request produces status `deferred` and the fake renderer records zero calls. |
+| DAB-022 | Routing dispatches each request to the renderer named by the capability matrix for its `asset_type`. | MUST | T1 | Test asserts image routes to the image renderer and music routes to the music renderer. |
+
+### Runner Boundary
+
+| ID | Requirement | Priority | Tier | Acceptance Criteria |
+|---|---|---|---|---|
+| DAB-030 | `runner.py` defines a `BoxRunner` protocol with a `FakeBoxRunner` returning configured artifacts and exit status; no real SSH in unit tests. | MUST | T1 | All unit tests use `FakeBoxRunner`; no network calls occur. |
+| DAB-031 | `SSHBoxRunner` builds its remote command as an argv list and transfers output files back; no request-derived string is interpolated into a shell command. | MUST | T2 | Test asserts the command is constructed as an argv list and an injection fixture is passed verbatim, never via a shell string. |
+
+### Producer Loop
+
+| ID | Requirement | Priority | Tier | Acceptance Criteria |
+|---|---|---|---|---|
+| DAB-040 | `producer.py` processes all pending requests in one pass, writing one manifest per request, never aborting the batch on a single failure. | MUST | T2 | Test with a batch containing one failing request: every other request still gets a manifest. |
+| DAB-041 | On renderer/runner failure write an `error` manifest with the reason; on partial success write `partial`. | MUST | T1 | Tests force failure and partial outcomes and assert the manifest status and reason. |
+| DAB-042 | A continuous `run` mode polls the bus on an interval and processes newly arrived requests. | MUST | T2 | Test drives one poll iteration via an injected clock and processes a newly added request. |
+
+### CLI
+
+| ID | Requirement | Priority | Tier | Acceptance Criteria |
+|---|---|---|---|---|
+| DAB-050 | `promptclaw asset-bus validate --request FILE` validates one request file and prints the normalized result or the validation error. | MUST | T1 | CLI test on valid and invalid fixtures asserts the printed output and exit code. |
+| DAB-051 | `promptclaw asset-bus once` processes every pending request and writes its deliverable and manifest. | MUST | T1 | CLI test produces a manifest for each pending request in a temp bus. |
+| DAB-052 | `promptclaw asset-bus run` runs the continuous loop; `promptclaw asset-bus doctor` reports bus paths, configured runner, and capability matrix without doing work. | MUST | T1 | `doctor` test asserts the report content and that no files are written. |
+
+### Box Render Entrypoints
+
+| ID | Requirement | Priority | Tier | Acceptance Criteria |
+|---|---|---|---|---|
+| DAB-060 | `tools/asset_render_image.py` accepts prompt/size/seed/count args and writes PNG(s) to an output directory. | SHOULD | T2 | A smoke test parses the documented argv and asserts the resolved render parameters. |
+| DAB-061 | `tools/asset_render_music.py` accepts mood/scene/duration/loopable args and writes a WAV to an output path; the documented contract is exercised in-repo via `FakeBoxRunner`. | SHOULD | T2 | The arg contract is documented and parsed; the fake runner reproduces it. |
+
+### Security
+
+| ID | Requirement | Priority | Tier | Acceptance Criteria |
+|---|---|---|---|---|
+| DAB-070 | Path-bearing request fields are sanitized; produced files always land under `deliverables/<request_id>/`; path traversal and absolute paths are rejected. | MUST | T1 | Test with `../` and an absolute `target_path` is rejected; output stays inside the sandbox dir. |
+| DAB-071 | Render arguments derived from request fields are passed as argv only; shell metacharacters are not interpreted. | MUST | T1 | An injection fixture in a prompt is passed literally and not interpreted. |
+| DAB-072 | Bounded work: per-request ceilings on image count, music duration, and total output bytes; requests over a ceiling return `error`. | MUST | T1 | Over-limit fixtures produce an `error` manifest stating the exceeded ceiling. |
+
+### Documentation
+
+| ID | Requirement | Priority | Tier | Acceptance Criteria |
+|---|---|---|---|---|
+| DAB-080 | `docs/deniable-asset-bus-spec.md` gains a "Producer (CypherClaw side)" section. | SHOULD | T1 | The section is present and the `schema` version string is unchanged. |
 
 ---
 
 ## Suggested Task Slicing
 
-SDP should split this into roughly these implementation groups:
+### Sprint 1 — Contract core
+- DAB-001, DAB-002 (schema + validation)
+- DAB-010, DAB-011, DAB-012, DAB-013 (store + idempotency)
 
-1. Approval replay and action metadata hardening: PAL-002 through PAL-012.
-2. Knowledge base: PAL-013 through PAL-017.
-3. Workflow family: PAL-018 through PAL-026.
-4. Deployment tooling: PAL-027 through PAL-033.
-5. Cost/Vast boundary: PAL-034 through PAL-037.
-6. Docs, tests, live verification, and SDP handoff: PAL-038 through PAL-045.
+### Sprint 2 — Capability & runner boundary
+- DAB-020, DAB-021, DAB-022 (capability matrix + routing, voiceover deferral)
+- DAB-030, DAB-031 (runner protocol + fake + ssh argv safety)
 
-Do not start deployment apply or rollback before the dry-run deployment plan and fake-remote tests are green.
+### Sprint 3 — Producer & CLI
+- DAB-040, DAB-041, DAB-042 (producer loop)
+- DAB-050, DAB-051, DAB-052 (CLI)
+
+### Sprint 4 — Box entrypoints, security, docs
+- DAB-060, DAB-061 (box render CLI contracts)
+- DAB-070, DAB-071, DAB-072 (security)
+- DAB-080 (docs)
 
 ---
 
 ## Verification Strategy
 
-### Unit and CLI Tests
+### Unit & CLI tests (TDD — tests written first/alongside, never after)
+- Each DAB-* requirement has at least one `tests/test_asset_bus_*.py` test.
+- A round-trip test: fake request → `asset-bus once` with `FakeBoxRunner` → manifest with correct
+  `status`, `sha256`, and relative paths; assets present under `deliverables/<request_id>/`.
+- Idempotency test (DAB-013), injection test (DAB-071), traversal test (DAB-070), deferral test (DAB-021).
 
-Run focused tests after each task:
+### Static checks
+- The new subpackage passes the repo's existing lint/type configuration.
 
-```bash
-pytest -q tests/test_pal_agent.py tests/test_pal_smoke.py tests/test_pal_client.py tests/test_doctor.py
-```
-
-New tests should be added for the new modules and commands. Avoid requiring live PAL for normal CI.
-
-### Static Checks
-
-Run:
-
-```bash
-ruff check promptclaw tests
-git diff --check
-```
-
-If mypy is part of the active SDP gate for this repo, include it.
-
-### Live Checks
-
-Live checks are opt-in and require:
-
-```bash
-export PAL_SSH_HOST=209.137.198.14
-export PAL_SSH_PORT=18967
-export PAL_SSH_KEY="$HOME/.ssh/pal_2026_vast"
-```
-
-Required live checks before marking the PRD deployable:
-
-```bash
-python -m promptclaw.cli pal health pal-2026
-python -m promptclaw.cli pal smoke pal-2026
-python -m promptclaw.cli pal agent triage pal-2026
-python -m promptclaw.cli pal agent actions pal-2026 --task "Proposal-only approval gate check. Propose restart_router only."
-python -m promptclaw.cli pal agent actions pal-2026 --task "Run read-only deep log inspection." --approve inspect_logs_deep
-```
-
-Mutating live checks such as `restart_router`, `pause_shutdown_once`, `resume_shutdown`, deploy apply, rollback, or any Vast API action must not run unless Anthony explicitly approves that exact action.
+### Live verification (operator, post-merge, out of SDP scope)
+- One real `image` and one real `music` request fulfilled end-to-end against the box, results
+  copied into a scratch game folder, sha256 verified.
 
 ---
 
 ## Security Requirements
 
-- Do not commit API keys, auth keys, private SSH keys, Tailscale auth keys, or Vast API tokens.
-- Read secrets only from environment variables or existing local SSH config.
-- Redact `PAL_SSH_KEY`, private key paths when necessary, tokens, API keys, and Authorization-like values from artifacts.
-- Never expose PAL through public ports as part of this PRD.
-- Treat Tailscale as the network boundary.
-- Preserve approval gates for mutating actions.
-- Unknown model-suggested actions must be ignored and recorded.
-- Frontier SDP agents may write code, tests, docs, and local artifacts, but must not perform cloud spend operations.
-
----
+- Request files are untrusted input. Validate strictly; never `eval`/`exec` request content.
+- No shell string interpolation of request-derived values (argv only).
+- All produced files confined to `deliverables/<request_id>/`; reject path traversal and absolute paths.
+- Enforce per-request resource ceilings (count, duration, bytes).
+- No secrets in the bus; manifests carry only metadata, never credentials.
 
 ## Deployment Requirements
 
-Deployment is a product deliverable, but deployment execution must be gated:
-
-1. Build and test locally.
-2. Create dry-run deploy plan.
-3. Show file diff and service impact.
-4. Require explicit `--approve-deploy`.
-5. Back up remote files.
-6. Apply files.
-7. Restart only approved service(s).
-8. Verify `/health`, query, smoke, Tailscale, and process state.
-9. Write deployment artifact locally under `.promptclaw/pal-deploy/`.
-
-The deploy implementation must support the current host-managed PAL runtime. It may support Docker as an additional deployment mode, but Docker cannot be the only path.
-
----
+- Producer runs on the laptop against the configured `$DENIABLE_ASSET_BUS`.
+- Box render CLIs (`asset_render_image.py`, `asset_render_music.py`) are deployed to the box by
+  the operator; the producer reaches them over existing Tailscale SSH.
+- No new always-on service is required for v1; `asset-bus run` may be launched on demand.
 
 ## Risks
 
-| Risk | Likelihood | Impact | Mitigation |
-|---|---|---|---|
-| SDP agents assume Docker because older guide used Docker | High | Medium | PAL-010 and PAL-011 require host-managed restart selection tests and Docker fallback-only behavior. |
-| Approval replay accidentally re-plans with model and executes a different action | Medium | High | PAL-002 forbids model calls during replay; tests must assert fake client is not called. |
-| Knowledge index grows with noisy run artifacts | Medium | Low | PAL-013 through PAL-015 bind source discovery, chunking, and index writing to deterministic tests. |
-| Live deployment apply breaks the PAL router | Medium | High | PAL-029 through PAL-031 require deploy plan, backup primitive, and explicit apply approval. |
-| Secrets leak into artifacts | Medium | High | Verifier gate scans artifacts for env var names, key paths, and token-like values. |
-| PAL recommends Phase 2 too early | Medium | Medium | PAL-022 requires a report-only workflow with no Phase 2 execution action. |
-| Vast API connector causes spend or destructive actions | Low | High | PAL-036 and PAL-037 require stub-only Vast boundary and secret redaction tests. |
-
----
+- **Music style mismatch** — generative-ambient engine may not satisfy game-music needs; mitigated
+  by `partial` + notes and by surfacing style limits in the spec.
+- **Box availability** — if the box is unreachable, requests fail with `error`; producer must not hang.
+- **Voiceover gap** — VO stays `deferred`; the game must not block on it.
 
 ## Assumptions
 
-1. PromptClaw remains the local control plane.
-2. PAL router remains reachable over Tailscale at `http://pal-cloud-a6000:8000`.
-3. The current Vast instance may be recreated in the future, so host, port, instance id, and SSH key path must be metadata/config, not hardcoded into source.
-4. `sdp-cli` frontier agents can make better implementation choices than PAL's local 70B model; PAL should not self-modify this codebase.
-5. Anthony prefers minimal involvement but still wants explicit approval for cost-bearing and mutating operations.
-6. Phase 1 remains the active hardware target until Anthony explicitly authorizes Phase 2.
-
----
+- The Deniable agent implements the requester side per the frozen v0.1 spec.
+- Existing box art/synthesis entrypoints can be wrapped without modification to their internals.
+- Tailscale SSH from laptop to box remains available.
 
 ## Open Questions for SDP Agents to Resolve Without Blocking
 
-These should not require Anthony unless the repo lacks enough information:
-
-1. Whether to use SQLite FTS5 or a JSON-lines local index for PAL KB v0.
-2. Whether approval replay writes into the original run directory or creates a linked child run.
-3. Exact module boundaries for PAL workflows once implementation begins.
-4. Whether deployment package files live under `pal-2026/deploy/` or `promptclaw/pal_deploy/` plus project templates.
-
-If the agent makes a choice, document the decision in the relevant docs and artifacts.
-
----
+- Exact arg surface of `asset_render_image.py` / `asset_render_music.py` — choose a minimal,
+  documented set consistent with the spec's `spec` blocks; the `FakeBoxRunner` defines the contract.
+- Polling interval and resource ceilings — choose sane defaults, make them config-overridable.
 
 ## Operator Handoff to SDP
 
-Validate the PRD without loading:
-
-```bash
-sdp-cli analyze --prd sdp/prd-pal-2026-agentic-ops-platform.md --validate-only
-```
-
-Load into the SDP queue when ready:
-
-```bash
-sdp-cli analyze --prd sdp/prd-pal-2026-agentic-ops-platform.md --load --merge append
-```
-
-Check task queue:
-
-```bash
-sdp-cli status
-sdp-cli tasks list
-```
-
-Run the pipeline:
-
-```bash
-sdp-cli run-loop
-```
-
-After implementation tasks finish, stage/deploy using the SDP deploy path:
-
-```bash
-sdp-cli stage
-sdp-cli deploy
-```
-
-Do not run mutating PAL deploy or cloud spend actions unless Anthony explicitly approves them after reading the generated dry-run plan.
-
----
-
-## Project History
-
-- v1.0 - 2026-05-15 - Initial SDP PRD for end-to-end PAL 2026 agentic operations, knowledge base, workflow engine, approval replay, deployment tooling, and verification gates.
+Build the producer in `promptclaw/asset_bus/` with tests-first, no live box, no GPU. Do not run or
+modify the CypherClaw v2 aesthetic tasks. Do not deploy to the box. Keep the v0.1 wire contract
+in `docs/deniable-asset-bus-spec.md` authoritative.

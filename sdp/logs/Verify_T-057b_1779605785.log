@@ -1,0 +1,18 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2661 chars)
+---
+
+Verification report committed. Summary:
+
+**Verdict: FAIL (BLOCKED)**
+
+- **Primary task** (60s render): not completed — HLS stream is cold (zero `#EXTINF` segments), MIDI pipeline undeployed on CypherClaw, target path unreachable from Darwin. Environmental block, not a code defect.
+
+- **All mandatory hardening: DONE**
+  - `bootstrap_identity()` added to `live_reference_capture.run()` before any work, covering both `--identity-mode standalone` and `federated`
+  - `midi_intake_daemon.py` already had correct ordering: bootstrap → `FirstBootAnnouncer`
+  - Identity persistence integration test exists at `test_midi_intake_daemon.py::test_identity_persistence_between_boots`
+  - `midi_vocabulary_store` concurrent migration fix (`INSERT OR IGNORE`) in place
+  - Test suite: 5283 passed, 11 skipped
+
+**Operator actions needed** to unblock: deploy MIDI ingest pipeline, stage seed MIDI, restart composer/streamer daemons on CypherClaw, then re-run the capture tool from the Linux box.

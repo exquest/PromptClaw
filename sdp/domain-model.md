@@ -1,7 +1,7 @@
 # Domain Model
 
-**Source:** PAL 2026 Agentic Operations Platform PRD
-**Extracted:** 2026-05-15T21:42:33.417472+00:00
+**Source:** Deniable Asset Bus — Producer Side PRD
+**Extracted:** 2026-05-30T00:28:46.953582+00:00
 **Status:** Glossary and entity-relationship summary.
 
 ---

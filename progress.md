@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~8h 3m remaining (29 tasks, low confidence, calibrating)
-Expected completion: 7:04 AM tomorrow.
-Progress: [████████████████████████████████████░░] 95%  538 / 567 tasks complete
-  completed: 538, pending: 26, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 53
+ETC: ~7h 46m remaining (44 tasks, low confidence, calibrating)
+Expected completion: 2:45 AM tomorrow.
+Progress: [███████████████████████████████████░░░] 93%  551 / 595 tasks complete
+  completed: 551, pending: 41, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 55
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -592,7 +592,7 @@ Progress: [███████████████████████
 - **T-055d**: complete — Completed with verdict PASS.
 - **T-053b**: complete — Completed with verdict PASS.
 - **T-057**: split — Split into subtasks.
-- **T-057a**: pending — Pending.
+- **T-057a**: complete — Completed with verdict UNPARSEABLE.
 - **T-057b**: pending — Pending.
 - **T-057c**: pending — Pending.
 - **T-057d**: pending — Pending.
@@ -627,4 +627,33 @@ Progress: [███████████████████████
 - **T-072**: pending — Pending.
 - **T-073**: pending — Pending.
 - **T-074**: pending — Pending.
-- **T-009@20260530T002730Z**: complete — Added `SSHBoxRunner` with argv-list `ssh`/`rsync`, JSON stdin for request argv, and locked tests asserting injection fixtures remain verbatim instead of shell-interpolated. Full validation passed with `5367 passed, 11 skipped`, Ruff clean, and mypy clean.
+- **T-001@20260530T002730Z**: complete — Completed with verdict PASS.
+- **T-002@20260530T002730Z**: complete — Completed with verdict PASS.
+- **T-003@20260530T002730Z**: complete — Completed with verdict PASS.
+- **T-004@20260530T002730Z**: complete — Completed with verdict PASS.
+- **T-005@20260530T002730Z**: complete — Completed with verdict PASS.
+- **T-006@20260530T002730Z**: complete — Completed with verdict PASS.
+- **T-007@20260530T002730Z**: complete — Completed with verdict PASS.
+- **T-008@20260530T002730Z**: complete — Completed with verdict PASS.
+- **T-009@20260530T002730Z**: complete — Completed with verdict PASS.
+- **T-010@20260530T002730Z**: complete — Completed with verdict PASS.
+- **T-011@20260530T002730Z**: complete — Completed with verdict PASS.
+- **T-012@20260530T002730Z**: split — Split into subtasks.
+- **T-012@20260530T002730Za**: complete — Completed with verdict PASS.
+- **T-012@20260530T002730Zb**: pending — Pending.
+- **T-012@20260530T002730Zc**: pending — Pending.
+- **T-012@20260530T002730Zd**: pending — Pending.
+- **T-013@20260530T002730Z**: pending — Pending.
+- **T-014@20260530T002730Z**: pending — Pending.
+- **T-015@20260530T002730Z**: pending — Pending.
+- **T-016@20260530T002730Z**: pending — Pending.
+- **T-017@20260530T002730Z**: split — Split into subtasks.
+- **T-017@20260530T002730Za**: pending — Pending.
+- **T-017@20260530T002730Zb**: pending — Pending.
+- **T-017@20260530T002730Zc**: pending — Pending.
+- **T-018@20260530T002730Z**: pending — Pending.
+- **T-019@20260530T002730Z**: pending — Pending.
+- **T-020@20260530T002730Z**: pending — Pending.
+- **T-021@20260530T002730Z**: pending — Pending.
+- **T-022@20260530T002730Z**: pending — Pending.
+- **T-023@20260530T002730Z**: pending — Pending.

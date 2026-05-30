@@ -1,9 +1,9 @@
-# PAL 2026 Agentic Operations Platform PRD — Implementation Plan
+# Deniable Asset Bus — Producer Side PRD — Implementation Plan
 
-**Generated:** 2026-05-15T21:42:33.416942+00:00
+**Generated:** 2026-05-30T00:28:46.953089+00:00
 **Source:** PRD v1.0
-**Total tasks:** 45
-**Estimated effort:** ~192 hours
+**Total tasks:** 23
+**Estimated effort:** ~84 hours
 
 ---
 
@@ -11,99 +11,82 @@
 
 Sprints are sequential. Tasks within a sprint can run in parallel unless a dependency is noted.
 
+### Sprint 0: Infrastructure & Billing
+
+- **T-001** [T1] Path-bearing request fields are sanitized; produced files always land under `deliverables/<request_id>/`; path traversal and absolute paths are rejected. (~3h)
+- **T-002** [T1] Render arguments derived from request fields are passed as argv only; shell metacharacters are not interpreted. (~3h)
+- **T-003** [T1] Bounded work: per-request ceilings on image count, music duration, and total output bytes; requests over a ceiling return `error`. (~3h)
+
+*Subtotal: ~9 hours*
+
 ### Sprint 1: Versioning System
 
-**Depends on:** Sprint 0 (Versioning System)
+**Depends on:** Sprint 0 (Infrastructure & Billing)
 
-- **T-001** [T1] Harden `restart_router` for host-managed PAL. (~3h)
-- **T-002** [T1] Keep Docker restart as fallback only. (~3h)
-- **T-003** [T1] Add fake SSH runner support for PAL tests. (~3h)
-- **T-004** [T2] Create PAL source discovery function. (~6h)
-- **T-005** [T2] Add deterministic PAL knowledge chunking. (~6h)
-- **T-006** [T2] Add PAL knowledge index writer. (~6h)
-- **T-007** [T2] Add PAL knowledge query command. (~6h)
-- **T-008** [T2] Inject PAL knowledge into workflow prompts. (~6h)
-- **T-009** [T2] Add slow-inference context collection. (~6h)
-- **T-010** [T2] Add slow-inference diagnosis CLI. (~6h)
+- **T-004** [T1] `store.py` resolves the bus root from `$DENIABLE_ASSET_BUS` (default `~/deniable-asset-bus`) and lists pending requests (those with no result manifest). (~3h) → deps: T-001
+- **T-005** [T1] All manifest and produced-file writes are atomic (`*.tmp` then `os.replace`). (~3h) → deps: T-001
+- **T-006** [T1] `store.py` computes `sha256` and byte size per produced asset and records bus-root-relative paths in the manifest. (~3h) → deps: T-001
+- **T-007** [T1] Re-processing a `request_id` that already has a result manifest is a no-op. (~3h) → deps: T-001
 
-*Subtotal: ~51 hours*
+*Subtotal: ~12 hours*
 
 ### Sprint 2: Quality Scoring
 
-**Depends on:** Sprint 0 (Versioning System), Sprint 1 (Quality Scoring)
+**Depends on:** Sprint 0 (Infrastructure & Billing), Sprint 1 (Versioning System)
 
-- **T-011** [T2] Add Vast connector stub boundary. (~6h) → deps: T-001
-- **T-012** [T1] Add Vast secret redaction tests. (~3h) → deps: T-001
-- **T-013** [T1] Update architecture documentation. (~3h) → deps: T-001
-- **T-014** [T1] Update command reference documentation. (~3h) → deps: T-001
+- **T-008** [T1] `runner.py` defines a `BoxRunner` protocol with a `FakeBoxRunner` returning configured artifacts and exit status; no real SSH in unit tests. (~3h) → deps: T-001, T-004
+- **T-009** [T2] `SSHBoxRunner` builds its remote command as an argv list and transfers output files back; no request-derived string is interpolated into a shell command. (~6h) → deps: T-001, T-004
 
-*Subtotal: ~15 hours*
+*Subtotal: ~9 hours*
 
 ### Sprint 3: Improvement Engine Hardening
 
-**Depends on:** Sprint 0 (Versioning System), Sprint 2 (Improvement Engine Hardening)
+**Depends on:** Sprint 0 (Infrastructure & Billing), Sprint 2 (Quality Scoring)
 
-- **T-015** [T2] Add restart-validation workflow. (~6h) → deps: T-011
-- **T-016** [T2] Add shutdown-audit workflow. (~6h) → deps: T-011
-- **T-017** [T2] Add Phase 2 readiness workflow. (~6h) → deps: T-011
-- **T-018** [T1] Standardize PAL workflow `run-summary.json`. (~3h) → deps: T-011
-- **T-019** [T1] Add PAL workflow artifact verifier. (~3h) → deps: T-011
-- **T-020** [T1] Add PAL secret redaction verifier. (~3h) → deps: T-011
-- **T-021** [T1] Add PAL escalation artifact helper. (~3h) → deps: T-011
-- **T-022** [T2] Create repo-managed PAL deployment manifest. (~6h) → deps: T-011
-- **T-023** [T2] Implement deploy diff model. (~6h) → deps: T-011
-- **T-024** [T2] Implement deploy-plan CLI. (~6h) → deps: T-011
+- **T-010** [T1] `capabilities.py` is the single source of truth: image=supported, music=supported, sfx=experimental, voiceover=deferred. (~3h) → deps: T-001, T-008
+- **T-011** [T1] A `voiceover` request yields a `deferred` manifest with explanatory `notes` and no renderer call; the same `request_id` can be fulfilled later. (~3h) → deps: T-001, T-008
+- **T-012** [T1] Routing dispatches each request to the renderer named by the capability matrix for its `asset_type`. (~3h) → deps: T-001, T-008
 
-*Subtotal: ~48 hours*
+*Subtotal: ~9 hours*
 
 ### Sprint 4: Public REST API
 
-**Depends on:** Sprint 0 (Versioning System), Sprint 2 (Improvement Engine Hardening), Sprint 3 (Public REST API)
+**Depends on:** Sprint 0 (Infrastructure & Billing), Sprint 2 (Quality Scoring), Sprint 3 (Improvement Engine Hardening)
 
-- **T-025** [T1] Update PAL project guide. (~3h) → deps: T-011, T-015
-- **T-026** [T2] Add fake-client CLI tests for PAL workflows. (~6h) → deps: T-011, T-015
-- **T-027** [T1] Add opt-in live PAL verification marker or script. (~3h) → deps: T-011, T-015
-- **T-028** [T1] Document live PAL verification commands. (~3h) → deps: T-011, T-015
-- **T-029** [T1] Create SDP handoff page. (~3h) → deps: T-011, T-015
-- **T-030** [T1] Update changelog for PAL agentic ops. (~3h) → deps: T-011, T-015
+- **T-013** [T2] `producer.py` processes all pending requests in one pass, writing one manifest per request, never aborting the batch on a single failure. (~6h) → deps: T-001, T-008, T-010
+- **T-014** [T1] On renderer/runner failure write an `error` manifest with the reason; on partial success write `partial`. (~3h) → deps: T-001, T-008, T-010
+- **T-015** [T2] A continuous `run` mode polls the bus on an interval and processes newly arrived requests. (~6h) → deps: T-001, T-008, T-010
 
-*Subtotal: ~21 hours*
+*Subtotal: ~15 hours*
 
-### Sprint 5: Library & CRUD Polish
+### Sprint 5: Model Comparison Hardening
 
-**Depends on:** Sprint 0 (Versioning System), Sprint 1 (Quality Scoring)
+**Depends on:** Sprint 0 (Infrastructure & Billing), Sprint 1 (Versioning System)
 
-- **T-031** [T1] Document the current PAL product surface. (~3h) → deps: T-001
-- **T-032** [T1] Add JSON export for PAL action metadata. (~3h) → deps: T-001
-- **T-033** [T1] Add `promptclaw pal agent approve` parser wiring. (~3h) → deps: T-001
-- **T-034** [T1] Load saved PAL action plans by run id. (~3h) → deps: T-001
-- **T-035** [T1] Reject approvals for actions absent from the saved plan. (~3h) → deps: T-001
-- **T-036** [T1] Reject approvals for unknown action ids. (~3h) → deps: T-001
-- **T-037** [T1] Execute an approved saved action without a model call. (~3h) → deps: T-001
-- **T-038** [T1] Write approval execution artifacts. (~3h) → deps: T-001
-- **T-039** [T1] Link approval execution artifacts to the source plan. (~3h) → deps: T-001
+- **T-016** [T1] `promptclaw/asset_bus/schema.py` defines request and manifest models matching `docs/deniable-asset-bus-spec.md` v0.1. (~3h) → deps: T-001, T-004
+- **T-017** [T1] `validate_request()` accepts conforming requests and rejects malformed ones with specific errors; unknown extra fields are ignored. (~3h) → deps: T-001, T-004
+- **T-018** [T1] `promptclaw asset-bus validate --request FILE` validates one request file and prints the normalized result or the validation error. (~3h) → deps: T-001, T-004
+- **T-019** [T1] `promptclaw asset-bus once` processes every pending request and writes its deliverable and manifest. (~3h) → deps: T-001, T-004
+- **T-020** [T1] `promptclaw asset-bus run` runs the continuous loop; `promptclaw asset-bus doctor` reports bus paths, configured runner, and capability matrix without doing work. (~3h) → deps: T-001, T-004
 
-*Subtotal: ~27 hours*
+*Subtotal: ~15 hours*
 
 ### Sprint 6: Stretch Goals
 
-**Depends on:** Sprint 0 (Versioning System)
+**Depends on:** Sprint 0 (Infrastructure & Billing)
 
-- **T-040** [T2] Implement deploy backup primitive. (~6h)
-- **T-041** [T2] Implement approved deploy-apply CLI. (~6h)
-- **T-042** [T2] Implement rollback primitive. (~6h)
-- **T-043** [T2] Add `promptclaw pal deploy rollback --approve-rollback`. (~6h)
-- **T-044** [T1] Add PAL deployment metadata model. (~3h)
-- **T-045** [T1] Add `promptclaw pal cost`. (~3h)
+- **T-021** [T2] `tools/asset_render_image.py` accepts prompt/size/seed/count args and writes PNG(s) to an output directory. (~6h) → deps: T-001
+- **T-022** [T2] `tools/asset_render_music.py` accepts mood/scene/duration/loopable args and writes a WAV to an output path; the documented contract is exercised in-repo via `FakeBoxRunner`. (~6h) → deps: T-001
+- **T-023** [T1] `docs/deniable-asset-bus-spec.md` gains a "Producer (CypherClaw side)" section. (~3h) → deps: T-001
 
-*Subtotal: ~30 hours*
+*Subtotal: ~15 hours*
 
 ---
 
 ## Requirements Coverage
 
-- **MUST requirements:** 39/39 covered
-- **SHOULD requirements:** 6 included as stretch
+- **MUST requirements:** 20/20 covered
+- **SHOULD requirements:** 3 included as stretch
 
 **✓ All MUST requirements covered.**
 

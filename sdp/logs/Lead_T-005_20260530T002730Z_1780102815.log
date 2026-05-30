@@ -1,0 +1,10 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (1337 chars)
+---
+
+T-005 done and committed (`2696d94`).
+
+- `promptclaw/asset_bus/atomic.py` — `atomic_write_bytes` / `atomic_write_text` write to `<path>.tmp`, fsync, then `os.replace` into place; the tmp file is cleaned up on failure.
+- `tests/test_asset_bus_atomic.py` — 11 tests including the spec-required assertion that writes go through a tmp path and `os.replace` (verified by patching `os.replace` and inspecting source/dst), plus a concurrent-reader test confirming no partial file is observable.
+- Exported from `promptclaw.asset_bus`.
+- 56 asset_bus tests pass; ruff and mypy clean.
