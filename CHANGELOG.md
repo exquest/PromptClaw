@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Added T-013 Deniable Asset Bus producer batch processing:
+  `process_pending_requests_once(...)` now snapshots all pending requests for
+  one pass, delegates each request id through the existing idempotent
+  `process_request_if_pending(...)` path, writes a v0.1 `error` manifest for a
+  per-request failure, and continues processing later pending requests instead
+  of aborting the batch. New tests cover a three-request batch with one failing
+  renderer plus the race where another producer writes a manifest between
+  pending enumeration and processing. Product-facing docs now describe the
+  producer batch boundary and per-request failure handling. No new
+  dependencies, provider secrets, database columns, migrations, runtime state
+  directories, startup-flow wiring, or agent commands were added. Full
+  validation passed with `5416 passed, 11 skipped`, Ruff clean, and mypy clean.
+
 - Added T-012d Deniable Asset Bus request-entry dispatch wiring:
   `process_request_if_pending(...)` now preserves its existing callback
   idempotency path while also accepting a `RendererMatrix` and

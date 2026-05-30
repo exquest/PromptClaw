@@ -27,6 +27,10 @@ from .limits import (
     check_request_within_ceilings,
     error_manifest_for_ceiling,
 )
+from .producer import (
+    BatchProcessResult,
+    process_pending_requests_once,
+)
 from .paths import (
     UnsafePathError,
     deliverable_dir,
@@ -70,6 +74,7 @@ __all__ = [
     "TMP_SUFFIX",
     "BoxRunResult",
     "BoxRunner",
+    "BatchProcessResult",
     "CapabilityStatus",
     "CeilingExceededError",
     "FakeBoxRunner",
@@ -95,6 +100,7 @@ __all__ = [
     "is_deferred",
     "list_pending_requests",
     "load_renderer_matrix",
+    "process_pending_requests_once",
     "process_request_if_pending",
     "resolve_bus_root",
     "result_manifest_path",

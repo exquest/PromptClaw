@@ -7,6 +7,20 @@ Expected completion: 2:45 AM tomorrow.
 Progress: [███████████████████████████████████░░░] 93%  551 / 595 tasks complete
   completed: 551, pending: 41, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 55
 
+## Manual ADP Notes
+
+- **T-013@20260530T002730Z Phase 0 Explore**: Read the Deniable Asset Bus PRD
+  and v0.1 filesystem contract, the full `promptclaw/asset_bus/` package, and
+  existing `tests/test_asset_bus_*.py` coverage. Existing patterns are
+  file-first handoff, safe request ids, sorted pending-request enumeration,
+  `process_request_if_pending(...)` for one idempotent manifest write, typed
+  `RendererMatrix`/`RendererRegistry` dispatch, atomic writes, and explicit
+  argv-list transport boundaries. The gap for DAB-040 is above the existing
+  single-request helper: there is no `producer.py` batch pass yet, and a
+  renderer exception currently propagates out of `process_request_if_pending`
+  instead of producing an `error` manifest and continuing with later pending
+  requests.
+
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-003@20260408T223256Z**: complete — Completed with verdict PASS.
@@ -643,7 +657,8 @@ Progress: [███████████████████████
 - **T-012@20260530T002730Zb**: pending — Pending.
 - **T-012@20260530T002730Zc**: pending — Pending.
 - **T-012@20260530T002730Zd**: pending — Pending.
-- **T-013@20260530T002730Z**: pending — Pending.
+- **T-013@20260530T002730Z**: in_progress — Producer batch pass implemented;
+  focused TDD coverage and full validation passed; ready for verifier.
 - **T-014@20260530T002730Z**: pending — Pending.
 - **T-015@20260530T002730Z**: pending — Pending.
 - **T-016@20260530T002730Z**: pending — Pending.

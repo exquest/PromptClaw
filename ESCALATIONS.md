@@ -1,5 +1,35 @@
 # Escalations
 
+## T-013@20260530T002730Z (2026-05-30)
+
+- **Reason:** No-questions task assumptions for DAB-040 producer batch
+  processing.
+- **Assumption:** `producer.py` means a new producer-loop module layered above
+  the existing idempotent `process_request_if_pending(...)` helper rather than
+  changing the single-request helper to swallow errors for all callers.
+- **Assumption:** A per-request failure includes renderer, dispatch,
+  request-read, and malformed renderer-result exceptions. The producer batch
+  layer should convert those to v0.1 `error` manifests and continue; lower
+  level helpers should keep their existing fail-fast behavior.
+- **Assumption:** Continuous polling (`run`) and CLI `asset-bus once` are later
+  requirements (DAB-042/DAB-051) and stay out of this T-013 slice.
+- **No new dependencies:** No Python package, provider secret, database column,
+  migration, runtime state directory, startup-flow wiring, or agent command is
+  added for this task.
+- **Candidate hardening:** The recurring `bootstrap_identity()` startup bullets
+  are outside the asset-bus producer implementation surface. They are treated
+  as mandatory regression anchors here: existing startup tests cover daemon
+  ordering, ASGI import startup, and standalone/federated persistence, and this
+  task adds a CLI startup persistence regression without changing startup flow.
+- **Validation:** Red phase was confirmed with
+  `pytest tests/test_asset_bus_producer.py -q` failing on the missing
+  `process_pending_requests_once` export before implementation. After
+  implementation, `pytest tests/test_asset_bus_*.py -q` passed with
+  `132 passed`, startup hardening anchors passed with `12 passed`, and the
+  required validation command
+  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`
+  passed with `5416 passed, 11 skipped`, Ruff clean, and mypy clean.
+
 ## T-012@20260530T002730Zd (2026-05-30)
 
 - **Reason:** No-questions task assumptions for wiring dispatch into the

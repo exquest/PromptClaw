@@ -108,9 +108,13 @@ The Deniable Asset Bus is a filesystem handoff between a requester writing
 `BoxRunner` protocol so producer code can use `FakeBoxRunner` in tests and
 `SSHBoxRunner` in production.
 
-`process_request_if_pending(...)` is the current request-processing entry
-point. It preserves result-manifest idempotency, reads the request JSON from the
-bus when dispatch mode is used, and invokes matrix/registry dispatch through
+`process_pending_requests_once(...)` is the producer batch entry point. It
+takes one sorted snapshot of pending request ids, delegates each id to
+`process_request_if_pending(...)`, and catches per-request failures so one bad
+request writes an `error` manifest without aborting later requests in the same
+pass. `process_request_if_pending(...)` remains the single-request entry point:
+it preserves result-manifest idempotency, reads the request JSON from the bus
+when dispatch mode is used, and invokes matrix/registry dispatch through
 `RendererMatrix`, `RendererRegistry`, and `dispatch_request(...)` before writing
 the returned manifest atomically.
 
