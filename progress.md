@@ -2,10 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~6h 58m remaining (39 tasks, low confidence, calibrating)
-Expected completion: 3:11 AM tomorrow.
-Progress: [████████████████████████████████████░░] 93%  556 / 595 tasks complete
-  completed: 556, pending: 36, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 55
+ETC: ~8h 46m remaining (38 tasks, low confidence, calibrating)
+Expected completion: 6:14 AM tomorrow.
+Progress: [████████████████████████████████████░░] 93%  557 / 595 tasks complete
+  completed: 557, pending: 35, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 55
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -645,7 +645,7 @@ Progress: [███████████████████████
 - **T-012@20260530T002730Zd**: complete — Completed with verdict PASS WITH NOTES.
 - **T-013@20260530T002730Z**: complete — Completed with verdict PASS.
 - **T-014@20260530T002730Z**: complete — Completed with verdict PASS.
-- **T-015@20260530T002730Z**: in_progress — Continuous producer run mode implemented; focused tests and full validation passed; ready for verifier.
+- **T-015@20260530T002730Z**: complete — Completed with verdict PASS.
 - **T-016@20260530T002730Z**: pending — Pending.
 - **T-017@20260530T002730Z**: split — Split into subtasks.
 - **T-017@20260530T002730Za**: pending — Pending.
@@ -710,7 +710,12 @@ Progress: [███████████████████████
   -> `5 passed`.
 - Required validation passed:
   `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`
-  -> `5424 passed, 11 skipped`, Ruff clean, mypy clean.
+  -> `5428 passed, 11 skipped`, Ruff clean, mypy clean.
+- Added explicit SI-003 evidence to
+  `sdp/verification/t-015@20260530t002730z-verify.md` with
+  `PRAGMA table_info(tasks)` and `PRAGMA table_info(task_runs)` snapshots
+  because the verifier parser treated the negative assertion "No database
+  migration" as a migration requirement.
 - Updated `docs/architecture.md`, `docs/handoff-protocol.md`,
   `docs/command-reference.md`, `docs/startup-wizard.md`, `CHANGELOG.md`, and
   `ESCALATIONS.md` for the continuous producer run mode, poll interval

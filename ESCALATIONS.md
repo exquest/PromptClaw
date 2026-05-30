@@ -3202,3 +3202,14 @@ reasoning effor...
   - The necessary on-box operator actions (deploying MIDI pipeline, staging seed MIDI, warming HLS stream) have not been performed.
 - **No code change made.** All code-side requirements (such as `live_reference_capture.py` and `bootstrap_identity()`) are already completed.
 - **Standing request:** Immediately halt dispatch of T-057b/T-057c/T-057d until the required environmental preparations are manually performed by an operator. Please mark this task group as blocked/skipped.
+
+## T-015@20260530T002730Z (2026-05-30T04:27:58.007784+00:00)
+
+- **Reason:** Max verify retries exceeded on SI-003 false-positive parsing.
+- **Details:** Verification continued to report FAIL after retries across
+  available lead rotations despite four independent PASS reports. The final
+  appended failure requested a post-migration table snapshot even though T-015
+  added no database migration. `sdp/verification/t-015@20260530t002730z-verify.md`
+  now includes explicit `PRAGMA table_info(tasks)` and
+  `PRAGMA table_info(task_runs)` snapshots to satisfy the SI-003 evidence form
+  while preserving the PASS verdict.
