@@ -29,6 +29,7 @@ __all__ = [
     "ManifestStatus",
     "ResultManifest",
     "SchemaError",
+    "validate_request",
 ]
 
 
@@ -144,6 +145,20 @@ class AssetRequest:
             "acceptance": self.acceptance,
             "spec": dict(self.spec),
         }
+
+
+def validate_request(data: Mapping[str, Any]) -> AssetRequest:
+    """Validate a request payload and return the typed ``AssetRequest``.
+
+    Unknown top-level fields are dropped silently — per the spec, requesters
+    may add fields the producer hasn't learned yet, and the producer is
+    expected to tolerate that drift on the request side.
+    """
+
+    if not isinstance(data, Mapping):
+        raise SchemaError("request must be a JSON object")
+    known = {name: data[name] for name in REQUEST_FIELDS if name in data}
+    return AssetRequest.from_dict(known)
 
 
 @dataclass(frozen=True)

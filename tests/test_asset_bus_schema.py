@@ -16,6 +16,7 @@ from promptclaw.asset_bus import (
     ManifestAsset,
     ResultManifest,
     SchemaError,
+    validate_request,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures" / "asset_bus"
@@ -123,3 +124,22 @@ def test_request_rejects_non_object_spec() -> None:
     raw["spec"] = "not an object"
     with pytest.raises(SchemaError, match="'spec' must be a JSON object"):
         AssetRequest.from_dict(raw)
+
+
+def test_validate_request_accepts_conforming_fixture() -> None:
+    raw = _load("request_image.json")
+    request = validate_request(raw)
+    assert isinstance(request, AssetRequest)
+    assert request.to_dict() == raw
+
+
+def test_validate_request_silently_ignores_unknown_fields() -> None:
+    raw = _load("request_image.json")
+    raw["unrecognized_top_level"] = "from a future minor"
+    raw["another_extra"] = {"nested": True}
+    request = validate_request(raw)
+    assert isinstance(request, AssetRequest)
+    assert "unrecognized_top_level" not in request.to_dict()
+    assert "another_extra" not in request.to_dict()
+    assert request.request_id == raw["request_id"]
+    assert request.schema == raw["schema"]

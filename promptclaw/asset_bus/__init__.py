@@ -59,6 +59,7 @@ from .schema import (
     ManifestStatus,
     ResultManifest,
     SchemaError,
+    validate_request,
 )
 from .renderers import (
     Renderer,
@@ -140,4 +141,5 @@ __all__ = [
     "sanitize_request_id",
     "sanitize_target_path",
     "to_render_arg",
+    "validate_request",
 ]
