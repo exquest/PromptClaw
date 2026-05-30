@@ -8,9 +8,12 @@ from .atomic import (
 from .capabilities import (
     CAPABILITIES,
     CapabilityStatus,
+    RendererMatrix,
+    RendererMatrixError,
     build_deferred_manifest,
     capability_for,
     is_deferred,
+    load_renderer_matrix,
 )
 from .limits import (
     MAX_IMAGES_PER_REQUEST,
@@ -62,6 +65,8 @@ __all__ = [
     "CeilingExceededError",
     "FakeBoxRunner",
     "RenderArgError",
+    "RendererMatrix",
+    "RendererMatrixError",
     "SSHBoxRunner",
     "UnsafePathError",
     "asset_manifest_entry",
@@ -75,6 +80,7 @@ __all__ = [
     "error_manifest_for_ceiling",
     "is_deferred",
     "list_pending_requests",
+    "load_renderer_matrix",
     "process_request_if_pending",
     "resolve_bus_root",
     "result_manifest_path",
