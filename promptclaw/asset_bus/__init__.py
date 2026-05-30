@@ -15,6 +15,10 @@ from .capabilities import (
     is_deferred,
     load_renderer_matrix,
 )
+from .dispatch import (
+    UnknownAssetTypeError,
+    dispatch_request,
+)
 from .limits import (
     MAX_IMAGES_PER_REQUEST,
     MAX_MUSIC_DURATION_SECONDS,
@@ -75,6 +79,7 @@ __all__ = [
     "RendererMatrixError",
     "RendererRegistry",
     "SSHBoxRunner",
+    "UnknownAssetTypeError",
     "UnknownRendererError",
     "UnsafePathError",
     "asset_manifest_entry",
@@ -85,6 +90,7 @@ __all__ = [
     "capability_for",
     "check_request_within_ceilings",
     "deliverable_dir",
+    "dispatch_request",
     "error_manifest_for_ceiling",
     "is_deferred",
     "list_pending_requests",
