@@ -1,5 +1,10 @@
 """Deniable Asset Bus — producer-side package."""
 
+from .atomic import (
+    TMP_SUFFIX,
+    atomic_write_bytes,
+    atomic_write_text,
+)
 from .limits import (
     MAX_IMAGES_PER_REQUEST,
     MAX_MUSIC_DURATION_SECONDS,
@@ -33,9 +38,12 @@ __all__ = [
     "MAX_IMAGES_PER_REQUEST",
     "MAX_MUSIC_DURATION_SECONDS",
     "MAX_TOTAL_OUTPUT_BYTES",
+    "TMP_SUFFIX",
     "CeilingExceededError",
     "RenderArgError",
     "UnsafePathError",
+    "atomic_write_bytes",
+    "atomic_write_text",
     "build_render_argv",
     "check_request_within_ceilings",
     "deliverable_dir",
