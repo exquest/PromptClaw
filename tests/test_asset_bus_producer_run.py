@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import pytest
 from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
@@ -116,3 +117,53 @@ def test_run_asset_bus_producer_processes_request_added_after_interval(
     assert manifest["status"] == "done"
     assert manifest["assets"][0]["path"] == f"deliverables/{REQUEST_ID}/late.png"
     assert (tmp_path / manifest["assets"][0]["path"]).is_file()
+
+
+
+def test_run_asset_bus_producer_validates_poll_interval(tmp_path: Path) -> None:
+    matrix = RendererMatrix({})
+    registry = RendererRegistry()
+    with pytest.raises(ValueError, match="poll_interval_s must be positive"):
+        run_asset_bus_producer(tmp_path, matrix=matrix, registry=registry, poll_interval_s=0)
+    with pytest.raises(ValueError, match="poll_interval_s must be positive"):
+        run_asset_bus_producer(tmp_path, matrix=matrix, registry=registry, poll_interval_s=-1.0)
+
+def test_run_asset_bus_producer_validates_max_polls(tmp_path: Path) -> None:
+    matrix = RendererMatrix({})
+    registry = RendererRegistry()
+    with pytest.raises(ValueError, match="max_polls must be positive"):
+        run_asset_bus_producer(tmp_path, matrix=matrix, registry=registry, max_polls=0)
+    with pytest.raises(ValueError, match="max_polls must be positive"):
+        run_asset_bus_producer(tmp_path, matrix=matrix, registry=registry, max_polls=-5)
+
+def test_run_asset_bus_producer_max_polls_one(tmp_path: Path) -> None:
+    matrix = RendererMatrix({})
+    registry = RendererRegistry()
+    clock = FakeClock(lambda s: None)
+    
+    result = run_asset_bus_producer(
+        tmp_path,
+        matrix=matrix,
+        registry=registry,
+        max_polls=1,
+        clock=clock,
+    )
+    
+    assert result.polls == 1
+    assert clock.sleeps == []
+
+def test_run_asset_bus_producer_stop_already_true(tmp_path: Path) -> None:
+    matrix = RendererMatrix({})
+    registry = RendererRegistry()
+    clock = FakeClock(lambda s: None)
+    
+    result = run_asset_bus_producer(
+        tmp_path,
+        matrix=matrix,
+        registry=registry,
+        clock=clock,
+        stop=lambda: True,
+    )
+    
+    assert result.polls == 0
+    assert clock.sleeps == []
