@@ -150,6 +150,13 @@ shell command string. Unit tests use `FakeBoxRunner`; production can use
 `SSHBoxRunner(host=..., remote_output_root=...)` to invoke deployed CypherClaw
 renderers over SSH and pull output files back with `rsync`.
 
+The programmatic request-processing entry point is
+`promptclaw.asset_bus.process_request_if_pending(...)`. Existing callers may
+still supply a direct `render` callback; producer callers can supply a
+`RendererMatrix` and `RendererRegistry` so the function reads the request file,
+uses matrix/registry dispatch, and atomically writes the returned result
+manifest.
+
 `SSHBoxRunner.run(argv, output_dir=...)` expects a renderer argv list, sends
 that argv as JSON stdin to the fixed remote
 `promptclaw.asset_bus.remote_exec` helper, and calls both local `ssh` and

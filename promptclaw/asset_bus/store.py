@@ -24,7 +24,10 @@ from pathlib import Path
 from typing import Any
 
 from .atomic import atomic_write_text
+from .capabilities import RendererMatrix
+from .dispatch import dispatch_request
 from .paths import UnsafePathError, sanitize_request_id
+from .renderers import RendererRegistry
 
 __all__ = [
     "DEFAULT_BUS_ROOT",
@@ -159,17 +162,53 @@ def result_manifest_path(bus_root: Path | str, request_id: str) -> Path:
     return root / "deliverables" / f"{safe_id}{_RESULT_SUFFIX}"
 
 
+def _request_file_path(bus_root: Path | str, request_id: str) -> Path:
+    safe_id = sanitize_request_id(request_id)
+    root = Path(bus_root).expanduser().absolute()
+    return root / "requests" / f"{safe_id}{_REQUEST_SUFFIX}"
+
+
+def _read_request_file(bus_root: Path | str, request_id: str) -> Mapping[str, Any]:
+    request_path = _request_file_path(bus_root, request_id)
+    raw = json.loads(request_path.read_text(encoding="utf-8"))
+    if not isinstance(raw, Mapping):
+        raise ValueError(f"request file must contain a JSON object: {request_path}")
+    return raw
+
+
+def _dispatch_request_manifest(
+    bus_root: Path | str,
+    request_id: str,
+    matrix: RendererMatrix,
+    registry: RendererRegistry,
+) -> Mapping[str, Any]:
+    request = _read_request_file(bus_root, request_id)
+    manifest = dispatch_request(request, matrix, registry)
+    if not isinstance(manifest, Mapping):
+        raise TypeError(
+            "asset-bus renderer must return a mapping-shaped result manifest"
+        )
+    return manifest
+
+
 def process_request_if_pending(
     bus_root: Path | str,
     request_id: str,
-    render: Callable[[], Mapping[str, Any]],
+    render: Callable[[], Mapping[str, Any]] | None = None,
+    *,
+    matrix: RendererMatrix | None = None,
+    registry: RendererRegistry | None = None,
 ) -> bool:
     """Render and write the result manifest unless one already exists.
 
     ``request_id`` keys the deliverable; if its result manifest is already on
-    disk this is a no-op — ``render`` is not invoked and the existing manifest
-    is not rewritten. Otherwise ``render`` is called, its return value is
-    serialized as JSON, and the manifest is written atomically.
+    disk this is a no-op — no request file is read, no renderer is invoked, and
+    the existing manifest is not rewritten.
+
+    Existing callback callers can pass ``render`` directly. Producer callers
+    can instead pass ``matrix`` and ``registry``; the request JSON is read from
+    ``requests/<request_id>.json`` and routed through
+    :func:`promptclaw.asset_bus.dispatch.dispatch_request`.
 
     Returns ``True`` if rendering occurred, ``False`` if the request was
     already fulfilled. The idempotency check is a single ``exists()`` and is
@@ -179,7 +218,20 @@ def process_request_if_pending(
     manifest_path = result_manifest_path(bus_root, request_id)
     if manifest_path.exists():
         return False
-    manifest = render()
+    if render is None:
+        if matrix is None or registry is None:
+            raise ValueError(
+                "process_request_if_pending requires either render or both "
+                "matrix and registry"
+            )
+        manifest = _dispatch_request_manifest(
+            bus_root,
+            request_id,
+            matrix,
+            registry,
+        )
+    else:
+        manifest = render()
     atomic_write_text(
         manifest_path,
         json.dumps(manifest, indent=2, sort_keys=True),

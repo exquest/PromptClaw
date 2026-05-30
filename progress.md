@@ -687,3 +687,41 @@ Progress: [███████████████████████
   `tests/test_space_reverb_profiles.py::test_voice_synthdefs_declare_fx_bus_id_routing_contract`
   and `tests/test_sw_sampler.py::TestRoutingAndFxSend`, covering the recurring
   `fx_bus_id` and `sw_sampler.scd` routing failure modes.
+
+### Phase 1 Specify
+
+- Wrote `specs/t-012@20260530t002730zd-spec.md` with problem statement,
+  technical approach, edge cases, and VERIFY commands for each acceptance
+  criterion.
+- Documented no-questions assumptions and no-new-dependency status in
+  `ESCALATIONS.md`.
+
+### Phase 2 Test Development
+
+- Added locked integration coverage in
+  `tests/test_asset_bus_process_dispatch.py`.
+- Red phase confirmed:
+  `pytest tests/test_asset_bus_process_dispatch.py -q` failed with
+  `TypeError: process_request_if_pending() got an unexpected keyword argument 'matrix'`.
+
+### Phase 3 Implement
+
+- Wired dispatch into `process_request_if_pending(...)` while preserving the
+  existing callback render path and idempotent no-op behavior.
+- Added request-file loading from `requests/<request_id>.json`, matrix/registry
+  dispatch via `dispatch_request(...)`, and a mapping-shaped renderer manifest
+  check before the existing atomic manifest write.
+
+### Phase 4 Verify & Document
+
+- Focused asset-bus suite passed:
+  `pytest tests/test_asset_bus_*.py -q` -> `130 passed`.
+- Candidate hardening anchors passed:
+  `pytest tests/test_space_reverb_profiles.py::test_voice_synthdefs_declare_fx_bus_id_routing_contract tests/test_sw_sampler.py::TestRoutingAndFxSend -q`
+  -> `5 passed`.
+- Required validation passed:
+  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`
+  -> `5413 passed, 11 skipped`, Ruff clean, mypy clean.
+- Updated `docs/architecture.md`, `docs/handoff-protocol.md`,
+  `docs/command-reference.md`, `docs/startup-wizard.md`, and `CHANGELOG.md`
+  for the request-processing matrix/registry dispatch boundary.

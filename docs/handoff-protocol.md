@@ -241,6 +241,12 @@ the handoff boundary by sending request argv as JSON stdin to the fixed remote
 `promptclaw.asset_bus.remote_exec` helper; neither the local `ssh` argv list nor
 the `rsync` transfer argv includes request-derived shell fragments.
 
+The producer-side entry point,
+`promptclaw.asset_bus.process_request_if_pending(...)`, now owns the first
+request-processing hop: after the idempotency check, it can read
+`requests/<request_id>.json`, route it through matrix/registry dispatch, and
+atomically publish the returned result manifest.
+
 ## Benefits
 
 - deterministic transfer point

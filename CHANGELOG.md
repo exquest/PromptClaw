@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Added T-012d Deniable Asset Bus request-entry dispatch wiring:
+  `process_request_if_pending(...)` now preserves its existing callback
+  idempotency path while also accepting a `RendererMatrix` and
+  `RendererRegistry`, reading `requests/<request_id>.json`, routing through
+  `dispatch_request(...)`, and atomically writing the renderer-returned result
+  manifest. New integration coverage drives real request files for `image` and
+  `music` through separate renderer stubs and verifies per-request manifests
+  plus produced asset paths. Product-facing docs now describe the
+  request-processing and matrix/registry dispatch boundary. No new Python
+  dependencies, provider secrets, database columns, migrations, runtime state
+  directories, startup-flow wiring, or agent commands were added. The
+  `fx_bus_id` / `sw_sampler.scd` hardening anchors passed, and full validation
+  passed with `5413 passed, 11 skipped`, Ruff clean, and mypy clean.
+
 - Added T-009 Deniable Asset Bus `SSHBoxRunner`: production renderer dispatch
   can now invoke the fixed `promptclaw.asset_bus.remote_exec` helper over SSH,
   serialize request-derived renderer argv as JSON stdin, execute the remote

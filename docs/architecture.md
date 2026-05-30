@@ -108,6 +108,12 @@ The Deniable Asset Bus is a filesystem handoff between a requester writing
 `BoxRunner` protocol so producer code can use `FakeBoxRunner` in tests and
 `SSHBoxRunner` in production.
 
+`process_request_if_pending(...)` is the current request-processing entry
+point. It preserves result-manifest idempotency, reads the request JSON from the
+bus when dispatch mode is used, and invokes matrix/registry dispatch through
+`RendererMatrix`, `RendererRegistry`, and `dispatch_request(...)` before writing
+the returned manifest atomically.
+
 `SSHBoxRunner` keeps request-derived strings out of shell command lines. The
 local `ssh` invocation is an argv list that calls the fixed
 `promptclaw.asset_bus.remote_exec` helper; the renderer argv is JSON stdin, and
