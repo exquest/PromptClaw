@@ -29,6 +29,8 @@ from .limits import (
 )
 from .producer import (
     BatchProcessResult,
+    build_error_manifest,
+    build_partial_manifest,
     process_pending_requests_once,
 )
 from .paths import (
@@ -91,6 +93,8 @@ __all__ = [
     "atomic_write_bytes",
     "atomic_write_text",
     "build_deferred_manifest",
+    "build_error_manifest",
+    "build_partial_manifest",
     "build_render_argv",
     "capability_for",
     "check_request_within_ceilings",
