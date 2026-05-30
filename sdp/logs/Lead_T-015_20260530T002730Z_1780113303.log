@@ -1,0 +1,20 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (9124 chars)
+---
+
+The escalation is filed, three independent PASS verifications are committed, and the loop is being driven by the documented SI-003 false positive — exactly the pattern memorized in `project_sdp_si003_false_positive.md`. The new uncommitted log/verify-doc churn is the orchestrator dispatching past its own halt request.
+
+Per Anthony's standing guidance (`escalate, don't retry` on SI-003 false positives), I'm not running another verify pass. T-015 is done.
+
+**Status of T-015@20260530T002730Z:**
+- Implementation committed: `447da84 feat(asset-bus): add continuous producer run mode`
+- Three independent PASS verifications: `3ebcf89`, `aabc0da`, `928ab61`
+- Halt request committed: `97d9e99 docs(escalations): halt request for T-015 — pair-rotate retries exhausted on verifier false positives`
+- Final report committed: `4e7150f verify(t-015): final verification report and hardening notes`
+
+**Why the loop keeps firing:**
+1. **SI-003** scans for the token `migration` and ignores negation context. T-015's spec line 80 says *"no database migration"* — there is no schema change, so no `PRAGMA table_info` / `\d <table>` evidence can exist.
+2. **`bootstrap_identity` hardening bullets** — already wired at `promptclaw/cli.py:1262`, `narrative_api/main.py:17`, `midi_intake_daemon.py:587`. Three verifiers confirmed this.
+3. **SuperCollider `fx_bus_id` bullets** — cross-project boilerplate, outside the asset-bus Python surface.
+
+**Recommended next step (your call):** file a focused task to patch the SI-003 rule so it ignores negative-assertion contexts ("no migration", "without migration", etc.). That stops this from recurring on T-016+ asset-bus tasks. Want me to draft that task spec, or just leave the halt request standing and move on?
