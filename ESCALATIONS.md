@@ -1,5 +1,23 @@
 # Escalations
 
+## T-012@20260530T002730Zd (2026-05-30)
+
+- **Reason:** No-questions task assumptions for wiring dispatch into the
+  Deniable Asset Bus request-processing entry point.
+- **Assumption:** "request-processing entry point" refers to the existing
+  `promptclaw.asset_bus.store.process_request_if_pending(...)` function because
+  it already owns result-manifest idempotency and atomic writes.
+- **Assumption:** This slice should preserve the current callback-based
+  `process_request_if_pending(..., render=...)` behavior while adding a
+  matrix/registry dispatch path, rather than introducing a separate producer
+  loop or CLI.
+- **No new dependencies:** No Python package, provider secret, database column,
+  migration, runtime state directory, startup-flow wiring, or agent command is
+  added for this task.
+- **Candidate hardening:** The recurring SuperCollider `fx_bus_id` and
+  `sw_sampler.scd` failures are outside the asset-bus Python implementation
+  scope but are mandatory verification anchors for this task.
+
 ## T-009@20260530T002730Z (2026-05-30)
 
 - **Reason:** Production deployment assumption for the new Deniable Asset Bus

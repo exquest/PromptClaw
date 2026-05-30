@@ -657,3 +657,33 @@ Progress: [███████████████████████
 - **T-021@20260530T002730Z**: pending — Pending.
 - **T-022@20260530T002730Z**: pending — Pending.
 - **T-023@20260530T002730Z**: pending — Pending.
+
+## T-012@20260530T002730Zd ADP Notes
+
+### Phase 0 Explore
+
+- Read the Deniable Asset Bus requester contract
+  (`docs/deniable-asset-bus-spec.md`) and producer PRD
+  (`sdp/prd-deniable-asset-bus-2026-05-29.md`): the producer must scan
+  `requests/`, write `deliverables/<request_id>.result.json`, preserve
+  idempotency, and route image/music requests through renderer-specific
+  producer code while keeping voiceover deferred.
+- Read the asset-bus affected area:
+  `promptclaw/asset_bus/{atomic,capabilities,dispatch,limits,paths,remote_exec,render_args,renderers,runner,store}.py`
+  and `promptclaw/asset_bus/__init__.py`.
+- Existing patterns: `RendererMatrix` maps `asset_type` to renderer name,
+  `RendererRegistry` maps renderer name to callable, and
+  `dispatch_request(...)` composes both while preserving typed
+  `UnknownAssetTypeError` / `UnknownRendererError` failures.
+- Existing request-processing gap: `process_request_if_pending(...)` already
+  handles result-manifest idempotency and atomic writes, but it only accepts a
+  manual `render` callback and does not yet read a request JSON file or invoke
+  matrix/registry dispatch.
+- Related tests reviewed:
+  `tests/test_asset_bus_{store,idempotency,dispatch,renderer_registry,renderer_matrix,capabilities,deferred,limits,paths,runner,remote_exec,render_args}.py`.
+  They establish flat `tests/test_asset_bus_*.py` naming, temp-dir bus roots,
+  hermetic renderer stubs/fake runners, and JSON manifest assertions.
+- Candidate hardening anchors identified for verification:
+  `tests/test_space_reverb_profiles.py::test_voice_synthdefs_declare_fx_bus_id_routing_contract`
+  and `tests/test_sw_sampler.py::TestRoutingAndFxSend`, covering the recurring
+  `fx_bus_id` and `sw_sampler.scd` routing failure modes.
