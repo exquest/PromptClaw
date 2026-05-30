@@ -5,6 +5,11 @@ from .atomic import (
     atomic_write_bytes,
     atomic_write_text,
 )
+from .capabilities import (
+    CAPABILITIES,
+    CapabilityStatus,
+    capability_for,
+)
 from .limits import (
     MAX_IMAGES_PER_REQUEST,
     MAX_MUSIC_DURATION_SECONDS,
@@ -42,6 +47,7 @@ from .store import (
 )
 
 __all__ = [
+    "CAPABILITIES",
     "DEFAULT_BUS_ROOT",
     "ENV_VAR",
     "MAX_IMAGES_PER_REQUEST",
@@ -50,6 +56,7 @@ __all__ = [
     "TMP_SUFFIX",
     "BoxRunResult",
     "BoxRunner",
+    "CapabilityStatus",
     "CeilingExceededError",
     "FakeBoxRunner",
     "RenderArgError",
@@ -59,6 +66,7 @@ __all__ = [
     "atomic_write_bytes",
     "atomic_write_text",
     "build_render_argv",
+    "capability_for",
     "check_request_within_ceilings",
     "deliverable_dir",
     "error_manifest_for_ceiling",
