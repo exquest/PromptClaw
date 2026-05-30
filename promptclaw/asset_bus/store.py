@@ -17,11 +17,13 @@ loop needs: :func:`resolve_bus_root` and :func:`list_pending_requests`.
 from __future__ import annotations
 
 import hashlib
+import json
 import os
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
+from .atomic import atomic_write_text
 from .paths import UnsafePathError, sanitize_request_id
 
 __all__ = [
@@ -29,7 +31,9 @@ __all__ = [
     "ENV_VAR",
     "asset_manifest_entry",
     "list_pending_requests",
+    "process_request_if_pending",
     "resolve_bus_root",
+    "result_manifest_path",
 ]
 
 
@@ -141,3 +145,43 @@ def asset_manifest_entry(
         "meta": dict(meta) if meta is not None else {},
     }
     return entry
+
+
+def result_manifest_path(bus_root: Path | str, request_id: str) -> Path:
+    """Return the result-manifest path for ``request_id`` under ``bus_root``.
+
+    The path is ``<bus_root>/deliverables/<request_id>.result.json``;
+    ``request_id`` is sanitized so callers cannot escape the deliverables
+    directory. The file is not required to exist.
+    """
+    safe_id = sanitize_request_id(request_id)
+    root = Path(bus_root).expanduser().absolute()
+    return root / "deliverables" / f"{safe_id}{_RESULT_SUFFIX}"
+
+
+def process_request_if_pending(
+    bus_root: Path | str,
+    request_id: str,
+    render: Callable[[], Mapping[str, Any]],
+) -> bool:
+    """Render and write the result manifest unless one already exists.
+
+    ``request_id`` keys the deliverable; if its result manifest is already on
+    disk this is a no-op — ``render`` is not invoked and the existing manifest
+    is not rewritten. Otherwise ``render`` is called, its return value is
+    serialized as JSON, and the manifest is written atomically.
+
+    Returns ``True`` if rendering occurred, ``False`` if the request was
+    already fulfilled. The idempotency check is a single ``exists()`` and is
+    not synchronized — two concurrent producers may both render, but the
+    atomic write keeps the manifest readable at all times.
+    """
+    manifest_path = result_manifest_path(bus_root, request_id)
+    if manifest_path.exists():
+        return False
+    manifest = render()
+    atomic_write_text(
+        manifest_path,
+        json.dumps(manifest, indent=2, sort_keys=True),
+    )
+    return True

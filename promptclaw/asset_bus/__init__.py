@@ -30,7 +30,9 @@ from .store import (
     ENV_VAR,
     asset_manifest_entry,
     list_pending_requests,
+    process_request_if_pending,
     resolve_bus_root,
+    result_manifest_path,
 )
 
 __all__ = [
@@ -51,7 +53,9 @@ __all__ = [
     "deliverable_dir",
     "error_manifest_for_ceiling",
     "list_pending_requests",
+    "process_request_if_pending",
     "resolve_bus_root",
+    "result_manifest_path",
     "safe_deliverable_path",
     "sanitize_request_id",
     "sanitize_target_path",
