@@ -8,8 +8,11 @@ from pathlib import Path
 import pytest
 
 from promptclaw.asset_bus import (
+    ASSET_TYPES,
+    FORMATS,
     MANIFEST_ASSET_FIELDS,
     MANIFEST_FIELDS,
+    PRIORITIES,
     REQUEST_FIELDS,
     SCHEMA,
     AssetRequest,
@@ -143,3 +146,99 @@ def test_validate_request_silently_ignores_unknown_fields() -> None:
     assert "another_extra" not in request.to_dict()
     assert request.request_id == raw["request_id"]
     assert request.schema == raw["schema"]
+
+
+def test_validate_request_rejects_non_object_payload() -> None:
+    with pytest.raises(SchemaError, match="request must be a JSON object"):
+        validate_request("not a dict")  # type: ignore[arg-type]
+
+
+def test_validate_request_reports_missing_required_field() -> None:
+    raw = _load("request_image.json")
+    del raw["acceptance"]
+    with pytest.raises(SchemaError, match="missing required fields") as excinfo:
+        validate_request(raw)
+    assert "acceptance" in str(excinfo.value)
+
+
+def test_validate_request_reports_wrong_type_for_string_field() -> None:
+    raw = _load("request_image.json")
+    raw["request_id"] = 12345
+    with pytest.raises(SchemaError, match="wrong type") as excinfo:
+        validate_request(raw)
+    msg = str(excinfo.value)
+    assert "'request_id'" in msg
+    assert "expected str" in msg
+    assert "got int" in msg
+
+
+def test_validate_request_reports_wrong_type_for_spec() -> None:
+    raw = _load("request_image.json")
+    raw["spec"] = "not an object"
+    with pytest.raises(SchemaError, match="wrong type") as excinfo:
+        validate_request(raw)
+    assert "'spec'" in str(excinfo.value)
+
+
+def test_validate_request_reports_invalid_asset_type() -> None:
+    raw = _load("request_image.json")
+    raw["asset_type"] = "hologram"
+    with pytest.raises(SchemaError, match="invalid value") as excinfo:
+        validate_request(raw)
+    msg = str(excinfo.value)
+    assert "'asset_type'" in msg
+    assert "'hologram'" in msg
+    for allowed in ASSET_TYPES:
+        assert allowed in msg
+
+
+def test_validate_request_reports_invalid_format() -> None:
+    raw = _load("request_image.json")
+    raw["format"] = "tiff"
+    with pytest.raises(SchemaError, match="invalid value") as excinfo:
+        validate_request(raw)
+    assert "'format'" in str(excinfo.value)
+    for allowed in FORMATS:
+        assert allowed in str(excinfo.value)
+
+
+def test_validate_request_reports_invalid_priority() -> None:
+    raw = _load("request_image.json")
+    raw["priority"] = "urgent"
+    with pytest.raises(SchemaError, match="invalid value") as excinfo:
+        validate_request(raw)
+    assert "'priority'" in str(excinfo.value)
+    for allowed in PRIORITIES:
+        assert allowed in str(excinfo.value)
+
+
+def test_validate_request_reports_invalid_schema_constant() -> None:
+    raw = _load("request_image.json")
+    raw["schema"] = "deniable-asset-bus/v9.9"
+    with pytest.raises(SchemaError, match="invalid value") as excinfo:
+        validate_request(raw)
+    msg = str(excinfo.value)
+    assert "'schema'" in msg
+    assert SCHEMA in msg
+
+
+def test_validate_request_error_categories_are_distinguishable() -> None:
+    base = _load("request_image.json")
+
+    missing = dict(base)
+    del missing["title"]
+    wrong_type = dict(base, request_id=42)
+    bad_enum = dict(base, priority="urgent")
+
+    with pytest.raises(SchemaError) as miss_err:
+        validate_request(missing)
+    with pytest.raises(SchemaError) as type_err:
+        validate_request(wrong_type)
+    with pytest.raises(SchemaError) as enum_err:
+        validate_request(bad_enum)
+
+    messages = {str(miss_err.value), str(type_err.value), str(enum_err.value)}
+    assert len(messages) == 3
+    assert "missing required fields" in str(miss_err.value)
+    assert "wrong type" in str(type_err.value)
+    assert "invalid value" in str(enum_err.value)

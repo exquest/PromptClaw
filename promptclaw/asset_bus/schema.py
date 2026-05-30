@@ -20,8 +20,11 @@ from dataclasses import dataclass, field
 from typing import Any, Final, Literal
 
 __all__ = [
+    "ASSET_TYPES",
+    "FORMATS",
     "MANIFEST_ASSET_FIELDS",
     "MANIFEST_FIELDS",
+    "PRIORITIES",
     "REQUEST_FIELDS",
     "SCHEMA",
     "AssetRequest",
@@ -36,6 +39,10 @@ __all__ = [
 SCHEMA: Final[str] = "deniable-asset-bus/v0.1"
 
 ManifestStatus = Literal["done", "error", "partial", "deferred"]
+
+ASSET_TYPES: Final[tuple[str, ...]] = ("image", "music", "voiceover", "sfx")
+FORMATS: Final[tuple[str, ...]] = ("png", "wav", "ogg", "mp3")
+PRIORITIES: Final[tuple[str, ...]] = ("low", "normal", "high")
 
 REQUEST_FIELDS: Final[tuple[str, ...]] = (
     "request_id",
@@ -147,17 +154,72 @@ class AssetRequest:
         }
 
 
+_REQUEST_STRING_FIELDS: Final[tuple[str, ...]] = (
+    "request_id",
+    "schema",
+    "created_at",
+    "requester",
+    "asset_type",
+    "title",
+    "format",
+    "target_path",
+    "priority",
+    "acceptance",
+)
+
+_REQUEST_ENUMS: Final[dict[str, tuple[str, ...]]] = {
+    "schema": (SCHEMA,),
+    "asset_type": ASSET_TYPES,
+    "format": FORMATS,
+    "priority": PRIORITIES,
+}
+
+
 def validate_request(data: Mapping[str, Any]) -> AssetRequest:
     """Validate a request payload and return the typed ``AssetRequest``.
 
     Unknown top-level fields are dropped silently — per the spec, requesters
     may add fields the producer hasn't learned yet, and the producer is
     expected to tolerate that drift on the request side.
+
+    Malformed requests raise ``SchemaError`` with a distinguishable prefix so
+    callers (and tests) can tell apart the failure modes:
+
+    * ``"missing required fields"`` — one or more required keys absent;
+    * ``"wrong type"`` — a field is present but the JSON type is wrong;
+    * ``"invalid value"`` — a field has a correct type but a value outside
+      the spec-defined enum (``schema``, ``asset_type``, ``format``,
+      ``priority``).
     """
 
     if not isinstance(data, Mapping):
         raise SchemaError("request must be a JSON object")
     known = {name: data[name] for name in REQUEST_FIELDS if name in data}
+
+    missing = [name for name in REQUEST_FIELDS if name not in known]
+    if missing:
+        raise SchemaError(f"request is missing required fields: {missing}")
+
+    for name in _REQUEST_STRING_FIELDS:
+        value = known[name]
+        if not isinstance(value, str):
+            raise SchemaError(
+                f"request field {name!r} has wrong type: "
+                f"expected str, got {type(value).__name__}"
+            )
+    if not isinstance(known["spec"], Mapping):
+        raise SchemaError(
+            f"request field 'spec' has wrong type: "
+            f"expected object, got {type(known['spec']).__name__}"
+        )
+
+    for name, allowed in _REQUEST_ENUMS.items():
+        if known[name] not in allowed:
+            raise SchemaError(
+                f"request field {name!r} has invalid value {known[name]!r}; "
+                f"expected one of {list(allowed)}"
+            )
+
     return AssetRequest.from_dict(known)
 
 
