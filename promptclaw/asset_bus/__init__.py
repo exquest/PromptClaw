@@ -35,6 +35,11 @@ from .render_args import (
     build_render_argv,
     to_render_arg,
 )
+from .renderers import (
+    Renderer,
+    RendererRegistry,
+    UnknownRendererError,
+)
 from .runner import (
     BoxRunner,
     BoxRunResult,
@@ -65,9 +70,12 @@ __all__ = [
     "CeilingExceededError",
     "FakeBoxRunner",
     "RenderArgError",
+    "Renderer",
     "RendererMatrix",
     "RendererMatrixError",
+    "RendererRegistry",
     "SSHBoxRunner",
+    "UnknownRendererError",
     "UnsafePathError",
     "asset_manifest_entry",
     "atomic_write_bytes",
