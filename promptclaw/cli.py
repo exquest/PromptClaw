@@ -6,6 +6,7 @@ import sys
 from dataclasses import asdict
 from pathlib import Path
 
+from .asset_bus import SchemaError, validate_request
 from .bootstrap import bootstrap_project, init_project
 from .config import load_config
 from .diagnostics import diagnose, format_diagnosis
@@ -327,6 +328,23 @@ def build_parser() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         help="Print approval result JSON",
+    )
+
+    asset_bus_parser = subparsers.add_parser(
+        "asset-bus", help="Deniable Asset Bus commands"
+    )
+    asset_bus_sub = asset_bus_parser.add_subparsers(
+        dest="asset_bus_command", required=True
+    )
+    asset_bus_validate_parser = asset_bus_sub.add_parser(
+        "validate",
+        help="Validate one request file against the v0.1 schema",
+    )
+    asset_bus_validate_parser.add_argument(
+        "--request",
+        required=True,
+        type=Path,
+        help="Path to a requests/<request_id>.json file",
     )
 
     # --- coherence subcommand group ---
@@ -1200,6 +1218,8 @@ def _dispatch(args: argparse.Namespace) -> int:
         return cmd_show_config(args)
     if args.command == "pal":
         return _dispatch_pal(args)
+    if args.command == "asset-bus":
+        return _dispatch_asset_bus(args)
     if args.command == "coherence":
         return _dispatch_coherence(args)
     return 2
@@ -1240,6 +1260,36 @@ def _dispatch_pal(args: argparse.Namespace) -> int:
         return cmd_pal_agent_actions(args)
     if args.pal_command == "agent" and args.pal_agent_command == "approve":
         return cmd_pal_agent_approve(args)
+    return 2
+
+
+def cmd_asset_bus_validate(args: argparse.Namespace) -> int:
+    request_path: Path = args.request
+    try:
+        raw = request_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        print(f"asset-bus validate: cannot read {request_path}: {exc}", file=sys.stderr)
+        return 2
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        print(
+            f"asset-bus validate: {request_path} is not valid JSON: {exc}",
+            file=sys.stderr,
+        )
+        return 2
+    try:
+        request = validate_request(data)
+    except SchemaError as exc:
+        print(f"asset-bus validate: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(request.to_dict(), indent=2))
+    return 0
+
+
+def _dispatch_asset_bus(args: argparse.Namespace) -> int:
+    if args.asset_bus_command == "validate":
+        return cmd_asset_bus_validate(args)
     return 2
 
 
