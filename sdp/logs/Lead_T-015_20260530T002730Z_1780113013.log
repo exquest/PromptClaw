@@ -1,0 +1,22 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-opus-4-7 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (7668 chars)
+---
+
+Stopping here rather than starting another retry cycle. This is the SI-003 false-positive pattern documented in memory.
+
+**State of T-015:**
+- Implementation committed in `447da84` (`feat(asset-bus): add continuous producer run mode`) — code is in place
+- Independent verifiers passed 3× (`3ebcf89`, `aabc0da`, `928ab61`) — all acceptance criteria green
+- Halt escalation already filed (`97d9e99`) for "pair-rotate retries exhausted on verifier false positives"
+- Verify report finalized (`603c38b`)
+- 5 Lead_T-015 logs + 4 Verify_T-015 logs show the loop has burned multiple retries
+- `promptclaw/coherence/migrations/` contains only the pre-existing `001_event_store.sql` and `002_decision_store.sql` — no schema change in this task
+
+**Why this prompt keeps appearing:** The spec mentions "migration" only in negative-assertion/scope context. SI-003 keyword-matches on the token and demands a `PRAGMA table_info`/`\d table` snapshot, which is unsatisfiable when no schema changed. Every "previous verification feedback" block in the brief above is the verifier looping on this — three of those blocks explicitly say "No issues found" before the SI-003 nag re-fires. Memory `project_sdp_si003_false_positive.md`: third hit (after T-017 and T-054d) — the rule itself needs the fix, not the lead.
+
+**Per `feedback_autonomous_sdp_limits.md`** I'm not going to spin up another Lead phase for this. Two paths forward, your call:
+
+1. **Patch SI-003** to skip specs whose only `migration` mentions are inside forbidden-action lists, AC "no X introduced" lines, or `git diff -- …/migrations` VERIFY commands. This is the real fix and stops the loop on future tasks too.
+2. **Hard-mark T-015 done** in the orchestrator state (the halt commit is the green light) and let the run-loop advance to T-016.
+
+Which do you want me to do?

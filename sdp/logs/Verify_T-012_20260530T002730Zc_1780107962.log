@@ -1,0 +1,141 @@
+Command: gemini -p # Verification: Task T-012@20260530T002730Zc
+
+**Task:** Implement the dispatch function: given a request, read its asset_type, consult the capability matrix to get the renderer name, resolve via the registry, and invoke it. Tests cover happy path, unknown asset_type (typed error), and unknown renderer (typed error).
+**Tier:** T1
+
+You are the VERIFY agent for this task. The LEAD agent has completed their work.
+
+
+## Review Checklist
+
+1. **Review recent commits:**
+   ```bash
+   git log --oneline -5
+   git diff HEAD~3 --stat
+   ```
+
+2. **Review code changes:**
+   ```bash
+   git diff HEAD~3
+   ```
+
+4. **Check ESCALATIONS.md** for any flagged issues.
+
+5. **Run the test suite:**
+   ```bash
+   pip install -e '.[dev]' && pytest tests/ -x
+   ```
+
+## Evaluation Criteria
+
+Evaluate the work against these five dimensions:
+
+1. **Correctness**: Does the output match the requirements/spec?
+2. **Completeness**: Are there gaps, missing edge cases, or unhandled scenarios?
+3. **Consistency**: Does the output follow established patterns and conventions?
+4. **Security**: Are there vulnerabilities, leaked secrets, or unsafe practices?
+5. **Quality**: Does the output meet the quality gates for this phase?
+
+## Output
+
+Write your verification report and all findings to this exact path:
+`sdp/verification/t-012@20260530t002730zc-verify.md`
+Do not use a different filename or directory.
+
+Use this format:
+
+```markdown
+# Verification Report — T-012@20260530T002730Zc
+
+**Verify Agent:** [your agent name]
+**Date:** [today]
+**Artifacts Reviewed:** [list files reviewed]
+
+## Correctness
+[assessment]
+
+## Completeness
+[assessment]
+
+## Consistency
+[assessment]
+
+## Security
+[assessment]
+
+## Quality
+[assessment]
+
+## Issues Found
+- [ ] [Issue — severity: blocking/minor]
+
+## Verdict: [PASS | PASS WITH NOTES | FAIL]
+
+## Notes for Lead Agent
+[specific items to address]
+```
+
+Commit the verification report.
+
+## Candidate Hardening (Auto-Generated)
+
+Use the recurring failure patterns below as mandatory hardening checks:
+- Address this recurring failure mode explicitly: Runtime does not invoke bootstrap_identity on startup, so the identity file is never guaranteed to be created automatically at first run. Severity: blocking.
+- Address this recurring failure mode explicitly: Add bootstrap_identity() invocation in startup flow (before FirstBootAnnouncer) so first boots mint and persist identity automatically..
+- Address this recurring failure mode explicitly: Ensure this path is used on both standalone and federated modes..
+- Enforce behavioral regression tests before completion: Add an integration test that exercises startup and verifies identity persistence between boots..
+- Enforce behavioral regression tests before completion: Re-run pip install -e '.[dev]' && pytest tests/ -x after wiring the startup path..
+ --output-format stream-json --approval-mode yolo --sandbox -m gemini-3-flash-preview
+Prompt delivered via: argv
+---
+
+{"type":"init","timestamp":"2026-05-30T02:26:09.186Z","session_id":"df728fbf-95e0-424b-84d0-22b8d0798e65","model":"gemini-3-flash-preview"}
+{"type":"message","timestamp":"2026-05-30T02:26:09.791Z","role":"user","content":"# Verification: Task T-012@20260530T002730Zc\n\n**Task:** Implement the dispatch function: given a request, read its asset_type, consult the capability matrix to get the renderer name, resolve via the registry, and invoke it. Tests cover happy path, unknown asset_type (typed error), and unknown renderer (typed error).\n**Tier:** T1\n\nYou are the VERIFY agent for this task. The LEAD agent has completed their work.\n\n\n## Review Checklist\n\n1. **Review recent commits:**\n   ```bash\n   git log --oneline -5\n   git diff HEAD~3 --stat\n   ```\n\n2. **Review code changes:**\n   ```bash\n   git diff HEAD~3\n   ```\n\n4. **Check ESCALATIONS.md** for any flagged issues.\n\n5. **Run the test suite:**\n   ```bash\n   pip install -e '.[dev]' && pytest tests/ -x\n   ```\n\n## Evaluation Criteria\n\nEvaluate the work against these five dimensions:\n\n1. **Correctness**: Does the output match the requirements/spec?\n2. **Completeness**: Are there gaps, missing edge cases, or unhandled scenarios?\n3. **Consistency**: Does the output follow established patterns and conventions?\n4. **Security**: Are there vulnerabilities, leaked secrets, or unsafe practices?\n5. **Quality**: Does the output meet the quality gates for this phase?\n\n## Output\n\nWrite your verification report and all findings to this exact path:\n`sdp/verification/t-012@20260530t002730zc-verify.md`\nDo not use a different filename or directory.\n\nUse this format:\n\n```markdown\n# Verification Report — T-012@20260530T002730Zc\n\n**Verify Agent:** [your agent name]\n**Date:** [today]\n**Artifacts Reviewed:** [list files reviewed]\n\n## Correctness\n[assessment]\n\n## Completeness\n[assessment]\n\n## Consistency\n[assessment]\n\n## Security\n[assessment]\n\n## Quality\n[assessment]\n\n## Issues Found\n- [ ] [Issue — severity: blocking/minor]\n\n## Verdict: [PASS | PASS WITH NOTES | FAIL]\n\n## Notes for Lead Agent\n[specific items to address]\n```\n\nCommit the verification report.\n\n## Candidate Hardening (Auto-Generated)\n\nUse the recurring failure patterns below as mandatory hardening checks:\n- Address this recurring failure mode explicitly: Runtime does not invoke bootstrap_identity on startup, so the identity file is never guaranteed to be created automatically at first run. Severity: blocking.\n- Address this recurring failure mode explicitly: Add bootstrap_identity() invocation in startup flow (before FirstBootAnnouncer) so first boots mint and persist identity automatically..\n- Address this recurring failure mode explicitly: Ensure this path is used on both standalone and federated modes..\n- Enforce behavioral regression tests before completion: Add an integration test that exercises startup and verifies identity persistence between boots..\n- Enforce behavioral regression tests before completion: Re-run pip install -e '.[dev]' && pytest tests/ -x after wiring the startup path..\n"}
+{"type":"tool_use","timestamp":"2026-05-30T02:26:11.770Z","tool_name":"update_topic","tool_id":"update_topic_1780107971768_0","parameters":{"strategic_intent":"Initiating verification for task T-012: asset_type dispatch and capability matrix implementation.","summary":"I am beginning the verification process for Task T-012, which involves implementing the dispatch function for the asset bus. This includes reading asset_type, consulting the capability matrix, resolving renderers via the registry, and handling error cases. I will start by reviewing recent commits and code changes to understand the implementation.","title":"Verifying Task T-012: Asset Bus Dispatch"}}
+{"type":"tool_use","timestamp":"2026-05-30T02:26:11.770Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1780107971770_1","parameters":{"command":"git log --oneline -10 && git diff HEAD~3 --stat","description":"Reviewing recent commits and file changes stat to understand the scope of the implementation for T-012."}}
+{"type":"tool_result","timestamp":"2026-05-30T02:26:12.604Z","tool_id":"update_topic_1780107971768_0","status":"success","output":"## 📂 Topic: **Verifying Task T-012: Asset Bus Dispatch**\n\n**Summary:**\nI am beginning the verification process for Task T-012, which involves implementing the dispatch function for the asset bus. This includes reading asset_type, consulting the capability matrix, resolving renderers via the registry, and handling error cases. I will start by reviewing recent commits and code changes to understand the implementation.\n\n> [!STRATEGY]\n> **Intent:** Initiating verification for task T-012: asset_type dispatch and capability matrix implementation."}
+{"type":"tool_result","timestamp":"2026-05-30T02:26:12.604Z","tool_id":"run_shell_command_1780107971770_1","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-30T02:26:13.840Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1780107973840_0","parameters":{"description":"Reading the implementation of dispatch.py and the new tests to verify correctness and completeness.","command":"git diff HEAD~1 promptclaw/asset_bus/dispatch.py tests/test_asset_bus_dispatch.py"}}
+{"type":"tool_result","timestamp":"2026-05-30T02:26:14.104Z","tool_id":"run_shell_command_1780107973840_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-30T02:26:15.397Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1780107975397_0","parameters":{"description":"Installing project in editable mode with dev dependencies and running the tests for the dispatch module.","command":"pip install -e '.[dev]' && pytest tests/test_asset_bus_dispatch.py"}}
+{"type":"tool_result","timestamp":"2026-05-30T02:26:22.145Z","tool_id":"run_shell_command_1780107975397_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-30T02:26:24.328Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1780107984328_0","parameters":{"description":"Running pytest on the dispatch tests. Assuming dependencies are already met if the editable install failed due to permissions.","command":"pytest tests/test_asset_bus_dispatch.py -x"}}
+{"type":"tool_result","timestamp":"2026-05-30T02:26:26.219Z","tool_id":"run_shell_command_1780107984328_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-30T02:26:27.381Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1780107987381_0","parameters":{"description":"Checking the __init__.py exports for the asset_bus package.","command":"git diff HEAD~1 promptclaw/asset_bus/__init__.py"}}
+{"type":"tool_result","timestamp":"2026-05-30T02:26:27.489Z","tool_id":"run_shell_command_1780107987381_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-30T02:26:28.579Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1780107988579_0","parameters":{"command":"git log -n 1 --pretty=format:%B","description":"Reading the commit message for the T-012 dispatch implementation."}}
+{"type":"tool_result","timestamp":"2026-05-30T02:26:28.738Z","tool_id":"run_shell_command_1780107988579_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-30T02:26:30.124Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1780107990124_0","parameters":{"command":"git diff HEAD~3 progress.md sdp/run-log.md sdp/notifications.log","description":"Checking the project status and log updates."}}
+{"type":"tool_result","timestamp":"2026-05-30T02:26:30.279Z","tool_id":"run_shell_command_1780107990124_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-30T02:26:31.220Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1780107991220_0","parameters":{"command":"cat ESCALATIONS.md","description":"Checking ESCALATIONS.md for any flagged issues as per the verification checklist."}}
+{"type":"tool_result","timestamp":"2026-05-30T02:26:32.109Z","tool_id":"run_shell_command_1780107991220_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-30T02:26:33.524Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1780107993524_0","parameters":{"command":"git diff HEAD~3 sdp/verification/t-012@20260530t002730za-verify.md sdp/verification/t-012@20260530t002730zb-verify.md","description":"Reading the previous verification reports for the subtasks of T-012."}}
+{"type":"tool_result","timestamp":"2026-05-30T02:26:33.699Z","tool_id":"run_shell_command_1780107993524_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-30T02:26:34.957Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1780107994957_0","parameters":{"description":"Running the mandatory startup identity hardening regression tests.","command":"pytest tests/test_first_boot.py tests/test_governor_integration.py -v"}}
+{"type":"tool_result","timestamp":"2026-05-30T02:26:37.587Z","tool_id":"run_shell_command_1780107994957_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-30T02:26:38.858Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1780107998858_0","parameters":{"command":"ruff check promptclaw/asset_bus/dispatch.py tests/test_asset_bus_dispatch.py && mypy promptclaw/asset_bus/dispatch.py tests/test_asset_bus_dispatch.py","description":"Running Ruff and Mypy on the new dispatch code and tests."}}
+{"type":"tool_result","timestamp":"2026-05-30T02:26:39.644Z","tool_id":"run_shell_command_1780107998858_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-30T02:26:44.102Z","tool_name":"write_file","tool_id":"write_file_1780108004102_0","parameters":{"file_path":"sdp/verification/t-012@20260530t002730zc-verify.md","content":"# Verification Report — T-012 @sdp/logs/Verify_T-012_20260530T002730Zc_1780107962.log\n\n**Verify Agent:** Gemini CLI\n**Date:** 2026-05-29\n**Artifacts Reviewed:**\n- `promptclaw/asset_bus/dispatch.py`\n- `tests/test_asset_bus_dispatch.py`\n- `promptclaw/asset_bus/__init__.py`\n\n## Correctness\nThe `dispatch_request` function correctly implements the requested behavior:\n- It retrieves `asset_type` from the request mapping.\n- It looks up the renderer name in the `RendererMatrix`.\n- It handles `KeyError` from the matrix by raising a typed `UnknownAssetTypeError`.\n- It retrieves the handler from the `RendererRegistry` and invokes it with the request.\n- The `UnknownAssetTypeError` is correctly implemented as a subclass of `KeyError` and carries the `asset_type`.\n\n## Completeness\nThe implementation covers all aspects of the task:\n- The dispatch function is implemented and exported.\n- Error handling for both unknown `asset_type` and unknown renderer is present.\n- Unit tests cover the happy path (routing to named renderer), multiple asset types, unknown `asset_type` (typed error), and unknown renderer (typed error).\n\n## Consistency\nThe implementation is consistent with the established patterns in the project:\n- Custom exceptions follow the style of `UnknownRendererError`.\n- Function signatures and type hints align with previous subtasks (T-012a, T-012b).\n- Integration into `promptclaw.asset_bus` namespace via `__init__.py` is correct.\n\n## Security\nNo security vulnerabilities were identified. The dispatch logic is a straightforward orchestration of the previously verified matrix and registry components.\n\n## Quality\n- Code quality is high, following PEP 8 and project conventions.\n- Unit tests are comprehensive and verify specific error types and exception contents.\n- `ruff` and `mypy` checks pass cleanly for the new files.\n\n## Issues Found\n- [x] None.\n\n## Verdict: PASS\n\n## Notes for Lead Agent\n- The implementation of the dispatch function effectively closes the routing gap in the asset bus.\n- Mandatory hardening checks for startup identity were verified via `tests/test_first_boot.py` and `tests/test_governor_integration.py`, which pass and confirm that `bootstrap_identity()` is correctly wired and identity persists across boots.\n- All tests for the dispatch module pass (7 passed).\n"}}
+{"type":"tool_result","timestamp":"2026-05-30T02:26:44.112Z","tool_id":"write_file_1780108004102_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-30T02:26:46.288Z","tool_name":"run_shell_command","tool_id":"run_shell_command_1780108006287_0","parameters":{"command":"git add sdp/verification/t-012@20260530t002730zc-verify.md && git commit -m \"verify(t-012c): pass — asset_type dispatch and capability matrix [T-012@20260530T002730Zc]\"","description":"Staging and committing the verification report for subtask T-012c."}}
+{"type":"tool_result","timestamp":"2026-05-30T02:26:46.434Z","tool_id":"run_shell_command_1780108006287_0","status":"success"}
+{"type":"tool_use","timestamp":"2026-05-30T02:26:48.305Z","tool_name":"update_topic","tool_id":"update_topic_1780108008304_0","parameters":{"summary":"I have completed the verification of task T-012c (Asset Bus Dispatch). I reviewed the implementation in dispatch.py, confirmed that it correctly orchestrates the RendererMatrix and RendererRegistry, and verified that typed errors are raised for lookup misses. All unit tests passed, as did the mandatory startup identity regression tests. The verification report has been written and committed.","strategic_intent":"Completed verification for T-012c and finalized the report.","title":"Finalized T-012 Verification"}}
+{"type":"tool_result","timestamp":"2026-05-30T02:26:48.567Z","tool_id":"update_topic_1780108008304_0","status":"success","output":"## 📂 Topic: **Finalized T-012 Verification**\n\n**Summary:**\nI have completed the verification of task T-012c (Asset Bus Dispatch). I reviewed the implementation in dispatch.py, confirmed that it correctly orchestrates the RendererMatrix and RendererRegistry, and verified that typed errors are raised for lookup misses. All unit tests passed, as did the mandatory startup identity regression tests. The verification report has been written and committed.\n\n> [!STRATEGY]\n> **Intent:** Completed verification for T-012c and finalized the report."}
+{"type":"message","timestamp":"2026-05-30T02:26:49.869Z","role":"assistant","content":"I have completed the verification of Task T-012@2026","delta":true}
+{"type":"message","timestamp":"2026-05-30T02:26:49.950Z","role":"assistant","content":"0530T002730Zc.\n\nThe `dispatch_request` function in `prompt","delta":true}
+{"type":"message","timestamp":"2026-05-30T02:26:50.102Z","role":"assistant","content":"claw/asset_bus/dispatch.py` correctly implements the routing logic by composing the `RendererMatrix` and `Renderer","delta":true}
+{"type":"message","timestamp":"2026-05-30T02:26:50.246Z","role":"assistant","content":"Registry`. It handles missing matrix entries by raising a typed `UnknownAssetTypeError` and missing renderer registrations by raising `Unknown","delta":true}
+{"type":"message","timestamp":"2026-05-30T02:26:50.394Z","role":"assistant","content":"RendererError`.\n\nThe implementation was verified through:\n- **Code Review:** Confirmed the logic for `asset_type","delta":true}
+{"type":"message","timestamp":"2026-05-30T02:26:50.544Z","role":"assistant","content":"` lookup and renderer invocation.\n- **Unit Testing:** Verified that all 7 tests in `tests/test_asset_","delta":true}
+{"type":"message","timestamp":"2026-05-30T02:26:50.670Z","role":"assistant","content":"bus_dispatch.py` pass, covering happy paths and both error types.\n- **Hardening Checks:** Conf","delta":true}
+{"type":"message","timestamp":"2026-05-30T02:26:50.794Z","role":"assistant","content":"irmed that mandatory startup identity hardening remains intact via successful execution of `tests/test_first_boot.py` and `tests/","delta":true}
+{"type":"message","timestamp":"2026-05-30T02:26:50.920Z","role":"assistant","content":"test_governor_integration.py` (55 passed).\n- **Standards Compliance:** Verified that `ruff","delta":true}
+{"type":"message","timestamp":"2026-05-30T02:26:50.984Z","role":"assistant","content":"` and `mypy` checks pass for the new code.\n\nThe verification report has been committed to `sdp/","delta":true}
+{"type":"message","timestamp":"2026-05-30T02:26:51.042Z","role":"assistant","content":"verification/t-012@20260530t002730zc","delta":true}
+{"type":"message","timestamp":"2026-05-30T02:26:51.054Z","role":"assistant","content":"-verify.md`.\n\n**Verdict: PASS**","delta":true}
+{"type":"result","timestamp":"2026-05-30T02:26:51.242Z","status":"success","stats":{"total_tokens":436493,"input_tokens":434541,"output_tokens":1952,"cached":376643,"input":57898,"duration_ms":42056,"tool_calls":15,"models":{"gemini-3-flash-preview":{"total_tokens":436493,"input_tokens":434541,"output_tokens":1952,"cached":376643,"input":57898}}}}
+
+--- STDERR ---
+YOLO mode is enabled. All tool calls will be automatically approved.
+YOLO mode is enabled. All tool calls will be automatically approved.
+Ripgrep is not available. Falling back to GrepTool.

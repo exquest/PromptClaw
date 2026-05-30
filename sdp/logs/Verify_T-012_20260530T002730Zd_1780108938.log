@@ -1,0 +1,14 @@
+Command: env -u CLAUDECODE claude --dangerously-skip-permissions --model claude-sonnet-4-6 --effort high --exclude-dynamic-system-prompt-sections -p -
+Prompt delivered via: stdin (2835 chars)
+---
+
+**Verdict: PASS WITH NOTES**
+
+Report committed at `sdp/verification/t-012@20260530t002730zd-verify.md`.
+
+**Summary of findings:**
+
+- All 5 acceptance criteria pass: 5413 tests pass, both SuperCollider hardening anchors (`fx_bus_id`, `sw_sampler.scd`) pass, docs/changelog/progress all updated correctly.
+- The implementation is correct: `process_request_if_pending` now supports a dispatch mode (via `matrix=` + `registry=`) while fully preserving the existing callback path.
+- **One minor gap**: no test exercises the `ValueError` branch when `render=None` and only one of `matrix`/`registry` is provided. The spec explicitly lists this as an edge case. The code handles it correctly — the test coverage is just missing.
+- The `bootstrap_identity` candidate hardening is out of scope for this task per the spec ("no startup-flow wiring"). That function is already wired in `cli.py` and tested in existing tests.

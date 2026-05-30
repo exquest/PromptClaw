@@ -2,24 +2,10 @@
 
 Generated from SQLite state (`tasks`, `task_runs`, `escalations`). Do not edit manually.
 
-ETC: ~7h 46m remaining (44 tasks, low confidence, calibrating)
-Expected completion: 2:45 AM tomorrow.
-Progress: [███████████████████████████████████░░░] 93%  551 / 595 tasks complete
-  completed: 551, pending: 41, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 55
-
-## Manual ADP Notes
-
-- **T-013@20260530T002730Z Phase 0 Explore**: Read the Deniable Asset Bus PRD
-  and v0.1 filesystem contract, the full `promptclaw/asset_bus/` package, and
-  existing `tests/test_asset_bus_*.py` coverage. Existing patterns are
-  file-first handoff, safe request ids, sorted pending-request enumeration,
-  `process_request_if_pending(...)` for one idempotent manifest write, typed
-  `RendererMatrix`/`RendererRegistry` dispatch, atomic writes, and explicit
-  argv-list transport boundaries. The gap for DAB-040 is above the existing
-  single-request helper: there is no `producer.py` batch pass yet, and a
-  renderer exception currently propagates out of `process_request_if_pending`
-  instead of producing an `error` manifest and continuing with later pending
-  requests.
+ETC: ~6h 58m remaining (39 tasks, low confidence, calibrating)
+Expected completion: 3:11 AM tomorrow.
+Progress: [████████████████████████████████████░░] 93%  556 / 595 tasks complete
+  completed: 556, pending: 36, needs_split: 1, blocked: 0, needs_attn: 2, skipped: 55
 
 - **T-001@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
 - **T-002@20260408T223256Z**: complete — Completed with verdict PASS WITH NOTES.
@@ -654,12 +640,11 @@ Progress: [███████████████████████
 - **T-011@20260530T002730Z**: complete — Completed with verdict PASS.
 - **T-012@20260530T002730Z**: split — Split into subtasks.
 - **T-012@20260530T002730Za**: complete — Completed with verdict PASS.
-- **T-012@20260530T002730Zb**: pending — Pending.
-- **T-012@20260530T002730Zc**: pending — Pending.
-- **T-012@20260530T002730Zd**: pending — Pending.
-- **T-013@20260530T002730Z**: in_progress — Producer batch pass implemented;
-  focused TDD coverage and full validation passed; ready for verifier.
-- **T-014@20260530T002730Z**: pending — Pending.
+- **T-012@20260530T002730Zb**: complete — Completed with verdict PASS.
+- **T-012@20260530T002730Zc**: complete — Completed with verdict PASS.
+- **T-012@20260530T002730Zd**: complete — Completed with verdict PASS WITH NOTES.
+- **T-013@20260530T002730Z**: complete — Completed with verdict PASS.
+- **T-014@20260530T002730Z**: complete — Completed with verdict PASS.
 - **T-015@20260530T002730Z**: in_progress — Continuous producer run mode implemented; focused tests and full validation passed; ready for verifier.
 - **T-016@20260530T002730Z**: pending — Pending.
 - **T-017@20260530T002730Z**: split — Split into subtasks.
@@ -672,74 +657,6 @@ Progress: [███████████████████████
 - **T-021@20260530T002730Z**: pending — Pending.
 - **T-022@20260530T002730Z**: pending — Pending.
 - **T-023@20260530T002730Z**: pending — Pending.
-
-## T-012@20260530T002730Zd ADP Notes
-
-### Phase 0 Explore
-
-- Read the Deniable Asset Bus requester contract
-  (`docs/deniable-asset-bus-spec.md`) and producer PRD
-  (`sdp/prd-deniable-asset-bus-2026-05-29.md`): the producer must scan
-  `requests/`, write `deliverables/<request_id>.result.json`, preserve
-  idempotency, and route image/music requests through renderer-specific
-  producer code while keeping voiceover deferred.
-- Read the asset-bus affected area:
-  `promptclaw/asset_bus/{atomic,capabilities,dispatch,limits,paths,remote_exec,render_args,renderers,runner,store}.py`
-  and `promptclaw/asset_bus/__init__.py`.
-- Existing patterns: `RendererMatrix` maps `asset_type` to renderer name,
-  `RendererRegistry` maps renderer name to callable, and
-  `dispatch_request(...)` composes both while preserving typed
-  `UnknownAssetTypeError` / `UnknownRendererError` failures.
-- Existing request-processing gap: `process_request_if_pending(...)` already
-  handles result-manifest idempotency and atomic writes, but it only accepts a
-  manual `render` callback and does not yet read a request JSON file or invoke
-  matrix/registry dispatch.
-- Related tests reviewed:
-  `tests/test_asset_bus_{store,idempotency,dispatch,renderer_registry,renderer_matrix,capabilities,deferred,limits,paths,runner,remote_exec,render_args}.py`.
-  They establish flat `tests/test_asset_bus_*.py` naming, temp-dir bus roots,
-  hermetic renderer stubs/fake runners, and JSON manifest assertions.
-- Candidate hardening anchors identified for verification:
-  `tests/test_space_reverb_profiles.py::test_voice_synthdefs_declare_fx_bus_id_routing_contract`
-  and `tests/test_sw_sampler.py::TestRoutingAndFxSend`, covering the recurring
-  `fx_bus_id` and `sw_sampler.scd` routing failure modes.
-
-### Phase 1 Specify
-
-- Wrote `specs/t-012@20260530t002730zd-spec.md` with problem statement,
-  technical approach, edge cases, and VERIFY commands for each acceptance
-  criterion.
-- Documented no-questions assumptions and no-new-dependency status in
-  `ESCALATIONS.md`.
-
-### Phase 2 Test Development
-
-- Added locked integration coverage in
-  `tests/test_asset_bus_process_dispatch.py`.
-- Red phase confirmed:
-  `pytest tests/test_asset_bus_process_dispatch.py -q` failed with
-  `TypeError: process_request_if_pending() got an unexpected keyword argument 'matrix'`.
-
-### Phase 3 Implement
-
-- Wired dispatch into `process_request_if_pending(...)` while preserving the
-  existing callback render path and idempotent no-op behavior.
-- Added request-file loading from `requests/<request_id>.json`, matrix/registry
-  dispatch via `dispatch_request(...)`, and a mapping-shaped renderer manifest
-  check before the existing atomic manifest write.
-
-### Phase 4 Verify & Document
-
-- Focused asset-bus suite passed:
-  `pytest tests/test_asset_bus_*.py -q` -> `130 passed`.
-- Candidate hardening anchors passed:
-  `pytest tests/test_space_reverb_profiles.py::test_voice_synthdefs_declare_fx_bus_id_routing_contract tests/test_sw_sampler.py::TestRoutingAndFxSend -q`
-  -> `5 passed`.
-- Required validation passed:
-  `pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ && mypy src/`
-  -> `5413 passed, 11 skipped`, Ruff clean, mypy clean.
-- Updated `docs/architecture.md`, `docs/handoff-protocol.md`,
-  `docs/command-reference.md`, `docs/startup-wizard.md`, and `CHANGELOG.md`
-  for the request-processing matrix/registry dispatch boundary.
 
 ## T-015@20260530T002730Z Phase 0 Explore
 
