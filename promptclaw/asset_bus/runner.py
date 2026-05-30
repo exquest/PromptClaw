@@ -15,6 +15,8 @@ configured exit status without touching a network or a shell. The real
 from __future__ import annotations
 
 import json
+import wave
+from io import BytesIO
 import subprocess
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -92,6 +94,10 @@ class FakeBoxRunner:
             target = output_dir / name
             atomic_write_bytes(target, data)
             written.append(target)
+        if not self.artifacts and self.exit_status == 0:
+            music_output = _fake_asset_render_music_output(argv_tuple, output_dir)
+            if music_output is not None:
+                written.append(music_output)
         self.calls.append((argv_tuple, output_dir))
         return BoxRunResult(
             exit_status=self.exit_status,
@@ -99,6 +105,59 @@ class FakeBoxRunner:
             stdout=self.stdout,
             stderr=self.stderr,
         )
+
+
+def _argv_option(argv: Sequence[str], option: str) -> str | None:
+    try:
+        index = argv.index(option)
+    except ValueError:
+        return None
+    value_index = index + 1
+    if value_index >= len(argv):
+        return None
+    return argv[value_index]
+
+
+def _fake_wav_bytes() -> bytes:
+    buffer = BytesIO()
+    with wave.open(buffer, "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(8000)
+        handle.writeframes(b"\x00\x00" * 16)
+    return buffer.getvalue()
+
+
+def _resolve_fake_output_path(output_dir: Path, output_value: str) -> Path:
+    candidate = Path(output_value)
+    if not candidate.is_absolute():
+        candidate = output_dir / candidate
+    resolved_output_dir = output_dir.resolve()
+    resolved_candidate = candidate.resolve(strict=False)
+    try:
+        resolved_candidate.relative_to(resolved_output_dir)
+    except ValueError as exc:
+        raise ValueError(
+            "fake asset_render_music output must stay under output_dir"
+        ) from exc
+    return resolved_candidate
+
+
+def _fake_asset_render_music_output(
+    argv: Sequence[str],
+    output_dir: Path,
+) -> Path | None:
+    if not argv or Path(argv[0]).name != "asset_render_music":
+        return None
+    output_value = _argv_option(argv, "--output")
+    if output_value is None:
+        output_value = _argv_option(argv, "--output-path")
+    if output_value is None:
+        return None
+
+    target = _resolve_fake_output_path(output_dir, output_value)
+    atomic_write_bytes(target, _fake_wav_bytes())
+    return target
 
 
 def _default_run_id() -> str:

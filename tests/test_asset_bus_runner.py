@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import socket
 import subprocess
+import wave
 from pathlib import Path
 from collections.abc import Sequence
 from typing import Any
@@ -92,6 +93,39 @@ def test_fake_box_runner_creates_missing_output_dir(tmp_path: Path) -> None:
     assert nested.is_dir()
     assert (nested / "out.wav").read_bytes() == b"riff"
     assert result.artifacts == (nested / "out.wav",)
+
+
+def test_fake_box_runner_reproduces_asset_render_music_output_contract(
+    tmp_path: Path,
+) -> None:
+    fake = FakeBoxRunner()
+    argv = [
+        "asset_render_music",
+        "--scene",
+        INJECTION_FIXTURE,
+        "--mood",
+        "tense",
+        "--mood",
+        "cold",
+        "--duration",
+        "4.5",
+        "--loopable",
+        "--output",
+        "stakeout-loop.wav",
+    ]
+
+    result = fake.run(argv, output_dir=tmp_path)
+
+    target = tmp_path / "stakeout-loop.wav"
+    assert result.exit_status == 0
+    assert result.artifacts == (target,)
+    assert fake.calls[-1] == (tuple(argv), tmp_path)
+    assert target.read_bytes().startswith(b"RIFF")
+    with wave.open(str(target), "rb") as handle:
+        assert handle.getnchannels() == 1
+        assert handle.getsampwidth() == 2
+        assert handle.getframerate() == 8000
+        assert handle.getnframes() > 0
 
 
 def test_fake_box_runner_passes_stdout_and_stderr_through(tmp_path: Path) -> None:

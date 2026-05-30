@@ -655,7 +655,30 @@ Progress: [███████████████████████
 - **T-019@20260530T002730Z**: pending — Pending.
 - **T-020@20260530T002730Z**: pending — Pending.
 - **T-021@20260530T002730Z**: complete — Completed with verdict PASS.
-- **T-022@20260530T002730Z**: pending — Pending.
+- **T-022@20260530T002730Z**: complete — Completed the Deniable Asset Bus
+  music render entrypoint. Exploration found the active ADP source in
+  `sdp/prd-deniable-asset-bus-2026-05-29.md`,
+  `sdp/deniable-asset-bus-analysis/implementation-plan.md`,
+  `sdp/deniable-asset-bus-analysis/task-graph.md`, and
+  `docs/deniable-asset-bus-spec.md`; the affected code pattern was
+  `tools/asset_render_image.py`, the argv/no-shell boundary in
+  `promptclaw/asset_bus/render_args.py`, and the `FakeBoxRunner` contract in
+  `promptclaw/asset_bus/runner.py`. Wrote
+  `specs/t-022@20260530t002730z-spec.md`, added locked tests in
+  `tests/test_asset_render_music.py` and `tests/test_asset_bus_runner.py`,
+  confirmed the red phase on missing `tools/asset_render_music.py` and missing
+  fake-runner WAV materialization, then implemented typed parsing for
+  `--scene`, repeatable `--mood`, positive `--duration`, optional `--loopable`,
+  and `--output`. The default renderer writes a valid standard-library WAV
+  without live box, SuperCollider, provider secrets, new dependencies,
+  migrations, or startup rewiring; `FakeBoxRunner` now materializes the named
+  WAV under `output_dir` while preserving verbatim argv recording. Focused
+  checks passed (`pytest tests/test_asset_render_music.py
+  tests/test_asset_bus_runner.py tests/test_asset_bus_render_args.py -q` ->
+  `27 passed`), startup identity hardening anchors passed (`11 passed`), and
+  full validation passed
+  (`pip install -e '.[dev]' && pytest tests/ -x && ruff check src/ tests/ &&
+  mypy src/` -> `5522 passed, 11 skipped`, Ruff clean, mypy clean).
 - **T-023@20260530T002730Z**: pending — Pending.
 
 ## T-015@20260530T002730Z Phase 0 Explore

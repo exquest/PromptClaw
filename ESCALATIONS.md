@@ -3231,3 +3231,26 @@ reasoning effor...
 - **Mandatory hardening anchors.** The recurring `fx_bus_id` and
   `sw_sampler.scd` failure modes are handled by running the existing
   SuperCollider routing contract tests during verification.
+
+## T-022@20260530T002730Z (2026-05-30T00:27:30Z) — assumptions
+
+- **No questions asked per task rule.** Assumed the box-side music entrypoint
+  should use a minimal argv surface compatible with the v0.1 music spec and
+  existing asset-bus argv boundary: `--scene`, repeatable `--mood`,
+  `--duration`, optional `--loopable`, and `--output`.
+- **No new dependencies.** The in-repo default render path writes a valid WAV
+  with the Python standard library, and deployed box operators can swap the
+  renderer callback to the existing CypherClaw synthesis stack without changing
+  the command contract.
+- **No database migration.** This task adds a standalone renderer CLI,
+  fake-runner contract coverage, and docs; it does not add or modify database
+  columns.
+- **No live box/SuperCollider execution in tests.** Smoke tests use an injected
+  renderer and `FakeBoxRunner`, so CI does not require the CypherClaw box,
+  SuperCollider, JACK, GPU resources, provider credentials, or model weights.
+- **Mandatory hardening anchors.** The generated startup identity hardening
+  bullets are unrelated to this renderer surface. Existing integration tests
+  already cover `bootstrap_identity()` startup invocation, ordering before
+  `FirstBootAnnouncer`, and identity persistence in standalone and federated
+  modes; those tests are treated as mandatory regression anchors for this
+  task.

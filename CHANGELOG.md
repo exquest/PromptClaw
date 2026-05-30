@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Added T-022 Deniable Asset Bus music render entrypoint:
+  `tools/asset_render_music.py` now accepts the documented box-side argv
+  contract (`--scene`, repeatable `--mood`, `--duration`, optional
+  `--loopable`, and `--output`), resolves it into typed render parameters, and
+  writes a valid WAV at the requested output path. The default in-repo renderer
+  uses only the Python standard library so smoke tests can run without a live
+  CypherClaw box, SuperCollider, JACK, GPU resources, provider credentials, or
+  model weights. `FakeBoxRunner` now reproduces the `asset_render_music
+  --output` contract by materializing the named WAV under its `output_dir`
+  while preserving verbatim argv recording. No new dependencies, provider
+  secrets, database columns, migrations, runtime state directories,
+  startup-flow wiring, or agent commands were added; existing startup identity
+  hardening anchors passed. Full validation passed with `5522 passed, 11
+  skipped`, Ruff clean, and mypy clean.
+
 - Added T-021 Deniable Asset Bus image render entrypoint:
   `tools/asset_render_image.py` now accepts the documented box-side argv
   contract (`--prompt`, `--size WIDTHxHEIGHT`, optional `--seed`, optional
