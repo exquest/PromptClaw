@@ -222,6 +222,106 @@ def test_validate_request_reports_invalid_schema_constant() -> None:
     assert SCHEMA in msg
 
 
+@pytest.mark.parametrize("field", REQUEST_FIELDS)
+def test_validate_request_reports_each_missing_required_field(field: str) -> None:
+    raw = _load("request_image.json")
+    del raw[field]
+    with pytest.raises(SchemaError, match="missing required fields") as excinfo:
+        validate_request(raw)
+    assert field in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    "field",
+    (
+        "request_id",
+        "schema",
+        "created_at",
+        "requester",
+        "asset_type",
+        "title",
+        "format",
+        "target_path",
+        "priority",
+        "acceptance",
+    ),
+)
+def test_validate_request_reports_each_string_field_wrong_type(field: str) -> None:
+    raw = _load("request_image.json")
+    raw[field] = 0
+    with pytest.raises(SchemaError, match="wrong type") as excinfo:
+        validate_request(raw)
+    msg = str(excinfo.value)
+    assert f"'{field}'" in msg
+    assert "expected str" in msg
+
+
+@pytest.mark.parametrize("bad_spec", [None, "string", 1, 1.5, True, ["list"]])
+def test_validate_request_reports_each_non_object_spec(bad_spec: object) -> None:
+    raw = _load("request_image.json")
+    raw["spec"] = bad_spec
+    with pytest.raises(SchemaError, match="wrong type") as excinfo:
+        validate_request(raw)
+    assert "'spec'" in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    ("field", "bad_value"),
+    [
+        ("schema", "deniable-asset-bus/v0.2"),
+        ("asset_type", "hologram"),
+        ("format", "tiff"),
+        ("priority", "urgent"),
+    ],
+)
+def test_validate_request_reports_each_enum_violation(
+    field: str, bad_value: str
+) -> None:
+    raw = _load("request_image.json")
+    raw[field] = bad_value
+    with pytest.raises(SchemaError, match="invalid value") as excinfo:
+        validate_request(raw)
+    msg = str(excinfo.value)
+    assert f"'{field}'" in msg
+    assert repr(bad_value) in msg
+
+
+def test_validate_request_accepts_each_valid_enum_combination() -> None:
+    raw = _load("request_image.json")
+    for asset_type in ASSET_TYPES:
+        for fmt in FORMATS:
+            for priority in PRIORITIES:
+                candidate = dict(
+                    raw,
+                    asset_type=asset_type,
+                    format=fmt,
+                    priority=priority,
+                )
+                request = validate_request(candidate)
+                assert request.asset_type == asset_type
+                assert request.format == fmt
+                assert request.priority == priority
+
+
+def test_validate_request_accepts_unknown_extras_with_each_json_type() -> None:
+    raw = _load("request_image.json")
+    raw["extra_string"] = "hi"
+    raw["extra_int"] = 7
+    raw["extra_null"] = None
+    raw["extra_list"] = [1, 2, 3]
+    raw["extra_object"] = {"nested": {"deep": True}}
+    request = validate_request(raw)
+    round_tripped = request.to_dict()
+    for key in (
+        "extra_string",
+        "extra_int",
+        "extra_null",
+        "extra_list",
+        "extra_object",
+    ):
+        assert key not in round_tripped
+
+
 def test_validate_request_error_categories_are_distinguishable() -> None:
     base = _load("request_image.json")
 
