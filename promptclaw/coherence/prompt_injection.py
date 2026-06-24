@@ -20,10 +20,37 @@ def format_decision_context(decisions: list[Decision]) -> str:
         lines.append(f"\n### ADR: {d.title}")
         lines.append(f"- **Decision:** {d.decision_text}")
         lines.append(f"- **Rationale:** {d.rationale}")
+        if d.constrains:
+            lines.append(f"- **Constrains:** {', '.join(d.constrains)}")
+        if d.unlocks:
+            lines.append(f"- **Unlocks:** {', '.join(d.unlocks)}")
         if d.file_paths:
             lines.append(f"- **Affects:** {', '.join(d.file_paths)}")
         if d.tags:
             lines.append(f"- **Tags:** {', '.join(d.tags)}")
+
+    return "\n".join(lines) + "\n"
+
+
+def format_tension_context(tensions: list[Any]) -> str:
+    """Format open tensions as a markdown block for prompt injection.
+
+    Unlike decisions (which must not be violated), tensions are HELD: surfaced so the agent
+    keeps both sides in view rather than silently collapsing the contradiction. Returns an
+    empty string if there are no tensions.
+    """
+    if not tensions:
+        return ""
+
+    lines: list[str] = ["## Active Tensions (HOLD — do not silently collapse)"]
+    for t in tensions:
+        lines.append(f"\n### {t.statement}")
+        if t.dialectic_state:
+            lines.append(f"- **State:** {t.dialectic_state}")
+        if t.resolution_criterion:
+            lines.append(f"- **Would resolve:** {t.resolution_criterion}")
+        if t.between:
+            lines.append(f"- **Between:** {', '.join(t.between)}")
 
     return "\n".join(lines) + "\n"
 

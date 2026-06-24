@@ -9,6 +9,13 @@ from pathlib import Path
 from typing import Any
 
 
+def _json_list(value: Any) -> list[str]:
+    """Decode a JSON-array text column into a list, tolerating already-decoded values."""
+    if isinstance(value, str):
+        return json.loads(value)
+    return value or []
+
+
 @dataclass
 class Decision:
     """An architectural decision record (ADR)."""
@@ -23,6 +30,8 @@ class Decision:
     superseded_by: str | None = None  # decision_id of superseding decision
     tags: list[str] = field(default_factory=list)  # e.g., ["database", "storage"]
     file_paths: list[str] = field(default_factory=list)  # Code paths this decision affects
+    unlocks: list[str] = field(default_factory=list)  # What this decision makes possible (dependency)
+    constrains: list[str] = field(default_factory=list)  # Forward constraints this decision imposes
 
 
 class SqliteDecisionStore:
@@ -39,10 +48,19 @@ class SqliteDecisionStore:
         status TEXT NOT NULL DEFAULT 'active',
         superseded_by TEXT,
         tags TEXT NOT NULL DEFAULT '[]',
-        file_paths TEXT NOT NULL DEFAULT '[]'
+        file_paths TEXT NOT NULL DEFAULT '[]',
+        unlocks TEXT NOT NULL DEFAULT '[]',
+        constrains TEXT NOT NULL DEFAULT '[]'
     );
     CREATE INDEX IF NOT EXISTS idx_decisions_status ON decisions(status);
     """
+
+    # Columns added after the initial schema; ensured idempotently on migrate() so
+    # databases created by an earlier version gain them without a destructive rebuild.
+    _ADDED_COLUMNS = (
+        ("unlocks", "TEXT NOT NULL DEFAULT '[]'"),
+        ("constrains", "TEXT NOT NULL DEFAULT '[]'"),
+    )
 
     def __init__(self, db_path: Path) -> None:
         self.db_path = db_path
@@ -59,10 +77,23 @@ class SqliteDecisionStore:
         return self._conn
 
     def migrate(self) -> None:
-        """Create the decisions table if it does not exist."""
+        """Create the decisions table if it does not exist, and add any newer columns."""
         conn = self._get_conn()
         conn.executescript(self._SCHEMA)
+        self._ensure_columns(conn)
         conn.commit()
+
+    def _ensure_columns(self, conn: sqlite3.Connection) -> None:
+        """Add post-initial-schema columns to a pre-existing table (idempotent)."""
+        existing = {row["name"] for row in conn.execute("PRAGMA table_info(decisions)")}
+        for name, decl in self._ADDED_COLUMNS:
+            if name not in existing:
+                try:
+                    conn.execute(f"ALTER TABLE decisions ADD COLUMN {name} {decl}")
+                except sqlite3.OperationalError as exc:
+                    # Tolerate a concurrent migrator having just added the column; re-raise anything else.
+                    if "duplicate column" not in str(exc).lower():
+                        raise
 
     def record(self, decision: Decision) -> None:
         """Insert a new decision into the store."""
@@ -70,8 +101,8 @@ class SqliteDecisionStore:
         conn.execute(
             "INSERT INTO decisions "
             "(decision_id, created_at, title, context, decision_text, rationale, "
-            "status, superseded_by, tags, file_paths) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "status, superseded_by, tags, file_paths, unlocks, constrains) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 decision.decision_id,
                 decision.created_at,
@@ -83,6 +114,8 @@ class SqliteDecisionStore:
                 decision.superseded_by,
                 json.dumps(decision.tags),
                 json.dumps(decision.file_paths),
+                json.dumps(decision.unlocks),
+                json.dumps(decision.constrains),
             ),
         )
         conn.commit()
@@ -181,12 +214,7 @@ class SqliteDecisionStore:
 
     @staticmethod
     def _row_to_decision(row: sqlite3.Row) -> Decision:
-        tags = row["tags"]
-        if isinstance(tags, str):
-            tags = json.loads(tags)
-        file_paths = row["file_paths"]
-        if isinstance(file_paths, str):
-            file_paths = json.loads(file_paths)
+        keys = set(row.keys())
         return Decision(
             decision_id=row["decision_id"],
             created_at=row["created_at"],
@@ -196,6 +224,8 @@ class SqliteDecisionStore:
             rationale=row["rationale"],
             status=row["status"],
             superseded_by=row["superseded_by"],
-            tags=tags,
-            file_paths=file_paths,
+            tags=_json_list(row["tags"]),
+            file_paths=_json_list(row["file_paths"]),
+            unlocks=_json_list(row["unlocks"]) if "unlocks" in keys else [],
+            constrains=_json_list(row["constrains"]) if "constrains" in keys else [],
         )

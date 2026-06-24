@@ -153,6 +153,88 @@ class TestSqliteDecisionStore(unittest.TestCase):
         self.assertEqual(self.store.query_relevant("anything"), [])
         self.assertIsNone(self.store.get("nonexistent"))
 
+    # --- unlocks / constrains fields (P2) ---
+
+    def test_record_and_get_preserves_unlocks_and_constrains(self):
+        dec = _make_decision(
+            decision_id="dec-uc",
+            unlocks=["feature X", "feature Y"],
+            constrains=["no global state"],
+        )
+        self.store.record(dec)
+        fetched = self.store.get("dec-uc")
+        self.assertEqual(fetched.unlocks, ["feature X", "feature Y"])
+        self.assertEqual(fetched.constrains, ["no global state"])
+
+    def test_unlocks_constrains_default_empty(self):
+        dec = _make_decision(decision_id="dec-default")
+        self.store.record(dec)
+        fetched = self.store.get("dec-default")
+        self.assertEqual(fetched.unlocks, [])
+        self.assertEqual(fetched.constrains, [])
+
+    def test_migrate_adds_columns_to_legacy_db(self):
+        # A DB created before unlocks/constrains existed must gain the columns on migrate().
+        import sqlite3
+
+        legacy_path = self.temp_dir / "legacy.db"
+        conn = sqlite3.connect(str(legacy_path))
+        conn.executescript(
+            "CREATE TABLE decisions ("
+            "decision_id TEXT PRIMARY KEY, created_at TEXT NOT NULL, title TEXT NOT NULL,"
+            "context TEXT NOT NULL DEFAULT '', decision_text TEXT NOT NULL DEFAULT '',"
+            "rationale TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'active',"
+            "superseded_by TEXT, tags TEXT NOT NULL DEFAULT '[]', "
+            "file_paths TEXT NOT NULL DEFAULT '[]');"
+        )
+        conn.execute(
+            "INSERT INTO decisions (decision_id, created_at, title) "
+            "VALUES ('leg-1','2026-01-01T00:00:00Z','Legacy')"
+        )
+        conn.commit()
+        conn.close()
+
+        store = SqliteDecisionStore(legacy_path)
+        store.migrate()  # must ALTER TABLE to add the new columns
+        try:
+            fetched = store.get("leg-1")
+            self.assertEqual(fetched.unlocks, [])
+            self.assertEqual(fetched.constrains, [])
+            store.record(_make_decision(decision_id="leg-2", unlocks=["a"], constrains=["b"]))
+            self.assertEqual(store.get("leg-2").unlocks, ["a"])
+            self.assertEqual(store.get("leg-2").constrains, ["b"])
+        finally:
+            store.close()
+
+    def test_migrate_partial_legacy_db_adds_only_missing_column(self):
+        # A DB where one of the two new columns already exists must gain only the other,
+        # without error.
+        import sqlite3
+
+        partial_path = self.temp_dir / "partial.db"
+        conn = sqlite3.connect(str(partial_path))
+        conn.executescript(
+            "CREATE TABLE decisions ("
+            "decision_id TEXT PRIMARY KEY, created_at TEXT NOT NULL, title TEXT NOT NULL,"
+            "context TEXT NOT NULL DEFAULT '', decision_text TEXT NOT NULL DEFAULT '',"
+            "rationale TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'active',"
+            "superseded_by TEXT, tags TEXT NOT NULL DEFAULT '[]', "
+            "file_paths TEXT NOT NULL DEFAULT '[]', "
+            "unlocks TEXT NOT NULL DEFAULT '[]');"  # has unlocks, missing constrains
+        )
+        conn.commit()
+        conn.close()
+
+        store = SqliteDecisionStore(partial_path)
+        store.migrate()  # should add only 'constrains'
+        try:
+            store.record(_make_decision(decision_id="p-1", unlocks=["u"], constrains=["c"]))
+            fetched = store.get("p-1")
+            self.assertEqual(fetched.unlocks, ["u"])
+            self.assertEqual(fetched.constrains, ["c"])
+        finally:
+            store.close()
+
 
 if __name__ == "__main__":
     unittest.main()
