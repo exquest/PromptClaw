@@ -74,7 +74,8 @@ def format_constitutional_context(rules: list[Any] | None = None, mode: Any = No
     lines: list[str] = [f"## Constitutional Rules (enforcement: {mode_label})"]
     for r in rules:
         severity_label = r.severity.value.upper() if isinstance(r.severity, ViolationSeverity) else str(r.severity)
-        lines.append(f"\n- **[{severity_label}] {r.rule_id}**: {r.description}")
+        tier_label = getattr(r, "tier", "formula").upper()
+        lines.append(f"\n- **[{tier_label} · {severity_label}] {r.rule_id}**: {r.description}")
         if r.message and r.message != r.description:
             lines.append(f"  - {r.message}")
 

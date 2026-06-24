@@ -25,6 +25,7 @@ from .prompt_injection import (
     format_tension_context,
 )
 from .reentry import build_reentry_digest
+from .shared_shadow import SharedShadow, render_shared_shadow
 from .tension_capture import parse_tension_blocks
 from .tension_store import SqliteTensionStore, Tension
 from .trust import TrustManager
@@ -374,6 +375,46 @@ class CoherenceEngine:
         """Mark a tension dissolved (it was not a real contradiction); it stops being surfaced."""
         self.tension_store.update_status(tension_id, "dissolved")
 
+    # --- Shared Shadow (the lead->verify handoff record) ---
+
+    def build_shared_shadow(
+        self,
+        *,
+        purpose: str,
+        deliverable: str = "",
+        audience: str = "",
+        current_phase: str = "",
+        next_move: str = "",
+        agreed_definitions: list[str] | None = None,
+        success_criteria: list[str] | None = None,
+        extra_unknowns: list[str] | None = None,
+    ) -> SharedShadow:
+        """Assemble a SHARED SHADOW from current coherence state.
+
+        Decisions and their forward constraints come from the decision store; open tensions
+        become Material unknowns, so the "never empty when something is unknown" rule holds by
+        construction.
+        """
+        active = self.decision_store.list_active()
+        material_unknowns = [t.statement for t in self.tension_store.list_open()]
+        material_unknowns += list(extra_unknowns or [])
+        return SharedShadow(
+            purpose=purpose,
+            audience=audience,
+            deliverable=deliverable,
+            constraints=[c for d in active for c in d.constrains],
+            agreed_definitions=list(agreed_definitions or []),
+            decisions=[d.title for d in active],
+            material_unknowns=material_unknowns,
+            current_phase=current_phase,
+            next_move=next_move,
+            success_criteria=list(success_criteria or []),
+        )
+
+    def shared_shadow_handoff(self, **kwargs: Any) -> str:
+        """Build and render a SHARED SHADOW as a markdown handoff."""
+        return render_shared_shadow(self.build_shared_shadow(**kwargs))
+
     # --- Re-entry digest (the "Prints" artifact) ---
 
     def build_reentry_digest_text(self, run_id: str | None = None) -> str:
@@ -457,3 +498,10 @@ class NullCoherenceEngine:
 
     def dissolve_tension(self, *args: Any, **kwargs: Any) -> None:
         return None
+
+    def build_shared_shadow(self, *args: Any, **kwargs: Any):
+        from .shared_shadow import SharedShadow
+        return SharedShadow(purpose=kwargs.get("purpose", ""))
+
+    def shared_shadow_handoff(self, *args: Any, **kwargs: Any) -> str:
+        return "# Handoff\n"

@@ -310,11 +310,13 @@ class PromptClawOrchestrator:
         )
         self.artifacts.write_handoff(
             "lead-to-verify.md",
-            "# Handoff\n\n"
-            f"Lead agent: {decision.lead_agent}\n\n"
-            f"Verifier agent: {decision.verifier_agent}\n\n"
-            "## Brief\n"
-            f"{decision.subtask_brief}\n",
+            self.coherence.shared_shadow_handoff(
+                purpose=state.task_text,
+                deliverable=decision.subtask_brief,
+                audience=f"Verifier: {decision.verifier_agent}",
+                current_phase="verify",
+                next_move=f"{decision.verifier_agent} verifies lead {decision.lead_agent}'s output",
+            ),
         )
         verify_prompt_path = self.artifacts.write_prompt(f"verify-{verifier.name}.md", verify_prompt)
         verify_result = self.runtime.run(

@@ -30,6 +30,12 @@ class TestSecurityConstitution(unittest.TestCase):
         self.assertIn("SEC-001", by_id)
         self.assertEqual(by_id["SEC-001"].severity, ViolationSeverity.HARD)
 
+    def test_sec001_is_foundation_tier(self):
+        # A security rule is entrenched: foundation, not adjustable formula.
+        by_id = {r.rule_id: r for r in self.constitution.rules}
+        self.assertEqual(by_id["SEC-001"].tier, "foundation")
+        self.assertIn("SEC-001", [r.rule_id for r in self.constitution.foundation_rules()])
+
     def test_fires_on_dummy_evidence_bypass_text(self):
         # The exact ESCALATIONS.md phrasing.
         text = (

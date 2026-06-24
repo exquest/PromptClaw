@@ -18,7 +18,14 @@ from .models import EnforcementMode, Violation, ViolationSeverity
 
 @dataclass
 class Rule:
-    """A single constitutional rule."""
+    """A single constitutional rule.
+
+    ``tier`` distinguishes entrenchment from blocking severity: a ``foundation`` rule is
+    fixed (amended only by deliberate human act; changing it implies re-deriving dependent
+    decisions — "recut, don't grandfather"), while a ``formula`` rule is adjustable guidance.
+    ``severity`` (hard/soft) only governs *when* a match blocks; ``tier`` governs *whether the
+    rule is load-bearing*. The two are orthogonal.
+    """
 
     rule_id: str
     severity: ViolationSeverity
@@ -28,6 +35,7 @@ class Rule:
     applies_to_phases: list[str] = field(default_factory=list)
     applies_to_agents: list[str] = field(default_factory=list)
     message: str = ""
+    tier: str = "formula"  # "foundation" (fixed) | "formula" (adjustable)
 
 
 def _parse_severity(value: str) -> ViolationSeverity:
@@ -52,6 +60,7 @@ def _rule_from_dict(data: dict[str, Any]) -> Rule:
         applies_to_phases=applies_to if isinstance(applies_to, list) else [applies_to],
         applies_to_agents=applies_to_agents if isinstance(applies_to_agents, list) else [applies_to_agents],
         message=data.get("message", ""),
+        tier=str(data.get("tier", "formula")).lower(),
     )
 
 
@@ -159,6 +168,14 @@ class Constitution:
             r for r in self.rules
             if not r.applies_to_phases or phase in r.applies_to_phases
         ]
+
+    def foundation_rules(self) -> list[Rule]:
+        """Return entrenched (foundation-tier) rules — changing one implies a recut sweep."""
+        return [r for r in self.rules if r.tier == "foundation"]
+
+    def formula_rules(self) -> list[Rule]:
+        """Return adjustable (formula-tier) rules."""
+        return [r for r in self.rules if r.tier != "foundation"]
 
     def hard_rules(self) -> list[Rule]:
         """Return all rules with HARD severity."""
