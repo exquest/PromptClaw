@@ -52,6 +52,11 @@ AFFECTIVE_STATE_BUS_MIN = 0.0
 AFFECTIVE_STATE_BUS_MAX = 1.0
 AFFECTIVE_STATE_BUS_DECAY_SECONDS = 5.0
 
+# Per PRD §7.5.2: a voice scales its modulator depths by
+# ``(1 + coupling_strength * affect)``. 0.5 is the documented baseline
+# strength (max +50% at full affect).
+DEFAULT_COUPLING_STRENGTH = 0.5
+
 # Per PRD §7.5.2: each voice writes a rolling-window estimate of its own
 # expression intensity, averaged over the last ~2 seconds.
 AFFECTIVE_STATE_BUS_WINDOW_SECONDS = 2.0
@@ -100,6 +105,21 @@ def affective_state_bus_decay(
     if elapsed_seconds <= 0:
         return clamped_initial
     return _clamp_affect(clamped_initial * math.exp(-float(elapsed_seconds) / float(tau)))
+
+
+def coupling_multiplier_from_bus_value(
+    bus_value: float,
+    *,
+    coupling_strength: float = DEFAULT_COUPLING_STRENGTH,
+) -> float:
+    """Return the PRD coupling multiplier ``1 + strength*affect`` for a bus value.
+
+    Both ``bus_value`` and ``coupling_strength`` are clamped to [0, 1], so the
+    multiplier is bounded in ``[1.0, 1.0 + coupling_strength]``.
+    """
+    affective_state = _clamp_affect(bus_value)
+    strength = _clamp_affect(coupling_strength)
+    return 1.0 + (strength * affective_state)
 
 
 def voice_expression_intensity(

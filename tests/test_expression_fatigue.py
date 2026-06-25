@@ -12,12 +12,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "my-claw", "too
 from expression.fatigue import (
     CYPHERCLAW_V2_FATIGUE_ENV,
     FATIGUE_HALF_LIFE_SECONDS,
+    FATIGUE_LOAD_PER_NOTE,
     FATIGUE_REDUCTION,
     FATIGUE_THRESHOLD,
     FatigueCounter,
     fatigue_decay_factor,
     fatigue_enabled,
     fatigue_multiplier,
+    note_load,
 )
 
 
@@ -311,3 +313,68 @@ def test_t011_recovery_behavior_is_explicit() -> None:
     assert recovered < FATIGUE_THRESHOLD
     assert math.isclose(recovered, 0.5 ** 10, rel_tol=1e-12)
     assert fatigue_multiplier(recovered, env=env) == 1.0
+
+
+# --- per-note load from expression intensity (design §7.5.3) --------------
+# Fatigue builds from the *history of gestures*: "heavy vibrato and high
+# dynamic range" load a voice, "silence and soft passages" let it recover.
+# We have no vibrato yet, so the per-note load proxy is the note's expressive
+# intensity M (0..1, the same scene-phase intensity the expression layer
+# derives from the arc phase's dynamic marking): loud/intense notes add more
+# load, quiet notes add little, so voices tire in weighty passages and rest in
+# soft ones.
+
+
+def test_load_per_note_constant_is_small_and_positive() -> None:
+    # The per-note load must be small so fatigue builds gradually over many
+    # notes (a rolling window of gestures) rather than saturating on one note.
+    assert 0.0 < FATIGUE_LOAD_PER_NOTE < 0.2
+
+
+def test_note_load_is_zero_at_zero_intensity() -> None:
+    # A silent/zero-intensity note adds no load — soft passages let voices rest.
+    assert note_load(0.0) == 0.0
+
+
+def test_note_load_is_max_at_full_intensity() -> None:
+    # A maximally intense note adds the full per-note load.
+    assert note_load(1.0) == FATIGUE_LOAD_PER_NOTE
+
+
+def test_note_load_scales_linearly_with_intensity() -> None:
+    assert math.isclose(note_load(0.5), 0.5 * FATIGUE_LOAD_PER_NOTE, rel_tol=1e-12)
+    # Monotonic: louder notes never add less load than quieter ones.
+    loads = [note_load(m) for m in (0.0, 0.1, 0.42, 0.68, 0.9, 1.0)]
+    assert loads == sorted(loads)
+
+
+def test_note_load_clamps_intensity_to_unit_range() -> None:
+    # Out-of-range intensities saturate rather than blowing up the counter.
+    assert note_load(-3.0) == 0.0
+    assert note_load(5.0) == FATIGUE_LOAD_PER_NOTE
+
+
+def test_note_load_honors_custom_scale() -> None:
+    assert math.isclose(note_load(1.0, scale=0.1), 0.1, rel_tol=1e-12)
+    assert math.isclose(note_load(0.5, scale=0.1), 0.05, rel_tol=1e-12)
+
+
+def test_steady_intense_play_crosses_threshold_quiet_play_does_not() -> None:
+    # End-to-end intent: a voice held at high intensity through a dense passage
+    # tires past the fatigue threshold, while the same cadence at low intensity
+    # stays fresh. Notes ~every 1.5s for ~30s (a rolling window of gestures).
+    env = {"CYPHERCLAW_V2_FATIGUE": "1"}
+    interval, span = 1.5, 30.0
+
+    loud = FatigueCounter()
+    quiet = FatigueCounter()
+    t = 0.0
+    while t <= span:
+        loud.add_note("v", note_load(0.9), now=t)
+        quiet.add_note("v", note_load(0.15), now=t)
+        t += interval
+
+    assert loud.value("v", now=span) > FATIGUE_THRESHOLD
+    assert fatigue_multiplier(loud.value("v", now=span), env=env) < 1.0
+    assert quiet.value("v", now=span) < FATIGUE_THRESHOLD
+    assert fatigue_multiplier(quiet.value("v", now=span), env=env) == 1.0

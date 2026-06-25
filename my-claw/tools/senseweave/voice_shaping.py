@@ -4,6 +4,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
+# A small, FIXED unison width for the pluck voice. Warmth comes from a steady
+# unison spread, not from a moving one — the composer previously rolled a fresh
+# random detune every note (_rnd.uniform(0.001, 0.006)), so the pluck's pitch
+# never settled and the ensemble read as "out of tune" to listeners. A constant
+# base keeps the note perceptibly in tune while still fattening it slightly.
+STABLE_PLUCK_UNISON_DETUNE = 0.0015
+# Ceiling on the total pluck unison width once the (deterministic) register and
+# performance terms stack on top — well under the old worst case (~0.0185).
+MAX_PLUCK_UNISON_DETUNE = 0.008
+
+
 @dataclass(frozen=True)
 class VoiceShape:
     """Small playback adjustments for a note's register."""
@@ -103,3 +114,24 @@ def shaping_for_note(voice_name: str, freq_hz: float) -> VoiceShape:
         highpass_hz=320.0,
         saturation_mix=0.12,
     )
+
+
+def pluck_playback_detune(
+    shape: VoiceShape,
+    performance_detune_add: float = 0.0,
+    *,
+    base: float = STABLE_PLUCK_UNISON_DETUNE,
+) -> float:
+    """Return the STABLE pluck unison detune for a note.
+
+    Sums a fixed base unison width with the deterministic register-dependent
+    (`shape.detune_add`) and performance (`performance_detune_add`) terms, then
+    clamps to ``MAX_PLUCK_UNISON_DETUNE``. There is no randomness, so the pluck's
+    tuning no longer wanders note-to-note. Negative inputs are floored at 0 so a
+    context term can never pull the note below its stable base width.
+    """
+
+    shape_add = max(0.0, getattr(shape, "detune_add", 0.0) or 0.0)
+    perf_add = max(0.0, performance_detune_add)
+    total = base + shape_add + perf_add
+    return round(min(total, MAX_PLUCK_UNISON_DETUNE), 4)

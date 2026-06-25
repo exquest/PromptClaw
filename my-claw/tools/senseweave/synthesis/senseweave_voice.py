@@ -28,8 +28,15 @@ from senseweave.affective_state_bus import (
     AFFECTIVE_STATE_BUS_INDEX,
     AFFECTIVE_STATE_BUS_MAX,
     AFFECTIVE_STATE_BUS_MIN,
+    DEFAULT_COUPLING_STRENGTH,
     coupling_enabled,
+    coupling_multiplier_from_bus_value,
 )
+
+__all__ = [
+    "DEFAULT_COUPLING_STRENGTH",
+    "coupling_multiplier_from_bus_value",
+]
 
 
 class OSCSender(Protocol):
@@ -44,22 +51,8 @@ class ControlBusReader(Protocol):
     def read_control_bus(self, bus_index: int) -> float: ...
 
 
-DEFAULT_COUPLING_STRENGTH = 0.5
-
-
 def _clamp_affective_state_bus_value(value: float) -> float:
     return max(AFFECTIVE_STATE_BUS_MIN, min(AFFECTIVE_STATE_BUS_MAX, float(value)))
-
-
-def coupling_multiplier_from_bus_value(
-    bus_value: float,
-    *,
-    coupling_strength: float = DEFAULT_COUPLING_STRENGTH,
-) -> float:
-    """Return the PRD coupling multiplier for a raw affective bus value."""
-    affective_state = _clamp_affective_state_bus_value(bus_value)
-    strength = _clamp_affective_state_bus_value(coupling_strength)
-    return 1.0 + (strength * affective_state)
 
 
 def scale_modulator_depths(

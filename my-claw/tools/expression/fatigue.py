@@ -44,6 +44,25 @@ FATIGUE_HALF_LIFE_SECONDS = 30.0
 FATIGUE_THRESHOLD = 0.7
 FATIGUE_REDUCTION = 0.5
 
+# Design §7.5.3: fatigue builds from the "history of gestures" — heavy/loud
+# notes load a voice, soft notes let it recover. The per-note load is the
+# note's expressive intensity M (0..1) times this scale. Small on purpose so
+# fatigue accrues over a rolling window of many notes rather than saturating
+# on one: a voice held near full intensity for a dense ~30s passage crosses
+# FATIGUE_THRESHOLD, while a soft passage at the same cadence stays fresh.
+FATIGUE_LOAD_PER_NOTE = 0.06
+
+
+def note_load(intensity: float, *, scale: float = FATIGUE_LOAD_PER_NOTE) -> float:
+    """Per-note fatigue load from a note's expressive intensity ``M`` in ``[0, 1]``.
+
+    ``intensity`` is clamped to the unit range; the load scales linearly so a
+    silent note adds nothing (soft passages rest a voice) and a maximally
+    intense note adds the full ``scale`` (loud passages tire it).
+    """
+    m = min(1.0, max(0.0, float(intensity)))
+    return scale * m
+
 
 def fatigue_multiplier(
     counter_value: float,
