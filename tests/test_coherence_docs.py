@@ -49,3 +49,17 @@ def test_coherence_overview_links_operational_surfaces() -> None:
         "graduation",
     ):
         assert phrase in text
+
+
+def test_coherence_overview_documents_tiers_and_sec001_hardening() -> None:
+    text = _read_doc("docs/coherence.md")
+
+    for phrase in (
+        "foundation",
+        "formula",
+        "recut, don't grandfather",
+        "SEC-001",
+        "PRAGMA table_info(dummy)",
+        "FAIL->PASS",
+    ):
+        assert phrase in text

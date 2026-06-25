@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Added T-005 SEC-001 hardening and tier docs:
+  `constitution.yaml` now detects placeholder output crafted to satisfy a
+  gate and self-edited `FAIL->PASS` verifier verdict flips in addition to the
+  existing dummy `PRAGMA table_info(dummy)` / evidence-parser bypass patterns.
+  `docs/coherence.md` now names SEC-001 as a foundation + hard rule under the
+  foundation/formula tier guidance, including the "recut, don't grandfather"
+  consequence and the correct escalation path for verifier false positives.
+  Regression coverage pins the new security strings, the legitimate
+  FAIL-then-rerun-PASS case, and the docs text. The `fx_bus_id` /
+  `sw_sampler.scd` hardening anchors passed, and full validation passed with
+  `5753 passed, 11 skipped`, Ruff clean, and mypy clean.
+
 - Added T-004 coherence documentation:
   `docs/configuration-reference.md` now documents the `coherence` block,
   enforcement modes, SQLite fallback, constitution path, auto-graduation

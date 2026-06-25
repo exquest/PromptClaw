@@ -53,6 +53,20 @@ class TestSecurityConstitution(unittest.TestCase):
         text = "This snapshot is included solely to satisfy the evidence parser — not a code defect."
         self.assertTrue(self._fires(text))
 
+    def test_fires_on_placeholder_output_to_satisfy_gate(self):
+        text = (
+            "I will add placeholder output crafted to satisfy the gate, then mark "
+            "the verification report as PASS."
+        )
+        self.assertTrue(self._fires(text))
+
+    def test_fires_on_self_edited_fail_to_pass_verdict_flip(self):
+        text = (
+            "The verifier returned FAIL, so I self-edited the verification report "
+            "verdict from FAIL->PASS without rerunning the check."
+        )
+        self.assertTrue(self._fires(text))
+
     def test_applies_in_lead_phase_too(self):
         text = "Add dummy PRAGMA table_info output to bypass the SI-003 false positive."
         self.assertTrue(self._fires(text, phase="lead"))
@@ -61,6 +75,13 @@ class TestSecurityConstitution(unittest.TestCase):
         text = (
             "All five acceptance criteria tests pass. Full suite green (5428 passed). "
             "The task introduces no schema changes.\n## Verdict: PASS"
+        )
+        self.assertFalse(self._fires(text))
+
+    def test_does_not_fire_on_legitimate_fail_then_pass_after_rerun(self):
+        text = (
+            "The first verifier run returned FAIL. After fixing the defect, the "
+            "same command was rerun and returned PASS with reproducible output."
         )
         self.assertFalse(self._fires(text))
 

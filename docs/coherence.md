@@ -92,3 +92,10 @@ A `foundation` rule is fixed by deliberate human amendment. Changing one is a
 "recut, don't grandfather" event: dependent decisions and generated outputs
 should be rechecked against the new foundation instead of assumed valid. A
 `formula` rule is adjustable operational guidance inside the foundation.
+
+The shipped root constitution makes SEC-001 a `foundation` + `hard` rule. It
+guards against fabricated verification evidence and verifier bypasses such as
+dummy `PRAGMA table_info(dummy)` output, placeholder output crafted to satisfy a
+gate, or a self-edited `FAIL->PASS` verdict flip. If a verifier rule
+false-positives, the correct path is to escalate and fix the verifier rule with
+reproducible evidence; do not invent evidence to satisfy the gate.
