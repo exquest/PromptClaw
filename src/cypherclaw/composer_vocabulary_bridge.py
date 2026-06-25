@@ -121,7 +121,7 @@ def load_vocabulary_fragments(
         return ()
     try:
         for kind in kinds:
-            rows = midi_vocabulary_store.query_fragments(conn, kind=kind)
+            rows = midi_vocabulary_store.query_fragments(conn, kind=kind, limit=limit)
             for row in rows:
                 fragment = _fragment_from_row(row)
                 if fragment is None:

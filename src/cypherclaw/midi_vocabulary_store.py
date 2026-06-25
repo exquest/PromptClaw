@@ -53,6 +53,13 @@ def connect(db_path: Path | str) -> sqlite3.Connection:
 
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
+    # WAL + synchronous=NORMAL: insert_fragment commits per row, so a single
+    # MIDI import is tens of thousands of commits. Under the default rollback
+    # journal + synchronous=FULL each commit fsyncs, saturating disk I/O for
+    # minutes (which can starve the live audio engine). WAL appends without a
+    # per-commit fsync and lets the composer read while the daemon writes.
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
     apply_migrations(conn)
     return conn
 
@@ -193,8 +200,15 @@ def query_fragments(
     *,
     kind: str | None = None,
     source_file: str | None = None,
+    limit: int | None = None,
 ) -> list[sqlite3.Row]:
-    """Return fragment rows, optionally filtered by kind or source file."""
+    """Return fragment rows, optionally filtered by kind or source file.
+
+    When ``limit`` is a positive integer, at most that many rows are returned
+    (lowest ``id`` first). A single MIDI import can yield tens of thousands of
+    motif rows, so the live composer's read path must cap the fetch rather than
+    materialize an entire kind on every score-tree build.
+    """
 
     sql = "SELECT * FROM fragments"
     clauses: list[str] = []
@@ -208,6 +222,9 @@ def query_fragments(
     if clauses:
         sql += " WHERE " + " AND ".join(clauses)
     sql += " ORDER BY id"
+    if limit is not None and limit > 0:
+        sql += " LIMIT ?"
+        params.append(int(limit))
     return list(conn.execute(sql, params).fetchall())
 
 

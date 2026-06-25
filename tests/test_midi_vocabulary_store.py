@@ -9,6 +9,18 @@ from pathlib import Path
 from cypherclaw import midi_vocabulary_store as store
 
 
+def test_connect_enables_wal_journal_mode(tmp_path: Path) -> None:
+    # WAL avoids an fsync per row-commit (insert_fragment commits per row), so
+    # a large MIDI import does not saturate disk I/O on the live audio box.
+    db_path = tmp_path / "midi_vocabulary.sqlite"
+    conn = store.connect(db_path)
+    try:
+        mode = conn.execute("PRAGMA journal_mode").fetchone()[0]
+    finally:
+        conn.close()
+    assert mode.lower() == "wal"
+
+
 def test_apply_migrations_creates_fragments_table(tmp_path: Path) -> None:
     db_path = tmp_path / "midi_vocabulary.sqlite"
     conn = sqlite3.connect(str(db_path))
@@ -177,8 +189,12 @@ def test_sample_query_returns_expected_rows(tmp_path: Path) -> None:
 
         motifs = store.query_fragments(conn, kind="melodic_motif")
         a_rows = store.query_fragments(conn, source_file="a.mid")
+        capped = store.query_fragments(conn, kind="melodic_motif", limit=1)
     finally:
         conn.close()
 
     assert [row["source_file"] for row in motifs] == ["a.mid", "b.mid"]
     assert [row["kind"] for row in a_rows] == ["melodic_motif", "rhythm_cell"]
+    # A positive limit caps the fetch (lowest id first) so the composer's read
+    # path never materializes an entire kind.
+    assert [row["source_file"] for row in capped] == ["a.mid"]
