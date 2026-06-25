@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 
@@ -78,8 +80,74 @@ class TrustManager:
     COMPLIANT_REWARD = 0.02
     RESTRICTION_THRESHOLD = 0.2
 
-    def __init__(self) -> None:
+    _SCHEMA = """
+    CREATE TABLE IF NOT EXISTS trust_scores (
+        agent TEXT PRIMARY KEY,
+        score REAL NOT NULL,
+        hard_violations INTEGER NOT NULL DEFAULT 0,
+        soft_violations INTEGER NOT NULL DEFAULT 0,
+        compliant_actions INTEGER NOT NULL DEFAULT 0,
+        last_updated TEXT NOT NULL DEFAULT ''
+    );
+    """
+
+    def __init__(self, db_path: Path | None = None) -> None:
         self.scores: dict[str, TrustScore] = {}
+        self._db_path = db_path
+        self._conn: sqlite3.Connection | None = None
+        if db_path is not None:
+            self._migrate()
+            self._load()
+
+    # --- Optional SQLite persistence (in-memory when db_path is None) ---
+
+    def _get_conn(self) -> sqlite3.Connection:
+        if self._conn is None:
+            self._conn = sqlite3.connect(str(self._db_path), timeout=30)
+            self._conn.execute("PRAGMA journal_mode=WAL")
+            self._conn.execute("PRAGMA busy_timeout=30000")
+            self._conn.execute("PRAGMA synchronous=NORMAL")
+            self._conn.row_factory = sqlite3.Row
+        return self._conn
+
+    def _migrate(self) -> None:
+        assert self._db_path is not None
+        self._db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = self._get_conn()
+        conn.executescript(self._SCHEMA)
+        conn.commit()
+
+    def _load(self) -> None:
+        for row in self._get_conn().execute("SELECT * FROM trust_scores"):
+            self.scores[row["agent"]] = TrustScore(
+                agent=row["agent"],
+                score=row["score"],
+                hard_violations=row["hard_violations"],
+                soft_violations=row["soft_violations"],
+                compliant_actions=row["compliant_actions"],
+                last_updated=row["last_updated"],
+            )
+
+    def _persist(self, ts: TrustScore) -> None:
+        if self._db_path is None:
+            return
+        conn = self._get_conn()
+        conn.execute(
+            "INSERT INTO trust_scores "
+            "(agent, score, hard_violations, soft_violations, compliant_actions, last_updated) "
+            "VALUES (?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(agent) DO UPDATE SET score=excluded.score, "
+            "hard_violations=excluded.hard_violations, soft_violations=excluded.soft_violations, "
+            "compliant_actions=excluded.compliant_actions, last_updated=excluded.last_updated",
+            (ts.agent, ts.score, ts.hard_violations, ts.soft_violations,
+             ts.compliant_actions, ts.last_updated),
+        )
+        conn.commit()
+
+    def close(self) -> None:
+        if self._conn is not None:
+            self._conn.close()
+            self._conn = None
 
     def get_score(self, agent: str) -> TrustScore:
         """Return existing score or create new one with INITIAL_SCORE."""
@@ -112,6 +180,7 @@ class TrustManager:
         current = getattr(ts, plan.counter_field)
         setattr(ts, plan.counter_field, current + 1)
         self._touch(ts)
+        self._persist(ts)
         return ts.score
 
     def apply_event_by_name(self, agent: str, plan_name: str) -> float:

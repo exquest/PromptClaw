@@ -96,5 +96,34 @@ class TestEngineSharedShadow(unittest.TestCase):
         self.assertIn("Latency vs. cost", out)
 
 
+class TestVerifyPromptShadowInjection(unittest.TestCase):
+    """Phase 1b: the SHARED SHADOW handoff must reach the verify prompt, not just disk."""
+
+    def _decision(self):
+        from promptclaw.models import RouteDecision
+        return RouteDecision(
+            ambiguous=False, clarification_question="", lead_agent="claude",
+            verifier_agent="codex", reason="r", subtask_brief="b", task_type="coding",
+        )
+
+    def test_build_verify_prompt_includes_shared_shadow(self):
+        from promptclaw.prompt_builder import build_verify_prompt
+        out = build_verify_prompt(
+            agent_instruction="V", task_text="T", decision=self._decision(),
+            lead_output="L", memory_text="",
+            shared_shadow="# Shared Shadow\n**Purpose:** build the widget",
+        )
+        self.assertIn("Shared Shadow (lead", out)
+        self.assertIn("build the widget", out)
+
+    def test_build_verify_prompt_omits_shadow_when_empty(self):
+        from promptclaw.prompt_builder import build_verify_prompt
+        out = build_verify_prompt(
+            agent_instruction="V", task_text="T", decision=self._decision(),
+            lead_output="L", memory_text="",
+        )
+        self.assertNotIn("Shared Shadow (lead", out)
+
+
 if __name__ == "__main__":
     unittest.main()

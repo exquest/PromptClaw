@@ -68,9 +68,11 @@ class CoherenceEngine:
             self.constitution = Constitution(constitution_file)
         else:
             self.constitution = Constitution(None)
-        # Trust & graduation
-        self.trust_manager = TrustManager()
-        self.graduation_manager = GraduationManager(config)
+        # Trust & graduation — persisted to the same coherence.db, surviving across runs.
+        self.trust_manager = TrustManager(db_path=decision_db_path)
+        self.graduation_manager = GraduationManager(config, db_path=decision_db_path)
+        # Adopt any enforcement mode graduated in prior runs so it takes effect immediately.
+        self.config.enforcement_mode = self.graduation_manager.current_mode.value
 
     def _create_event_store(self, config: CoherenceConfig, project_root: Path) -> EventStoreBackend:
         if config.database_url and config.database_url.startswith("postgresql"):
@@ -81,7 +83,13 @@ class CoherenceEngine:
         return SqliteEventStore(db_path)
 
     def _next_seq(self, run_id: str) -> int:
-        seq = self._sequence_counters.get(run_id, 0)
+        if run_id not in self._sequence_counters:
+            # Seed from the persisted event log so a resumed run continues, not restarts at 0.
+            existing = self.event_store.replay(run_id)
+            self._sequence_counters[run_id] = (
+                existing[-1].sequence_number + 1 if existing else 0
+            )
+        seq = self._sequence_counters[run_id]
         self._sequence_counters[run_id] = seq + 1
         return seq
 
@@ -313,6 +321,28 @@ class CoherenceEngine:
         """Record whether a detected violation was a true or false positive."""
         self.graduation_manager.record_observation(was_true_positive)
 
+    def note_override_outcome(
+        self,
+        overridden_violations: list[Any],
+        retry_output: str,
+        phase: str = "verify",
+        agent: str = "",
+    ) -> None:
+        """Feed graduation from a coherence override: did the retry clear the same rules?
+
+        When an override forced a FAIL, the retry output is re-evaluated; if none of the
+        overridden rules still fire, the override drove a real fix (true positive); otherwise
+        it is treated as a false positive. This is the in-repo signal — the higher-quality one
+        comes from operator-gated findings on the real path.
+        """
+        if not overridden_violations:
+            return
+        overridden = {v.rule_id for v in overridden_violations}
+        recurring = {
+            v.rule_id for v in self.constitution.evaluate(retry_output, phase=phase, agent=agent)
+        }
+        self.record_graduation_observation(was_true_positive=overridden.isdisjoint(recurring))
+
     # --- Decision management ---
 
     def record_decision(
@@ -505,3 +535,9 @@ class NullCoherenceEngine:
 
     def shared_shadow_handoff(self, *args: Any, **kwargs: Any) -> str:
         return "# Handoff\n"
+
+    def record_graduation_observation(self, *args: Any, **kwargs: Any) -> None:
+        return None
+
+    def note_override_outcome(self, *args: Any, **kwargs: Any) -> None:
+        return None

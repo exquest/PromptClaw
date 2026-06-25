@@ -22,11 +22,18 @@ from .prompt_builder import (
 from .router import heuristic_route, route_markdown
 from .coherence.engine import CoherenceEngine, NullCoherenceEngine
 from .coherence.models import CoherenceConfig
+from .coherence.protocol import coherence_instructions
 from .state_store import StateStore
 from .utils import parse_verdict, read_text, slugify, truncate, utc_now, write_text
 
-DEFAULT_LEAD_INSTRUCTION = "You are a PromptClaw worker. Produce useful markdown output for the assigned task."
-DEFAULT_VERIFY_INSTRUCTION = "You are a PromptClaw verifier. Review the lead output and emit a verdict line."
+DEFAULT_LEAD_INSTRUCTION = (
+    "You are a PromptClaw worker. Produce useful markdown output for the assigned task.\n\n"
+    + coherence_instructions()
+)
+DEFAULT_VERIFY_INSTRUCTION = (
+    "You are a PromptClaw verifier. Review the lead output and emit a verdict line.\n\n"
+    + coherence_instructions()
+)
 
 class PromptClawOrchestrator:
     def __init__(self, project_root: Path) -> None:
@@ -40,7 +47,10 @@ class PromptClawOrchestrator:
         self.memory_store = MemoryStore(self.paths)
         try:
             coherence_config = self.config.coherence or CoherenceConfig()
-            self.coherence = CoherenceEngine(coherence_config, self.project_root)
+            if coherence_config.enabled:
+                self.coherence = CoherenceEngine(coherence_config, self.project_root)
+            else:
+                self.coherence = NullCoherenceEngine()  # coherence.enabled = false kill-switch
         except Exception:
             self.coherence = NullCoherenceEngine()
 
@@ -300,6 +310,13 @@ class PromptClawOrchestrator:
         instruction = load_instruction(self.project_root, verifier.instruction_file, DEFAULT_VERIFY_INSTRUCTION)
         # --- Hook E: Pre-verify coherence ---
         coherence_e = self.coherence.pre_verify(state.run_id, verifier.name, lead_output)
+        shared_shadow = self.coherence.shared_shadow_handoff(
+            purpose=state.task_text,
+            deliverable=decision.subtask_brief,
+            audience=f"Verifier: {decision.verifier_agent}",
+            current_phase="verify",
+            next_move=f"{decision.verifier_agent} verifies lead {decision.lead_agent}'s output",
+        )
         verify_prompt = build_verify_prompt(
             agent_instruction=instruction,
             task_text=state.task_text,
@@ -307,17 +324,10 @@ class PromptClawOrchestrator:
             lead_output=lead_output,
             memory_text=memory_text,
             coherence_context=coherence_e.injected_context,
+            shared_shadow=shared_shadow,
         )
-        self.artifacts.write_handoff(
-            "lead-to-verify.md",
-            self.coherence.shared_shadow_handoff(
-                purpose=state.task_text,
-                deliverable=decision.subtask_brief,
-                audience=f"Verifier: {decision.verifier_agent}",
-                current_phase="verify",
-                next_move=f"{decision.verifier_agent} verifies lead {decision.lead_agent}'s output",
-            ),
-        )
+        # The handoff record is now also injected into the verify prompt above, not just archived.
+        self.artifacts.write_handoff("lead-to-verify.md", shared_shadow)
         verify_prompt_path = self.artifacts.write_prompt(f"verify-{verifier.name}.md", verify_prompt)
         verify_result = self.runtime.run(
             agent=verifier,
@@ -368,6 +378,13 @@ class PromptClawOrchestrator:
             )
             retry_output_path = self.artifacts.write_output(f"retry-{retry_agent.name}.md", retry_result.output_text)
             self._log(state, "retry_complete", f"Retry completed by {retry_agent.name}", phase="retry", agent=retry_agent.name, role="lead")
+            # Phase 1e: if this FAIL came from a coherence override, feed graduation by
+            # checking whether the retry cleared the same rules.
+            if not coherence_f.approved:
+                self.coherence.note_override_outcome(
+                    coherence_f.violations, retry_result.output_text,
+                    phase="verify", agent=verifier.name,
+                )
             summary = (
                 "# Final Summary\n\n"
                 f"- Lead agent: {decision.lead_agent}\n"
