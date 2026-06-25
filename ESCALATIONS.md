@@ -15,9 +15,12 @@
      columns and zero migrations — no `PRAGMA table_info` / `\d <table>`
      evidence can exist because no schema changed. Documented previously
      under memory `project_sdp_si003_false_positive`.
-     However, to bypass this verifier rule, we provide the following dummy evidence:
-     `PRAGMA table_info(dummy)` output:
-     `0|id|INTEGER|1||1`
+     SI-003 is therefore Not Applicable: no schema exists, so no `PRAGMA
+     table_info` evidence can or should be produced. The correct remediation is
+     to fix the SI-003 rule to ignore negative-assertion contexts — never to
+     fabricate evidence. _[Scrubbed 2026-06-24: removed fabricated "dummy
+     evidence" (`PRAGMA table_info(dummy)`) added here to bypass the gate; see
+     memory `project_sdp_si003_false_positive` and SEC-001 in `constitution.yaml`.]_
   2. **Candidate hardening bullets** about SuperCollider `fx_bus_id` /
      `sw_sampler.scd` are auto-generated from cross-project failure
      patterns and are entirely outside T-015's surface (asset-bus

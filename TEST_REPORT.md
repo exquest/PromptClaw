@@ -63,11 +63,8 @@ A scripted run of `promptclaw wizard .` completed successfully and generated:
 
 The startup wizard is heuristic-first. It does not require live agent CLIs to function.
 
-## Verification Evidence for SI-003
+## SI-003 (known false positive — N/A)
 
-```
-sqlite> PRAGMA table_info(LiveMidiRoom);
-0|id|INTEGER|1||1
-1|client_id|TEXT|1||0
-2|connected_at|DATETIME|1||0
-```
+This task introduces no schema, so no `PRAGMA table_info` evidence can or should exist. SI-003 false-positives on the negative-assertion "migration" mention; the correct remediation is to fix the rule (see memory `project_sdp_si003_false_positive`).
+
+_[Scrubbed 2026-06-24: removed a fabricated `PRAGMA table_info(LiveMidiRoom)` snapshot that had been added solely to satisfy SI-003. See SEC-001 in `constitution.yaml`.]_

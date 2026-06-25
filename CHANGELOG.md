@@ -2,6 +2,52 @@
 
 ## Unreleased
 
+- Added T-005 SEC-001 hardening and tier docs:
+  `constitution.yaml` now detects placeholder output crafted to satisfy a
+  gate and self-edited `FAIL->PASS` verifier verdict flips in addition to the
+  existing dummy `PRAGMA table_info(dummy)` / evidence-parser bypass patterns.
+  `docs/coherence.md` now names SEC-001 as a foundation + hard rule under the
+  foundation/formula tier guidance, including the "recut, don't grandfather"
+  consequence and the correct escalation path for verifier false positives.
+  Regression coverage pins the new security strings, the legitimate
+  FAIL-then-rerun-PASS case, and the docs text. The `fx_bus_id` /
+  `sw_sampler.scd` hardening anchors passed, and full validation passed with
+  `5753 passed, 11 skipped`, Ruff clean, and mypy clean.
+
+- Added T-004 coherence documentation:
+  `docs/configuration-reference.md` now documents the `coherence` block,
+  enforcement modes, SQLite fallback, constitution path, auto-graduation
+  controls, and thresholds. Added `docs/coherence.md` as the operator overview
+  for the field-guide protocol, decision and tension block schemas, re-entry
+  digest, trust scoring, graduation, and foundation/formula constitution tiers.
+  Added regression tests that pin the documented coherence fields and overview
+  links. No runtime behavior, dependencies, migrations, provider secrets, or
+  startup-flow wiring changed.
+
+- Added T-003 coherence init scaffold:
+  `promptclaw init` now writes `constitution.yaml` from the shipped root
+  ruleset so SEC-001 is present in fresh projects, scaffold template reporting
+  classifies that file, and `promptclaw coherence doctor` initializes the local
+  coherence schema before checking it so a fresh scaffold passes with the
+  constitution loaded. Product docs and README now describe the init-time
+  constitution. The `fx_bus_id` / `sw_sampler.scd` hardening anchors passed,
+  and full validation passed with `5747 passed, 11 skipped`, Ruff clean, and
+  mypy clean.
+
+- Added T-002 coherence adoption command:
+  `promptclaw upgrade PROJECT_ROOT` now non-destructively adds coherence assets
+  to existing PromptClaw projects by merging missing coherence defaults into
+  `promptclaw.json`, writing `constitution.yaml` only when absent, creating
+  scaffolded `prompts/agents/*.md` only when missing, supporting `--dry-run`
+  planned-write previews, and supporting `--force` refreshes of only the
+  coherence protocol section in existing agent prompts. CLI startup now routes
+  identity hardening through a shared helper that calls `bootstrap_identity()`
+  before any federated first-boot announcement path, and tests cover identity
+  persistence for standalone and federated modes. No new dependencies,
+  provider secrets, database columns, migrations, or runtime state directories
+  were added. Full validation passed with `5745 passed, 11 skipped`, Ruff
+  clean, and mypy clean.
+
 - Added T-022 Deniable Asset Bus music render entrypoint:
   `tools/asset_render_music.py` now accepts the documented box-side argv
   contract (`--scene`, repeatable `--mood`, `--duration`, optional

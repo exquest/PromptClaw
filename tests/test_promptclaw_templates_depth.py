@@ -8,6 +8,7 @@ from pathlib import Path
 from promptclaw.templates import (
     ScaffoldTemplateEntry,
     ScaffoldTemplateReport,
+    default_constitution_text,
     project_scaffold,
     required_startup_prompt_paths,
     scaffold_template_entries,
@@ -22,6 +23,7 @@ TEMPLATES_MODULE_PATH = Path("promptclaw/templates.py")
 
 def test_template_category_classifies_known_paths() -> None:
     assert template_category("promptclaw.json") == "config"
+    assert template_category("constitution.yaml") == "constitution"
     assert template_category("docs/PROJECT_GUIDE.md") == "docs"
     assert template_category("prompts/control/routing.md") == "control_prompt"
     assert template_category("prompts/agents/codex.md") == "agent_prompt"
@@ -45,16 +47,24 @@ def test_scaffold_template_entries_preserve_project_scaffold_contract() -> None:
     assert json.loads(entries[0].content)["project"]["name"] == "Template Claw"
 
 
+def test_scaffold_includes_root_constitution_verbatim() -> None:
+    scaffold = project_scaffold("Constitution Claw")
+
+    assert scaffold["constitution.yaml"] == default_constitution_text()
+    assert "id: SEC-001" in scaffold["constitution.yaml"]
+
+
 def test_scaffold_template_report_summarizes_generated_templates() -> None:
     report = scaffold_template_report("Report Claw")
 
     assert isinstance(report, ScaffoldTemplateReport)
     assert report.project_name == "Report Claw"
-    assert report.file_count == 14
+    assert report.file_count == 15
     assert report.total_size_bytes == sum(entry.size_bytes for entry in report.entries)
     assert report.categories == {
         "agent_prompt": 3,
         "config": 1,
+        "constitution": 1,
         "control_prompt": 3,
         "docs": 1,
         "example": 2,
@@ -70,7 +80,7 @@ def test_summarize_scaffold_templates_is_json_safe() -> None:
 
     json.dumps(summary)
     assert summary["project_name"] == "Summary Claw"
-    assert summary["file_count"] == 14
+    assert summary["file_count"] == 15
     assert summary["categories"]["startup_prompt"] == 3
     assert summary["required_prompt_paths"] == list(required_startup_prompt_paths())
     assert summary["missing_required_prompt_paths"] == []

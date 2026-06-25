@@ -49,6 +49,45 @@ The startup wizard updates `description` from your project pitch.
 
 The startup wizard may update `verification_enabled` and `ask_user_on_ambiguity`.
 
+### `coherence`
+
+```json
+{
+  "enabled": true,
+  "database_url": "",
+  "redis_url": "",
+  "constitution_path": "constitution.yaml",
+  "enforcement_mode": "monitor",
+  "auto_graduate": true,
+  "graduation_confidence_threshold": 0.85,
+  "graduation_false_positive_threshold": 0.05
+}
+```
+
+The coherence engine preserves decisions, held tensions, constitutional verdicts,
+trust scores, and the re-entry digest for each project.
+
+- `enabled`: turns the runtime coherence hooks on or off. When `false`, PromptClaw
+  uses the no-op coherence engine and external `open_session(...)` callers get a
+  no-op session.
+- `database_url`: event-store backend. Leave empty for the default SQLite store at
+  `.promptclaw/coherence.db`; use a `postgresql://...` URL with the `coherence-pg`
+  extra for PostgreSQL-backed events.
+- `redis_url`: optional Redis URL passed to the PostgreSQL event-store backend.
+  It is unused by the default SQLite path.
+- `constitution_path`: project-root-relative YAML or JSON file loaded by the
+  constitution evaluator. Fresh projects use `constitution.yaml`.
+- `enforcement_mode`: one of `monitor`, `soft`, or `full`.
+  - `monitor`: evaluate and record violations, but never block.
+  - `soft`: block hard-severity violations only.
+  - `full`: block any hard or soft violation.
+- `auto_graduate`: lets the engine promote enforcement modes when observed
+  detection quality clears the thresholds below.
+- `graduation_confidence_threshold`: minimum true-positive confidence for
+  promotion from `monitor` to `soft`, after at least 20 observations.
+- `graduation_false_positive_threshold`: maximum false-positive rate for
+  promotion from `soft` to `full`, after at least 10 runs in soft mode.
+
 ### `pal`
 
 ```json

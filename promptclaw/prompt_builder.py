@@ -73,6 +73,7 @@ def build_verify_prompt(
     lead_output: str,
     memory_text: str,
     coherence_context: str = "",
+    shared_shadow: str = "",
 ) -> str:
     parts = [
         f"{agent_instruction.strip()}\n\n"
@@ -89,6 +90,8 @@ def build_verify_prompt(
     ]
     if coherence_context:
         parts.append(f"{coherence_context.strip()}\n\n")
+    if shared_shadow:
+        parts.append(f"# Shared Shadow (lead→verify handoff)\n{shared_shadow.strip()}\n\n")
     parts.append(
         "# Required Output\n"
         "Produce markdown and include one explicit verdict line: "

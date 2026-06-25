@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from pathlib import Path
 
+from .coherence.protocol import coherence_instructions
 from .config import default_project_config
 
 STARTER_DOC = """# Project Guide
@@ -105,6 +107,10 @@ You are Gemini inside PromptClaw. 📚
 ## Output style
 Produce markdown optimized for clarity and synthesis.
 """
+
+# Shared coherence standing-instructions appended to every scaffolded agent prompt, so agents
+# emit ```decision/```tension blocks the engine captures and follow the collaboration protocol.
+_COHERENCE_SECTION = "## Coherence — standing instructions\n\n" + coherence_instructions()
 
 PROJECT_VISION = """# Project Vision
 
@@ -212,13 +218,14 @@ def _scaffold_contents(project_name: str) -> dict[str, str]:
                 for name, agent in config.agents.items()
             },
         }, indent=2) + "\n",
+        "constitution.yaml": default_constitution_text(),
         "docs/PROJECT_GUIDE.md": STARTER_DOC + "\n",
         "prompts/control/routing.md": CONTROL_ROUTING + "\n",
         "prompts/control/review.md": CONTROL_REVIEW + "\n",
         "prompts/control/summarize.md": CONTROL_SUMMARIZE + "\n",
-        "prompts/agents/codex.md": AGENT_CODEX + "\n",
-        "prompts/agents/claude.md": AGENT_CLAUDE + "\n",
-        "prompts/agents/gemini.md": AGENT_GEMINI + "\n",
+        "prompts/agents/codex.md": AGENT_CODEX + "\n\n" + _COHERENCE_SECTION,
+        "prompts/agents/claude.md": AGENT_CLAUDE + "\n\n" + _COHERENCE_SECTION,
+        "prompts/agents/gemini.md": AGENT_GEMINI + "\n\n" + _COHERENCE_SECTION,
         "prompts/00-project-vision.md": PROJECT_VISION + "\n",
         "prompts/01-agent-roles.md": AGENT_ROLES + "\n",
         "prompts/02-routing-rules.md": ROUTING_RULES + "\n",
@@ -232,6 +239,8 @@ def template_category(path: str) -> str:
     normalized = path.replace("\\", "/")
     if normalized == "promptclaw.json":
         return "config"
+    if normalized == "constitution.yaml":
+        return "constitution"
     if normalized.startswith("docs/"):
         return "docs"
     if normalized.startswith("prompts/control/"):
@@ -249,6 +258,15 @@ def template_category(path: str) -> str:
 
 def required_startup_prompt_paths() -> tuple[str, ...]:
     return _REQUIRED_STARTUP_PROMPT_PATHS
+
+
+def coherence_protocol_section() -> str:
+    return _COHERENCE_SECTION
+
+
+def default_constitution_text() -> str:
+    constitution_path = Path(__file__).resolve().parent.parent / "constitution.yaml"
+    return constitution_path.read_text(encoding="utf-8")
 
 
 def scaffold_template_entries(project_name: str) -> tuple[ScaffoldTemplateEntry, ...]:

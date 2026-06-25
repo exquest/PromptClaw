@@ -54,23 +54,19 @@ cd my-claw
 
 The startup wizard asks questions one at a time and configures your agents.
 
-### 3) Add a constitution (optional)
+### 3) Review the constitution
 
-Create `constitution.json` in your project root:
+`promptclaw init` scaffolds `constitution.yaml` from the shipped root ruleset,
+including SEC-001. You can extend it with additional rules:
 
-```json
-{
-  "rules": [
-    {
-      "id": "no-secrets",
-      "severity": "hard",
-      "description": "Never include API keys or secrets in output",
-      "pattern": "(api[_-]?key|secret|password|token)\\s*[:=]\\s*\\S+",
-      "applies_to": ["lead", "verify"],
-      "message": "Output contains what appears to be a secret"
-    }
-  ]
-}
+```yaml
+rules:
+  - id: no-secrets
+    severity: hard
+    description: Never include API keys or secrets in output
+    pattern: "(api[_-]?key|secret|password|token)\\s*[:=]\\s*\\S+"
+    applies_to: [lead, verify]
+    message: Output contains what appears to be a secret
 ```
 
 ### 4) Record architectural decisions
@@ -187,9 +183,11 @@ Add coherence settings to `promptclaw.json`:
     "enabled": true,
     "database_url": "",
     "redis_url": "",
-    "constitution_path": "constitution.json",
+    "constitution_path": "constitution.yaml",
     "enforcement_mode": "monitor",
-    "auto_graduate": true
+    "auto_graduate": true,
+    "graduation_confidence_threshold": 0.85,
+    "graduation_false_positive_threshold": 0.05
   }
 }
 ```
@@ -274,6 +272,7 @@ confirm the Mac has an active connection to the `cypherclaw` node.
 ## Docs
 
 - `docs/coherence-foundations.md` — research basis (60+ papers)
+- `docs/coherence.md` — operational coherence overview
 - `docs/architecture.md` — system design
 - `docs/build-your-own-promptclaw.md` — custom claw guide
 - `docs/configuration-reference.md` — all config options

@@ -14,6 +14,7 @@ PromptClaw v2.1 is organized around one principle:
 - `wizard`
 - `doctor`
 - `bootstrap`
+- `upgrade`
 - `run`
 - `resume`
 - `status`
@@ -48,6 +49,15 @@ agent-result, event, and run-state contracts. It also exposes JSON-safe
 diagnostic summaries for configs, agents, route decisions, and run states, so
 operator/status surfaces can report model state without reinterpreting raw
 dataclass fields differently in each caller.
+
+`promptclaw upgrade PROJECT_ROOT` is the non-destructive adoption path for
+existing PromptClaw projects that need the coherence layer. It preserves unknown
+config keys, merges missing coherence defaults into `promptclaw.json`, writes
+`constitution.yaml` only when absent, and creates the scaffolded agent prompt
+files only when they are missing.
+
+Fresh `promptclaw init` projects scaffold the same root `constitution.yaml`, so
+SEC-001 is available before the first coherence run or doctor check.
 
 ### 4. Control plane
 
@@ -289,10 +299,11 @@ CypherClaw live deployments add a runtime safety layer around the orchestrator:
 - checkpoint export via `my-claw/tools/runtime_checkpoint.py`
 - systemd-managed runner startup through `my-claw/tools/sdp_runner_launcher.sh`
 
-Identity bootstrap is part of startup hardening. Daemon poll loops call
-`bootstrap_identity()` before creating `FirstBootAnnouncer`, and ASGI imports of
-`cypherclaw.narrative_api.main:app` also bootstrap identity before app creation
-so both standalone and federated homes persist identity on first boot.
+Identity bootstrap is part of startup hardening. The PromptClaw CLI entrypoint
+and daemon poll loops call `bootstrap_identity()` before any first-boot
+announcement path, and ASGI imports of `cypherclaw.narrative_api.main:app` also
+bootstrap identity before app creation, so standalone and federated homes
+persist identity on first boot.
 
 The tmpfs workdir is acceleration only. It clones the repository into `/run/cypherclaw-tmp/workdir/<name>` and then symlinks the authoritative DBs back to disk so reboot or tmpfs loss cannot silently rewrite queue authority.
 

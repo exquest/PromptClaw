@@ -19,7 +19,7 @@ from .asset_bus import (
     run_asset_bus_producer,
     validate_request,
 )
-from .bootstrap import bootstrap_project, init_project
+from .bootstrap import bootstrap_project, init_project, upgrade_project
 from .config import load_config
 from .diagnostics import diagnose, format_diagnosis
 from .doctor import run_doctor
@@ -86,6 +86,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     bootstrap_parser = subparsers.add_parser("bootstrap", help="Run the bootstrap task from starter prompts")
     bootstrap_parser.add_argument("project_root", type=Path)
+
+    upgrade_parser = subparsers.add_parser("upgrade", help="Add coherence assets to an existing PromptClaw project")
+    upgrade_parser.add_argument("project_root", type=Path)
+    upgrade_parser.add_argument("--dry-run", action="store_true", help="Preview planned writes without changing files")
+    upgrade_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Refresh the coherence protocol section in existing agent prompts",
+    )
 
     run_parser = subparsers.add_parser("run", help="Run a task")
     run_parser.add_argument("project_root", type=Path)
@@ -492,6 +501,12 @@ def cmd_bootstrap(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_upgrade(args: argparse.Namespace) -> int:
+    report = upgrade_project(args.project_root, dry_run=args.dry_run, force=args.force)
+    print(json.dumps(asdict(report), indent=2))
+    return 0
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     orchestrator = PromptClawOrchestrator(args.project_root)
     task_text = args.task if args.task else read_text(args.task_file)
@@ -677,6 +692,13 @@ def cmd_coherence_doctor(args: argparse.Namespace) -> int:
     print("Coherence Doctor")
     print("=" * 40)
 
+    engine = None
+    engine_error: Exception | None = None
+    try:
+        engine = _build_coherence_engine(project_root)
+    except Exception as exc:
+        engine_error = exc
+
     # Check 1: Constitution file exists and parses without errors
     constitution_path = project_root / "constitution.yaml"
     if constitution_path.exists():
@@ -728,65 +750,74 @@ def cmd_coherence_doctor(args: argparse.Namespace) -> int:
         _fail("Coherence DB", f"database not found at {db_path}")
 
     # Check 3: All decision records have required fields
-    try:
-        engine = _build_coherence_engine(project_root)
-        decisions = engine.decision_store.list_active()
-        invalid_decisions = []
-        for d in decisions:
-            missing = []
-            if not d.decision_id:
-                missing.append("decision_id")
-            if not d.title:
-                missing.append("title")
-            if not d.created_at:
-                missing.append("created_at")
-            if not d.decision_text:
-                missing.append("decision_text")
-            if missing:
-                invalid_decisions.append((d.decision_id or "<no-id>", missing))
-        if not invalid_decisions:
-            _pass("Decision records", f"{len(decisions)} active decisions, all valid")
-        else:
-            details = "; ".join(f"{did} missing {', '.join(fields)}" for did, fields in invalid_decisions)
-            _fail("Decision records", details)
-    except Exception as exc:
-        _fail("Decision records", f"could not query: {exc}")
+    if engine is None:
+        _fail("Decision records", f"could not query: {engine_error}")
+    else:
+        try:
+            decisions = engine.decision_store.list_active()
+            invalid_decisions = []
+            for d in decisions:
+                missing = []
+                if not d.decision_id:
+                    missing.append("decision_id")
+                if not d.title:
+                    missing.append("title")
+                if not d.created_at:
+                    missing.append("created_at")
+                if not d.decision_text:
+                    missing.append("decision_text")
+                if missing:
+                    invalid_decisions.append((d.decision_id or "<no-id>", missing))
+            if not invalid_decisions:
+                _pass("Decision records", f"{len(decisions)} active decisions, all valid")
+            else:
+                details = "; ".join(f"{did} missing {', '.join(fields)}" for did, fields in invalid_decisions)
+                _fail("Decision records", details)
+        except Exception as exc:
+            _fail("Decision records", f"could not query: {exc}")
 
     # Check 4: No orphaned events (events referencing non-existent runs)
-    try:
-        engine = _build_coherence_engine(project_root)
-        all_events = engine.event_store.replay_all()
-        # Collect unique run_ids from events
-        event_run_ids = set()
-        for ev in all_events:
-            event_run_ids.add(ev.run_id)
-        # Check which run_ids have a run_started event
-        started_runs = set()
-        for ev in all_events:
-            if ev.event_type == "run_started":
-                started_runs.add(ev.run_id)
-        orphaned = event_run_ids - started_runs
-        if not orphaned:
-            _pass("Orphaned events", f"{len(event_run_ids)} run(s) found, none orphaned")
-        else:
-            _fail("Orphaned events", f"{len(orphaned)} run(s) with events but no run_started: {', '.join(sorted(orphaned))}")
-    except Exception as exc:
-        _fail("Orphaned events", f"could not check: {exc}")
+    if engine is None:
+        _fail("Orphaned events", f"could not check: {engine_error}")
+    else:
+        try:
+            all_events = engine.event_store.replay_all()
+            # Collect unique run_ids from events
+            event_run_ids = set()
+            for ev in all_events:
+                event_run_ids.add(ev.run_id)
+            # Check which run_ids have a run_started event
+            started_runs = set()
+            for ev in all_events:
+                if ev.event_type == "run_started":
+                    started_runs.add(ev.run_id)
+            orphaned = event_run_ids - started_runs
+            if not orphaned:
+                _pass("Orphaned events", f"{len(event_run_ids)} run(s) found, none orphaned")
+            else:
+                _fail(
+                    "Orphaned events",
+                    f"{len(orphaned)} run(s) with events but no run_started: {', '.join(sorted(orphaned))}",
+                )
+        except Exception as exc:
+            _fail("Orphaned events", f"could not check: {exc}")
 
     # Check 5: Trust scores are within valid range [0.0, 1.0]
-    try:
-        engine = _build_coherence_engine(project_root)
-        scores = engine.trust_manager.all_scores()
-        out_of_range = []
-        for agent, ts in scores.items():
-            if ts.score < 0.0 or ts.score > 1.0:
-                out_of_range.append(f"{agent}={ts.score:.4f}")
-        if not out_of_range:
-            _pass("Trust scores", f"{len(scores)} agent(s) tracked, all in [0.0, 1.0]")
-        else:
-            _fail("Trust scores", f"out of range: {', '.join(out_of_range)}")
-    except Exception as exc:
-        _fail("Trust scores", f"could not check: {exc}")
+    if engine is None:
+        _fail("Trust scores", f"could not check: {engine_error}")
+    else:
+        try:
+            scores = engine.trust_manager.all_scores()
+            out_of_range = []
+            for agent, ts in scores.items():
+                if ts.score < 0.0 or ts.score > 1.0:
+                    out_of_range.append(f"{agent}={ts.score:.4f}")
+            if not out_of_range:
+                _pass("Trust scores", f"{len(scores)} agent(s) tracked, all in [0.0, 1.0]")
+            else:
+                _fail("Trust scores", f"out of range: {', '.join(out_of_range)}")
+        except Exception as exc:
+            _fail("Trust scores", f"could not check: {exc}")
 
     # Summary
     print("=" * 40)
@@ -1287,6 +1318,8 @@ def _dispatch(args: argparse.Namespace) -> int:
         return cmd_doctor(args)
     if args.command == "bootstrap":
         return cmd_bootstrap(args)
+    if args.command == "upgrade":
+        return cmd_upgrade(args)
     if args.command == "run":
         return cmd_run(args)
     if args.command == "resume":
@@ -1513,11 +1546,7 @@ def _dispatch_coherence(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    try:
-        from cypherclaw.first_boot import bootstrap_identity
-        bootstrap_identity()
-    except ImportError:
-        pass
+    _bootstrap_runtime_identity()
 
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -1533,6 +1562,17 @@ def main(argv: list[str] | None = None) -> int:
         if state := _try_extract_state(args):
             print(f"\n  Run state may be partially saved. Check: promptclaw status {state} --run-id <id>", file=sys.stderr)
         return 1
+
+
+def _bootstrap_runtime_identity() -> None:
+    try:
+        from cypherclaw.first_boot import FirstBootAnnouncer, bootstrap_identity
+    except ImportError:
+        return
+
+    identity = bootstrap_identity()
+    if getattr(identity, "mode", None) == "federated":
+        FirstBootAnnouncer().maybe_announce()
 
 
 def _try_extract_state(args: argparse.Namespace) -> str | None:
