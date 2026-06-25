@@ -183,9 +183,11 @@ Add coherence settings to `promptclaw.json`:
     "enabled": true,
     "database_url": "",
     "redis_url": "",
-    "constitution_path": "constitution.json",
+    "constitution_path": "constitution.yaml",
     "enforcement_mode": "monitor",
-    "auto_graduate": true
+    "auto_graduate": true,
+    "graduation_confidence_threshold": 0.85,
+    "graduation_false_positive_threshold": 0.05
   }
 }
 ```
@@ -270,6 +272,7 @@ confirm the Mac has an active connection to the `cypherclaw` node.
 ## Docs
 
 - `docs/coherence-foundations.md` — research basis (60+ papers)
+- `docs/coherence.md` — operational coherence overview
 - `docs/architecture.md` — system design
 - `docs/build-your-own-promptclaw.md` — custom claw guide
 - `docs/configuration-reference.md` — all config options

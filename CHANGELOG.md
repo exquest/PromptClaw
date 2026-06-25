@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Added T-004 coherence documentation:
+  `docs/configuration-reference.md` now documents the `coherence` block,
+  enforcement modes, SQLite fallback, constitution path, auto-graduation
+  controls, and thresholds. Added `docs/coherence.md` as the operator overview
+  for the field-guide protocol, decision and tension block schemas, re-entry
+  digest, trust scoring, graduation, and foundation/formula constitution tiers.
+  Added regression tests that pin the documented coherence fields and overview
+  links. No runtime behavior, dependencies, migrations, provider secrets, or
+  startup-flow wiring changed.
+
 - Added T-003 coherence init scaffold:
   `promptclaw init` now writes `constitution.yaml` from the shipped root
   ruleset so SEC-001 is present in fresh projects, scaffold template reporting
