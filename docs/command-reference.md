@@ -11,10 +11,14 @@ promptclaw init PATH [--name NAME] [--no-wizard]
 Creates:
 
 - `promptclaw.json`
+- `constitution.yaml`
 - `prompts/`
 - `docs/`
 - `.promptclaw/`
 - example tasks
+
+The scaffolded constitution is copied from the shipped root ruleset and includes
+SEC-001.
 
 When running in an interactive terminal, `init` launches the startup wizard unless `--no-wizard` is passed.
 
@@ -100,6 +104,10 @@ the scaffolded `prompts/agents/*.md` files only when they are missing. `--dry-ru
 prints the planned writes without mutating files. `--force` refreshes only the
 coherence protocol section of existing agent prompts; local prompt content above
 that section is left intact.
+
+`promptclaw coherence doctor PROJECT_ROOT` initializes the local coherence
+schema before checking it, so a freshly initialized project can pass with its
+scaffolded constitution loaded.
 
 ## `promptclaw run`
 

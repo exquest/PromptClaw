@@ -69,6 +69,7 @@ Examples:
 - `docs/STARTUP_TRANSCRIPT.md`
 - `.promptclaw/onboarding/startup-session.md`
 - `promptclaw.json`
+- `constitution.yaml`
 
 ## Design notes
 
@@ -80,6 +81,9 @@ Examples:
   defaults, writes `constitution.yaml` only when missing, and leaves existing
   prompt content intact unless `--force` is used to refresh the protocol
   section.
+- New `promptclaw init` projects already include the shipped root
+  `constitution.yaml`, so SEC-001 is present before the first coherence doctor
+  or run.
 - When you later switch an agent to live `command` mode, PromptClaw runs it from the project root and fills `{prompt_file}` with an absolute path to the generated prompt artifact.
 - PAL 2026 agent workflows are post-init, opt-in operational workflows. The startup materials may describe PAL's role, but `promptclaw pal agent triage` still uses a local diagnostic allow-list. PAL plan and summary prompts can include a bounded `Knowledge Context` section from the local PAL KB after `promptclaw pal kb build` has run. `promptclaw pal agent actions` is proposal-only unless the operator passes `--approve ACTION_ID`, so infrastructure mutation remains a human approval gate. The slow-inference context and diagnosis paths are also read-only: `promptclaw pal diagnose slow-inference` records health, baseline token/s, optional GPU hints, optional logs, and local findings into run artifacts without exposing action ids or changing infrastructure. `promptclaw pal validate restart` adds a post-restart validation workflow that records health, one direct query, active smoke, Tailscale, and process-check observations with `mutating_actions: []`. `promptclaw pal audit shutdown` adds a read-only shutdown audit that records shutdown enabled state, override state, next shutdown window, cron evidence, and recent logs with `mutating_actions: []` and no shutdown override changes. `promptclaw pal report phase2-readiness` adds a report-only Phase 2 readiness workflow that scores prerequisites and records `phase2_execution_actions: []` without an approval or execution path. `promptclaw pal deploy apply` requires `--approve-apply` and `promptclaw pal deploy rollback` requires `--approve-rollback`; both currently mutate only a supplied local fake remote inventory snapshot, with `live_ssh=false` and no service restarts. The Vast connector is also only a stub boundary by default: `rent`, `destroy`, `start`, and `stop` are blocked metadata, not callable action ids.
 - The Deniable Asset Bus producer keeps renderer execution behind the `BoxRunner` boundary. `process_pending_requests_once(...)` snapshots pending requests for one pass, delegates each id to `process_request_if_pending(...)`, and converts per-request failures to `error` manifests so the rest of the batch keeps moving. `run_asset_bus_producer(...)` is the continuous producer run mode: it repeats that pass on a poll interval so newly arrived requests are processed on the next loop. `FakeBoxRunner` stays the unit-test transport, while `SSHBoxRunner` sends renderer argv as JSON stdin to a fixed remote helper and uses argv-list `ssh`/`rsync` calls with `shell=False`, so request text from prompts, scenes, or moods is not interpolated into shell commands.

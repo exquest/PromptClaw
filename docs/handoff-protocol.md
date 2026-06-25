@@ -266,6 +266,10 @@ on the next poll without changing the filesystem handoff contract.
 
 Before runtime handoffs begin, the startup wizard can generate the initial routing documents and agent lanes. That gives the orchestrator a cleaner starting point than raw placeholder prompts.
 
+Fresh `promptclaw init` scaffolds `constitution.yaml` from the shipped root
+ruleset, so the first coherence doctor or run can load SEC-001 without a
+separate adoption step.
+
 For existing projects, `promptclaw upgrade PROJECT_ROOT` adds the coherence
 constitution and scaffolded agent protocol sections without creating run
 handoffs. Its authority is the planned-write report it prints and the resulting

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Added T-003 coherence init scaffold:
+  `promptclaw init` now writes `constitution.yaml` from the shipped root
+  ruleset so SEC-001 is present in fresh projects, scaffold template reporting
+  classifies that file, and `promptclaw coherence doctor` initializes the local
+  coherence schema before checking it so a fresh scaffold passes with the
+  constitution loaded. Product docs and README now describe the init-time
+  constitution. The `fx_bus_id` / `sw_sampler.scd` hardening anchors passed,
+  and full validation passed with `5747 passed, 11 skipped`, Ruff clean, and
+  mypy clean.
+
 - Added T-002 coherence adoption command:
   `promptclaw upgrade PROJECT_ROOT` now non-destructively adds coherence assets
   to existing PromptClaw projects by merging missing coherence defaults into

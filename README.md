@@ -54,23 +54,19 @@ cd my-claw
 
 The startup wizard asks questions one at a time and configures your agents.
 
-### 3) Add a constitution (optional)
+### 3) Review the constitution
 
-Create `constitution.json` in your project root:
+`promptclaw init` scaffolds `constitution.yaml` from the shipped root ruleset,
+including SEC-001. You can extend it with additional rules:
 
-```json
-{
-  "rules": [
-    {
-      "id": "no-secrets",
-      "severity": "hard",
-      "description": "Never include API keys or secrets in output",
-      "pattern": "(api[_-]?key|secret|password|token)\\s*[:=]\\s*\\S+",
-      "applies_to": ["lead", "verify"],
-      "message": "Output contains what appears to be a secret"
-    }
-  ]
-}
+```yaml
+rules:
+  - id: no-secrets
+    severity: hard
+    description: Never include API keys or secrets in output
+    pattern: "(api[_-]?key|secret|password|token)\\s*[:=]\\s*\\S+"
+    applies_to: [lead, verify]
+    message: Output contains what appears to be a secret
 ```
 
 ### 4) Record architectural decisions

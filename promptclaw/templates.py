@@ -218,6 +218,7 @@ def _scaffold_contents(project_name: str) -> dict[str, str]:
                 for name, agent in config.agents.items()
             },
         }, indent=2) + "\n",
+        "constitution.yaml": default_constitution_text(),
         "docs/PROJECT_GUIDE.md": STARTER_DOC + "\n",
         "prompts/control/routing.md": CONTROL_ROUTING + "\n",
         "prompts/control/review.md": CONTROL_REVIEW + "\n",
@@ -238,6 +239,8 @@ def template_category(path: str) -> str:
     normalized = path.replace("\\", "/")
     if normalized == "promptclaw.json":
         return "config"
+    if normalized == "constitution.yaml":
+        return "constitution"
     if normalized.startswith("docs/"):
         return "docs"
     if normalized.startswith("prompts/control/"):

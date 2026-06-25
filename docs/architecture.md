@@ -56,6 +56,9 @@ config keys, merges missing coherence defaults into `promptclaw.json`, writes
 `constitution.yaml` only when absent, and creates the scaffolded agent prompt
 files only when they are missing.
 
+Fresh `promptclaw init` projects scaffold the same root `constitution.yaml`, so
+SEC-001 is available before the first coherence run or doctor check.
+
 ### 4. Control plane
 
 The control plane decides:
