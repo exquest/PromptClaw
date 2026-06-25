@@ -266,6 +266,12 @@ on the next poll without changing the filesystem handoff contract.
 
 Before runtime handoffs begin, the startup wizard can generate the initial routing documents and agent lanes. That gives the orchestrator a cleaner starting point than raw placeholder prompts.
 
+For existing projects, `promptclaw upgrade PROJECT_ROOT` adds the coherence
+constitution and scaffolded agent protocol sections without creating run
+handoffs. Its authority is the planned-write report it prints and the resulting
+local file changes: `promptclaw.json`, `constitution.yaml`, and missing or
+force-refreshed `prompts/agents/*.md` files.
+
 ## Clarification flow
 
 If the route decision marks the task as ambiguous, the orchestrator writes:

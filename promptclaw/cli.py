@@ -19,7 +19,7 @@ from .asset_bus import (
     run_asset_bus_producer,
     validate_request,
 )
-from .bootstrap import bootstrap_project, init_project
+from .bootstrap import bootstrap_project, init_project, upgrade_project
 from .config import load_config
 from .diagnostics import diagnose, format_diagnosis
 from .doctor import run_doctor
@@ -86,6 +86,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     bootstrap_parser = subparsers.add_parser("bootstrap", help="Run the bootstrap task from starter prompts")
     bootstrap_parser.add_argument("project_root", type=Path)
+
+    upgrade_parser = subparsers.add_parser("upgrade", help="Add coherence assets to an existing PromptClaw project")
+    upgrade_parser.add_argument("project_root", type=Path)
+    upgrade_parser.add_argument("--dry-run", action="store_true", help="Preview planned writes without changing files")
+    upgrade_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Refresh the coherence protocol section in existing agent prompts",
+    )
 
     run_parser = subparsers.add_parser("run", help="Run a task")
     run_parser.add_argument("project_root", type=Path)
@@ -489,6 +498,12 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 def cmd_bootstrap(args: argparse.Namespace) -> int:
     run_id = bootstrap_project(args.project_root)
     print(status_line(f"Bootstrap run created: {run_id} 🚀", "🦀"))
+    return 0
+
+
+def cmd_upgrade(args: argparse.Namespace) -> int:
+    report = upgrade_project(args.project_root, dry_run=args.dry_run, force=args.force)
+    print(json.dumps(asdict(report), indent=2))
     return 0
 
 
@@ -1287,6 +1302,8 @@ def _dispatch(args: argparse.Namespace) -> int:
         return cmd_doctor(args)
     if args.command == "bootstrap":
         return cmd_bootstrap(args)
+    if args.command == "upgrade":
+        return cmd_upgrade(args)
     if args.command == "run":
         return cmd_run(args)
     if args.command == "resume":
@@ -1513,11 +1530,7 @@ def _dispatch_coherence(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    try:
-        from cypherclaw.first_boot import bootstrap_identity
-        bootstrap_identity()
-    except ImportError:
-        pass
+    _bootstrap_runtime_identity()
 
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -1533,6 +1546,17 @@ def main(argv: list[str] | None = None) -> int:
         if state := _try_extract_state(args):
             print(f"\n  Run state may be partially saved. Check: promptclaw status {state} --run-id <id>", file=sys.stderr)
         return 1
+
+
+def _bootstrap_runtime_identity() -> None:
+    try:
+        from cypherclaw.first_boot import FirstBootAnnouncer, bootstrap_identity
+    except ImportError:
+        return
+
+    identity = bootstrap_identity()
+    if getattr(identity, "mode", None) == "federated":
+        FirstBootAnnouncer().maybe_announce()
 
 
 def _try_extract_state(args: argparse.Namespace) -> str | None:

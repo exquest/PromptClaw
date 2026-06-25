@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Added T-002 coherence adoption command:
+  `promptclaw upgrade PROJECT_ROOT` now non-destructively adds coherence assets
+  to existing PromptClaw projects by merging missing coherence defaults into
+  `promptclaw.json`, writing `constitution.yaml` only when absent, creating
+  scaffolded `prompts/agents/*.md` only when missing, supporting `--dry-run`
+  planned-write previews, and supporting `--force` refreshes of only the
+  coherence protocol section in existing agent prompts. CLI startup now routes
+  identity hardening through a shared helper that calls `bootstrap_identity()`
+  before any federated first-boot announcement path, and tests cover identity
+  persistence for standalone and federated modes. No new dependencies,
+  provider secrets, database columns, migrations, or runtime state directories
+  were added. Full validation passed with `5745 passed, 11 skipped`, Ruff
+  clean, and mypy clean.
+
 - Added T-022 Deniable Asset Bus music render entrypoint:
   `tools/asset_render_music.py` now accepts the documented box-side argv
   contract (`--scene`, repeatable `--mood`, `--duration`, optional

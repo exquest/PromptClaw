@@ -83,6 +83,24 @@ Equivalent to composing a task from:
 - `prompts/02-routing-rules.md`
 - `docs/STARTUP_PROFILE.md` if present
 
+## `promptclaw upgrade`
+
+Add coherence assets to an existing PromptClaw project without overwriting local
+configuration or prompt work.
+
+```bash
+promptclaw upgrade PROJECT_ROOT
+promptclaw upgrade PROJECT_ROOT --dry-run
+promptclaw upgrade PROJECT_ROOT --force
+```
+
+The command merges missing coherence defaults into `promptclaw.json`, preserves
+other config keys, writes `constitution.yaml` only if it is absent, and creates
+the scaffolded `prompts/agents/*.md` files only when they are missing. `--dry-run`
+prints the planned writes without mutating files. `--force` refreshes only the
+coherence protocol section of existing agent prompts; local prompt content above
+that section is left intact.
+
 ## `promptclaw run`
 
 Run a task.

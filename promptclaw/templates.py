@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from pathlib import Path
 
 from .coherence.protocol import coherence_instructions
 from .config import default_project_config
@@ -254,6 +255,15 @@ def template_category(path: str) -> str:
 
 def required_startup_prompt_paths() -> tuple[str, ...]:
     return _REQUIRED_STARTUP_PROMPT_PATHS
+
+
+def coherence_protocol_section() -> str:
+    return _COHERENCE_SECTION
+
+
+def default_constitution_text() -> str:
+    constitution_path = Path(__file__).resolve().parent.parent / "constitution.yaml"
+    return constitution_path.read_text(encoding="utf-8")
 
 
 def scaffold_template_entries(project_name: str) -> tuple[ScaffoldTemplateEntry, ...]:
