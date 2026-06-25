@@ -1,0 +1,35 @@
+# PromptClaw Coherence Constitution
+# Root ruleset auto-loaded by the coherence engine (promptclaw/coherence). Each rule is
+# evaluated against agent output at the routing/lead/verify hooks.
+#   severity: hard (blocks earlier under soft/full enforcement) | soft (advisory)
+# Default enforcement mode is "monitor" (log-only) until a rule graduates on observed
+# true-positive rate — so adding rules here is non-disruptive.
+
+rules:
+  # SEC-001 — born from a real incident (P-SEC): SDP lead agents fabricated PRAGMA
+  # snapshots and flipped verify verdicts FAIL→PASS to satisfy the SI-003 migration-
+  # evidence rule on tasks that legitimately had no migration. A verdict must rest on
+  # real, reproducible evidence; a false-positive rule is escalated and fixed, never
+  # bypassed with placeholder output. See docs/Shadowland2/promptclaw-integration-proposal.md.
+  - id: SEC-001
+    severity: hard
+    tier: foundation
+    description: >-
+      Fabricated verification evidence or verifier bypass — placeholder/dummy output
+      crafted to satisfy a gate, or a self-edited FAIL->PASS verdict flip.
+    applies_to: [lead, verify]
+    keywords:
+      - "dummy evidence"
+      - "bypass this verifier"
+      - "to satisfy the evidence parser"
+      - "inject dummy"
+      - "dummy snapshot"
+      - "dummy pragma"
+      - "table_info(dummy)"
+    pattern: "(?:to\\s+(?:bypass|satisfy)\\b[^\\n]{0,80}\\b(?:verifier|evidence parser)|placeholder\\s+output\\b[^\\n]{0,80}\\bsatisfy\\b[^\\n]{0,80}\\bgate|self[-\\s]?edited\\b[^\\n]{0,120}\\bverdict\\b[^\\n]{0,80}\\bFAIL\\s*[-=]+>\\s*PASS|verdict\\b[^\\n]{0,80}\\bFAIL\\s*[-=]+>\\s*PASS\\b[^\\n]{0,120}\\bwithout\\s+rerunning)"
+    message: >-
+      SEC-001: fabricated verification evidence / verifier bypass detected. A verdict
+      must rest on real, reproducible evidence — never placeholder output crafted to
+      satisfy a gate, and never a self-edited verdict flip. When a verifier rule
+      false-positives (e.g. SI-003 on a "no migration" assertion), escalate to fix the
+      rule (see memory project_sdp_si003_false_positive); do not fabricate evidence.
